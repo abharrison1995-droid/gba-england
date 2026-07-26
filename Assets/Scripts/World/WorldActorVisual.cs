@@ -23,9 +23,22 @@ namespace ExiledAlvaston.World
         public float SwingDuration = 0.35f;
         public float LungeDistance = 0.22f;
 
+        [Header("Mounted")]
+        [Tooltip("Optional bespoke 'character sat on the vehicle' artwork. When assigned it " +
+                 "replaces the whole billboard while riding. Left empty, the vehicle's own sprite " +
+                 "is layered under the normal actor sprite instead.")]
+        public Sprite MountedSprite;
+
+        [Tooltip("Height of the layered vehicle sprite, as a fraction of the actor's height.")]
+        public float VehicleSpriteHeight = 0.62f;
+
         private Transform _visualRoot;
         private Transform _swingRoot;
         private SpriteRenderer _sr;
+        private Transform _mountRoot;
+        private SpriteRenderer _mountSr;
+        private Sprite _spriteBeforeMount;
+        private bool _isMounted;
         private Coroutine _swingRoutine;
         private Vector3 _swingBaseLocalPos;
         private GameObject _slashFx;
@@ -50,6 +63,107 @@ namespace ExiledAlvaston.World
             _swingRoot.localPosition = Vector3.zero;
             _swingRoot.localRotation = Quaternion.identity;
             _swingBaseLocalPos = Vector3.zero;
+        }
+
+        /// <summary>
+        /// The actor's own sprite renderer. Callers that want to tint or read the actor — crouch
+        /// shading, for one — must go through this rather than GetComponentInChildren, which will
+        /// happily hand back the layered vehicle sprite instead once one exists.
+        /// </summary>
+        public SpriteRenderer ActorRenderer
+        {
+            get
+            {
+                EnsureHierarchy();
+                return _sr;
+            }
+        }
+
+        /// <summary>
+        /// Puts the actor on or off a vehicle. With a MountedSprite assigned that art takes over
+        /// the billboard; otherwise <paramref name="vehicleSprite"/> is drawn over the actor's
+        /// feet, so any character sprite reads as riding without bespoke art per character.
+        /// </summary>
+        public void SetMounted(bool mounted, Sprite vehicleSprite)
+        {
+            EnsureHierarchy();
+
+            if (mounted)
+            {
+                if (!_isMounted)
+                    _spriteBeforeMount = _sr.sprite;
+                _isMounted = true;
+
+                if (MountedSprite != null)
+                {
+                    _sr.sprite = MountedSprite;
+                    FitScaleToHeight();
+                    ShowVehicleSprite(null);
+                }
+                else
+                {
+                    ShowVehicleSprite(vehicleSprite);
+                }
+            }
+            else
+            {
+                if (_isMounted && _spriteBeforeMount != null)
+                {
+                    _sr.sprite = _spriteBeforeMount;
+                    FitScaleToHeight();
+                }
+                _isMounted = false;
+                ShowVehicleSprite(null);
+            }
+        }
+
+        private void ShowVehicleSprite(Sprite sprite)
+        {
+            if (sprite == null)
+            {
+                if (_mountRoot != null)
+                    _mountRoot.gameObject.SetActive(false);
+                return;
+            }
+
+            EnsureMountHierarchy();
+
+            _mountSr.sprite = sprite;
+            // In front of the actor, so the rider's legs sit behind the bodywork.
+            _mountSr.sortingOrder = _sr != null ? _sr.sortingOrder + 1 : 11;
+
+            float spriteH = sprite.bounds.size.y;
+            if (spriteH < 0.001f) spriteH = 1f;
+            float targetH = Height * VehicleSpriteHeight;
+            _mountRoot.localScale = Vector3.one * (targetH / spriteH);
+
+            // _visualRoot sits at mid-height, so the actor's feet are at -Height * 0.5.
+            _mountRoot.localPosition = new Vector3(0f, -Height * 0.5f + targetH * 0.5f, 0f);
+            _mountRoot.gameObject.SetActive(true);
+        }
+
+        private void EnsureMountHierarchy()
+        {
+            if (_mountRoot == null)
+            {
+                Transform existing = _visualRoot.Find("MountVisual");
+                if (existing != null) _mountRoot = existing;
+                else
+                {
+                    // Parented to the billboard root rather than SwingRoot, so a melee swing can
+                    // never rotate or lunge the vehicle along with the actor.
+                    var go = new GameObject("MountVisual");
+                    go.transform.SetParent(_visualRoot, false);
+                    _mountRoot = go.transform;
+                }
+            }
+
+            if (_mountSr == null)
+            {
+                _mountSr = _mountRoot.GetComponent<SpriteRenderer>();
+                if (_mountSr == null)
+                    _mountSr = _mountRoot.gameObject.AddComponent<SpriteRenderer>();
+            }
         }
 
         /// <summary>Flip sprite / remember aim based on last move facing.</summary>

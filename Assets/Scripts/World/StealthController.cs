@@ -45,7 +45,7 @@ namespace ExiledAlvaston.World
                     player.SetSpeedMultiplier(this, SneakSpeedMultiplier);
 
                     // Visual feedback placeholder (darken sprite)
-                    var spriteRenderer = player.GetComponentInChildren<SpriteRenderer>();
+                    var spriteRenderer = FindPlayerRenderer(player);
                     if (spriteRenderer != null) spriteRenderer.color = Color.gray;
 
                     UIManager.Instance?.ShowToast("Sneaking...");
@@ -54,12 +54,24 @@ namespace ExiledAlvaston.World
                 {
                     player.ClearSpeedMultiplier(this);
 
-                    var spriteRenderer = player.GetComponentInChildren<SpriteRenderer>();
+                    var spriteRenderer = FindPlayerRenderer(player);
                     if (spriteRenderer != null) spriteRenderer.color = Color.white;
 
                     UIManager.Instance?.ShowToast("Out of stealth.");
                 }
             }
+        }
+
+        /// <summary>
+        /// The actor's own renderer. GetComponentInChildren would do until the player carries a
+        /// second SpriteRenderer — the layered vehicle sprite while riding — after which it can
+        /// hand back the moped and leave the player untinted.
+        /// </summary>
+        private static SpriteRenderer FindPlayerRenderer(CombatController player)
+        {
+            var visual = player.GetComponent<WorldActorVisual>();
+            if (visual != null) return visual.ActorRenderer;
+            return player.GetComponentInChildren<SpriteRenderer>();
         }
     }
 }

@@ -194,6 +194,10 @@ public static class ModernBritainSetup
     //  MOPED PREFAB
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
+    // ⚠ This deletes and recreates the asset, which takes the .meta with it and mints a fresh
+    // GUID — re-running it orphans the Moped, Nosey Parker and Pub instances already placed in
+    // c.unity. To change an existing prefab, edit it in place instead: see MopedVisualSetup,
+    // which uses LoadPrefabContents/SaveAsPrefabAsset and preserves the GUID.
     private static GameObject BuildMopedPrefab()
     {
         string path = $"{PrefabFolder}/Moped.prefab";

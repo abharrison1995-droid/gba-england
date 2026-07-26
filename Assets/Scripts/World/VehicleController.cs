@@ -22,6 +22,10 @@ namespace ExiledAlvaston.World
         [Tooltip("The visual model of the parked vehicle to hide when mounted.")]
         public GameObject ParkedModel;
 
+        [Tooltip("Sprite layered over the player while riding. Left empty, whatever the " +
+                 "ParkedModel renders is used, so the parked and ridden vehicle always match.")]
+        public Sprite VehicleSprite;
+
         [Tooltip("Left wherever you drop it while you stay in that chunk. Leave the chunk — by " +
                  "edge, door, portal, load or death — and it turns up back where it started.")]
         public bool ReturnsHomeOnChunkChange = true;
@@ -119,13 +123,19 @@ namespace ExiledAlvaston.World
                 UIManager.Instance?.ShowToast($"Hopped onto the {VehicleName}.");
             }
 
+            // Resolved before the model is hidden, so the ridden sprite always matches the parked one.
+            Sprite ridden = ResolveVehicleSprite();
+
             // Hide the parked model only. Never SetActive the root: that fires OnDisable below,
             // and the vehicle would cancel its own boost the instant it was mounted.
             if (ParkedModel != null)
                 ParkedModel.SetActive(false);
 
             if (player != null)
+            {
                 player.SetSpeedMultiplier(this, SpeedMultiplier);
+                player.GetComponent<WorldActorVisual>()?.SetMounted(true, ridden);
+            }
 
             ApplyPrompt(true);
         }
@@ -136,6 +146,7 @@ namespace ExiledAlvaston.World
             if (player != null)
             {
                 player.ClearSpeedMultiplier(this);
+                player.GetComponent<WorldActorVisual>()?.SetMounted(false, null);
                 transform.position = player.transform.position;
 
                 // Remember which chunk it was abandoned in; Update sends it home once that
@@ -149,6 +160,16 @@ namespace ExiledAlvaston.World
 
             ApplyPrompt(false);
             UIManager.Instance?.ShowToast($"Hopped off the {VehicleName}.");
+        }
+
+        /// <summary>The sprite to draw over the rider. Reads the parked model's own art by default.</summary>
+        private Sprite ResolveVehicleSprite()
+        {
+            if (VehicleSprite != null) return VehicleSprite;
+            if (ParkedModel == null) return null;
+
+            var sr = ParkedModel.GetComponentInChildren<SpriteRenderer>(true);
+            return sr != null ? sr.sprite : null;
         }
 
         private void ApplyPrompt(bool mounted)
@@ -175,7 +196,12 @@ namespace ExiledAlvaston.World
         {
             if (!IsRidden) return;
 
-            CombatController.Instance?.ClearSpeedMultiplier(this);
+            var player = CombatController.Instance;
+            if (player != null)
+            {
+                player.ClearSpeedMultiplier(this);
+                player.GetComponent<WorldActorVisual>()?.SetMounted(false, null);
+            }
 
             if (ParkedModel != null)
                 ParkedModel.SetActive(true);
