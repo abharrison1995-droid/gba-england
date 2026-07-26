@@ -60,6 +60,12 @@ namespace ExiledAlvaston.World
         {
             Interactable closest = null;
             float best = float.PositiveInfinity;
+
+            // Tracked separately so a LowPriority option never beats a real one on distance —
+            // a mounted vehicle rides at distance zero and would win every tie otherwise.
+            Interactable fallback = null;
+            float bestFallback = float.PositiveInfinity;
+
             Vector3 pos = transform.position;
 
             var all = Interactable.Active;
@@ -76,13 +82,23 @@ namespace ExiledAlvaston.World
                 Vector3 delta = it.transform.position - pos;
                 delta.y = 0f;
                 float sq = delta.sqrMagnitude;
-                if (sq <= it.InteractRange * it.InteractRange && sq < best)
+                if (sq > it.InteractRange * it.InteractRange) continue;
+
+                if (it.LowPriority)
+                {
+                    if (sq < bestFallback)
+                    {
+                        bestFallback = sq;
+                        fallback = it;
+                    }
+                }
+                else if (sq < best)
                 {
                     best = sq;
                     closest = it;
                 }
             }
-            return closest;
+            return closest != null ? closest : fallback;
         }
 
         /// <summary>Called by the HUD Interact button, or the E-key shortcut above.</summary>

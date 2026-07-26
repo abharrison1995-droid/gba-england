@@ -21,6 +21,10 @@ namespace ExiledAlvaston.World
         public bool Reusable = true;
         [Tooltip("How close (horizontally) the player must stand to interact.")]
         public float InteractRange = 2.5f;
+        [Tooltip("Only offered when nothing else is in range. For things that sit on top of the " +
+                 "player — a mounted vehicle is at distance zero and would otherwise mask every " +
+                 "pub, door and NPC you ride past.")]
+        public bool LowPriority = false;
 
         public UnityEvent OnInteract = new UnityEvent();
 
