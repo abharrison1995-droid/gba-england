@@ -167,24 +167,77 @@ The importer prints a summary to the Console listing what it wired, anything it 
 
 ## 7. Current requests
 
-### Priority 1 — finish the mount system
+### 7.1 First run — this one asset, on its own
 
-The mount system shipped and works, but the art is a placeholder I generated in code: a crude
-64×40 moped drawn from coloured rectangles. These three replace it.
+Nothing in this pipeline has been through a full round trip yet. Produce **only** this, then stop,
+so the handoff can be checked before a batch is committed to.
 
 | File | Type | Notes |
 |---|---|---|
-| `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Three-quarter view, facing camera-right, neutral standing pose. ~200 px tall trimmed. |
-| `spr_char_player_moped.png` | single | **The same character sat on the moped**, as one combined image. Same view and facing. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — so the rider and bike must read as one silhouette. Total height ~200 px trimmed. |
-| `spr_vehicle_moped.png` | single | The moped **parked, no rider**. Deliveroo-orange bodywork. ~135 px tall trimmed. |
+| `spr_vehicle_moped.png` | single | A moped, **parked, no rider**, side-on three-quarter view facing camera-right. Deliveroo-orange bodywork, food delivery box on the back. Slightly scruffy — this is a nicked moped in a British city. ~135 px tall trimmed. |
 
-The parked moped and the ridden moped should be recognisably the same vehicle.
+### 7.2 The rest of the mount system
 
-All three are **auto-assigned on import** — the player sprites onto the player's `WorldActorVisual`
-in the open scene, the parked moped into `Moped.prefab`. Use exactly these filenames or that
-wiring will not find them.
+The mount system works, but the art is a placeholder I generated in code: a crude 64×40 moped drawn
+from coloured rectangles. `spr_vehicle_moped` above plus these two replace it entirely.
 
-### Later
+| File | Type | Notes |
+|---|---|---|
+| `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Neutral standing pose. ~200 px tall trimmed. |
+| `spr_char_player_moped.png` | single | **The same character sat on the moped**, as one combined image. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette. ~200 px tall trimmed. |
+
+The parked moped and the ridden moped must be recognisably the same vehicle.
+
+These three are **auto-assigned on import**, so use exactly those filenames.
+
+### 7.3 Characters — sprite sheets
+
+All cells **256×256** unless stated, subject ~200 px tall, feet near the bottom of the cell, facing
+camera-right. World height 1.35 units. Standard actions and frame counts:
+
+| Action | Frames | Columns | fps | Loop |
+|---|---|---|---|---|
+| `idle` | 4 | 4 | 6 | yes |
+| `walk` | 8 | 8 | 10 | yes |
+| `attack` | 6 | 6 | 12 | no |
+| `cast` | 6 | 6 | 12 | no |
+| `hurt` | 3 | 3 | 12 | no |
+| `death` | 6 | 6 | 10 | no |
+
+**Councillor Mosley** — `sheet_char_mosley_<action>.png`, actions: `idle`, `walk`.
+An elderly UK city councillor. Pensioner, ill-fitting grey suit, lanyard, comb-over, self-important
+posture. A quest-giver who stands and talks — no combat.
+
+**Daniel Pauls** — `sheet_char_danielpauls_<action>.png`, actions: `idle`, `walk`, `cast`.
+A stage magician in a **pink jazzy Las Vegas suit** — sequins, wide lapels, ruffled shirt, far too
+much for a British council estate, which is the joke. Middle-aged, theatrical. He teaches the
+player their first spell, so `cast` should be a showman's flourish rather than a grim incantation.
+
+**The tracksuit geezer** — `sheet_char_underhoused_<action>.png`, actions: `idle`, `walk`, `attack`,
+`hurt`, `death`. Sketchy bloke in a full tracksuit, **wild unkempt hair**, twitchy. He panics and
+zaps the player during the opening magic quest and is then killed, so he needs the full hostile set.
+`attack` is a wild flailing magic zap, not a weapon swing.
+
+**Angry squirrel** — `sheet_char_squirrel_<action>.png`, actions: `idle`, `walk`, `attack`, `hurt`,
+`death`. **Cells 128×128, world height 0.45** — this one is small, so ignore the 256/200 figures
+above. A genuinely furious grey squirrel. Comic menace, not cute.
+
+**Roaming pharmacist** — `sheet_char_pharmacist_<action>.png`, actions: `idle`, `walk`.
+A drug dealer with the bearing and costume of a high-street pharmacist — white coat, name badge,
+clipboard, entirely straight-faced about it. The gag is deadpan; play it completely seriously.
+
+### 7.4 Props — single sprites
+
+Buildings are billboards, but the camera is **fixed** at pitch 30°, yaw −45° and never rotates, so
+draw them **in that same isometric projection** — two faces of the box visible, seen from slightly
+above. Not a flat straight-on elevation. Do not paint ground, shadow or surroundings.
+
+| File | World height | Notes |
+|---|---|---|
+| `spr_prop_office_building.png` | 6.0 units (~600 px) | A sketchy, boxy low-rise office block. Plain, cheap, slightly grim — think a two- or three-storey building on a British retail park. Simple massing, few details. |
+| `spr_prop_shed.png` | 2.2 units (~220 px) | A small garden shed. Timber, weathered, single door, maybe one window. |
+
+### 7.5 Later
 
 Five police tiers (PCSO hi-vis yellow, Bobby navy, Armed Response black, Occult Agent trench-coat
 brown, Occult Commander Ministry red), the Nosey Parker civilian, and the pub exterior — all
