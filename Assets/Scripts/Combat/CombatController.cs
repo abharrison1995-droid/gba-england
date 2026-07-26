@@ -331,21 +331,6 @@ namespace ExiledAlvaston.Combat
         {
             if (_isAttacking || _isDead) return;
 
-            _isAttacking = true;
-
-            // Lock body to last faced direction for this swing
-            if (_facingDir.sqrMagnitude > 0.001f)
-                SetFacing(_facingDir);
-
-            if (PlayerAnimator != null)
-                SetAnimatorTrigger("MeleeAttack");
-
-            if (_actorVisual == null)
-                _actorVisual = GetComponent<WorldActorVisual>();
-            if (_actorVisual != null)
-                _actorVisual.PlayMeleeSwing(_facingDir);
-
-            _rb.velocity = Vector3.zero;
             StartCoroutine(MeleeHitboxRoutine(MeleeHitDelay, MeleeRecovery));
         }
 
@@ -354,8 +339,29 @@ namespace ExiledAlvaston.Combat
             // _isAttacking gates every attack and cast. If this routine ever stops early without
             // clearing it, the player silently loses the ability to attack for the rest of the
             // session — so the reset lives in a finally, not on the happy path.
+            //
+            // Everything the swing does lives inside the try, including the setup that used to sit
+            // in PerformMeleeAttack: anything throwing between raising the flag and reaching the
+            // coroutine would have stuck it true with no finally to run. Unity steps a coroutine
+            // synchronously up to its first yield, so the flag is still set before StartCoroutine
+            // returns and a double-tap still can't fire twice. CastAbilityRoutine has this shape.
+            _isAttacking = true;
+
             try
             {
+                // Lock body to last faced direction for this swing
+                if (_facingDir.sqrMagnitude > 0.001f)
+                    SetFacing(_facingDir);
+
+                SetAnimatorTrigger("MeleeAttack");
+
+                if (_actorVisual == null)
+                    _actorVisual = GetComponent<WorldActorVisual>();
+                if (_actorVisual != null)
+                    _actorVisual.PlayMeleeSwing(_facingDir);
+
+                _rb.velocity = Vector3.zero;
+
                 yield return new WaitForSeconds(delay);
 
                 Vector3 facing = _facingDir.sqrMagnitude > 0.001f ? _facingDir.normalized : transform.forward;
