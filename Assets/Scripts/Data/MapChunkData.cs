@@ -17,6 +17,20 @@ namespace ExiledAlvaston.Data
     }
 
     /// <summary>
+    /// One vehicle placed in a chunk. Authored on the chunk asset rather than dropped into the
+    /// chunk prefab, so every vehicle in the world is listed in one place.
+    /// </summary>
+    [System.Serializable]
+    public struct VehicleSpawn
+    {
+        public VehicleData Vehicle;
+        [Tooltip("World position. Chunks are all instantiated at the origin, so this is also local.")]
+        public Vector3 Position;
+        [Tooltip("Facing, in degrees around Y.")]
+        public float YRotation;
+    }
+
+    /// <summary>
     /// Configuration for a world chunk in the grid matrix.
     /// </summary>
     [CreateAssetMenu(fileName = "NewMapChunkData", menuName = "ExiledAlvaston/Data/Map Chunk Data")]
@@ -45,5 +59,12 @@ namespace ExiledAlvaston.Data
         public MapChunkData SouthChunk;
         public MapChunkData EastChunk;
         public MapChunkData WestChunk;
+
+        // Appended, never inserted — existing .asset files carry no value for this and Unity will
+        // read it as an empty list, which is the correct default.
+        [Header("Vehicles")]
+        [Tooltip("Rideable vehicles spawned into this chunk each time it loads. Author them with " +
+                 "Tools > Exiled Alvaston > Place > Vehicle Placement rather than by hand.")]
+        public List<VehicleSpawn> VehicleSpawns = new List<VehicleSpawn>();
     }
 }
