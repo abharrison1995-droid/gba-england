@@ -13,6 +13,7 @@ namespace ExiledAlvaston.World
         public static PlayerInteractor Instance { get; private set; }
 
         private Interactable _current;
+        private string _lastPrompt;
         private float _armedAt;
 
         private void Awake()
@@ -36,6 +37,7 @@ namespace ExiledAlvaston.World
                 if (_current != null)
                 {
                     _current = null;
+                    _lastPrompt = null;
                     if (UIManager.Instance != null)
                         UIManager.Instance.SetInteractPrompt(null);
                 }
@@ -43,11 +45,18 @@ namespace ExiledAlvaston.World
             }
 
             Interactable closest = FindClosest();
-            if (closest != _current)
+            string prompt = closest != null ? closest.Prompt : null;
+
+            // The prompt is compared as well as the target: an interactable can rewrite its own
+            // Prompt without the closest one changing — mounting a vehicle flips it to "Get off
+            // the ...", and watching the reference alone left the HUD reading "Nick this Moped"
+            // for the whole ride.
+            if (closest != _current || prompt != _lastPrompt)
             {
                 _current = closest;
+                _lastPrompt = prompt;
                 if (UIManager.Instance != null)
-                    UIManager.Instance.SetInteractPrompt(_current != null ? _current.Prompt : null);
+                    UIManager.Instance.SetInteractPrompt(prompt);
             }
 
 #if UNITY_STANDALONE || UNITY_EDITOR || UNITY_WEBGL

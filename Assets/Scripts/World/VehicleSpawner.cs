@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using ExiledAlvaston.Data;
 
 namespace ExiledAlvaston.World
@@ -16,6 +17,12 @@ namespace ExiledAlvaston.World
 
         private MapChunkData _spawnedFor;
         private GameObject _spawnedInto;
+
+        // What each chunk's spawn entries produced last time, indexed to match VehicleSpawns.
+        // A parked vehicle dies with its chunk and reads back as null here, so it respawns; one
+        // you rode out on left its chunk and is still alive, so its entry stays occupied.
+        private readonly Dictionary<MapChunkData, VehicleController[]> _live =
+            new Dictionary<MapChunkData, VehicleController[]>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -63,8 +70,19 @@ namespace ExiledAlvaston.World
         {
             if (data.VehicleSpawns == null) return;
 
-            for (int i = 0; i < data.VehicleSpawns.Count; i++)
+            int count = data.VehicleSpawns.Count;
+            if (!_live.TryGetValue(data, out VehicleController[] live) || live.Length != count)
             {
+                live = new VehicleController[count];
+                _live[data] = live;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                // Still alive means you rode this one out of the chunk and brought it back. Without
+                // this check every round trip while mounted minted another moped from the same entry.
+                if (live[i] != null) continue;
+
                 VehicleSpawn spawn = data.VehicleSpawns[i];
 
                 if (spawn.Vehicle == null)
@@ -93,6 +111,7 @@ namespace ExiledAlvaston.World
 
                 vehicle.Apply(spawn.Vehicle);
                 vehicle.MarkChunkOwned();
+                live[i] = vehicle;
             }
         }
     }

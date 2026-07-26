@@ -112,6 +112,11 @@ public class VehiclePlacementTool : EditorWindow
         EditorGUILayout.LabelField($"{_chunk.ChunkName}: {count} vehicle(s)", EditorStyles.boldLabel);
         if (count == 0) return;
 
+        // Removal is deferred rather than done mid-loop: mutating the list while the layout is
+        // being built desynchronises Unity's IMGUI layout/repaint passes, and ExitGUI would skip
+        // the EndScrollView below.
+        int removeAt = -1;
+
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
         for (int i = 0; i < count; i++)
         {
@@ -129,15 +134,17 @@ public class VehiclePlacementTool : EditorWindow
                 }
 
                 if (GUILayout.Button("Remove", GUILayout.Width(64)))
-                {
-                    Undo.RecordObject(_chunk, "Remove vehicle spawn");
-                    spawns.RemoveAt(i);
-                    EditorUtility.SetDirty(_chunk);
-                    AssetDatabase.SaveAssets();
-                    GUIUtility.ExitGUI();
-                }
+                    removeAt = i;
             }
         }
         EditorGUILayout.EndScrollView();
+
+        if (removeAt >= 0)
+        {
+            Undo.RecordObject(_chunk, "Remove vehicle spawn");
+            spawns.RemoveAt(removeAt);
+            EditorUtility.SetDirty(_chunk);
+            AssetDatabase.SaveAssets();
+        }
     }
 }
