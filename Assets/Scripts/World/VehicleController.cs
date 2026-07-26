@@ -40,17 +40,41 @@ namespace ExiledAlvaston.World
             }
 
             _isPlayerMounted = true;
-            
+
             // Hide the parked model
             if (ParkedModel != null)
                 ParkedModel.SetActive(false);
 
-            // Boost player speed
-            player.MovementSpeed *= SpeedMultiplier;
+            player.SetSpeedMultiplier(this, SpeedMultiplier);
 
             // TODO: In a full implementation, swap player animator state to "Driving"
         }
-        
-        // You could also implement Unmount() here which drops the ParkedModel back down at player pos.
+
+        /// <summary>Step off: drops the vehicle where the player is standing and gives back their speed.</summary>
+        public void Unmount()
+        {
+            if (!_isPlayerMounted) return;
+
+            var player = CombatController.Instance;
+            if (player != null)
+            {
+                player.ClearSpeedMultiplier(this);
+                transform.position = player.transform.position;
+            }
+
+            if (ParkedModel != null)
+                ParkedModel.SetActive(true);
+
+            _isPlayerMounted = false;
+            UIManager.Instance?.ShowToast($"Hopped off the {VehicleName}.");
+        }
+
+        // Without this the boost outlives the vehicle: chunk transitions destroy the whole chunk,
+        // so a mounted moped would vanish with its multiplier still registered.
+        private void OnDisable()
+        {
+            if (_isPlayerMounted && CombatController.Instance != null)
+                CombatController.Instance.ClearSpeedMultiplier(this);
+        }
     }
 }
