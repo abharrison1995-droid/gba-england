@@ -212,9 +212,9 @@ public static class ModernBritainSetup
             vehicle.SpeedMultiplier = 2.0f;
             vehicle.IsOwnedByNPC = true;
 
-            // Wire OnInteract → VehicleController.Mount
-            UnityAction mountAction = vehicle.Mount;
-            UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(interactable.OnInteract, mountAction);
+            // Wire OnInteract → VehicleController.Toggle (one prompt covers mount and dismount)
+            UnityAction toggleAction = vehicle.Toggle;
+            UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(interactable.OnInteract, toggleAction);
 
             // Placeholder body — a flattened cube that reads as a moped
             GameObject body = GameObject.CreatePrimitive(PrimitiveType.Cube);

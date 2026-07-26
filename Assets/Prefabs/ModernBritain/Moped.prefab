@@ -137,7 +137,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 6278093731728455519}
         m_TargetAssemblyTypeName: ExiledAlvaston.World.VehicleController, Assembly-CSharp
-        m_MethodName: Mount
+        m_MethodName: Toggle
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

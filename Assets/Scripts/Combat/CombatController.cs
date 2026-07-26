@@ -330,8 +330,25 @@ namespace ExiledAlvaston.Combat
         public void PerformMeleeAttack()
         {
             if (_isAttacking || _isDead) return;
+            if (BlockedByRiding()) return;
 
             StartCoroutine(MeleeHitboxRoutine(MeleeHitDelay, MeleeRecovery));
+        }
+
+        /// <summary>
+        /// Riding takes both hands. Reads the non-creating accessor so this stays a null check on
+        /// every attack and cast for a player who has never been near a vehicle.
+        /// </summary>
+        private bool BlockedByRiding()
+        {
+            if (!MountController.IsPlayerRiding) return false;
+
+            if (UIManager.Instance != null)
+            {
+                var vehicle = MountController.Current.CurrentVehicle;
+                UIManager.Instance.LogCombat($"Not while you're on the {vehicle.VehicleName}.");
+            }
+            return true;
         }
 
         private IEnumerator MeleeHitboxRoutine(float delay, float attackDuration)
@@ -514,6 +531,7 @@ namespace ExiledAlvaston.Combat
         public void TryCastAbility(int slotIndex)
         {
             if (_isAttacking || _isDead) return;
+            if (BlockedByRiding()) return;
             if (EquippedAbilities == null || slotIndex < 0 || slotIndex >= EquippedAbilities.Count) return;
 
             AbilityData ability = EquippedAbilities[slotIndex];
