@@ -25,6 +25,8 @@ namespace ExiledAlvaston.Combat
         private WorldActorVisual _actorVisual;
 
         [Header("Movement")]
+        [Tooltip("Base walk speed. Treat as read-only at runtime — apply temporary changes through " +
+                 "SetSpeedMultiplier so two systems can't corrupt each other's idea of 'normal'.")]
         public float MovementSpeed = 5f;
 
         [Header("Combat Stats")]
@@ -206,6 +208,44 @@ namespace ExiledAlvaston.Combat
             return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         }
 
+        #region Movement speed modifiers
+        // Crouching and vehicles both want to scale move speed. When each one multiplied
+        // MovementSpeed in place and cached its own "original", mounting a moped while crouched
+        // wrote the boosted value back as the new normal. Modifiers are keyed by source instead,
+        // so they compose and unregister cleanly in any order.
+        private readonly Dictionary<Object, float> _speedModifiers = new Dictionary<Object, float>();
+        private float _speedProduct = 1f;
+
+        /// <summary>Base speed with every registered modifier applied.</summary>
+        public float EffectiveMovementSpeed => MovementSpeed * _speedProduct;
+
+        /// <summary>Register or replace <paramref name="source"/>'s speed multiplier.</summary>
+        public void SetSpeedMultiplier(Object source, float multiplier)
+        {
+            if (source == null) return;
+            _speedModifiers[source] = multiplier;
+            RecomputeSpeedProduct();
+        }
+
+        /// <summary>Remove <paramref name="source"/>'s multiplier, if it had one.</summary>
+        public void ClearSpeedMultiplier(Object source)
+        {
+            if (source == null) return;
+            if (_speedModifiers.Remove(source))
+                RecomputeSpeedProduct();
+        }
+
+        // Cached rather than recomputed per FixedUpdate — the dictionary walk would allocate an
+        // enumerator every physics step, and this project keeps hot paths allocation-free.
+        private void RecomputeSpeedProduct()
+        {
+            float product = 1f;
+            foreach (var kv in _speedModifiers)
+                product *= kv.Value;
+            _speedProduct = product;
+        }
+        #endregion
+
         private void HandleMovement()
         {
             Vector2 input = ReadMoveInput();
@@ -222,7 +262,7 @@ namespace ExiledAlvaston.Combat
             if (moveDir.sqrMagnitude < 0.0001f) return;
 
             SetFacing(moveDir);
-            _rb.MovePosition(_rb.position + moveDir * (MovementSpeed * input.magnitude * Time.fixedDeltaTime));
+            _rb.MovePosition(_rb.position + moveDir * (EffectiveMovementSpeed * input.magnitude * Time.fixedDeltaTime));
 
             if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", input.magnitude);
         }
@@ -298,7 +338,7 @@ namespace ExiledAlvaston.Combat
                 SetFacing(_facingDir);
 
             if (PlayerAnimator != null)
-                PlayerAnimator.SetTrigger("MeleeAttack");
+                SetAnimatorTrigger("MeleeAttack");
 
             if (_actorVisual == null)
                 _actorVisual = GetComponent<WorldActorVisual>();
@@ -311,52 +351,61 @@ namespace ExiledAlvaston.Combat
 
         private IEnumerator MeleeHitboxRoutine(float delay, float attackDuration)
         {
-            yield return new WaitForSeconds(delay);
-
-            Vector3 facing = _facingDir.sqrMagnitude > 0.001f ? _facingDir.normalized : transform.forward;
-            facing.y = 0f;
-            if (facing.sqrMagnitude < 0.001f) facing = Vector3.forward;
-            facing.Normalize();
-
-            float hitRadius = 1.15f;
-            float hitReach = 1.35f;
-            // Always aim from last facing — ignore a stale AttackPoint that doesn't follow aim
-            Vector3 hitCenter = transform.position + facing * hitReach;
-            if (AttackPoint != null)
-                hitCenter = transform.position + facing * Vector3.Distance(transform.position, AttackPoint.position);
-
-            int hitCount = Physics.OverlapSphereNonAlloc(hitCenter, hitRadius, _hitResults);
-            int damage = PlayerData != null ? PlayerData.BaseTraits.Strength * 2 + 5 : 10;
-
-            _hitThisSwing.Clear();
-            for (int i = 0; i < hitCount; i++)
+            // _isAttacking gates every attack and cast. If this routine ever stops early without
+            // clearing it, the player silently loses the ability to attack for the rest of the
+            // session — so the reset lives in a finally, not on the happy path.
+            try
             {
-                Collider enemyCol = _hitResults[i];
-                if (enemyCol == null) continue;
-                if (enemyCol.transform == transform || enemyCol.transform.IsChildOf(transform)) continue;
+                yield return new WaitForSeconds(delay);
 
-                // Parent lookup so child colliders still resolve; set dedupes multi-collider enemies
-                Health targetHealth = enemyCol.GetComponentInParent<Health>();
-                if (targetHealth == null || targetHealth.IsDead) continue;
-                if (!_hitThisSwing.Add(targetHealth)) continue;
+                Vector3 facing = _facingDir.sqrMagnitude > 0.001f ? _facingDir.normalized : transform.forward;
+                facing.y = 0f;
+                if (facing.sqrMagnitude < 0.001f) facing = Vector3.forward;
+                facing.Normalize();
 
-                // Must be roughly in front of the facing direction
-                Vector3 toTarget = targetHealth.transform.position - transform.position;
-                toTarget.y = 0f;
-                if (toTarget.sqrMagnitude > 0.01f)
+                float hitRadius = 1.15f;
+                float hitReach = 1.35f;
+                // Always aim from last facing — ignore a stale AttackPoint that doesn't follow aim
+                Vector3 hitCenter = transform.position + facing * hitReach;
+                if (AttackPoint != null)
+                    hitCenter = transform.position + facing * Vector3.Distance(transform.position, AttackPoint.position);
+
+                int hitCount = Physics.OverlapSphereNonAlloc(hitCenter, hitRadius, _hitResults);
+                int damage = PlayerData != null ? PlayerData.BaseTraits.Strength * 2 + 5 : 10;
+
+                _hitThisSwing.Clear();
+                for (int i = 0; i < hitCount; i++)
                 {
-                    float ahead = Vector3.Dot(toTarget.normalized, facing);
-                    if (ahead < 0.15f) continue; // behind / beside — ignore
+                    Collider enemyCol = _hitResults[i];
+                    if (enemyCol == null) continue;
+                    if (enemyCol.transform == transform || enemyCol.transform.IsChildOf(transform)) continue;
+
+                    // Parent lookup so child colliders still resolve; set dedupes multi-collider enemies
+                    Health targetHealth = enemyCol.GetComponentInParent<Health>();
+                    if (targetHealth == null || targetHealth.IsDead) continue;
+                    if (!_hitThisSwing.Add(targetHealth)) continue;
+
+                    // Must be roughly in front of the facing direction
+                    Vector3 toTarget = targetHealth.transform.position - transform.position;
+                    toTarget.y = 0f;
+                    if (toTarget.sqrMagnitude > 0.01f)
+                    {
+                        float ahead = Vector3.Dot(toTarget.normalized, facing);
+                        if (ahead < 0.15f) continue; // behind / beside — ignore
+                    }
+
+                    string foeName = string.IsNullOrEmpty(targetHealth.DisplayName)
+                        ? targetHealth.name.Replace("(Clone)", "").Trim()
+                        : targetHealth.DisplayName;
+                    targetHealth.TakeDamage(damage, "you", foeName);
                 }
 
-                string foeName = string.IsNullOrEmpty(targetHealth.DisplayName)
-                    ? targetHealth.name.Replace("(Clone)", "").Trim()
-                    : targetHealth.DisplayName;
-                targetHealth.TakeDamage(damage, "you", foeName);
+                yield return new WaitForSeconds(attackDuration);
             }
-
-            yield return new WaitForSeconds(attackDuration);
-            _isAttacking = false;
+            finally
+            {
+                _isAttacking = false;
+            }
         }
 
         private void OnDrawGizmosSelected()
@@ -395,7 +444,7 @@ namespace ExiledAlvaston.Combat
         private void OnHealthDamaged(int damage)
         {
             CurrentHealth = _health.CurrentHealth;
-            if (PlayerAnimator != null) PlayerAnimator.SetTrigger("Hit");
+            SetAnimatorTrigger("Hit");
         }
 
         private void OnHealthDeath()
@@ -515,34 +564,59 @@ namespace ExiledAlvaston.Combat
             _isAttacking = true;
             _rb.velocity = Vector3.zero;
 
-            if (PlayerAnimator != null) PlayerAnimator.SetTrigger("CastSpell");
-
-            // Shout the (player-named) spell overhead as you cast: "Spark Out!"
-            string shout = IsMagic(ability) && Flow.PlayerSession.Instance != null
-                ? Flow.PlayerSession.Instance.SpellName
-                : ability.AbilityName;
-            UI.SpellShoutText.Spawn(transform.position, shout);
-
-            yield return new WaitForSeconds(ability.CastTime);
-
-            // Zap the nearest enemy in range; otherwise the bolt just cracks off into the air.
-            Vector3 origin = transform.position;
-            Health target = FindSpellTarget(ability.Range);
-            if (target != null)
+            // See MeleeHitboxRoutine: the reset must be in a finally or a single interrupted cast
+            // permanently disables both spells and melee.
+            try
             {
-                LightningBolt.Spawn(origin, target.transform.position);
-                if (ability.BaseDamage > 0)
-                    target.TakeDamage(ability.BaseDamage, shout, target.DisplayName);
+                SetAnimatorTrigger("CastSpell");
+
+                // Shout the (player-named) spell overhead as you cast: "Spark Out!"
+                string shout = IsMagic(ability) && Flow.PlayerSession.Instance != null
+                    ? Flow.PlayerSession.Instance.SpellName
+                    : ability.AbilityName;
+                UI.SpellShoutText.Spawn(transform.position, shout);
+
+                yield return new WaitForSeconds(ability.CastTime);
+
+                // Zap the nearest enemy in range; otherwise the bolt just cracks off into the air.
+                Vector3 origin = transform.position;
+                Health target = FindSpellTarget(ability.Range);
+                if (target != null)
+                {
+                    LightningBolt.Spawn(origin, target.transform.position);
+                    if (ability.BaseDamage > 0)
+                        target.TakeDamage(ability.BaseDamage, shout, target.DisplayName);
+                }
+                else
+                {
+                    LightningBolt.Spawn(origin, origin + FacingDirection * Mathf.Max(2f, ability.Range * 0.6f));
+                }
+
+                if (ability.EffectPrefab != null)
+                    Instantiate(ability.EffectPrefab, origin + FacingDirection * 1.2f, transform.rotation);
             }
-            else
+            finally
             {
-                LightningBolt.Spawn(origin, origin + FacingDirection * Mathf.Max(2f, ability.Range * 0.6f));
+                _isAttacking = false;
             }
+        }
 
-            if (ability.EffectPrefab != null)
-                Instantiate(ability.EffectPrefab, origin + FacingDirection * 1.2f, transform.rotation);
-
-            _isAttacking = false;
+        /// <summary>
+        /// SetTrigger on a controller that lacks the parameter logs an error every call. The
+        /// player's controller is authored in-scene and may not define all of them, so check
+        /// first rather than flooding the console (which hides real errors).
+        /// </summary>
+        private void SetAnimatorTrigger(string trigger)
+        {
+            if (PlayerAnimator == null) return;
+            foreach (var p in PlayerAnimator.parameters)
+            {
+                if (p.type == AnimatorControllerParameterType.Trigger && p.name == trigger)
+                {
+                    PlayerAnimator.SetTrigger(trigger);
+                    return;
+                }
+            }
         }
 
         /// <summary>Closest living enemy Health within range (never the player themselves).</summary>
