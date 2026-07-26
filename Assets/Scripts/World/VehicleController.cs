@@ -60,8 +60,18 @@ namespace ExiledAlvaston.World
         // catches every path, including load-game and the arrest return.
         private void Update()
         {
+            // Ridden: travel with the player. Its own Interactable is what offers the dismount
+            // prompt, so leaving the vehicle parked would put that prompt out of range the moment
+            // you drove off — and homing doesn't apply to a vehicle you're sat on.
+            if (IsRidden)
+            {
+                var rider = CombatController.Instance;
+                if (rider != null)
+                    transform.position = rider.transform.position;
+                return;
+            }
+
             if (!ReturnsHomeOnChunkChange || !_displaced) return;
-            if (IsRidden) return; // riding it across an edge doesn't count as abandoning it
 
             var chunks = ChunkManager.Instance;
             if (chunks == null || chunks.CurrentChunkData == _parkedChunk) return;
