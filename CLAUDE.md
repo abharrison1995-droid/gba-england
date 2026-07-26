@@ -1,9 +1,14 @@
 # CLAUDE.md — Exiled Alvaston
 
 Guidance for Claude Code sessions in this repo. Written from a codebase audit (2026-07-26),
-revised the same day after the consequence mechanics were recovered from a stash and landed.
+revised the same day after the consequence mechanics were recovered from a stash and landed,
+and again after the mount/vehicle work on `fix/moped-mount-and-melee-flag` (see §9 and §11).
 Facts here are verified against code, not against design docs. Where code and a design doc
 disagree, this file records **what the code actually does**.
+
+> **§11 is not verified in a running editor.** Everything else in this file was read off code
+> that has at least been compiled. The vehicle work has not been — no Unity session has opened
+> since it was written. Treat §11 as "what the code says it does", not "what the game does".
 
 > **Stale-brief warning.** An older written brief describes this as a "2D mobile RPG".
 > That is out of date. The game is **isometric by design** (confirmed 2026-07-26) and the
@@ -51,14 +56,15 @@ Assets/
     Camera/           # IsometricCameraFollow
     Combat/           # CombatController (player), EnemyAI, Health, LightningBolt
     Data/             # ScriptableObjects: MapChunkData, CharacterData, AbilityData,
-                      #   ItemData, DialogueData, PlayerClass
+                      #   ItemData, DialogueData, PlayerClass, VehicleData
     Dialogue/         # DialogueManager
     Flow/             # GameFlowController, PlayerSession, SaveGameManager
     Quests/           # QuestManager
     Systems/          # PauseManager, WantedManager
     UI/               # UIManager, HUD, joystick, inventory, title/creator/death screens
     Vibe/             # EKVibe — central const/colour/tuning table
-    World/            # ChunkManager, ChunkEdge, doors, nameplates, billboards
+    World/            # ChunkManager, ChunkEdge, doors, nameplates, billboards,
+                      #   MountController + VehicleController + VehicleSpawner (§11)
   Editor/             # editor-only tools (no asmdef — see below)
   Data/Chunks/        # 6 MapChunkData .asset files
   Prefabs/Chunks/     # 6 matching chunk prefabs
@@ -120,6 +126,15 @@ Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is li
 
 If you add or change transition behaviour, you must touch all four or consolidate them.
 
+**If you need to *react* to a chunk change, poll — do not hook a transition.** `CurrentChunkData`
+is a public serialized field written from **seven** places across six files: both `ChunkManager`
+routines, `GameFlowController` ×2, `SaveGameManager`, `DeathScreenUI`, and two editor tools. Any
+one hook misses the other paths, and turning the field into a property to raise an event would
+stop Unity serialising the scene's authored starting chunk. `VehicleSpawner` and
+`VehicleController` both compare against a remembered reference instead — cheap, and it catches
+load-game and the arrest return for free. Watch `CurrentChunkInstance` too if a reload of the
+*same* chunk matters to you (dying in Home_Alvaston and respawning into it).
+
 Current chunks: `Home_Alvaston` (0,0 — the "London" hub, `IsCity: 1`), `North_Wasteland`,
 `South_Slums`, `East_RetailPark`, `West_Canal`, `Manor_Cellars` (tutorial dungeon, reached
 by `InstanceDoor`, not by edge). Outer chunks link back to Home only — their other three
@@ -149,7 +164,9 @@ Consequences to respect:
 - `Manor_Cellars_Data` has `ChunkName: "Manor Cellars"` (space) while every other chunk uses
   underscores. Do not "normalise" this casually — it is a save key.
 
-**Not saved:** `PlayerSession.TutorialComplete`, quest state, inventory, wanted level.
+**Not saved:** `PlayerSession.TutorialComplete`, quest state, inventory, wanted level, and
+whether you are riding anything (§11 — a load puts you on foot with vehicles back at their
+authored spots, and a vehicle you had already nicked is nickable again).
 `PlayerSession` is `DontDestroyOnLoad` (memory only) so tutorial state resets on app restart
 while the position save survives — gates keyed off `TutorialComplete` will re-lock.
 
@@ -167,6 +184,17 @@ Renaming these breaks Unity serialization silently (fields go null / enums shift
   `GameFlowState`, `HUDActionButton.ActionKind`, `InstanceDoor.Destination`. Always append.
 - **`Assets/Data/Chunks/*.asset` reference each other by GUID** for adjacency. Deleting or
   regenerating a `.meta` breaks the adjacency graph.
+- ⚠️ **Never rebuild an existing prefab by deleting and re-saving it.**
+  `ModernBritainSetup.BuildMopedPrefab` does `AssetDatabase.DeleteAsset(path)` then
+  `SaveAsPrefabAsset`. That takes the `.meta` with it and mints a fresh GUID, so **re-running
+  that tool orphans the Moped, Nosey Parker and Pub instances already placed in `c.unity`** —
+  they detach silently and the scene keeps empty prefab stubs. To change an existing prefab,
+  edit it in place: `PrefabUtility.LoadPrefabContents` → modify → `SaveAsPrefabAsset` →
+  `UnloadPrefabContents`, which overwrites without touching the `.meta`. `MopedVisualSetup` is
+  the worked example.
+- **Appending a serialized field is safe; inserting is not.** `MapChunkData.VehicleSpawns` was
+  added after the adjacency block for this reason — existing `.asset` files carry no value for
+  it and Unity reads an empty list, which is the correct default.
 
 ## 8. The consequence systems (the GTA layer)
 
@@ -192,7 +220,7 @@ is the single most load-bearing line in the whole consequence loop.
 | Nosey Parkers | `AI/NoseyParkerAI` | Civilians. Within `DetectionRadius`, if concealment is below max, they spend `ReportTime` dialling 999, then `SpikeKnives()`. |
 | Stealth | `World/StealthController` | Crouch toggle: halves move speed, halves parker detection radius. |
 | Pickpocketing | `World/PickpocketInteractable` | Requires crouch. Rolls `CatchChance`; failure spikes Knives. |
-| Grand Theft Moped | `World/VehicleController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. |
+| Grand Theft Moped | `World/VehicleController` + `World/MountController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. See §11 — ride state, dismounting and spawning all changed. |
 | Pub safehouses | `World/PubInteractable` | A pint clears Knives + concealment, heals, and saves. |
 | Arrest | `Flow/GameFlowController.ArrestRoutine` | Death dealt by an `EnemyAI.IsPolice` attacker (tracked via `Health.LastAttacker`) arrests instead of killing: clears wanted level, despawns police, returns you to the cellars. |
 
@@ -201,11 +229,17 @@ is the single most load-bearing line in the whole consequence loop.
 - **Stealth is keyboard-only.** `StealthController.Update` reads `Input.GetKeyDown(KeyCode.C)`,
   with its own comment noting mobile needs a UI button. On a touchscreen-first game this makes
   stealth unreachable — and since `TryPickpocket` requires `IsCrouched`, **pickpocketing is
-  unreachable on mobile too.**
-- **`MovementSpeed` has no single owner.** `StealthController` and `VehicleController` both
-  multiply `CombatController.MovementSpeed` in place and cache their own "original". Mount a
-  moped while crouched and the restore writes back a corrupted base. `VehicleController` has
-  no `Unmount`, so its 2× boost is permanent once taken.
+  unreachable on mobile too.** It also means the crouch-plus-vehicle composition that §11's
+  modifier stack exists to handle cannot be exercised on a device at all.
+- **The ModernBritain props are in every chunk.** `NoseyParker` and `Pub_TheWinchester` are
+  scene-root instances in `c.unity` (`m_TransformParent: {fileID: 0}`), and every chunk is
+  instantiated at `Vector3.zero`, so both stand at the same world coordinates in all six chunks.
+  The parker reports you in the wasteland; the pub — the only manual save point — follows you
+  everywhere. The moped had this too and was fixed by §11's spawner; these two have not been.
+- ~~**`MovementSpeed` has no single owner.**~~ **Fixed** (`a6b387e`, on `main`). Modifiers are
+  keyed by source via `CombatController.SetSpeedMultiplier` / `ClearSpeedMultiplier`, and
+  movement reads `EffectiveMovementSpeed`. `MovementSpeed` is now a read-only base — never
+  multiply it in place again. ~~`VehicleController` has no `Unmount`~~ — see §11.
 - **Nosey Parkers fire on any concealment below max.** One cast drains 34 with 5/sec regen, so
   every cast opens a ~7-second window in which every parker in range starts reporting. Each
   parker also sets `this.enabled = false` after reporting (the comment says "run away", but it
@@ -225,6 +259,9 @@ is the single most load-bearing line in the whole consequence loop.
   `main` was unnecessary — everything in it had already landed via PR #2 — but it did no harm:
   nothing was resurrected and no file diverged. Because it is now an ancestor of `main`, the
   stash commit is permanently reachable and **the branch itself is safe to delete.**
+- **`fix/moped-mount-and-melee-flag` is 11 commits ahead of `main` and NOT merged.** It holds
+  the melee-flag fix and all of §11. Nothing on it has been compiled or opened in Unity, and it
+  carries four editor steps that must be done before the game is playable — see §11.
 - ⚠️ **`4b93ccc` on `feat/quest-placement-tools-and-mosley-quest` is NOT merged.** It holds one
   fix worth keeping — a `PauseManager.IsPaused` guard in `CombatController.Update` that stops
   spell/attack input firing through open menus — tangled together with 1,789 craftpix renames
@@ -319,9 +356,70 @@ above it. Run it before and after anything that deletes, moves or renames assets
 Everything else — does the scene load, is anything pink, do the mechanics behave — needs the
 Unity editor and therefore needs a human. Say so plainly rather than implying otherwise.
 
+**There is no C# compiler in the agent environment either.** Reference integrity passing says
+nothing about whether the project builds. Anything written without a Unity session is unverified
+in both senses; §11 is the current example.
+
 A rename to **GBA: England** (Great British Annals) is under consideration. Notes if it
 proceeds: the `ExiledAlvaston` namespace appears in 46 `.cs` files and **zero serialized
 assets**, so a namespace rename is safe — Unity binds scripts by `.meta` GUID, not type name.
 What is *not* safe is `Home_Alvaston`, which is a `ChunkName` and therefore a save key (§6).
 A colon is illegal in Windows paths and git repo names, so any repo/folder would be
 `gba-england` with `GBA: England` only as a display string.
+
+---
+
+## 11. Mounts and vehicles
+
+⚠️ **On `fix/moped-mount-and-melee-flag`, not on `main`. Never compiled, never run.**
+
+**Ride state has one owner: `World/MountController`.** It holds `CurrentVehicle`;
+`VehicleController` describes a vehicle and applies its own effects when told to. Nothing places
+the component — `MountController.Get()` attaches it to the `CombatController` GameObject on first
+use. Use `MountController.Current` (non-creating) inside `OnDisable`/`OnDestroy`; `AddComponent`
+during teardown is illegal.
+
+| Piece | Script | What it does |
+|---|---|---|
+| Ride state | `World/MountController` | `Mount` / `Dismount` / `ForgetVehicle`. `IsPlayerRiding` is the cheap static read. |
+| The vehicle | `World/VehicleController` | `Toggle` (the interact entry point), effects, prompt, homing. |
+| Spawning | `World/VehicleSpawner` | Reads `MapChunkData.VehicleSpawns`, parents instances to the live chunk. Self-bootstraps via `RuntimeInitializeOnLoadMethod`. |
+| Definition | `Data/VehicleData` | Name, speed multiplier, nickable, prompt, sprite, parked height. |
+
+**Two ownership models, deliberately separate.** A vehicle spawned by `VehicleSpawner` is
+*chunk-owned*: it dies with its chunk and is respawned at its authored spot next visit, so it
+needs no homing. It unparents on mount (so riding across an edge cannot destroy it under you) and
+rejoins whichever chunk you abandon it in. A vehicle hand-placed in the scene is *not*
+chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not merge these.
+
+**Things that will catch you out:**
+
+- **Never `SetActive(false)` a vehicle root** to hide it. `OnDisable` clears the speed multiplier,
+  so the vehicle would cancel its own boost the instant it was mounted. Hide `ParkedModel`.
+- **A mounted vehicle rides at distance zero**, so it wins `PlayerInteractor.FindClosest` on
+  distance every time. `Interactable.LowPriority` is what stops it masking pubs, doors and NPCs;
+  the mounted vehicle sets it.
+- **`PlayerInteractor` compares the prompt string, not just the target.** An interactable that
+  rewrites its own `Prompt` without the closest one changing — which is exactly what mounting
+  does — would otherwise leave the HUD stale.
+- **`VehicleSpawner` tracks what each spawn entry produced.** Without that, riding a chunk's
+  moped out and back mints a second one from the same entry, once per round trip.
+- **The player must not gain a stray `SpriteRenderer` lookup.** `WorldActorVisual.ActorRenderer`
+  exists because `GetComponentInChildren<SpriteRenderer>()` starts returning the layered vehicle
+  sprite once one exists — `StealthController`'s crouch tint used to do exactly that.
+- **`MountedSprite` will not work on an animator-driven player.** It writes `_sr.sprite`, which an
+  Animator overwrites every frame. The layered composite path is unaffected. Unverified which
+  applies to the player in `c.unity`.
+- **Nicking does not persist**, by decision. `IsOwnedByNPC` is cleared on the instance, and the
+  instance is replaced when the chunk reloads — so you re-nick and re-spike on every visit.
+  Consistent with §6, where wanted level and inventory are not saved either.
+
+**Editor steps this branch needs before it is playable**, in order:
+
+1. `Tools → Exiled Alvaston → Art → Build Moped Placeholder Art` — bakes the placeholder sprite
+   and replaces the orange cube, editing the prefab in place (§7).
+2. Create a `VehicleData` (`Assets > Create > ExiledAlvaston > Data > Vehicle Data`), set
+   `ChassisPrefab` to `Moped.prefab`.
+3. `Tools → Exiled Alvaston → Place → Vehicle Placement` — add it to `Home_Alvaston_Data`.
+4. **Delete the Moped instance at the root of `c.unity`**, or the legacy every-chunk one and the
+   spawned one both exist.
