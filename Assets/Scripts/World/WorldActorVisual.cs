@@ -181,6 +181,12 @@ namespace ExiledAlvaston.World
             float side = Vector3.Dot(_swingFacing, cam.transform.right);
             bool facingCameraLeft = side < -0.05f;
             _sr.flipX = SpriteFacesRightByDefault ? facingCameraLeft : !facingCameraLeft;
+
+            // The layered vehicle sprite is drawn facing the same way as the actor, so it has to
+            // flip with them. Without this the rider turns left and the moped underneath keeps
+            // pointing right. The MountedSprite path needs no special case — that art replaces
+            // the actor's own sprite and flips with it.
+            if (_mountSr != null) _mountSr.flipX = _sr.flipX;
         }
 
         public void PlayMeleeSwing()
