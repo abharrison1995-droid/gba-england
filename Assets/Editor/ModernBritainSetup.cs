@@ -194,6 +194,10 @@ public static class ModernBritainSetup
     //  MOPED PREFAB
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
+    // ⚠ This deletes and recreates the asset, which takes the .meta with it and mints a fresh
+    // GUID — re-running it orphans the Moped, Nosey Parker and Pub instances already placed in
+    // c.unity. To change an existing prefab, edit it in place instead: see MopedVisualSetup,
+    // which uses LoadPrefabContents/SaveAsPrefabAsset and preserves the GUID.
     private static GameObject BuildMopedPrefab()
     {
         string path = $"{PrefabFolder}/Moped.prefab";
@@ -212,9 +216,9 @@ public static class ModernBritainSetup
             vehicle.SpeedMultiplier = 2.0f;
             vehicle.IsOwnedByNPC = true;
 
-            // Wire OnInteract → VehicleController.Mount
-            UnityAction mountAction = vehicle.Mount;
-            UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(interactable.OnInteract, mountAction);
+            // Wire OnInteract → VehicleController.Toggle (one prompt covers mount and dismount)
+            UnityAction toggleAction = vehicle.Toggle;
+            UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(interactable.OnInteract, toggleAction);
 
             // Placeholder body — a flattened cube that reads as a moped
             GameObject body = GameObject.CreatePrimitive(PrimitiveType.Cube);
