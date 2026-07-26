@@ -123,8 +123,118 @@ public static class ArtImportTool
             }
         }
 
+        AutoAssign(report, problems);
+
         AssetDatabase.SaveAssets();
         Summarise(report, problems, questions);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  AUTO-ASSIGNMENT
+    //  Imported art is wired into the things that were waiting for it, so a batch of sprites
+    //  does not need a follow-up round of hand-dragging in the Inspector.
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private static void AutoAssign(List<string> report, List<string> problems)
+    {
+        AssignPlayerSprite("spr_char_player", false, report, problems);
+        AssignPlayerSprite("spr_char_player_moped", true, report, problems);
+        AssignMopedSprite("spr_vehicle_moped", report, problems);
+    }
+
+    private static Sprite FindImported(string baseName)
+    {
+        string[] hits = AssetDatabase.FindAssets($"{baseName} t:Sprite", new[] { ArtRoot });
+        foreach (string guid in hits)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (Path.GetFileNameWithoutExtension(path) != baseName) continue;
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+        return null;
+    }
+
+    /// <summary>Player sprite or the sat-on-a-moped variant, on the WorldActorVisual in the open scene.</summary>
+    private static void AssignPlayerSprite(string baseName, bool mounted, List<string> report, List<string> problems)
+    {
+        Sprite sprite = FindImported(baseName);
+        if (sprite == null) return;
+
+        var player = UnityEngine.Object.FindObjectOfType<ExiledAlvaston.Combat.CombatController>();
+        if (player == null)
+        {
+            problems.Add($"{baseName}: imported, but no CombatController in the open scene — " +
+                         "open Assets/c.unity and re-run to have it assigned.");
+            return;
+        }
+
+        var visual = player.GetComponent<ExiledAlvaston.World.WorldActorVisual>();
+        if (visual == null)
+        {
+            problems.Add($"{baseName}: the player has no WorldActorVisual to assign it to.");
+            return;
+        }
+
+        Undo.RecordObject(visual, "Assign generated sprite");
+        if (mounted) visual.MountedSprite = sprite;
+        else visual.ActorSprite = sprite;
+
+        EditorUtility.SetDirty(visual);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(player.gameObject.scene);
+        report.Add($"    assigned to player WorldActorVisual.{(mounted ? "MountedSprite" : "ActorSprite")} " +
+                   "— save the scene (Ctrl+S)");
+    }
+
+    /// <summary>Parked moped art, written into the prefab in place so the GUID survives.</summary>
+    private static void AssignMopedSprite(string baseName, List<string> report, List<string> problems)
+    {
+        Sprite sprite = FindImported(baseName);
+        if (sprite == null) return;
+
+        const string prefabPath = "Assets/Prefabs/ModernBritain/Moped.prefab";
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) == null)
+        {
+            problems.Add($"{baseName}: {prefabPath} not found.");
+            return;
+        }
+
+        GameObject contents = PrefabUtility.LoadPrefabContents(prefabPath);
+        try
+        {
+            var vehicle = contents.GetComponent<ExiledAlvaston.World.VehicleController>();
+            if (vehicle == null)
+            {
+                problems.Add($"{baseName}: Moped.prefab has no VehicleController.");
+                return;
+            }
+
+            vehicle.VehicleSprite = sprite;
+
+            if (vehicle.ParkedModel != null)
+            {
+                var sr = vehicle.ParkedModel.GetComponentInChildren<SpriteRenderer>(true);
+                if (sr != null)
+                {
+                    sr.sprite = sprite;
+
+                    // Parked height is 0.9 world units; the renderer is scaled to suit whatever
+                    // the sprite's own bounds are, so replacement art of any resolution fits.
+                    float spriteH = sprite.bounds.size.y;
+                    if (spriteH > 0.001f)
+                    {
+                        sr.transform.localScale = Vector3.one * (0.9f / spriteH);
+                        sr.transform.localPosition = new Vector3(0f, 0.45f, 0f);
+                    }
+                }
+            }
+
+            PrefabUtility.SaveAsPrefabAsset(contents, prefabPath);
+            report.Add("    assigned to Moped.prefab (VehicleSprite + parked visual)");
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(contents);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════

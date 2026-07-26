@@ -4,6 +4,16 @@ How art gets from a generation agent into the game. Read `AGENTS.md` first for t
 
 **Deliver to `art_incoming/`. One PNG plus one JSON per asset. Nothing else, nowhere else.**
 
+**Work the whole request list in §7 in one run.** Do not stop after one asset to check in — the
+importer processes a folder at a time, and a batch of eight costs the same number of Unity steps
+as a batch of one. If something in a request is unclear, put it in that asset's `"question"` field
+and keep going.
+
+**Suggested model: Gemini 3.1 Pro, high reasoning**, for a first batch or any request involving new
+subject matter — the sizing and facing rules below are easy to violate plausibly. Once a batch has
+come back correct, a faster model is fine for volume. This is set in Antigravity's own agent
+configuration; nothing in this repo can select it for you.
+
 ---
 
 ## 1. What the game looks like
@@ -169,6 +179,10 @@ The mount system shipped and works, but the art is a placeholder I generated in 
 | `spr_vehicle_moped.png` | single | The moped **parked, no rider**. Deliveroo-orange bodywork. ~135 px tall trimmed. |
 
 The parked moped and the ridden moped should be recognisably the same vehicle.
+
+All three are **auto-assigned on import** — the player sprites onto the player's `WorldActorVisual`
+in the open scene, the parked moped into `Moped.prefab`. Use exactly these filenames or that
+wiring will not find them.
 
 ### Later
 
