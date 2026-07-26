@@ -103,6 +103,28 @@ Sheet:
 folder. `frameCount` may be fewer than `columns × rows` if the last row is partly empty — say so.
 Add `"question": "..."` if a request was ambiguous.
 
+Two optional fields, both usually omitted:
+
+- `"subject"` — groups sheets into one animator. Defaults to `name` minus the `_<action>` suffix,
+  so `player_walk` and `player_attack` already land on the same `player` controller. Set it only
+  when the names do not follow that pattern.
+- `"rendererPath"` — animation binding path to the SpriteRenderer. Defaults to empty, meaning the
+  renderer is on the same GameObject as the Animator, which is what every existing clip in this
+  project uses. Leave it alone unless told otherwise.
+
+Recognised `action` values map to animator states and to the parameter names the game already
+calls. Anything outside this list still imports and still gets a clip — it just is not wired into
+a state machine:
+
+| `action` | State | Fired by |
+|---|---|---|
+| `idle` | `Idle` | default state |
+| `walk` | `Run` | `Speed` float > 0.1 |
+| `attack` | `Attack` | `MeleeAttack` trigger |
+| `hurt` | `Hurt` | `Hit` trigger |
+| `death` | `Death` | `Death` trigger, no return to idle |
+| `cast` | `Cast` | `CastSpell` trigger |
+
 ## 5. Naming
 
 - Single: `spr_<category>_<name>.png` → `spr_char_player.png`, `spr_vehicle_moped.png`
@@ -124,6 +146,12 @@ same filename** — do not create `_v2`.
 6. Reports what it wired and what it could not.
 
 Nothing is imported automatically. `art_incoming/` is staging — files sit there until the tool runs.
+Re-running is safe and idempotent: an asset of the same name overwrites in place, keeping its GUID
+and every reference to it, which is why §5 forbids `_v2` filenames.
+
+Clips land in `Assets/Animations/Generated/`, controllers as `<subject>_Controller.controller`.
+The importer prints a summary to the Console listing what it wired, anything it could not, and any
+`"question"` fields it found.
 
 ---
 
