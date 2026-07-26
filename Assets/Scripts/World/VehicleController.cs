@@ -1,5 +1,6 @@
 using UnityEngine;
 using ExiledAlvaston.Combat;
+using ExiledAlvaston.Data;
 using ExiledAlvaston.Systems;
 using ExiledAlvaston.UI;
 
@@ -21,8 +22,17 @@ namespace ExiledAlvaston.World
         [Tooltip("The visual model of the parked vehicle to hide when mounted.")]
         public GameObject ParkedModel;
 
+        [Tooltip("Left wherever you drop it while you stay in that chunk. Leave the chunk — by " +
+                 "edge, door, portal, load or death — and it turns up back where it started.")]
+        public bool ReturnsHomeOnChunkChange = true;
+
         private Interactable _interactable;
         private string _parkedPrompt;
+
+        private Vector3 _homePosition;
+        private Quaternion _homeRotation;
+        private MapChunkData _parkedChunk;
+        private bool _displaced;
 
         /// <summary>True while this specific vehicle is the one under the player.</summary>
         public bool IsRidden => MountController.Current != null
@@ -32,6 +42,36 @@ namespace ExiledAlvaston.World
         {
             _interactable = GetComponent<Interactable>();
             _parkedPrompt = _interactable != null ? _interactable.Prompt : null;
+
+            _homePosition = transform.position;
+            _homeRotation = transform.rotation;
+        }
+
+        // Polls the live chunk rather than subscribing to a transition event, deliberately.
+        // CurrentChunkData is a public serialized field written from seven places across six
+        // files — both ChunkManager routines, GameFlowController twice, SaveGameManager,
+        // DeathScreenUI and two editor tools — so hooking any one transition path would miss the
+        // other three, and converting the field to a property to raise an event would stop Unity
+        // serialising the scene's authored starting chunk. A reference compare costs nothing and
+        // catches every path, including load-game and the arrest return.
+        private void Update()
+        {
+            if (!ReturnsHomeOnChunkChange || !_displaced) return;
+            if (IsRidden) return; // riding it across an edge doesn't count as abandoning it
+
+            var chunks = ChunkManager.Instance;
+            if (chunks == null || chunks.CurrentChunkData == _parkedChunk) return;
+
+            ReturnHome();
+        }
+
+        /// <summary>Back to where it was standing when the scene loaded.</summary>
+        public void ReturnHome()
+        {
+            transform.position = _homePosition;
+            transform.rotation = _homeRotation;
+            _parkedChunk = null;
+            _displaced = false;
         }
 
         /// <summary>
@@ -97,6 +137,11 @@ namespace ExiledAlvaston.World
             {
                 player.ClearSpeedMultiplier(this);
                 transform.position = player.transform.position;
+
+                // Remember which chunk it was abandoned in; Update sends it home once that
+                // stops being the live one.
+                _parkedChunk = ChunkManager.Instance != null ? ChunkManager.Instance.CurrentChunkData : null;
+                _displaced = true;
             }
 
             if (ParkedModel != null)
