@@ -286,15 +286,38 @@ root** — exclude it, or every pack looks used.
 
 ## 10. Working agreement
 
-Multi-agent workflow: **audit → issue → branch → plan structural risk → small single-concern
-commits → review against plan → document why → close the loop.**
+Multi-agent workflow: **plan → implement → review → merge.**
 
-- Architect (Opus): scopes, produces plan/mapping table, flags structural risk. No code.
-- Implementer (Sonnet): works strictly from the plan, small commits, no scope improvisation.
-- Reviewer: reviews diff against the plan, hunting silent failure modes — orphaned references,
-  broken GUIDs, save incompatibility — not just style.
+Three agents are defined in `.claude/agents/`. Invoke them by name.
+
+| Agent | Model | Role |
+|---|---|---|
+| `architect` | Opus | Scopes, produces the plan and mapping table, flags structural risk. **Never edits code.** |
+| `implementer` | Sonnet | Works strictly from the plan. Small single-concern commits. No scope improvisation. |
+| `reviewer` | Opus | Reviews the diff against the plan, hunting silent failure modes — not style. |
+
+Typical use: *"use the architect subagent to plan X"* → approve the plan → *"use the implementer
+subagent to execute it"* → *"use the reviewer subagent to review the diff against the plan"*.
+
+Skip the ceremony for genuinely small, low-risk changes. It exists for anything touching §5–§7.
 
 Before any rename/refactor touching §6 or §7, produce an explicit mapping table first.
+
+### Verification — read this before claiming something works
+
+There is **no test framework in this project.** A "test" step cannot be automated yet, which is
+why the third agent is a reviewer rather than a tester. What *can* be checked mechanically:
+
+```
+python Tools/asset_reachability.py --check-dangling   # reference integrity; exits 1 on breakage
+python Tools/asset_reachability.py --packs            # which asset packs are fully unused
+```
+
+`--check-dangling` knows the build scene's built-in baseline (17 unresolved GUIDs) and fails only
+above it. Run it before and after anything that deletes, moves or renames assets.
+
+Everything else — does the scene load, is anything pink, do the mechanics behave — needs the
+Unity editor and therefore needs a human. Say so plainly rather than implying otherwise.
 
 A rename to **GBA: England** (Great British Annals) is under consideration. Notes if it
 proceeds: the `ExiledAlvaston` namespace appears in 46 `.cs` files and **zero serialized
