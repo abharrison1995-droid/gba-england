@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6b6b36a8c9bf654e906cb5798b01d33, type: 3}
+  m_Name: NPC_WardenAlcott
+  m_EditorClassIdentifier: 
+  CharacterName: Warden Alcott
+  Portrait: {fileID: 0}
+  Class: 0
+  MaxHealth: 20
+  MaxManaStamina: 10
+  BaseMovementSpeed: 0
+  BaseTraits:
+    Strength: 0
+    Endurance: 0
+    Agility: 0
+    Intelligence: 0
+    Awareness: 0
+    Perception: 0
+  BaseResistances:
+    Physical: 0
+    Magic: 0
+    Fire: 0
+    Cold: 0
+    Poison: 0

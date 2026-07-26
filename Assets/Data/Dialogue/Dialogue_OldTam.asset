@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_OldTam
+  m_EditorClassIdentifier: 
+  StartingNode:
+    Speaker: {fileID: 11400000, guid: 3b7d091fd2233ba498cc698ac7346781, type: 2}
+    DialogueText: "Spare a coin for Old Tam? No? Then spare an ear \u2014 I hear
+      things, sat here by the gates."
+    Choices:
+    - ChoiceText: What have you heard?
+      NextNode:
+        Speaker: {fileID: 11400000, guid: 3b7d091fd2233ba498cc698ac7346781, type: 2}
+        DialogueText: Bandits been creeping back into the old manor west of here.
+          Someone's paying them, mark me. Nobody squats in a ruin for free.
+        Choices: []
+      RequiredStat: 
+      RequiredStatLevel: 0
+      GrantQuestId: old_manor_rumors
+      GrantQuestTitle: Rats in the Manor
+      GrantQuestObjective: Old Tam claims someone is paying bandits to move back
+        into the Manor Cellars, west of the gates. Return there and see who's squatting.
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+    - ChoiceText: Not today, Tam.
+      NextNode:
+        Speaker: {fileID: 0}
+        DialogueText: 
+        Choices: []
+      RequiredStat: 
+      RequiredStatLevel: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 

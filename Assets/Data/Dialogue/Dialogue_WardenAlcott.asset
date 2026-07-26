@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_WardenAlcott
+  m_EditorClassIdentifier: 
+  StartingNode:
+    Speaker: {fileID: 11400000, guid: abbd044c9ab768148ade660d4d4c5bf8, type: 2}
+    DialogueText: Hold there, exile. London's gates don't open for cellar-rats. State
+      your business.
+    Choices:
+    - ChoiceText: I fought my way out of the Manor Cellars. I've earned passage.
+      NextNode:
+        Speaker: {fileID: 11400000, guid: abbd044c9ab768148ade660d4d4c5bf8, type: 2}
+        DialogueText: The cellars, eh? Then you're tougher than you look. Keep your
+          blade sheathed inside the walls and we'll have no quarrel.
+        Choices: []
+      RequiredStat: 
+      RequiredStatLevel: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+    - ChoiceText: '[Shove past him]'
+      NextNode:
+        Speaker: {fileID: 11400000, guid: abbd044c9ab768148ade660d4d4c5bf8, type: 2}
+        DialogueText: "Oof\u2014 all right, all right! No need for that. Go on through,
+          brute."
+        Choices: []
+      RequiredStat: STR
+      RequiredStatLevel: 4
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+    - ChoiceText: Never mind.
+      NextNode:
+        Speaker: {fileID: 0}
+        DialogueText: 
+        Choices: []
+      RequiredStat: 
+      RequiredStatLevel: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 

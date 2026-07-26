@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc51ae09f9646d48896705b87b1ac3f, type: 3}
+  m_Name: CherryMangoVape
+  m_EditorClassIdentifier:
+  ItemID: cherry_mango_vape
+  ItemName: Cherry Mango Vape
+  Description: A disposable vape, cherry mango flavour, near enough empty. Every
+    Sad Neek seems to have one on them - Mosley's little parting gift, by the look
+    of it.
+  Icon: {fileID: 0}
+  Type: 8
+  AllowedClasses: []
+  Value: 0
+  Damage: 0
+  Armor: 0

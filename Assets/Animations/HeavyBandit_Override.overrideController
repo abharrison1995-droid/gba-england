@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: HeavyBandit_Override
+  m_Controller: {fileID: 9100000, guid: 2d372b778735a51408c43d40fec400d0, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 92d6fdbae34fd6945a4c2d8bc245d171, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 09d8f2be37e5aae4881686b0d2e16602, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 66dbf56c151cbca448df8d0719a410d3, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 89a50a740c6b55e448f48ab5497f52a9, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 05496b9fd52d3b14da4b0497f5095341, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: c31b638f024d3d845b87399f5bc227ef, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 0f5930ab30bee1845b601f9e2bda19c6, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 563632f823d8b2b4ea2adafb8d8886b7, type: 2}

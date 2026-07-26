@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_Mosley_Signoff
+  m_EditorClassIdentifier:
+  StartingNode:
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: "Ah, my problem-solver. All quiet at the yard now, I trust. The
+      council thanks you, in its way — and so do I. Keep your head down and
+      yours is safe with me. I daresay I'll have need of you again before long."
+    Choices: []

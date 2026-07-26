@@ -1,0 +1,131 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_Mosley_Intro
+  m_EditorClassIdentifier:
+  StartingNode:
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: "Ah. You'll be the one Daniel Pauls has been making use of, round
+      the city. Word travels, in circles like mine — don't look so alarmed,
+      I've no interest in the constabulary hearing about your... talents. I rather
+      think we understand one another."
+    Choices:
+    - ChoiceText: "What is it you want?"
+      NextNode:
+        Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+        DialogueText: "A small service, that's all. Some years back the council
+          ran a little programme — resocialization, we called it, for men who
+          weren't contributing to the borough as they might. Men of a certain type.
+          Regrettably the process didn't take as intended, and I haven't the stomach
+          to finish what I started. There's a yard behind my house — a pipe
+          leads down into it. You'll find them there. See that they're sorted, bring
+          me something to show for it, and there'll be no reason for either of our
+          little secrets to travel any further."
+        Choices:
+        - ChoiceText: "Consider it done."
+          NextNode:
+            Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+            DialogueText: "Good man. I'll expect proof, mind — not excuses."
+            Choices: []
+          RequiredStat:
+          RequiredStatLevel: 0
+          RequiredItem: {fileID: 0}
+          RequiredItemQuantity: 1
+          ConsumeRequiredItem: 1
+          GrantQuestId: mosley_cleanup
+          GrantQuestTitle: A Quiet Word From The Council
+          GrantQuestObjective: "Councillor Mosley wants the men in the walled yard
+            behind his house dealt with. Go in through the pipe, finish what his
+            \"programme\" started, and bring him proof."
+          GrantQuestLocation: Home Alvaston
+          TeachSpark: 0
+          CompleteQuestId:
+        - ChoiceText: "This is eugenics. You're a monster."
+          NextNode:
+            Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+            DialogueText: "I prefer 'quality of stock', but you're welcome to call
+              it what helps you sleep. The offer stands regardless — and so
+              does what I know about you."
+            Choices:
+            - ChoiceText: "...Fine. I'll deal with them."
+              NextNode:
+                Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+                DialogueText: "Sensible. Bring me proof."
+                Choices: []
+              RequiredStat:
+              RequiredStatLevel: 0
+              RequiredItem: {fileID: 0}
+              RequiredItemQuantity: 1
+              ConsumeRequiredItem: 1
+              GrantQuestId: mosley_cleanup
+              GrantQuestTitle: A Quiet Word From The Council
+              GrantQuestObjective: "Councillor Mosley wants the men in the walled
+                yard behind his house dealt with. Go in through the pipe, finish
+                what his \"programme\" started, and bring him proof."
+              GrantQuestLocation: Home Alvaston
+              TeachSpark: 0
+              CompleteQuestId:
+            - ChoiceText: "Get someone else."
+              NextNode:
+                Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+                DialogueText: "There isn't anyone else fool enough to owe me a favour.
+                  The pipe will be there when you change your mind."
+                Choices: []
+              RequiredStat:
+              RequiredStatLevel: 0
+              RequiredItem: {fileID: 0}
+              RequiredItemQuantity: 1
+              ConsumeRequiredItem: 1
+              GrantQuestId:
+              GrantQuestTitle:
+              GrantQuestObjective:
+              GrantQuestLocation:
+              TeachSpark: 0
+              CompleteQuestId:
+          RequiredStat:
+          RequiredStatLevel: 0
+          RequiredItem: {fileID: 0}
+          RequiredItemQuantity: 1
+          ConsumeRequiredItem: 1
+          GrantQuestId:
+          GrantQuestTitle:
+          GrantQuestObjective:
+          GrantQuestLocation:
+          TeachSpark: 0
+          CompleteQuestId:
+      RequiredStat:
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 1
+      GrantQuestId:
+      GrantQuestTitle:
+      GrantQuestObjective:
+      GrantQuestLocation:
+      TeachSpark: 0
+      CompleteQuestId:
+    - ChoiceText: "Not interested."
+      NextNode:
+        Speaker: {fileID: 0}
+        DialogueText:
+        Choices: []
+      RequiredStat:
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 1
+      GrantQuestId:
+      GrantQuestTitle:
+      GrantQuestObjective:
+      GrantQuestLocation:
+      TeachSpark: 0
+      CompleteQuestId:
