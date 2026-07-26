@@ -37,6 +37,7 @@ namespace ExiledAlvaston.World
         private Quaternion _homeRotation;
         private MapChunkData _parkedChunk;
         private bool _displaced;
+        private bool _chunkOwned;
 
         /// <summary>True while this specific vehicle is the one under the player.</summary>
         public bool IsRidden => MountController.Current != null
@@ -77,6 +78,57 @@ namespace ExiledAlvaston.World
             if (chunks == null || chunks.CurrentChunkData == _parkedChunk) return;
 
             ReturnHome();
+        }
+
+        /// <summary>
+        /// Configures this instance from a VehicleData asset. Called by VehicleSpawner right after
+        /// Instantiate, so it runs after Awake and has to refresh the cached parked prompt too.
+        /// </summary>
+        public void Apply(VehicleData data)
+        {
+            if (data == null) return;
+
+            VehicleName     = string.IsNullOrEmpty(data.VehicleName) ? VehicleName : data.VehicleName;
+            SpeedMultiplier = data.SpeedMultiplier;
+            IsOwnedByNPC    = data.IsNickable;
+
+            if (data.VehicleSprite != null)
+            {
+                VehicleSprite = data.VehicleSprite;
+                ApplyParkedArt(data.VehicleSprite, data.ParkedHeight);
+            }
+
+            if (_interactable != null && !string.IsNullOrEmpty(data.ParkedPrompt))
+            {
+                _parkedPrompt = data.ParkedPrompt;
+                _interactable.Prompt = data.ParkedPrompt;
+            }
+        }
+
+        private void ApplyParkedArt(Sprite sprite, float parkedHeight)
+        {
+            if (ParkedModel == null) return;
+
+            var sr = ParkedModel.GetComponentInChildren<SpriteRenderer>(true);
+            if (sr == null) return;
+
+            sr.sprite = sprite;
+
+            float spriteH = sprite.bounds.size.y;
+            if (spriteH < 0.001f || parkedHeight <= 0f) return;
+
+            sr.transform.localScale = Vector3.one * (parkedHeight / spriteH);
+            sr.transform.localPosition = new Vector3(0f, parkedHeight * 0.5f, 0f);
+        }
+
+        /// <summary>
+        /// Marks this instance as belonging to the chunk that spawned it: it dies with that chunk
+        /// and is respawned from the chunk's data next visit, so it needs no homing of its own.
+        /// Hand-placed vehicles left in the scene are not chunk-owned and keep ReturnHome.
+        /// </summary>
+        public void MarkChunkOwned()
+        {
+            _chunkOwned = true;
         }
 
         /// <summary>Back to where it was standing when the scene loaded.</summary>
@@ -147,6 +199,12 @@ namespace ExiledAlvaston.World
                 player.GetComponent<WorldActorVisual>()?.SetMounted(true, ridden);
             }
 
+            // A chunk-owned vehicle is a child of the chunk instance, which a transition destroys.
+            // Riding out from under yourself is not the intent, so it leaves the chunk while ridden
+            // and rejoins one on dismount.
+            if (_chunkOwned)
+                transform.SetParent(null, true);
+
             ApplyPrompt(true);
         }
 
@@ -159,10 +217,21 @@ namespace ExiledAlvaston.World
                 player.GetComponent<WorldActorVisual>()?.SetMounted(false, null);
                 transform.position = player.transform.position;
 
-                // Remember which chunk it was abandoned in; Update sends it home once that
-                // stops being the live one.
-                _parkedChunk = ChunkManager.Instance != null ? ChunkManager.Instance.CurrentChunkData : null;
-                _displaced = true;
+                var chunks = ChunkManager.Instance;
+                if (_chunkOwned)
+                {
+                    // Hand it to whichever chunk you abandoned it in. It dies with that chunk and
+                    // the spawner puts a fresh one at its authored spot next visit — which is the
+                    // "back where it started" behaviour, without anything having to teleport.
+                    if (chunks != null && chunks.CurrentChunkInstance != null)
+                        transform.SetParent(chunks.CurrentChunkInstance.transform, true);
+                }
+                else
+                {
+                    // Hand-placed in the scene: nothing will destroy it, so it homes itself.
+                    _parkedChunk = chunks != null ? chunks.CurrentChunkData : null;
+                    _displaced = true;
+                }
             }
 
             if (ParkedModel != null)
