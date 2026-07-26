@@ -16,19 +16,10 @@ namespace ExiledAlvaston.World
         [Tooltip("Speed multiplier while sneaking.")]
         public float SneakSpeedMultiplier = 0.5f;
 
-        private float _originalSpeed = 0f;
-
         private void Awake()
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
-        }
-
-        private void Start()
-        {
-            var player = CombatController.Instance;
-            if (player != null)
-                _originalSpeed = player.MovementSpeed;
         }
 
         private void Update()
@@ -49,23 +40,23 @@ namespace ExiledAlvaston.World
             {
                 if (IsCrouched)
                 {
-                    // Save current speed in case it was modified by a vehicle/buff, then halve it.
-                    _originalSpeed = player.MovementSpeed;
-                    player.MovementSpeed *= SneakSpeedMultiplier;
-                    
+                    // Registered by source, so mounting a vehicle while crouched composes
+                    // instead of overwriting either system's idea of base speed.
+                    player.SetSpeedMultiplier(this, SneakSpeedMultiplier);
+
                     // Visual feedback placeholder (darken sprite)
                     var spriteRenderer = player.GetComponentInChildren<SpriteRenderer>();
                     if (spriteRenderer != null) spriteRenderer.color = Color.gray;
-                    
+
                     UIManager.Instance?.ShowToast("Sneaking...");
                 }
                 else
                 {
-                    player.MovementSpeed = _originalSpeed;
-                    
+                    player.ClearSpeedMultiplier(this);
+
                     var spriteRenderer = player.GetComponentInChildren<SpriteRenderer>();
                     if (spriteRenderer != null) spriteRenderer.color = Color.white;
-                    
+
                     UIManager.Instance?.ShowToast("Out of stealth.");
                 }
             }
