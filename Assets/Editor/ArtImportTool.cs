@@ -25,8 +25,17 @@ public static class ArtImportTool
     private const string StagingFolder  = "art_incoming";
     private const string ArtRoot        = "Assets/Art/Generated";
     private const string AnimRoot       = "Assets/Animations/Generated";
-    private const float  PixelsPerUnit  = 100f;   // matches the sprites already in Assets/Sprites
     private const int    MaxTextureSize = 2048;
+
+    /// <summary>
+    /// The whole art direction in one number. Sources arrive photoreal and high-resolution and are
+    /// reduced to this density, so a 1.35-unit character lands at ~65 px and reads as a digitised
+    /// sprite. Using it as the import PPU too means sprites sit at their natural size in the scene
+    /// with a scale factor of 1.
+    /// </summary>
+    private const float PixelsPerWorldUnit = 48f;
+
+    private const float PixelsPerUnit = PixelsPerWorldUnit;
 
     /// <summary>Action name in the JSON → state name in the controller → parameter that fires it.</summary>
     private static readonly Dictionary<string, string> ActionToState = new Dictionary<string, string>
@@ -277,11 +286,14 @@ public static class ArtImportTool
         string destFolder = $"{ArtRoot}/{category}";
         EnsureFolder(destFolder);
 
-        string destPath = $"{destFolder}/{baseName}.png";
-        File.Copy(png, Path.Combine(Directory.GetParent(Application.dataPath).FullName, destPath), true);
-        AssetDatabase.ImportAsset(destPath, ImportAssetOptions.ForceUpdate);
-
         bool isSheet = string.Equals(m.type, "sheet", StringComparison.OrdinalIgnoreCase);
+
+        string destPath = $"{destFolder}/{baseName}.png";
+        string destAbsolute = Path.Combine(Directory.GetParent(Application.dataPath).FullName, destPath);
+
+        if (!Reduce(png, destAbsolute, m, isSheet, problems, report)) return;
+
+        AssetDatabase.ImportAsset(destPath, ImportAssetOptions.ForceUpdate);
         if (!ApplyImportSettings(destPath, m, isSheet, problems)) return;
 
         if (!isSheet)
@@ -328,6 +340,141 @@ public static class ArtImportTool
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  REDUCTION
+    //  Sources arrive photoreal and large. The look comes from crushing them down here, not
+    //  from asking a generator for low resolution — image models draw "fake pixel art" with an
+    //  inconsistent grid, whereas a deterministic reduction gives the same treatment to every
+    //  asset forever, however far apart they were generated.
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private static bool Reduce(string sourcePath, string destAbsolute, ArtManifest m, bool isSheet,
+        List<string> problems, List<string> report)
+    {
+        var src = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+        if (!src.LoadImage(File.ReadAllBytes(sourcePath)))
+        {
+            problems.Add($"{Path.GetFileName(sourcePath)}: could not be read as a PNG.");
+            return false;
+        }
+
+        float worldHeight = m.worldHeight > 0f ? m.worldHeight : 1.35f;
+
+        int outW, outH;
+        if (isSheet)
+        {
+            if (m.frameWidth <= 0 || m.frameHeight <= 0)
+            {
+                problems.Add($"{m.name}: sheet needs frameWidth and frameHeight to be reduced.");
+                UnityEngine.Object.DestroyImmediate(src);
+                return false;
+            }
+
+            int columns = m.columns > 0 ? m.columns : Mathf.Max(1, src.width / m.frameWidth);
+            int rows    = m.rows    > 0 ? m.rows    : Mathf.Max(1, src.height / m.frameHeight);
+
+            // Cells are sized first and the sheet built from them, so rounding can never drift
+            // the grid out of alignment across a row.
+            int cellH = Mathf.Max(1, Mathf.RoundToInt(worldHeight * PixelsPerWorldUnit));
+            float scale = (float)cellH / m.frameHeight;
+            int cellW = Mathf.Max(1, Mathf.RoundToInt(m.frameWidth * scale));
+
+            outW = cellW * columns;
+            outH = cellH * rows;
+
+            m.frameWidth = cellW;
+            m.frameHeight = cellH;
+            m.columns = columns;
+            m.rows = rows;
+        }
+        else
+        {
+            outH = Mathf.Max(1, Mathf.RoundToInt(worldHeight * PixelsPerWorldUnit));
+            outW = Mathf.Max(1, Mathf.RoundToInt(src.width * ((float)outH / src.height)));
+        }
+
+        if (outW >= src.width || outH >= src.height)
+        {
+            report.Add($"    source is {src.width}x{src.height}, target {outW}x{outH} — copied without reduction");
+            File.WriteAllBytes(destAbsolute, src.EncodeToPNG());
+        }
+        else
+        {
+            Texture2D reduced = AreaAverage(src, outW, outH);
+            File.WriteAllBytes(destAbsolute, reduced.EncodeToPNG());
+            report.Add($"    {src.width}x{src.height} → {outW}x{outH}");
+            UnityEngine.Object.DestroyImmediate(reduced);
+        }
+
+        UnityEngine.Object.DestroyImmediate(src);
+        return true;
+    }
+
+    /// <summary>
+    /// Box-filter reduction. Area averaging, not nearest-neighbour: a photographic source point
+    /// sampled down to 65 px is aliased noise, whereas averaging gives the clean crushed look the
+    /// digitised sprites of the era actually had. Point filtering at render time keeps it crisp.
+    /// </summary>
+    private static Texture2D AreaAverage(Texture2D src, int outW, int outH)
+    {
+        Color32[] source = src.GetPixels32();
+        var result = new Color32[outW * outH];
+
+        float xStep = (float)src.width / outW;
+        float yStep = (float)src.height / outH;
+
+        for (int y = 0; y < outH; y++)
+        {
+            int y0 = Mathf.FloorToInt(y * yStep);
+            int y1 = Mathf.Min(src.height, Mathf.CeilToInt((y + 1) * yStep));
+            if (y1 <= y0) y1 = y0 + 1;
+
+            for (int x = 0; x < outW; x++)
+            {
+                int x0 = Mathf.FloorToInt(x * xStep);
+                int x1 = Mathf.Min(src.width, Mathf.CeilToInt((x + 1) * xStep));
+                if (x1 <= x0) x1 = x0 + 1;
+
+                // Colour is weighted by alpha — averaging straight RGBA drags the colour of fully
+                // transparent pixels into the edges and leaves a dark halo round every sprite.
+                float r = 0f, g = 0f, b = 0f, a = 0f;
+                int count = 0;
+
+                for (int sy = y0; sy < y1; sy++)
+                {
+                    int row = sy * src.width;
+                    for (int sx = x0; sx < x1; sx++)
+                    {
+                        Color32 c = source[row + sx];
+                        float w = c.a / 255f;
+                        r += c.r * w;
+                        g += c.g * w;
+                        b += c.b * w;
+                        a += c.a;
+                        count++;
+                    }
+                }
+
+                if (count == 0) continue;
+
+                float alpha = a / count;
+                float weight = a / 255f;   // summed alpha, the divisor for the colour accumulation
+
+                result[y * outW + x] = weight > 0.0001f
+                    ? new Color32((byte)Mathf.Clamp(r / weight, 0f, 255f),
+                                  (byte)Mathf.Clamp(g / weight, 0f, 255f),
+                                  (byte)Mathf.Clamp(b / weight, 0f, 255f),
+                                  (byte)Mathf.Clamp(alpha, 0f, 255f))
+                    : new Color32(0, 0, 0, 0);
+            }
+        }
+
+        var outTex = new Texture2D(outW, outH, TextureFormat.RGBA32, false);
+        outTex.SetPixels32(result);
+        outTex.Apply();
+        return outTex;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════
     //  IMPORT SETTINGS AND SLICING
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
@@ -342,10 +489,13 @@ public static class ArtImportTool
 
         importer.textureType         = TextureImporterType.Sprite;
         importer.spritePixelsPerUnit = PixelsPerUnit;
-        importer.filterMode          = FilterMode.Bilinear;
+        // Point, not bilinear: the pixels are the art now, and filtering would smear the very
+        // thing the reduction just created. This is also why the existing 64x64 orcs look mushy.
+        importer.filterMode          = FilterMode.Point;
         importer.alphaIsTransparency = true;
         importer.mipmapEnabled       = false;
         importer.maxTextureSize      = MaxTextureSize;
+        importer.textureCompression  = TextureImporterCompression.Uncompressed;
         importer.spriteImportMode    = isSheet ? SpriteImportMode.Multiple : SpriteImportMode.Single;
 
         if (isSheet)

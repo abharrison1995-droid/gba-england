@@ -74,3 +74,7 @@ crashlytics-build.properties
 **/__MACOSX/
 Thumbs.db
 Desktop.ini
+
+# Generated art sources — high-res, reduced on import, never committed (ART_PIPELINE.md)
+/art_incoming/*
+!/art_incoming/README.md

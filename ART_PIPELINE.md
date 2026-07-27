@@ -34,32 +34,56 @@ Consequences for every character and creature you draw:
 Setting: **modern Britain, slightly grim, slightly funny.** Council estates, retail parks, canals,
 pubs, hi-vis, hoodies, mopeds. Not fantasy, despite the magic.
 
+### The style — photoreal source, crushed small
+
+The game looks like **digitised sprites**: the early-90s technique where studios photographed real
+actors and props and reduced them to a few dozen pixels. Grounded, slightly grubby, photographic —
+never cartoon, never vector, never cel-shaded, no black outlines.
+
+**So generate photorealistic images at high resolution.** Do not attempt to draw low-resolution or
+pixel art. The reduction is done deterministically on import, which is what keeps every asset
+consistent no matter how far apart they were generated — a generator asked for "64px pixel art"
+produces a different pixel grid every time, and it looks wrong.
+
+Think a photograph of the subject against a plain backdrop, lit evenly, then shrunk until it is
+mostly suggestion. Your job is the photograph. The shrinking is ours.
+
+**People must be synthetic, not real.** Do not source, trace or reproduce photographs of real
+identifiable people — likeness rights survive any licence on the image, and the cast here is
+fictional anyway. Generated faces are indistinguishable once reduced.
+
 ## 2. Resolution and size — read carefully, this is the part that goes wrong
 
-Art is **hi-res 2D, not pixel art**: import is **100 pixels per unit, bilinear filtering**, matching
-the sprites already in `Assets/Sprites/`.
+**Deliver large. The importer reduces.** Every asset is area-averaged down to **48 pixels per world
+unit** on import, so a 1.35-unit character finishes at ~65 px tall. You never produce that size
+yourself.
 
-The engine scales every sprite so its **full image height** becomes a fixed world height. It uses
-the image bounds, not the visible pixels. So:
+Deliver single sprites at roughly **512 px tall**, or larger if the subject wants it. More
+resolution costs nothing — sources stay outside the project and are never committed.
 
-> **Trim single sprites tight to the artwork.** No transparent margin above or below. A sprite with
-> 20% empty space at the top renders 20% smaller than one without, even at identical canvas size.
+The one rule that trips everything up:
 
-Target heights, and the resulting artwork height at 100 PPU:
+> **Trim single sprites tight to the artwork.** No transparent margin above or below. Sizing is
+> derived from the **full image height**, not the visible pixels, so a sprite with 20% empty space
+> at the top finishes 20% smaller than one without.
 
-| Subject | World height | Draw at |
+The `worldHeight` in the JSON is what drives the reduction, so it must be right:
+
+| Subject | `worldHeight` | Finishes at |
 |---|---|---|
-| Player, NPCs, police, civilians | 1.35 units | **~200 px tall** after trimming |
-| Moped and similar vehicles | 0.9 units | ~135 px tall after trimming |
-| Bushes | 0.9 units | ~135 px |
-| Trees | 2.2 units | ~320 px |
-| Walls | 1.8 units | ~260 px |
+| Player, NPCs, police, civilians | 1.35 | ~65 px |
+| Moped and similar vehicles | 0.9 | ~43 px |
+| Bushes | 0.9 | ~43 px |
+| Small animals (squirrel) | 0.45 | ~22 px |
+| Sheds | 2.2 | ~106 px |
+| Trees | 2.2 | ~106 px |
+| Office buildings | 6.0 | ~288 px |
 
-Width follows whatever the subject needs — only height is normalised. Characters are roughly
-0.85 units wide, so a character canvas ends up near **128×200**.
+Width follows whatever the subject needs — only height is normalised.
 
-Hard limits: **PNG, RGBA with real alpha, max 2048 px on either side, under 2 MB.** No JPEG, no
-flattened white background, no checkerboard "transparency" pattern drawn as pixels.
+Hard limits: **PNG, RGBA with real alpha.** No JPEG, no flattened white background, no checkerboard
+"transparency" pattern drawn as pixels. Source files have no size cap, but do not deliver anything
+gratuitous — 8K renders of a shed help nobody.
 
 ## 3. Sprite sheets and animation
 
@@ -68,7 +92,9 @@ to bottom. Unlike single sprites, sheet cells are **not** trimmed: the subject s
 position inside a consistent cell, feet near the bottom, so the character does not jitter between
 frames.
 
-Standard character cell: **256×256**, subject ~200 px tall, horizontally centred.
+Standard character cell at source resolution: **512×512**, subject filling most of the cell height,
+horizontally centred. The importer reduces the whole sheet so each cell lands at ~65×65, and
+recalculates the grid itself — you always work at source size.
 
 Name actions from this list so the importer can build the animator: `idle`, `walk`, `attack`,
 `hurt`, `death`, `cast`. Anything else is fine but will be imported as a clip with no state wiring.
@@ -98,8 +124,8 @@ Sheet:
   "category": "characters",
   "action": "walk",
   "worldHeight": 1.35,
-  "frameWidth": 256,
-  "frameHeight": 256,
+  "frameWidth": 512,
+  "frameHeight": 512,
   "columns": 8,
   "rows": 1,
   "frameCount": 8,
@@ -174,7 +200,10 @@ so the handoff can be checked before a batch is committed to.
 
 | File | Type | Notes |
 |---|---|---|
-| `spr_vehicle_moped.png` | single | A moped, **parked, no rider**, side-on three-quarter view facing camera-right. Deliveroo-orange bodywork, food delivery box on the back. Slightly scruffy — this is a nicked moped in a British city. ~135 px tall trimmed. |
+| `spr_vehicle_moped.png` | single | A moped, **parked, no rider**, side-on three-quarter view facing camera-right. Deliveroo-orange bodywork, food delivery box on the back. Scruffy and used — a nicked moped in a British city. Photoreal, ~512 px tall, trimmed. |
+
+An earlier attempt at this asset came back as clean vector cartoon with heavy black outlines. That
+is the wrong direction — see §1. Photographic, not illustrated.
 
 ### 7.2 The rest of the mount system
 
@@ -183,8 +212,8 @@ from coloured rectangles. `spr_vehicle_moped` above plus these two replace it en
 
 | File | Type | Notes |
 |---|---|---|
-| `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Neutral standing pose. ~200 px tall trimmed. |
-| `spr_char_player_moped.png` | single | **The same character sat on the moped**, as one combined image. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette. ~200 px tall trimmed. |
+| `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Neutral standing pose. Photoreal, ~512 px tall, trimmed. |
+| `spr_char_player_moped.png` | single | **The same character sat on the moped**, as one combined image. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette. Photoreal, ~512 px tall, trimmed. |
 
 The parked moped and the ridden moped must be recognisably the same vehicle.
 
@@ -192,8 +221,8 @@ These three are **auto-assigned on import**, so use exactly those filenames.
 
 ### 7.3 Characters — sprite sheets
 
-All cells **256×256** unless stated, subject ~200 px tall, feet near the bottom of the cell, facing
-camera-right. World height 1.35 units. Standard actions and frame counts:
+All source cells **512×512** unless stated, subject filling most of the cell height, feet near the
+bottom, facing camera-right. `worldHeight` 1.35. Standard actions and frame counts:
 
 | Action | Frames | Columns | fps | Loop |
 |---|---|---|---|---|
@@ -219,8 +248,8 @@ zaps the player during the opening magic quest and is then killed, so he needs t
 `attack` is a wild flailing magic zap, not a weapon swing.
 
 **Angry squirrel** — `sheet_char_squirrel_<action>.png`, actions: `idle`, `walk`, `attack`, `hurt`,
-`death`. **Cells 128×128, world height 0.45** — this one is small, so ignore the 256/200 figures
-above. A genuinely furious grey squirrel. Comic menace, not cute.
+`death`. **`worldHeight` 0.45** — it finishes around 22 px, so source cells of 256×256 are plenty
+rather than the usual 512. A genuinely furious grey squirrel. Comic menace, not cute.
 
 **Roaming pharmacist** — `sheet_char_pharmacist_<action>.png`, actions: `idle`, `walk`.
 A drug dealer with the bearing and costume of a high-street pharmacist — white coat, name badge,
@@ -232,10 +261,10 @@ Buildings are billboards, but the camera is **fixed** at pitch 30°, yaw −45°
 draw them **in that same isometric projection** — two faces of the box visible, seen from slightly
 above. Not a flat straight-on elevation. Do not paint ground, shadow or surroundings.
 
-| File | World height | Notes |
+| File | `worldHeight` | Notes |
 |---|---|---|
-| `spr_prop_office_building.png` | 6.0 units (~600 px) | A sketchy, boxy low-rise office block. Plain, cheap, slightly grim — think a two- or three-storey building on a British retail park. Simple massing, few details. |
-| `spr_prop_shed.png` | 2.2 units (~220 px) | A small garden shed. Timber, weathered, single door, maybe one window. |
+| `spr_prop_office_building.png` | 6.0 | A sketchy, boxy low-rise office block. Plain, cheap, slightly grim — think a two- or three-storey building on a British retail park. Simple massing, few details. |
+| `spr_prop_shed.png` | 2.2 | A small garden shed. Timber, weathered, single door, maybe one window. |
 
 ### 7.5 Later
 
