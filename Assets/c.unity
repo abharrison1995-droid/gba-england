@@ -40880,6 +40880,8 @@ MonoBehaviour:
   SwingAngle: 55
   SwingDuration: 0.35
   LungeDistance: 0.22
+  MountedSprite: {fileID: 0}
+  VehicleSpriteHeight: 0.62
 --- !u!114 &767704720
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -40899,6 +40901,7 @@ MonoBehaviour:
   RangedCaster: 0
   EyeHeight: 0.95
   AttackWindup: 0.3
+  IsPolice: 0
   MoveSpeed: 3.2
   TurnSpeed: 10
   Animator: {fileID: 837429772}
@@ -46573,6 +46576,8 @@ MonoBehaviour:
   SwingAngle: 55
   SwingDuration: 0.35
   LungeDistance: 0.22
+  MountedSprite: {fileID: 0}
+  VehicleSpriteHeight: 0.62
 --- !u!114 &861987725
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101976,7 +101981,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4633336289689031604, guid: 8f1ab68633f986544a174b0c5efd4d28, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 5
+      value: 10.05
       objectReference: {fileID: 0}
     - target: {fileID: 4633336289689031604, guid: 8f1ab68633f986544a174b0c5efd4d28, type: 3}
       propertyPath: m_LocalRotation.w
@@ -113597,6 +113602,8 @@ MonoBehaviour:
   SwingAngle: 55
   SwingDuration: 0.35
   LungeDistance: 0.22
+  MountedSprite: {fileID: 0}
+  VehicleSpriteHeight: 0.62
 --- !u!114 &2022723108
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113616,6 +113623,7 @@ MonoBehaviour:
   RangedCaster: 0
   EyeHeight: 0.95
   AttackWindup: 0.3
+  IsPolice: 0
   MoveSpeed: 3.2
   TurnSpeed: 10
   Animator: {fileID: 1621565934}
