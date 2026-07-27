@@ -359,6 +359,29 @@ public static class ArtImportTool
 
         float worldHeight = m.worldHeight > 0f ? m.worldHeight : 1.35f;
 
+        // Generators are poor at producing a real alpha channel and good at putting a subject on a
+        // plain backdrop, so the contract asks for flat magenta and the backdrop is removed here.
+        string keyNote = KeyOutBackground(src);
+        if (keyNote != null) report.Add("    " + keyNote);
+
+        // Trimming is not left to the generator either — sizing is derived from full image height,
+        // so untrimmed art silently renders small. Sheets are never trimmed: the grid must stay
+        // uniform or every frame shifts.
+        if (!isSheet)
+        {
+            string trimNote = TrimToContent(ref src);
+            if (trimNote != null) report.Add("    " + trimNote);
+        }
+
+        if (!HasUsableAlpha(src))
+        {
+            problems.Add($"{m.name}: still opaque edge-to-edge after background removal — the source " +
+                         "has neither an alpha channel nor a flat keyable backdrop. Regenerate it " +
+                         "with a solid magenta (#FF00FF) background, no gradient and no shadow.");
+            UnityEngine.Object.DestroyImmediate(src);
+            return false;
+        }
+
         int outW, outH;
         if (isSheet)
         {
@@ -407,6 +430,126 @@ public static class ArtImportTool
 
         UnityEngine.Object.DestroyImmediate(src);
         return true;
+    }
+
+    /// <summary>
+    /// Removes a flat backdrop by flood-filling inward from the border. Contiguous from the edge,
+    /// so a magenta detail inside the subject survives — only background connected to the frame
+    /// edge is cleared. Returns a note for the report, or null if the image already had alpha.
+    /// </summary>
+    private static string KeyOutBackground(Texture2D tex)
+    {
+        Color32[] px = tex.GetPixels32();
+        int w = tex.width, h = tex.height;
+
+        // Already has real transparency at the edges — nothing to key.
+        if (px[0].a < 8 && px[w - 1].a < 8 && px[(h - 1) * w].a < 8 && px[h * w - 1].a < 8)
+            return null;
+
+        // Average the border, then check the border actually is one flat colour. A gradient
+        // backdrop is not safely keyable and is better reported than half-removed.
+        long sr = 0, sg = 0, sb = 0;
+        int count = 0;
+        foreach (int i in BorderIndices(w, h)) { sr += px[i].r; sg += px[i].g; sb += px[i].b; count++; }
+        var seed = new Color32((byte)(sr / count), (byte)(sg / count), (byte)(sb / count), 255);
+
+        float worst = 0f;
+        foreach (int i in BorderIndices(w, h)) worst = Mathf.Max(worst, Distance(px[i], seed));
+        if (worst > 90f)
+            return $"background is not flat (border varies by {worst:0}) — not keyed, expect a backdrop";
+
+        const float tolerance = 90f;
+        var queue = new Queue<int>();
+        var seen = new bool[px.Length];
+
+        foreach (int i in BorderIndices(w, h))
+        {
+            if (seen[i] || Distance(px[i], seed) > tolerance) continue;
+            seen[i] = true;
+            queue.Enqueue(i);
+        }
+
+        int cleared = 0;
+        while (queue.Count > 0)
+        {
+            int i = queue.Dequeue();
+            px[i] = new Color32(0, 0, 0, 0);
+            cleared++;
+
+            int x = i % w, y = i / w;
+            if (x > 0)     TryEnqueue(px, seen, queue, i - 1, seed, tolerance);
+            if (x < w - 1) TryEnqueue(px, seen, queue, i + 1, seed, tolerance);
+            if (y > 0)     TryEnqueue(px, seen, queue, i - w, seed, tolerance);
+            if (y < h - 1) TryEnqueue(px, seen, queue, i + w, seed, tolerance);
+        }
+
+        tex.SetPixels32(px);
+        tex.Apply();
+        return $"keyed out backdrop ({cleared * 100 / px.Length}% of the image)";
+    }
+
+    private static void TryEnqueue(Color32[] px, bool[] seen, Queue<int> queue, int i,
+        Color32 seed, float tolerance)
+    {
+        if (seen[i]) return;
+        if (Distance(px[i], seed) > tolerance) return;
+        seen[i] = true;
+        queue.Enqueue(i);
+    }
+
+    private static IEnumerable<int> BorderIndices(int w, int h)
+    {
+        for (int x = 0; x < w; x++) { yield return x; yield return (h - 1) * w + x; }
+        for (int y = 1; y < h - 1; y++) { yield return y * w; yield return y * w + (w - 1); }
+    }
+
+    private static float Distance(Color32 a, Color32 b)
+    {
+        float dr = a.r - b.r, dg = a.g - b.g, db = a.b - b.b;
+        return Mathf.Sqrt(dr * dr + dg * dg + db * db);
+    }
+
+    /// <summary>Crops to the opaque bounding box, so untrimmed art cannot silently render small.</summary>
+    private static string TrimToContent(ref Texture2D tex)
+    {
+        Color32[] px = tex.GetPixels32();
+        int w = tex.width, h = tex.height;
+
+        int minX = w, minY = h, maxX = -1, maxY = -1;
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                if (px[y * w + x].a <= 8) continue;
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+
+        if (maxX < 0) return null;                                   // nothing opaque at all
+        if (minX == 0 && minY == 0 && maxX == w - 1 && maxY == h - 1) return null;  // already tight
+
+        int newW = maxX - minX + 1;
+        int newH = maxY - minY + 1;
+
+        // GetPixels32 has no region overload — the float Color path does.
+        var cropped = new Texture2D(newW, newH, TextureFormat.RGBA32, false);
+        cropped.SetPixels(tex.GetPixels(minX, minY, newW, newH));
+        cropped.Apply();
+
+        UnityEngine.Object.DestroyImmediate(tex);
+        tex = cropped;
+        return $"trimmed {w}x{h} → {newW}x{newH}";
+    }
+
+    private static bool HasUsableAlpha(Texture2D tex)
+    {
+        Color32[] px = tex.GetPixels32();
+        int transparent = 0;
+        for (int i = 0; i < px.Length; i++) if (px[i].a <= 8) transparent++;
+        return transparent > px.Length / 100;   // at least 1% — a trimmed sprite can be nearly solid
     }
 
     /// <summary>

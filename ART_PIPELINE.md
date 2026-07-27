@@ -63,9 +63,8 @@ resolution costs nothing — sources stay outside the project and are never comm
 
 The one rule that trips everything up:
 
-> **Trim single sprites tight to the artwork.** No transparent margin above or below. Sizing is
-> derived from the **full image height**, not the visible pixels, so a sprite with 20% empty space
-> at the top finishes 20% smaller than one without.
+> Sizing is derived from the **full image height** after trimming, not from the canvas you drew
+> on. The importer trims for you, so what matters is that the background is removable — see below.
 
 The `worldHeight` in the JSON is what drives the reduction, so it must be right:
 
@@ -81,9 +80,24 @@ The `worldHeight` in the JSON is what drives the reduction, so it must be right:
 
 Width follows whatever the subject needs — only height is normalised.
 
-Hard limits: **PNG, RGBA with real alpha.** No JPEG, no flattened white background, no checkerboard
-"transparency" pattern drawn as pixels. Source files have no size cap, but do not deliver anything
-gratuitous — 8K renders of a shed help nobody.
+### Backgrounds — the rule that has failed twice now
+
+A true alpha channel is ideal, but image generators are unreliable at producing one. So:
+
+> **Put the subject on a flat, solid magenta background — `#FF00FF`, pure, no gradient, no
+> vignette, no cast shadow, no floor.** The importer keys that colour out and trims to the subject.
+
+Flat means *one colour*, edge to edge. A purple gradient is not flat and will be rejected rather
+than half-removed. If your tool can emit real transparency instead, do that and skip the magenta.
+
+Do not use magenta anywhere in the subject itself.
+
+You do not need to trim — the importer crops to the subject after keying. Trim if you can; it is no
+longer the failure it was.
+
+Hard limits: **PNG.** No JPEG — its compression will smear the key colour and the backdrop will not
+come out cleanly. Source files have no size cap, but do not deliver anything gratuitous — 8K
+renders of a shed help nobody.
 
 ## 3. Sprite sheets and animation
 
