@@ -214,22 +214,28 @@ so the handoff can be checked before a batch is committed to.
 
 | File | Type | Notes |
 |---|---|---|
-| `spr_vehicle_moped.png` | single | A moped, **parked, no rider**, side-on three-quarter view facing camera-right. Deliveroo-orange bodywork, food delivery box on the back. Scruffy and used — a nicked moped in a British city. Photoreal, ~512 px tall, trimmed. |
+| `spr_vehicle_moped.png` | single | A **public hire e-bike**, parked and unattended, side-on three-quarter view facing camera-right. The dockless rental sort you find dumped on British pavements: chunky step-through frame, fat tyres, basket on the front, battery pack on the down tube, a rear rack, small solar panel or branding plate. Scuffed and slightly abused. Photoreal, ~512 px tall. |
 
-An earlier attempt at this asset came back as clean vector cartoon with heavy black outlines. That
-is the wrong direction — see §1. Photographic, not illustrated.
+Two earlier attempts at this asset failed. The first came back as clean vector cartoon with heavy
+black outlines — wrong style, see §1. The second had a purple gradient painted into the background
+— wrong background, see §2. Photographic subject, flat magenta backdrop.
+
+Do not brand it with a real hire company's livery. Invent one, or leave it unbranded.
+
+**Keep the filename** even though the subject is now an e-bike rather than a moped — it is an
+internal identifier the importer keys off, and renaming it would orphan the wiring.
 
 ### 7.2 The rest of the mount system
 
-The mount system works, but the art is a placeholder I generated in code: a crude 64×40 moped drawn
+The mount system works, but the art is a placeholder generated in code: a crude 64×40 moped drawn
 from coloured rectangles. `spr_vehicle_moped` above plus these two replace it entirely.
 
 | File | Type | Notes |
 |---|---|---|
 | `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Neutral standing pose. Photoreal, ~512 px tall, trimmed. |
-| `spr_char_player_moped.png` | single | **The same character sat on the moped**, as one combined image. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette. Photoreal, ~512 px tall, trimmed. |
+| `spr_char_player_moped.png` | single | **The same character sat on the e-bike**, as one combined image, mid-ride rather than stationary. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette at 65 px. Photoreal, ~512 px tall. Keep the filename. |
 
-The parked moped and the ridden moped must be recognisably the same vehicle.
+The parked e-bike and the ridden one must be recognisably the same vehicle.
 
 These three are **auto-assigned on import**, so use exactly those filenames.
 
