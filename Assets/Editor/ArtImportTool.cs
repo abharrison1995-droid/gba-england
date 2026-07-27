@@ -412,6 +412,8 @@ public static class ArtImportTool
             if (trimNote != null) report.Add("    " + trimNote);
         }
 
+        if (isSheet) CheckFrameAlignment(src, m, report, problems);
+
         if (!HasUsableAlpha(src))
         {
             problems.Add($"{m.name}: still opaque edge-to-edge after background removal — the source " +
@@ -561,6 +563,61 @@ public static class ArtImportTool
     {
         float dr = a.r - b.r, dg = a.g - b.g, db = a.b - b.b;
         return Mathf.Sqrt(dr * dr + dg * dg + db * db);
+    }
+
+    /// <summary>
+    /// Warns when the subject does not sit on the same baseline in every cell. Sheets are not
+    /// trimmed, so a figure that drifts up the cell between frames bobs and floats once it is
+    /// playing — and at 65 px that is very visible while being almost impossible to spot in the
+    /// source. Cheap to measure here, painful to notice in game.
+    /// </summary>
+    private static void CheckFrameAlignment(Texture2D tex, ArtManifest m, List<string> report,
+        List<string> problems)
+    {
+        if (m.frameWidth <= 0 || m.frameHeight <= 0) return;
+
+        int columns = Mathf.Max(1, m.columns);
+        int rows = Mathf.Max(1, m.rows);
+        int frames = m.frameCount > 0 ? Mathf.Min(m.frameCount, columns * rows) : columns * rows;
+        if (frames < 2) return;
+
+        Color32[] px = tex.GetPixels32();
+        int lowest = int.MaxValue, highest = int.MinValue;
+
+        for (int f = 0; f < frames; f++)
+        {
+            int cx = (f % columns) * m.frameWidth;
+            // Texture origin is bottom-left, so row 0 of the sheet is the top of the image.
+            int cy = tex.height - ((f / columns) + 1) * m.frameHeight;
+
+            int bottom = -1;
+            for (int y = 0; y < m.frameHeight && bottom < 0; y++)
+            {
+                for (int x = 0; x < m.frameWidth; x++)
+                {
+                    if (px[(cy + y) * tex.width + cx + x].a <= 8) continue;
+                    bottom = y;
+                    break;
+                }
+            }
+            if (bottom < 0) continue;
+
+            lowest = Mathf.Min(lowest, bottom);
+            highest = Mathf.Max(highest, bottom);
+        }
+
+        if (lowest == int.MaxValue) return;
+
+        int spread = highest - lowest;
+        float atFinalSize = spread * (m.worldHeight > 0f ? m.worldHeight : 1.35f)
+                            * PixelsPerWorldUnit / m.frameHeight;
+
+        if (atFinalSize >= 2f)
+            problems.Add($"{m.name}: the subject's feet move {spread} px between frames " +
+                         $"({atFinalSize:0.#} px at final size) — it will bob. Frames should share " +
+                         "a baseline; regenerate rather than importing.");
+        else if (spread > 0)
+            report.Add($"    baseline drift {spread} px across frames (negligible at final size)");
     }
 
     /// <summary>Crops to the opaque bounding box, so untrimmed art cannot silently render small.</summary>

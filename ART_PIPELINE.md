@@ -102,9 +102,16 @@ renders of a shed help nobody.
 ## 3. Sprite sheets and animation
 
 A sheet must be a **uniform grid** — every cell identical in size, frames left to right, then top
-to bottom. Unlike single sprites, sheet cells are **not** trimmed: the subject sits at a consistent
-position inside a consistent cell, feet near the bottom, so the character does not jitter between
-frames.
+to bottom. Unlike single sprites, sheet cells are **not** trimmed.
+
+> **Every frame must share the same baseline.** The subject's feet land on the same row of pixels
+> in every cell, and the figure stays the same height and scale throughout. Never crop, shrink or
+> re-frame between frames. A walk cycle moves the *limbs*; the ground does not move.
+>
+> The importer measures this and refuses anything that would visibly bob. It is the single most
+> common way a sheet fails, because it looks fine frame by frame and only shows up in motion.
+
+Keep the full body in frame in every cell — no legs cut off at the bottom edge.
 
 Standard character cell at source resolution: **512×512**, subject filling most of the cell height,
 horizontally centred. The importer reduces the whole sheet so each cell lands at ~65×65, and
