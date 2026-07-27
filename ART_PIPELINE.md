@@ -275,12 +275,16 @@ bottom, facing camera-right. `worldHeight` 1.35. Standard actions and frame coun
 | Action | Frames | Columns | fps | Loop |
 |---|---|---|---|---|
 | `idle` | 4 | 4 | 6 | yes |
-| `walk` | 8 | 8 | 10 | yes |
+| `walk` | 4 | 4 | 8 | yes |
 | `attack` | 6 | 6 | 12 | no |
 | `cast` | 6 | 6 | 12 | no |
 | `hurt` | 3 | 3 | 12 | no |
 | `death` | 6 | 6 | 10 | no |
 | `cycle` | 6 | 6 | 12 | yes |
+
+Frame counts are deliberately low. Every extra frame is another chance for the figure to drift in
+scale or angle, and at 65 px the difference between a 4-frame and an 8-frame walk is barely
+visible. Fewer, consistent frames beat more, inconsistent ones.
 
 **Councillor Mosley** — `sheet_char_mosley_<action>.png`, actions: `idle`, `walk`.
 An elderly UK city councillor. Pensioner, ill-fitting grey suit, lanyard, comb-over, self-important
