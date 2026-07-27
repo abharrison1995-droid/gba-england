@@ -433,9 +433,19 @@ public static class ArtImportTool
     }
 
     /// <summary>
-    /// Removes a flat backdrop by flood-filling inward from the border. Contiguous from the edge,
-    /// so a magenta detail inside the subject survives — only background connected to the frame
-    /// edge is cleared. Returns a note for the report, or null if the image already had alpha.
+    /// Chroma-keys a flat backdrop out, edge pixels included.
+    ///
+    /// A binary threshold is not enough. Anti-aliased edges are a *blend* of backdrop and subject,
+    /// too far from the key colour to clear and too close to keep, and once the image is averaged
+    /// down they dominate every thin structure — a bike came back with magenta spokes. So partial
+    /// pixels are unmixed instead: a blended pixel is P = a·S + (1−a)·K, and the subject colour S
+    /// is recovered rather than left with the backdrop smeared through it.
+    ///
+    /// Keying is global rather than flood-filled from the border, which also clears backdrop
+    /// enclosed by the subject — between spokes, inside a basket. The cost is that anything
+    /// genuinely this colour in the subject disappears, which is why the contract forbids it.
+    ///
+    /// Returns a note for the report, or null if the image already had alpha.
     /// </summary>
     private static string KeyOutBackground(Texture2D tex)
     {
@@ -458,43 +468,48 @@ public static class ArtImportTool
         if (worst > 90f)
             return $"background is not flat (border varies by {worst:0}) — not keyed, expect a backdrop";
 
-        const float tolerance = 90f;
-        var queue = new Queue<int>();
-        var seen = new bool[px.Length];
+        // Below Inner the pixel is backdrop; above Outer it is untouched subject; between the two
+        // it is a blend and gets unmixed. Values measured against a real 512px render.
+        const float inner = 60f;
+        const float outer = 170f;
 
-        foreach (int i in BorderIndices(w, h))
+        int cleared = 0, unmixed = 0;
+        for (int i = 0; i < px.Length; i++)
         {
-            if (seen[i] || Distance(px[i], seed) > tolerance) continue;
-            seen[i] = true;
-            queue.Enqueue(i);
-        }
+            float d = Distance(px[i], seed);
 
-        int cleared = 0;
-        while (queue.Count > 0)
-        {
-            int i = queue.Dequeue();
-            px[i] = new Color32(0, 0, 0, 0);
-            cleared++;
+            if (d <= inner)
+            {
+                px[i] = new Color32(0, 0, 0, 0);
+                cleared++;
+                continue;
+            }
+            if (d >= outer)
+            {
+                px[i].a = 255;
+                continue;
+            }
 
-            int x = i % w, y = i / w;
-            if (x > 0)     TryEnqueue(px, seen, queue, i - 1, seed, tolerance);
-            if (x < w - 1) TryEnqueue(px, seen, queue, i + 1, seed, tolerance);
-            if (y > 0)     TryEnqueue(px, seen, queue, i - w, seed, tolerance);
-            if (y < h - 1) TryEnqueue(px, seen, queue, i + w, seed, tolerance);
+            float coverage = (d - inner) / (outer - inner);
+            float backdrop = 1f - coverage;
+
+            px[i] = new Color32(
+                Unmix(px[i].r, seed.r, coverage, backdrop),
+                Unmix(px[i].g, seed.g, coverage, backdrop),
+                Unmix(px[i].b, seed.b, coverage, backdrop),
+                (byte)Mathf.Clamp(coverage * 255f, 0f, 255f));
+            unmixed++;
         }
 
         tex.SetPixels32(px);
         tex.Apply();
-        return $"keyed out backdrop ({cleared * 100 / px.Length}% of the image)";
+        return $"keyed out backdrop ({cleared * 100 / px.Length}% cleared, {unmixed} edge pixels unmixed)";
     }
 
-    private static void TryEnqueue(Color32[] px, bool[] seen, Queue<int> queue, int i,
-        Color32 seed, float tolerance)
+    /// <summary>Recovers S from P = a·S + (1−a)·K for one channel.</summary>
+    private static byte Unmix(byte pixel, byte key, float coverage, float backdrop)
     {
-        if (seen[i]) return;
-        if (Distance(px[i], seed) > tolerance) return;
-        seen[i] = true;
-        queue.Enqueue(i);
+        return (byte)Mathf.Clamp((pixel - key * backdrop) / coverage, 0f, 255f);
     }
 
     private static IEnumerable<int> BorderIndices(int w, int h)
