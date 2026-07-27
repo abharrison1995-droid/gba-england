@@ -264,7 +264,11 @@ namespace ExiledAlvaston.Combat
             SetFacing(moveDir);
             _rb.MovePosition(_rb.position + moveDir * (EffectiveMovementSpeed * input.magnitude * Time.fixedDeltaTime));
 
-            if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", input.magnitude);
+            // Riding is still movement, but the legs shouldn't be sprinting — the rider is sat on
+            // the thing. Speed stays at zero while mounted so the animator holds its idle pose and
+            // the vehicle sprite does the moving.
+            if (PlayerAnimator != null)
+                PlayerAnimator.SetFloat("Speed", MountController.IsPlayerRiding ? 0f : input.magnitude);
         }
 
         private void SetFacing(Vector3 dir)

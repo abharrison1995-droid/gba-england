@@ -32,6 +32,11 @@ namespace ExiledAlvaston.World
         [Tooltip("Height of the layered vehicle sprite, as a fraction of the actor's height.")]
         public float VehicleSpriteHeight = 0.62f;
 
+        [Tooltip("Lifts the layered vehicle clear of the ground. Its base sits exactly on the " +
+                 "actor's feet otherwise, which puts the bottom row of pixels level with the " +
+                 "ground mesh and clips the tyres. Two pixels' worth at 48 px per unit.")]
+        public float VehicleGroundClearance = 0.04f;
+
         private Transform _visualRoot;
         private Transform _swingRoot;
         private SpriteRenderer _sr;
@@ -138,7 +143,10 @@ namespace ExiledAlvaston.World
             _mountRoot.localScale = Vector3.one * (targetH / spriteH);
 
             // _visualRoot sits at mid-height, so the actor's feet are at -Height * 0.5.
-            _mountRoot.localPosition = new Vector3(0f, -Height * 0.5f + targetH * 0.5f, 0f);
+            _mountRoot.localPosition = new Vector3(
+                0f,
+                -Height * 0.5f + targetH * 0.5f + VehicleGroundClearance,
+                0f);
             _mountRoot.gameObject.SetActive(true);
         }
 
