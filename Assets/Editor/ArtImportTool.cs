@@ -46,7 +46,11 @@ public static class ArtImportTool
         { "hurt",   "Hurt"   },
         { "death",  "Death"  },
         { "cast",   "Cast"   },
+        { "cycle",  "Cycle"  },   // riding a vehicle — held by a bool, not fired by a trigger
     };
+
+    /// <summary>Bool parameters, for states that are held rather than fired once.</summary>
+    private const string CyclingParameter = "Cycling";
 
     private static readonly Dictionary<string, string> ActionToTrigger = new Dictionary<string, string>
     {
@@ -149,6 +153,7 @@ public static class ArtImportTool
         AssignPlayerSprite("spr_char_player", false, report, problems);
         AssignPlayerSprite("spr_char_player_ebike", true, report, problems);
         AssignVehicleSprite("spr_vehicle_ebike", report, problems);
+        AssignPlayerController("player", report, problems);
     }
 
     private static Sprite FindImported(string baseName)
@@ -192,6 +197,40 @@ public static class ArtImportTool
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(player.gameObject.scene);
         report.Add($"    assigned to player WorldActorVisual.{(mounted ? "MountedSprite" : "ActorSprite")} " +
                    "— save the scene (Ctrl+S)");
+    }
+
+    /// <summary>
+    /// Points the player's Animator at the controller built from their sheets. Without this the
+    /// sheets import, the clips exist, and the player carries on playing whatever placeholder
+    /// controller was assigned — Bandit_Controller, in this project.
+    /// </summary>
+    private static void AssignPlayerController(string subject, List<string> report, List<string> problems)
+    {
+        string path = $"{AnimRoot}/{subject}_Controller.controller";
+        var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+        if (controller == null) return;
+
+        var player = UnityEngine.Object.FindObjectOfType<ExiledAlvaston.Combat.CombatController>();
+        if (player == null)
+        {
+            problems.Add($"{subject}_Controller built, but no CombatController in the open scene — " +
+                         "open Assets/c.unity and re-run to have it assigned.");
+            return;
+        }
+
+        Animator animator = player.PlayerAnimator;
+        if (animator == null)
+        {
+            problems.Add($"{subject}_Controller built, but CombatController.PlayerAnimator is unset.");
+            return;
+        }
+        if (animator.runtimeAnimatorController == controller) return;
+
+        Undo.RecordObject(animator, "Assign generated controller");
+        animator.runtimeAnimatorController = controller;
+        EditorUtility.SetDirty(animator);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(player.gameObject.scene);
+        report.Add($"    player Animator now uses {subject}_Controller — save the scene (Ctrl+S)");
     }
 
     /// <summary>Parked vehicle art, written into the prefab in place so the GUID survives.</summary>
@@ -781,6 +820,7 @@ public static class ArtImportTool
         // MeleeAttack, Hit and Death, and CombatController also calls CastSpell — which no
         // controller in the project defines today.
         EnsureParameter(controller, "Speed", AnimatorControllerParameterType.Float);
+        EnsureParameter(controller, CyclingParameter, AnimatorControllerParameterType.Bool);
         foreach (string trigger in ActionToTrigger.Values)
             EnsureParameter(controller, trigger, AnimatorControllerParameterType.Trigger);
 
@@ -810,6 +850,22 @@ public static class ArtImportTool
             {
                 AddTransition(idle, run, "Speed", AnimatorConditionMode.Greater, 0.1f);
                 AddTransition(run, idle, "Speed", AnimatorConditionMode.Less, 0.1f);
+            }
+
+            // Cycling is held for as long as you are on the vehicle, so it is a bool from Any
+            // State rather than a one-shot trigger, and it returns to idle when the bool clears.
+            if (states.TryGetValue("cycle", out AnimatorState cycle))
+            {
+                var toCycle = sm.AddAnyStateTransition(cycle);
+                toCycle.hasExitTime = false;
+                toCycle.duration = 0.05f;
+                toCycle.canTransitionToSelf = false;
+                toCycle.AddCondition(AnimatorConditionMode.If, 0f, CyclingParameter);
+
+                var offCycle = cycle.AddTransition(idle);
+                offCycle.hasExitTime = false;
+                offCycle.duration = 0.05f;
+                offCycle.AddCondition(AnimatorConditionMode.IfNot, 0f, CyclingParameter);
             }
 
             // One-shots fire from Any State on their trigger and fall back to idle when finished.

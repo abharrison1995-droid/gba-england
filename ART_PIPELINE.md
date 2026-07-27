@@ -174,6 +174,7 @@ a state machine:
 | `hurt` | `Hurt` | `Hit` trigger |
 | `death` | `Death` | `Death` trigger, no return to idle |
 | `cast` | `Cast` | `CastSpell` trigger |
+| `cycle` | `Cycle` | `Cycling` bool, held while riding |
 
 ## 5. Naming
 
@@ -229,16 +230,26 @@ rename. `spr_vehicle_ebike` above plus these two are what fill it in.
 
 | File | Type | Notes |
 |---|---|---|
-| `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Neutral standing pose. Photoreal, ~512 px tall, trimmed. |
-| `spr_char_player_ebike.png` | single | **The same character sat on the e-bike**, as one combined image, mid-ride rather than stationary. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette at 65 px. Photoreal, ~512 px tall. |
+The player is **sheets, not singles** — they animate. One character serves all four classes; the
+classes differ in stats only, so there are no per-class variants.
 
-**Generate the standing player first, then use that image as visual reference for the riding one.**
-The two must obviously be the same person — same face, same build, same clothes, same colours. The
-bike in the riding image must match the already-delivered `spr_vehicle_ebike.png`; use it as
-reference too.
+`sheet_char_player_<action>.png`, using the frame table in §7.3:
 
-The player is a single sprite regardless of the four character classes — nothing in the game picks
-artwork from the class.
+| Action | Notes |
+|---|---|
+| `idle` | Standing, small weight shift or breath. |
+| `walk` | Walk cycle. |
+| `attack` | Melee swing. |
+| `cast` | Casting a spell — this is a magic game, played straight. |
+| `hurt` | Taking a hit. |
+| `death` | Falling. |
+| `cycle` | **Sat on the e-bike, pedalling.** The whole cell is rider *and* bike as one image, so it must match `spr_vehicle_ebike.png`. Held for as long as the player is riding, so it loops. |
+
+The player: a young modern Brit in street clothes — hoodie, tracksuit bottoms, trainers. Ordinary,
+slightly scruffy. Same person in every sheet: same face, build, clothes and colours.
+
+**Generate `idle` first and use it as visual reference for every other sheet.** Separately-prompted
+photoreal humans will not be the same person unless told to be.
 
 These three are **auto-assigned on import**, so use exactly those filenames.
 
@@ -255,6 +266,7 @@ bottom, facing camera-right. `worldHeight` 1.35. Standard actions and frame coun
 | `cast` | 6 | 6 | 12 | no |
 | `hurt` | 3 | 3 | 12 | no |
 | `death` | 6 | 6 | 10 | no |
+| `cycle` | 6 | 6 | 12 | yes |
 
 **Councillor Mosley** — `sheet_char_mosley_<action>.png`, actions: `idle`, `walk`.
 An elderly UK city councillor. Pensioner, ill-fitting grey suit, lanyard, comb-over, self-important

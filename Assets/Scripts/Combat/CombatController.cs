@@ -23,6 +23,9 @@ namespace ExiledAlvaston.Combat
         private Rigidbody _rb;
         private Health _health;
         private WorldActorVisual _actorVisual;
+        private RuntimeAnimatorController _animatorParamsFor;
+        private bool _hasSpeedParam;
+        private bool _hasCyclingParam;
 
         [Header("Movement")]
         [Tooltip("Base walk speed. Treat as read-only at runtime — apply temporary changes through " +
@@ -251,7 +254,7 @@ namespace ExiledAlvaston.Combat
             Vector2 input = ReadMoveInput();
             if (input.sqrMagnitude < 0.0001f)
             {
-                if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", 0f);
+                ApplyLocomotionAnimation(0f);
                 return;
             }
 
@@ -264,11 +267,43 @@ namespace ExiledAlvaston.Combat
             SetFacing(moveDir);
             _rb.MovePosition(_rb.position + moveDir * (EffectiveMovementSpeed * input.magnitude * Time.fixedDeltaTime));
 
-            // Riding is still movement, but the legs shouldn't be sprinting — the rider is sat on
-            // the thing. Speed stays at zero while mounted so the animator holds its idle pose and
-            // the vehicle sprite does the moving.
-            if (PlayerAnimator != null)
-                PlayerAnimator.SetFloat("Speed", MountController.IsPlayerRiding ? 0f : input.magnitude);
+            ApplyLocomotionAnimation(input.magnitude);
+        }
+
+        /// <summary>
+        /// Drives the locomotion parameters. Riding holds Speed at zero and raises Cycling, so a
+        /// controller with a Cycle state plays it and one without simply idles rather than running
+        /// on the spot.
+        /// </summary>
+        private void ApplyLocomotionAnimation(float speed)
+        {
+            if (PlayerAnimator == null) return;
+            RefreshAnimatorParameters();
+
+            bool riding = MountController.IsPlayerRiding;
+            if (_hasSpeedParam) PlayerAnimator.SetFloat("Speed", riding ? 0f : speed);
+            if (_hasCyclingParam) PlayerAnimator.SetBool("Cycling", riding);
+        }
+
+        // Animator.parameters allocates an array per access, and this runs every physics step, so
+        // presence is resolved once per controller instead. Keyed on the controller because it can
+        // change at runtime — the art importer assigns one when the player's sheets land.
+        private void RefreshAnimatorParameters()
+        {
+            RuntimeAnimatorController controller = PlayerAnimator.runtimeAnimatorController;
+            if (controller == _animatorParamsFor) return;
+
+            _animatorParamsFor = controller;
+            _hasSpeedParam = false;
+            _hasCyclingParam = false;
+
+            foreach (var p in PlayerAnimator.parameters)
+            {
+                if (p.name == "Speed" && p.type == AnimatorControllerParameterType.Float)
+                    _hasSpeedParam = true;
+                else if (p.name == "Cycling" && p.type == AnimatorControllerParameterType.Bool)
+                    _hasCyclingParam = true;
+            }
         }
 
         private void SetFacing(Vector3 dir)
