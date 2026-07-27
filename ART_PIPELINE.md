@@ -232,7 +232,13 @@ rename. `spr_vehicle_ebike` above plus these two are what fill it in.
 | `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Neutral standing pose. Photoreal, ~512 px tall, trimmed. |
 | `spr_char_player_ebike.png` | single | **The same character sat on the e-bike**, as one combined image, mid-ride rather than stationary. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette at 65 px. Photoreal, ~512 px tall. |
 
-The parked e-bike and the ridden one must be recognisably the same vehicle.
+**Generate the standing player first, then use that image as visual reference for the riding one.**
+The two must obviously be the same person — same face, same build, same clothes, same colours. The
+bike in the riding image must match the already-delivered `spr_vehicle_ebike.png`; use it as
+reference too.
+
+The player is a single sprite regardless of the four character classes — nothing in the game picks
+artwork from the class.
 
 These three are **auto-assigned on import**, so use exactly those filenames.
 
