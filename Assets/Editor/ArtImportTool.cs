@@ -110,20 +110,17 @@ public static class ArtImportTool
         // in one pass rather than rebuilt per action.
         var clipsBySubject = new Dictionary<string, Dictionary<string, AnimationClip>>();
 
-        try
+        // Deliberately not wrapped in StartAssetEditing/StopAssetEditing. That batches — and
+        // therefore defers — the ImportAsset calls, so AssetImporter.GetAtPath returns null for a
+        // file that was only just written, the import settings never apply, and the asset lands
+        // with Unity's defaults: Default texture type, no slices, no clips. A handful of assets
+        // per run makes the batching worthless anyway.
+        foreach (string manifestPath in manifests)
         {
-            AssetDatabase.StartAssetEditing();
+            ImportOne(manifestPath, staging, report, problems, questions, clipsBySubject);
+        }
 
-            foreach (string manifestPath in manifests)
-            {
-                ImportOne(manifestPath, staging, report, problems, questions, clipsBySubject);
-            }
-        }
-        finally
-        {
-            AssetDatabase.StopAssetEditing();
-            AssetDatabase.Refresh();
-        }
+        AssetDatabase.Refresh();
 
         foreach (var kv in clipsBySubject)
         {
@@ -811,7 +808,9 @@ public static class ArtImportTool
         var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
         if (importer == null)
         {
-            problems.Add($"{assetPath}: no TextureImporter — is it a valid PNG?");
+            problems.Add($"{assetPath}: no TextureImporter yet, so import settings and slicing " +
+                         "were skipped and the asset landed with Unity's defaults. This happens " +
+                         "when the import is deferred — do not batch these inside StartAssetEditing.");
             return false;
         }
 
