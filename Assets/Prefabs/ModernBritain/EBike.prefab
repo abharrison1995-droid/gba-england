@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3091528407146329417}
   - component: {fileID: 3755945723523705348}
   m_Layer: 0
-  m_Name: MopedVisual
+  m_Name: EBikeVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -74,7 +74,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 5
-  m_Sprite: {fileID: 21300000, guid: e52fa24a403e67f46bd8aefa757da553, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -110,7 +110,7 @@ GameObject:
   - component: {fileID: 4345234484872731323}
   - component: {fileID: 6278093731728455519}
   m_Layer: 0
-  m_Name: Moped
+  m_Name: EBike
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -179,5 +179,5 @@ MonoBehaviour:
   SpeedMultiplier: 2
   IsOwnedByNPC: 1
   ParkedModel: {fileID: 780696340065892696}
-  VehicleSprite: {fileID: 21300000, guid: e52fa24a403e67f46bd8aefa757da553, type: 3}
+  VehicleSprite: {fileID: 0}
   ReturnsHomeOnChunkChange: 1

@@ -3,14 +3,14 @@ using UnityEngine;
 namespace ExiledAlvaston.Data
 {
     /// <summary>
-    /// One kind of rideable thing — moped, bike, milk float. The chassis prefab supplies the
+    /// One kind of rideable thing — hire e-bike, moped, milk float. The chassis prefab supplies the
     /// components and collider; this supplies the tuning and the art, so adding a vehicle is a
     /// new asset rather than a new prefab.
     /// </summary>
     [CreateAssetMenu(fileName = "NewVehicleData", menuName = "ExiledAlvaston/Data/Vehicle Data")]
     public class VehicleData : ScriptableObject
     {
-        public string VehicleName = "Deliveroo Moped";
+        public string VehicleName = "Limey E-Bike";
 
         [Tooltip("Prefab to instantiate. Must carry a VehicleController and an Interactable.")]
         public GameObject ChassisPrefab;
@@ -25,7 +25,7 @@ namespace ExiledAlvaston.Data
         public bool IsNickable = true;
 
         [Tooltip("Interact prompt while parked and not yet yours.")]
-        public string ParkedPrompt = "Nick this moped";
+        public string ParkedPrompt = "Nick this e-bike";
 
         [Header("Art")]
         [Tooltip("Drawn parked, and layered over the rider while mounted. Leave empty to keep " +

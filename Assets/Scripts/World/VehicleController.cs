@@ -7,7 +7,7 @@ using ExiledAlvaston.UI;
 namespace ExiledAlvaston.World
 {
     /// <summary>
-    /// Handles the "Grand Theft Moped" logic. When the player mounts, they get a speed boost.
+    /// Handles the "Grand Theft E-Bike" logic. When the player mounts, they get a speed boost.
     /// If they steal it, the law gets involved.
     ///
     /// Whether the player is riding is owned by <see cref="MountController"/>, not by a bool here.
@@ -269,7 +269,7 @@ namespace ExiledAlvaston.World
         }
 
         // Without this the boost outlives the vehicle: chunk transitions destroy the whole chunk,
-        // so a mounted moped would vanish with its multiplier still registered. The ride state is
+        // so a mounted vehicle would vanish with its multiplier still registered. The ride state is
         // dropped too — leaving it set made the vehicle permanently half-mounted if it came back.
         private void OnDisable()
         {

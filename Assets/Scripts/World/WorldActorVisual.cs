@@ -183,7 +183,7 @@ namespace ExiledAlvaston.World
             _sr.flipX = SpriteFacesRightByDefault ? facingCameraLeft : !facingCameraLeft;
 
             // The layered vehicle sprite is drawn facing the same way as the actor, so it has to
-            // flip with them. Without this the rider turns left and the moped underneath keeps
+            // flip with them. Without this the rider turns left and the vehicle underneath keeps
             // pointing right. The MountedSprite path needs no special case — that art replaces
             // the actor's own sprite and flips with it.
             if (_mountSr != null) _mountSr.flipX = _sr.flipX;

@@ -6,7 +6,7 @@ using ExiledAlvaston.Data;
 /// Authors a chunk's vehicle spawns without typing coordinates. Vehicles live on the chunk's
 /// MapChunkData asset rather than inside the chunk prefab, so every vehicle in the world is
 /// listed in one place — but that means there is nothing to drag in the scene, which is what
-/// this window is for: line the scene view up where you want the moped and press the button.
+/// this window is for: line the scene view up where you want the vehicle and press the button.
 ///
 /// Run via: Tools → Exiled Alvaston → Place → Vehicle Placement
 /// </summary>

@@ -71,7 +71,7 @@ The `worldHeight` in the JSON is what drives the reduction, so it must be right:
 | Subject | `worldHeight` | Finishes at |
 |---|---|---|
 | Player, NPCs, police, civilians | 1.35 | ~65 px |
-| Moped and similar vehicles | 0.9 | ~43 px |
+| E-bikes, mopeds and similar | 0.9 | ~43 px |
 | Bushes | 0.9 | ~43 px |
 | Small animals (squirrel) | 0.45 | ~22 px |
 | Sheds | 2.2 | ~106 px |
@@ -177,7 +177,7 @@ a state machine:
 
 ## 5. Naming
 
-- Single: `spr_<category>_<name>.png` → `spr_char_player.png`, `spr_vehicle_moped.png`
+- Single: `spr_<category>_<name>.png` → `spr_char_player.png`, `spr_vehicle_ebike.png`
 - Sheet: `sheet_<category>_<name>_<action>.png` → `sheet_char_player_walk.png`
 
 Lower case, underscores, no spaces, no version suffixes. Regenerating an asset **overwrites the
@@ -214,7 +214,7 @@ so the handoff can be checked before a batch is committed to.
 
 | File | Type | Notes |
 |---|---|---|
-| `spr_vehicle_moped.png` | single | A **public hire e-bike**, parked and unattended, side-on three-quarter view facing camera-right. The dockless rental sort you find dumped on British pavements: chunky step-through frame, fat tyres, basket on the front, battery pack on the down tube, a rear rack, small solar panel or branding plate. Scuffed and slightly abused. Photoreal, ~512 px tall. |
+| `spr_vehicle_ebike.png` | single | A **public hire e-bike**, parked and unattended, side-on three-quarter view facing camera-right. The dockless rental sort you find dumped on British pavements: chunky step-through frame, fat tyres, basket on the front, battery pack on the down tube, a rear rack, small solar panel or branding plate. Scuffed and slightly abused. Photoreal, ~512 px tall. |
 
 Two earlier attempts at this asset failed. The first came back as clean vector cartoon with heavy
 black outlines — wrong style, see §1. The second had a purple gradient painted into the background
@@ -222,18 +222,15 @@ black outlines — wrong style, see §1. The second had a purple gradient painte
 
 Do not brand it with a real hire company's livery. Invent one, or leave it unbranded.
 
-**Keep the filename** even though the subject is now an e-bike rather than a moped — it is an
-internal identifier the importer keys off, and renaming it would orphan the wiring.
-
 ### 7.2 The rest of the mount system
 
-The mount system works, but the art is a placeholder generated in code: a crude 64×40 moped drawn
-from coloured rectangles. `spr_vehicle_moped` above plus these two replace it entirely.
+The mount system works but has no art at all — the code-generated placeholder was deleted with the
+rename. `spr_vehicle_ebike` above plus these two are what fill it in.
 
 | File | Type | Notes |
 |---|---|---|
 | `spr_char_player.png` | single | The player. Modern British street clothes — hoodie, trackies, trainers. Neutral standing pose. Photoreal, ~512 px tall, trimmed. |
-| `spr_char_player_moped.png` | single | **The same character sat on the e-bike**, as one combined image, mid-ride rather than stationary. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette at 65 px. Photoreal, ~512 px tall. Keep the filename. |
+| `spr_char_player_ebike.png` | single | **The same character sat on the e-bike**, as one combined image, mid-ride rather than stationary. This drives `WorldActorVisual.MountedSprite`, which replaces the whole player sprite while riding — rider and bike must read as one silhouette at 65 px. Photoreal, ~512 px tall. |
 
 The parked e-bike and the ridden one must be recognisably the same vehicle.
 

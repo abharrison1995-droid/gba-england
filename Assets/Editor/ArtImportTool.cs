@@ -147,8 +147,8 @@ public static class ArtImportTool
     private static void AutoAssign(List<string> report, List<string> problems)
     {
         AssignPlayerSprite("spr_char_player", false, report, problems);
-        AssignPlayerSprite("spr_char_player_moped", true, report, problems);
-        AssignMopedSprite("spr_vehicle_moped", report, problems);
+        AssignPlayerSprite("spr_char_player_ebike", true, report, problems);
+        AssignVehicleSprite("spr_vehicle_ebike", report, problems);
     }
 
     private static Sprite FindImported(string baseName)
@@ -163,7 +163,7 @@ public static class ArtImportTool
         return null;
     }
 
-    /// <summary>Player sprite or the sat-on-a-moped variant, on the WorldActorVisual in the open scene.</summary>
+    /// <summary>Player sprite, or the riding variant, on the WorldActorVisual in the open scene.</summary>
     private static void AssignPlayerSprite(string baseName, bool mounted, List<string> report, List<string> problems)
     {
         Sprite sprite = FindImported(baseName);
@@ -194,13 +194,13 @@ public static class ArtImportTool
                    "— save the scene (Ctrl+S)");
     }
 
-    /// <summary>Parked moped art, written into the prefab in place so the GUID survives.</summary>
-    private static void AssignMopedSprite(string baseName, List<string> report, List<string> problems)
+    /// <summary>Parked vehicle art, written into the prefab in place so the GUID survives.</summary>
+    private static void AssignVehicleSprite(string baseName, List<string> report, List<string> problems)
     {
         Sprite sprite = FindImported(baseName);
         if (sprite == null) return;
 
-        const string prefabPath = "Assets/Prefabs/ModernBritain/Moped.prefab";
+        const string prefabPath = "Assets/Prefabs/ModernBritain/EBike.prefab";
         if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) == null)
         {
             problems.Add($"{baseName}: {prefabPath} not found.");
@@ -213,7 +213,7 @@ public static class ArtImportTool
             var vehicle = contents.GetComponent<ExiledAlvaston.World.VehicleController>();
             if (vehicle == null)
             {
-                problems.Add($"{baseName}: Moped.prefab has no VehicleController.");
+                problems.Add($"{baseName}: EBike.prefab has no VehicleController.");
                 return;
             }
 
@@ -238,7 +238,7 @@ public static class ArtImportTool
             }
 
             PrefabUtility.SaveAsPrefabAsset(contents, prefabPath);
-            report.Add("    assigned to Moped.prefab (VehicleSprite + parked visual)");
+            report.Add("    assigned to EBike.prefab (VehicleSprite + parked visual)");
         }
         finally
         {

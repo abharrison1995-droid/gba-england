@@ -68,7 +68,7 @@ Assets/
   Editor/             # editor-only tools (no asmdef — see below)
   Data/Chunks/        # 6 MapChunkData .asset files
   Prefabs/Chunks/     # 6 matching chunk prefabs
-  Prefabs/ModernBritain/  # police tiers, Nosey Parker, moped, pub — see §6
+  Prefabs/ModernBritain/  # police tiers, Nosey Parker, e-bike, pub — see §6
   Resources/Items/    # ItemData loaded by name at runtime (Resources.Load)
   3DModels/, Sprites/, Art/, Animations/, Materials/   # art
   6twelve/            # third-party asset pack (has its own DEMO scene) — not our code
@@ -185,12 +185,12 @@ Renaming these breaks Unity serialization silently (fields go null / enums shift
 - **`Assets/Data/Chunks/*.asset` reference each other by GUID** for adjacency. Deleting or
   regenerating a `.meta` breaks the adjacency graph.
 - ⚠️ **Never rebuild an existing prefab by deleting and re-saving it.**
-  `ModernBritainSetup.BuildMopedPrefab` does `AssetDatabase.DeleteAsset(path)` then
+  `ModernBritainSetup.BuildEBikePrefab` does `AssetDatabase.DeleteAsset(path)` then
   `SaveAsPrefabAsset`. That takes the `.meta` with it and mints a fresh GUID, so **re-running
-  that tool orphans the Moped, Nosey Parker and Pub instances already placed in `c.unity`** —
+  that tool orphans the EBike, Nosey Parker and Pub instances already placed in `c.unity`** —
   they detach silently and the scene keeps empty prefab stubs. To change an existing prefab,
   edit it in place: `PrefabUtility.LoadPrefabContents` → modify → `SaveAsPrefabAsset` →
-  `UnloadPrefabContents`, which overwrites without touching the `.meta`. `MopedVisualSetup` is
+  `UnloadPrefabContents`, which overwrites without touching the `.meta`. `ArtImportTool` is
   the worked example.
 - **Appending a serialized field is safe; inserting is not.** `MapChunkData.VehicleSpawns` was
   added after the adjacency block for this reason — existing `.asset` files carry no value for
@@ -220,7 +220,7 @@ is the single most load-bearing line in the whole consequence loop.
 | Nosey Parkers | `AI/NoseyParkerAI` | Civilians. Within `DetectionRadius`, if concealment is below max, they spend `ReportTime` dialling 999, then `SpikeKnives()`. |
 | Stealth | `World/StealthController` | Crouch toggle: halves move speed, halves parker detection radius. |
 | Pickpocketing | `World/PickpocketInteractable` | Requires crouch. Rolls `CatchChance`; failure spikes Knives. |
-| Grand Theft Moped | `World/VehicleController` + `World/MountController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. See §11 — ride state, dismounting and spawning all changed. |
+| Grand Theft E-Bike | `World/VehicleController` + `World/MountController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. See §11 — ride state, dismounting and spawning all changed. |
 | Pub safehouses | `World/PubInteractable` | A pint clears Knives + concealment, heals, and saves. |
 | Arrest | `Flow/GameFlowController.ArrestRoutine` | Death dealt by an `EnemyAI.IsPolice` attacker (tracked via `Health.LastAttacker`) arrests instead of killing: clears wanted level, despawns police, returns you to the cellars. |
 
@@ -235,7 +235,7 @@ is the single most load-bearing line in the whole consequence loop.
   scene-root instances in `c.unity` (`m_TransformParent: {fileID: 0}`), and every chunk is
   instantiated at `Vector3.zero`, so both stand at the same world coordinates in all six chunks.
   The parker reports you in the wasteland; the pub — the only manual save point — follows you
-  everywhere. The moped had this too and was fixed by §11's spawner; these two have not been.
+  everywhere. The e-bike had this too and was fixed by §11's spawner; these two have not been.
 - ~~**`MovementSpeed` has no single owner.**~~ **Fixed** (`a6b387e`, on `main`). Modifiers are
   keyed by source via `CombatController.SetSpeedMultiplier` / `ClearSpeedMultiplier`, and
   movement reads `EffectiveMovementSpeed`. `MovementSpeed` is now a read-only base — never
@@ -259,9 +259,8 @@ is the single most load-bearing line in the whole consequence loop.
   `main` was unnecessary — everything in it had already landed via PR #2 — but it did no harm:
   nothing was resurrected and no file diverged. Because it is now an ancestor of `main`, the
   stash commit is permanently reachable and **the branch itself is safe to delete.**
-- **`fix/moped-mount-and-melee-flag` is 11 commits ahead of `main` and NOT merged.** It holds
-  the melee-flag fix and all of §11. Nothing on it has been compiled or opened in Unity, and it
-  carries four editor steps that must be done before the game is playable — see §11.
+- **`fix/moped-mount-and-melee-flag` is merged into `main`** (the melee-flag fix and all of §11),
+  along with the art pipeline in §12. The branch is safe to delete.
 - ⚠️ **`4b93ccc` on `feat/quest-placement-tools-and-mosley-quest` is NOT merged.** It holds one
   fix worth keeping — a `PauseManager.IsPaused` guard in `CombatController.Update` that stops
   spell/attack input firing through open menus — tangled together with 1,789 craftpix renames
@@ -371,7 +370,12 @@ A colon is illegal in Windows paths and git repo names, so any repo/folder would
 
 ## 11. Mounts and vehicles
 
-⚠️ **On `fix/moped-mount-and-melee-flag`, not on `main`. Never compiled, never run.**
+Merged to `main`, compiled, and play-tested in the editor: mounting, dismounting, the boost, the
+prompt flip and the visuals all work. The **data-driven spawner path is not yet exercised** — the
+scene still holds a hand-placed vehicle instance and no chunk has a `VehicleSpawns` entry.
+
+The stealable vehicle is a **hire e-bike** ("Limey E-Bike"). It was a Deliveroo moped until
+`EBike.prefab` was renamed; if you find "moped" in a comment it is describing history.
 
 **Ride state has one owner: `World/MountController`.** It holds `CurrentVehicle`;
 `VehicleController` describes a vehicle and applies its own effects when told to. Nothing places
@@ -403,7 +407,7 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
   rewrites its own `Prompt` without the closest one changing — which is exactly what mounting
   does — would otherwise leave the HUD stale.
 - **`VehicleSpawner` tracks what each spawn entry produced.** Without that, riding a chunk's
-  moped out and back mints a second one from the same entry, once per round trip.
+  vehicle out and back mints a second one from the same entry, once per round trip.
 - **The player must not gain a stray `SpriteRenderer` lookup.** `WorldActorVisual.ActorRenderer`
   exists because `GetComponentInChildren<SpriteRenderer>()` starts returning the layered vehicle
   sprite once one exists — `StealthController`'s crouch tint used to do exactly that.
@@ -414,12 +418,52 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
   instance is replaced when the chunk reloads — so you re-nick and re-spike on every visit.
   Consistent with §6, where wanted level and inventory are not saved either.
 
-**Editor steps this branch needs before it is playable**, in order:
+**Still open, to move off the hand-placed instance:**
 
-1. `Tools → Exiled Alvaston → Art → Build Moped Placeholder Art` — bakes the placeholder sprite
-   and replaces the orange cube, editing the prefab in place (§7).
-2. Create a `VehicleData` (`Assets > Create > ExiledAlvaston > Data > Vehicle Data`), set
-   `ChassisPrefab` to `Moped.prefab`.
-3. `Tools → Exiled Alvaston → Place → Vehicle Placement` — add it to `Home_Alvaston_Data`.
-4. **Delete the Moped instance at the root of `c.unity`**, or the legacy every-chunk one and the
-   spawned one both exist.
+1. Create a `VehicleData` (`Assets > Create > ExiledAlvaston > Data > Vehicle Data`), set
+   `ChassisPrefab` to `EBike.prefab`. An earlier attempt left `Home_Alvaston_Data` pointing at one
+   that was never written to disk — check the asset exists before trusting a spawn entry.
+2. `Tools → Exiled Alvaston → Place → Vehicle Placement` — add it to `Home_Alvaston_Data`.
+3. **Delete the EBike instance at the root of `c.unity`**, or the hand-placed every-chunk one and
+   the spawned one both exist.
+
+`EBike.prefab` currently has **no sprite assigned** — the code-generated placeholder was deleted
+with the rename, and the art comes from §12 instead.
+
+---
+
+## 12. Generated art pipeline
+
+Art is produced by a **second agent** (Antigravity/Gemini) and imported by a Unity tool. The
+contract is `AGENTS.md` (hard rules) and `ART_PIPELINE.md` (the spec and the request list).
+`GEMINI.md` is a pointer to those, not a copy.
+
+- The art agent writes **PNG + sidecar JSON to `art_incoming/`, and nothing else** — never inside
+  `Assets/`, never a `.meta`, never git. `art_incoming/` is gitignored apart from its README.
+- `Tools → Exiled Alvaston → Art → Import Generated Art` (`Editor/ArtImportTool.cs`) does the rest:
+  keys out the backdrop, trims, reduces, sets import settings, slices sheets, builds clips and an
+  `AnimatorController`, then assigns known assets to what was waiting for them.
+
+**The art direction is a post-process, not a prompt.** Sources arrive photoreal and large; the
+importer area-averages them down to **48 px per world unit**, so a 1.35-unit character lands near
+65 px — digitised-sprite style. This is deliberate: asking a generator for low resolution produces
+a different fake pixel grid every time, whereas a deterministic reduction treats every asset
+identically however far apart they were generated. Filtering is **Point**.
+
+Things learned the hard way, all encoded in the tool rather than the prompt:
+
+- Generators are unreliable at emitting real alpha and reliable at putting a subject on a plain
+  backdrop, so the contract asks for flat magenta `#FF00FF` and the importer flood-fills it out
+  from the border. Contiguous, so magenta inside the subject survives.
+- Untrimmed art renders small, because sizing derives from full image height. The importer trims;
+  the generator is not trusted to.
+- Reduction is **area-averaged**, not nearest-neighbour — point sampling a photograph down to 65 px
+  is aliased noise. Colour is weighted by alpha through the average or edges get a dark halo.
+- Sheets are never trimmed: it would shift every cell off the grid.
+
+The generated controller defines `Speed`, `MeleeAttack`, `Hit`, `Death` **and `CastSpell`** — the
+last of which nothing else in the project defines, which is the console error noted in §8.
+
+`Assets/Sprites/Enemies` is the old craftpix content: 64×64 pixel art imported at PPU 100 with
+**bilinear** filtering, which is why it looks mushy. It predates all of this and is not the
+reference style.

@@ -80,7 +80,7 @@ namespace ExiledAlvaston.World
             for (int i = 0; i < count; i++)
             {
                 // Still alive means you rode this one out of the chunk and brought it back. Without
-                // this check every round trip while mounted minted another moped from the same entry.
+                // this check every round trip while mounted minted another one from the same entry.
                 if (live[i] != null) continue;
 
                 VehicleSpawn spawn = data.VehicleSpawns[i];
