@@ -113,6 +113,13 @@ to bottom. Unlike single sprites, sheet cells are **not** trimmed.
 
 Keep the full body in frame in every cell — no legs cut off at the bottom edge.
 
+> **Every sheet of the same character must agree with every other one.** Same view angle, same
+> body width, same height, same clothes. A character drawn three-quarter when idle and in profile
+> when walking changes shape the moment they move. Generate `idle` first and use it as the visual
+> reference for every other action — do not work from the text description twice.
+>
+> The importer compares sheets of the same subject and refuses ones that disagree.
+
 Standard character cell at source resolution: **512×512**, subject filling most of the cell height,
 horizontally centred. The importer reduces the whole sheet so each cell lands at ~65×65, and
 recalculates the grid itself — you always work at source size.

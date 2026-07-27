@@ -104,6 +104,7 @@ public static class ArtImportTool
         var report = new List<string>();
         var problems = new List<string>();
         var questions = new List<string>();
+        ShapesBySubject.Clear();
 
         // Controllers are built after every clip exists, so a subject's states can all be wired
         // in one pass rather than rebuilt per action.
@@ -136,6 +137,7 @@ public static class ArtImportTool
             }
         }
 
+        CompareSubjectShapes(problems);
         AutoAssign(report, problems);
 
         AssetDatabase.SaveAssets();
@@ -571,6 +573,55 @@ public static class ArtImportTool
     /// playing — and at 65 px that is very visible while being almost impossible to spot in the
     /// source. Cheap to measure here, painful to notice in game.
     /// </summary>
+    /// <summary>How much of its cell the subject fills, for comparing sheets of the same subject.</summary>
+    private class SubjectShape
+    {
+        public string Sheet;
+        public float Width;   // fraction of cell width
+        public float Height;  // fraction of cell height
+    }
+
+    private static readonly Dictionary<string, List<SubjectShape>> ShapesBySubject =
+        new Dictionary<string, List<SubjectShape>>();
+
+    /// <summary>
+    /// A subject's sheets must agree with each other, not just internally. The first generated
+    /// walk cycle sat on a correct baseline but was drawn near edge-on — 47 px wide against the
+    /// idle sheet's 122 — so the character would have turned into a sliver the moment they moved.
+    /// </summary>
+    private static void CompareSubjectShapes(List<string> problems)
+    {
+        foreach (var kv in ShapesBySubject)
+        {
+            List<SubjectShape> shapes = kv.Value;
+            if (shapes.Count < 2) continue;
+
+            var widest = shapes[0];
+            var narrowest = shapes[0];
+            var tallest = shapes[0];
+            var shortest = shapes[0];
+
+            foreach (SubjectShape s in shapes)
+            {
+                if (s.Width > widest.Width) widest = s;
+                if (s.Width < narrowest.Width) narrowest = s;
+                if (s.Height > tallest.Height) tallest = s;
+                if (s.Height < shortest.Height) shortest = s;
+            }
+
+            if (narrowest.Width > 0.001f && widest.Width / narrowest.Width > 1.4f)
+                problems.Add($"{kv.Key}: '{narrowest.Sheet}' is {widest.Width / narrowest.Width:0.#}× " +
+                             $"narrower than '{widest.Sheet}' — the view angle differs between sheets, " +
+                             "so the character changes shape between animations. Regenerate the narrow one " +
+                             "using the other as reference.");
+
+            if (shortest.Height > 0.001f && tallest.Height / shortest.Height > 1.15f)
+                problems.Add($"{kv.Key}: '{shortest.Sheet}' is {tallest.Height / shortest.Height:0.#}× " +
+                             $"shorter than '{tallest.Sheet}' — the character will change size between " +
+                             "animations.");
+        }
+    }
+
     private static void CheckFrameAlignment(Texture2D tex, ArtManifest m, List<string> report,
         List<string> problems)
     {
@@ -583,6 +634,8 @@ public static class ArtImportTool
 
         Color32[] px = tex.GetPixels32();
         int lowest = int.MaxValue, highest = int.MinValue;
+        long widthSum = 0, heightSum = 0;
+        int measured = 0;
 
         for (int f = 0; f < frames; f++)
         {
@@ -590,20 +643,41 @@ public static class ArtImportTool
             // Texture origin is bottom-left, so row 0 of the sheet is the top of the image.
             int cy = tex.height - ((f / columns) + 1) * m.frameHeight;
 
-            int bottom = -1;
-            for (int y = 0; y < m.frameHeight && bottom < 0; y++)
+            int bottom = -1, top = -1, left = int.MaxValue, right = -1;
+            for (int y = 0; y < m.frameHeight; y++)
             {
                 for (int x = 0; x < m.frameWidth; x++)
                 {
                     if (px[(cy + y) * tex.width + cx + x].a <= 8) continue;
-                    bottom = y;
-                    break;
+                    if (bottom < 0) bottom = y;
+                    top = y;
+                    if (x < left) left = x;
+                    if (x > right) right = x;
                 }
             }
             if (bottom < 0) continue;
 
             lowest = Mathf.Min(lowest, bottom);
             highest = Mathf.Max(highest, bottom);
+            widthSum += right - left + 1;
+            heightSum += top - bottom + 1;
+            measured++;
+        }
+
+        if (measured > 0)
+        {
+            string subject = ResolveSubject(m, m.name ?? "");
+            if (!ShapesBySubject.TryGetValue(subject, out var list))
+            {
+                list = new List<SubjectShape>();
+                ShapesBySubject[subject] = list;
+            }
+            list.Add(new SubjectShape
+            {
+                Sheet  = m.name,
+                Width  = (float)widthSum / measured / m.frameWidth,
+                Height = (float)heightSum / measured / m.frameHeight
+            });
         }
 
         if (lowest == int.MaxValue) return;
