@@ -44,6 +44,8 @@ namespace ExiledAlvaston.World
         private SpriteRenderer _mountSr;
         private Sprite _spriteBeforeMount;
         private bool _isMounted;
+        private Animator _spriteAnimator;
+        private bool _animatorWasEnabled;
         private Coroutine _swingRoutine;
         private Vector3 _swingBaseLocalPos;
         private GameObject _slashFx;
@@ -101,6 +103,11 @@ namespace ExiledAlvaston.World
 
                 if (MountedSprite != null)
                 {
+                    // An Animator on the sprite's own GameObject rewrites m_Sprite every frame and
+                    // would silently undo this. Park it for the duration rather than losing the
+                    // bespoke rider art to whatever clip happens to be playing.
+                    SuspendSpriteAnimator();
+
                     _sr.sprite = MountedSprite;
                     FitScaleToHeight();
                     ShowVehicleSprite(null);
@@ -118,8 +125,28 @@ namespace ExiledAlvaston.World
                     FitScaleToHeight();
                 }
                 _isMounted = false;
+                RestoreSpriteAnimator();
                 ShowVehicleSprite(null);
             }
+        }
+
+        private void SuspendSpriteAnimator()
+        {
+            if (_spriteAnimator == null && _sr != null)
+                _spriteAnimator = _sr.GetComponent<Animator>();
+
+            if (_spriteAnimator == null || !_spriteAnimator.enabled) return;
+
+            _animatorWasEnabled = true;
+            _spriteAnimator.enabled = false;
+        }
+
+        private void RestoreSpriteAnimator()
+        {
+            if (_spriteAnimator == null || !_animatorWasEnabled) return;
+
+            _spriteAnimator.enabled = true;
+            _animatorWasEnabled = false;
         }
 
         private void ShowVehicleSprite(Sprite sprite)
