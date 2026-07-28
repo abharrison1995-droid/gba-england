@@ -355,6 +355,12 @@ above it. Run it before and after anything that deletes, moves or renames assets
 Everything else — does the scene load, is anything pink, do the mechanics behave — needs the
 Unity editor and therefore needs a human. Say so plainly rather than implying otherwise.
 
+⚠️ **Changes made in the Inspector while Play mode is running are discarded when it stops.** This
+has wasted real time: a value is tuned in play, it looks right, play stops, the old value returns,
+the scene is saved over the top. When asking for an editor change, say whether Play must be
+stopped first. Give the route through the UI as well as the field name — panel, menu path, which
+object to select — not just what to set.
+
 **There is no C# compiler in the agent environment either.** Reference integrity passing says
 nothing about whether the project builds. Anything written without a Unity session is unverified
 in both senses; §11 is the current example.
@@ -475,6 +481,20 @@ prompt. Do not undo these to simplify the code — each cost a wasted generation
   skipped, and assets land with Unity's defaults — no slices, no clips, no controller — while
   appearing to succeed. This cost a full round trip once already.
 
+### Actor sprite sizing — two traps that cost a cycle each
+
+- **Resize an actor with `WorldActorVisual.Height`, never by scaling its `ActorVisual` child.**
+  `ApplyVisual` positions that child at `Height / 2` — the sprite's centre — assuming its scale is
+  1. Scaling it grows the sprite about that centre and buries the feet below the floor.
+  `GroundOffset` is there for the small art-dependent nudge, not for resizing.
+- **`FitScaleToHeight` refits in `LateUpdate` whenever the displayed sprite changes, and must
+  keep doing so.** It divides the target height by the sprite's *bounds*, and an Animator swaps
+  `m_Sprite` for frames whose pixel size and import PPU differ from whatever `ActorSprite` holds.
+  Fitting once at Awake against a stale 48 px @ PPU 100 placeholder, then animating 65 px @ PPU 48
+  frames, rendered the player at 4.5 units instead of 1.6 with the bottom 1.46 units underground.
+  The giveaway is that it looks correct the instant any Inspector field is touched, because
+  `OnValidate` refits against the sprite actually showing. It is a reference compare per frame.
+
 Frame counts are deliberately low (4-frame walks). Every extra frame is another chance for the
 figure to drift, and at 65 px the difference is barely visible.
 
@@ -487,3 +507,21 @@ without that the sheets would import and the player would carry on playing `Band
 `Assets/Sprites/Enemies` is the old craftpix content: 64×64 pixel art imported at PPU 100 with
 **bilinear** filtering, which is why it looks mushy. It predates all of this and is not the
 reference style.
+
+### Where the art stands
+
+Delivered and in the game:
+
+- `spr_vehicle_ebike` — the hire e-bike, wired into `EBike.prefab`.
+- `sheet_char_player_idle` (4 frames) and `sheet_char_player_walk` (4 frames) — sliced, clipped,
+  and driving `player_Controller`, which is assigned to the player's Animator in place of
+  `Bandit_Controller`. The player is `Height 1.6`, `GroundOffset 0`, `ActorVisual` scale 1.
+
+Requested but not yet generated, all specced in `ART_PIPELINE.md` §7: the player's `attack`,
+`cast`, `hurt`, `death` and `cycle` sheets; the five NPCs in §7.3 (Councillor Mosley, Daniel
+Pauls, the tracksuit geezer, the angry squirrel, the roaming pharmacist); the office block and
+shed in §7.4.
+
+Not yet solved: those NPCs are spawned in code by `MagicTutorial`, which assigns a single `Sprite`
+rather than an `AnimatorController`. Animated NPCs need that changed before their sheets are
+worth generating.
