@@ -411,9 +411,10 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
 - **The player must not gain a stray `SpriteRenderer` lookup.** `WorldActorVisual.ActorRenderer`
   exists because `GetComponentInChildren<SpriteRenderer>()` starts returning the layered vehicle
   sprite once one exists — `StealthController`'s crouch tint used to do exactly that.
-- **`MountedSprite` will not work on an animator-driven player.** It writes `_sr.sprite`, which an
-  Animator overwrites every frame. The layered composite path is unaffected. Unverified which
-  applies to the player in `c.unity`.
+- **`MountedSprite` is superseded by the `cycle` sheet.** It writes `_sr.sprite`, which an Animator
+  overwrites every frame — the player's Animator sits on `SwingRoot` with a controller assigned, so
+  `WorldActorVisual` suspends it while a `MountedSprite` shows. Now that riding has an animated
+  `Cycle` state, prefer a `cycle` sheet: it animates, and it needs no per-character rider art.
 - **Nicking does not persist**, by decision. `IsOwnedByNPC` is cleared on the instance, and the
   instance is replaced when the chunk reloads — so you re-nick and re-spike on every visit.
   Consistent with §6, where wanted level and inventory are not saved either.
@@ -450,19 +451,38 @@ importer area-averages them down to **48 px per world unit**, so a 1.35-unit cha
 a different fake pixel grid every time, whereas a deterministic reduction treats every asset
 identically however far apart they were generated. Filtering is **Point**.
 
-Things learned the hard way, all encoded in the tool rather than the prompt:
+Things learned the hard way, every one of them encoded in the tool rather than asked for in a
+prompt. Do not undo these to simplify the code — each cost a wasted generation cycle:
 
-- Generators are unreliable at emitting real alpha and reliable at putting a subject on a plain
-  backdrop, so the contract asks for flat magenta `#FF00FF` and the importer flood-fills it out
-  from the border. Contiguous, so magenta inside the subject survives.
-- Untrimmed art renders small, because sizing derives from full image height. The importer trims;
-  the generator is not trusted to.
-- Reduction is **area-averaged**, not nearest-neighbour — point sampling a photograph down to 65 px
+- **Chroma key, globally, and unmix the edges.** Generators are unreliable at emitting real alpha
+  and reliable at putting a subject on a plain backdrop, so the contract asks for flat magenta
+  `#FF00FF`. A threshold alone is not enough: anti-aliased edges are a blend of backdrop and
+  subject, and once averaged down they dominate thin structures — a bike arrived with magenta
+  spokes. Partial pixels are unmixed via `P = a·S + (1−a)·K`. Keying is global, not flood-filled
+  from the border, so backdrop trapped inside the subject goes too.
+- **Trim in the tool, never in the prompt.** Sizing derives from full image height, so untrimmed
+  art silently renders small.
+- **Reduction is area-averaged**, not nearest-neighbour — point sampling a photograph down to 65 px
   is aliased noise. Colour is weighted by alpha through the average or edges get a dark halo.
-- Sheets are never trimmed: it would shift every cell off the grid.
+- **Sheets are never trimmed**: it would shift every cell off the grid.
+- **Sheets are checked for a shared baseline.** A figure that drifts up its cell between frames
+  bobs in motion while looking fine frame by frame. Refused above 2 px at final size.
+- **Sheets of one subject are checked against each other.** Each can be internally perfect and
+  still disagree — a walk drawn near edge-on was 47 px wide against the idle sheet's 122. Refused
+  above 1.4× on width or 1.15× on height.
+- ⚠️ **Never wrap the import loop in `AssetDatabase.StartAssetEditing`.** It defers `ImportAsset`,
+  so `AssetImporter.GetAtPath` returns null for a file just written, every import setting is
+  skipped, and assets land with Unity's defaults — no slices, no clips, no controller — while
+  appearing to succeed. This cost a full round trip once already.
 
-The generated controller defines `Speed`, `MeleeAttack`, `Hit`, `Death` **and `CastSpell`** — the
-last of which nothing else in the project defines, which is the console error noted in §8.
+Frame counts are deliberately low (4-frame walks). Every extra frame is another chance for the
+figure to drift, and at 65 px the difference is barely visible.
+
+The generated controller defines `Speed`, `MeleeAttack`, `Hit`, `Death`, `CastSpell` and a
+`Cycling` bool. `CastSpell` is the one nothing else in the project defines, which is the console
+error noted in §8. `Cycling` holds a `Cycle` state for as long as the player is riding — see §11.
+Once a subject's sheets import, the tool points the player's Animator at the controller it built;
+without that the sheets would import and the player would carry on playing `Bandit_Controller`.
 
 `Assets/Sprites/Enemies` is the old craftpix content: 64×64 pixel art imported at PPU 100 with
 **bilinear** filtering, which is why it looks mushy. It predates all of this and is not the
