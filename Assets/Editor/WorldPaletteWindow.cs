@@ -1,0 +1,354 @@
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using ExiledAlvaston.Data;
+
+/// <summary>
+/// Click-to-place content authoring. Replaces the five Place/… windows, which all shared one
+/// shape — fill in fields, press a button, get one object at the Scene view pivot — with a palette
+/// of preconfigured <see cref="PlacementPreset"/> assets you arm once and then click into place,
+/// as many times as you like.
+///
+/// Run via: Tools → GBA → World Palette
+///
+/// Works in a scene or in Prefab Mode; in Prefab Mode placements go into the prefab's own scene,
+/// which is how content gets authored into a chunk prefab (chunks are instantiated from their
+/// prefab at runtime, so anything left loose in c.unity is not part of the chunk).
+/// </summary>
+public class WorldPaletteWindow : EditorWindow
+{
+    private const float ButtonSize = 68f;
+    private const float GroundPlaneY = 0f;
+
+    private PlacementPreset[] _presets = new PlacementPreset[0];
+    private PlacementPreset _armed;
+    private Vector2 _scroll;
+
+    /// <summary>Where the last hover landed, for the ghost and for the placement itself.</summary>
+    private Vector3 _hoverPoint;
+    private bool _hoverValid;
+
+    /// <summary>Vehicles are authored onto a chunk asset, not into a scene — this is the target.</summary>
+    private MapChunkData _vehicleChunk;
+
+    [MenuItem("Tools/GBA/World Palette")]
+    public static void Open()
+    {
+        GetWindow<WorldPaletteWindow>("World Palette");
+    }
+
+    private void OnEnable()
+    {
+        Refresh();
+        SceneView.duringSceneGui += OnSceneGUI;
+    }
+
+    private void OnDisable()
+    {
+        SceneView.duringSceneGui -= OnSceneGUI;
+    }
+
+    private void Refresh()
+    {
+        _presets = AssetDatabase.FindAssets("t:PlacementPreset")
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .Select(AssetDatabase.LoadAssetAtPath<PlacementPreset>)
+            .Where(p => p != null)
+            .OrderBy(p => (int)p.Category)
+            .ThenBy(p => p.Label)
+            .ToArray();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  THE PALETTE
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private void OnGUI()
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField(_armed != null ? $"Armed: {_armed.Label}" : "Nothing armed",
+                EditorStyles.boldLabel);
+            if (GUILayout.Button("Refresh", GUILayout.Width(70))) Refresh();
+        }
+
+        if (_armed != null)
+        {
+            EditorGUILayout.HelpBox(
+                "Click in the Scene view to place. Hold Shift to keep placing.\n" +
+                "Esc, or clicking the armed preset again, disarms.",
+                MessageType.Info);
+            if (GUILayout.Button("Disarm")) Disarm();
+        }
+        else
+        {
+            EditorGUILayout.HelpBox(
+                "Pick a preset, then click in the Scene view to place it.\n" +
+                "In Prefab Mode placements go into the open prefab — which is where chunk content " +
+                "has to live, since chunks are instantiated from their prefab at runtime.",
+                MessageType.None);
+        }
+
+        PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+        EditorGUILayout.LabelField(stage != null
+            ? $"Placing into prefab: {stage.assetPath}"
+            : "Placing into the open scene", EditorStyles.miniLabel);
+
+        if (_presets.Length == 0)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.HelpBox(
+                "No PlacementPreset assets found.\n\n" +
+                "Generate a starter set with Tools → GBA → Content → Create Starter Presets, or " +
+                "make one via Assets → Create → ExiledAlvaston → Data → Placement Preset.",
+                MessageType.Warning);
+            if (GUILayout.Button("Create Starter Presets"))
+            {
+                StarterPresetGenerator.Run();
+                Refresh();
+            }
+            return;
+        }
+
+        EditorGUILayout.Space();
+        _scroll = EditorGUILayout.BeginScrollView(_scroll);
+
+        foreach (var group in _presets.GroupBy(p => p.Category))
+        {
+            EditorGUILayout.LabelField(group.Key.ToString(), EditorStyles.boldLabel);
+            DrawGrid(group.ToList());
+
+            if (group.Key == PlacementPreset.PlacementCategory.Vehicle)
+                DrawVehicleTarget();
+
+            EditorGUILayout.Space();
+        }
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawGrid(List<PlacementPreset> presets)
+    {
+        int perRow = Mathf.Max(1, Mathf.FloorToInt((position.width - 30f) / (ButtonSize + 6f)));
+
+        for (int i = 0; i < presets.Count; i++)
+        {
+            if (i % perRow == 0) EditorGUILayout.BeginHorizontal();
+
+            PlacementPreset preset = presets[i];
+            bool isArmed = preset == _armed;
+
+            var content = new GUIContent(
+                IconFor(preset) == null ? preset.Label : "",
+                IconFor(preset),
+                preset.Label);
+
+            Color prev = GUI.backgroundColor;
+            if (isArmed) GUI.backgroundColor = new Color(0.45f, 0.8f, 1f);
+
+            if (GUILayout.Button(content, GUILayout.Width(ButtonSize), GUILayout.Height(ButtonSize)))
+            {
+                // Clicking the armed preset again disarms, so the palette has no dead-end state
+                // where the only way out is Esc in a different window.
+                if (isArmed) Disarm();
+                else Arm(preset);
+            }
+
+            GUI.backgroundColor = prev;
+
+            if (i % perRow == perRow - 1 || i == presets.Count - 1) EditorGUILayout.EndHorizontal();
+        }
+    }
+
+    private void DrawVehicleTarget()
+    {
+        EditorGUI.indentLevel++;
+        _vehicleChunk = (MapChunkData)EditorGUILayout.ObjectField(
+            new GUIContent("Target chunk", "Vehicles live on the chunk's MapChunkData, not in the " +
+                "chunk prefab, so a vehicle placement writes a VehicleSpawn entry here."),
+            _vehicleChunk, typeof(MapChunkData), false);
+
+        if (_armed != null
+            && _armed.Category == PlacementPreset.PlacementCategory.Vehicle
+            && _vehicleChunk == null)
+        {
+            EditorGUILayout.HelpBox("Pick a target chunk before placing a vehicle.", MessageType.Warning);
+        }
+        EditorGUI.indentLevel--;
+    }
+
+    private static Texture IconFor(PlacementPreset preset)
+    {
+        if (preset.Icon == null) return null;
+
+        // AssetPreview renders asynchronously and returns null on the first few calls, so the
+        // sprite's own texture is the fallback rather than an empty button.
+        Texture preview = AssetPreview.GetAssetPreview(preset.Icon);
+        return preview != null ? preview : preset.Icon.texture;
+    }
+
+    private void Arm(PlacementPreset preset)
+    {
+        _armed = preset;
+        _hoverValid = false;
+        SceneView.RepaintAll();
+        Repaint();
+    }
+
+    private void Disarm()
+    {
+        _armed = null;
+        _hoverValid = false;
+        SceneView.RepaintAll();
+        Repaint();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  THE SCENE VIEW
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private void OnSceneGUI(SceneView view)
+    {
+        if (_armed == null) return;
+
+        Event e = Event.current;
+
+        // Takes the default control so a click places instead of selecting whatever is under the
+        // cursor. Without this, the first click just picks the ground mesh.
+        int control = GUIUtility.GetControlID(FocusType.Passive);
+        HandleUtility.AddDefaultControl(control);
+
+        if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
+        {
+            Disarm();
+            e.Use();
+            return;
+        }
+
+        if (e.type == EventType.MouseMove || e.type == EventType.MouseDrag || e.type == EventType.Repaint)
+        {
+            _hoverValid = TryGetPoint(e.mousePosition, out _hoverPoint);
+            if (e.type != EventType.Repaint) view.Repaint();
+        }
+
+        if (e.type == EventType.Repaint && _hoverValid)
+            DrawGhost(_hoverPoint);
+
+        if (e.type == EventType.MouseDown && e.button == 0 && !e.alt)
+        {
+            if (TryGetPoint(e.mousePosition, out Vector3 point))
+            {
+                PlaceAt(point);
+                // Shift is stamp mode — keep the preset armed for a run of placements.
+                if (!e.shift) Disarm();
+            }
+            e.Use();
+        }
+    }
+
+    private static void DrawGhost(Vector3 point)
+    {
+        Handles.color = new Color(0.35f, 0.8f, 1f, 0.9f);
+        Handles.DrawWireDisc(point, Vector3.up, 0.6f);
+        Handles.DrawWireDisc(point, Vector3.up, 0.15f);
+        Handles.DrawLine(point, point + Vector3.up * 1.35f);
+    }
+
+    /// <summary>
+    /// Where the cursor is pointing in the world. Prefers real geometry so placements sit on
+    /// whatever is under them, and falls back to the ground plane — which is also the only option
+    /// in Prefab Mode when the prefab has no colliders yet.
+    /// </summary>
+    private static bool TryGetPoint(Vector2 mousePosition, out Vector3 point)
+    {
+        Ray ray = HandleUtility.GUIPointToWorldRay(mousePosition);
+
+        PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+        if (stage != null)
+        {
+            // A prefab stage has its own physics scene; the global Physics.Raycast would hit the
+            // main scene's colliders, which are not even visible here.
+            if (stage.scene.GetPhysicsScene().Raycast(ray.origin, ray.direction, out RaycastHit stageHit, 5000f))
+            {
+                point = stageHit.point;
+                return true;
+            }
+        }
+        else if (Physics.Raycast(ray, out RaycastHit hit, 5000f))
+        {
+            point = hit.point;
+            return true;
+        }
+
+        var ground = new Plane(Vector3.up, new Vector3(0f, GroundPlaneY, 0f));
+        if (ground.Raycast(ray, out float distance))
+        {
+            point = ray.GetPoint(distance);
+            return true;
+        }
+
+        point = Vector3.zero;
+        return false;
+    }
+
+    private void PlaceAt(Vector3 point)
+    {
+        if (_armed.Category == PlacementPreset.PlacementCategory.Vehicle)
+        {
+            PlaceVehicle(point);
+            return;
+        }
+
+        PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+        Transform parent = Selection.activeTransform;
+        // Same rule the old Place windows used: an explicit selection wins, then the open prefab's
+        // root, then the scene root.
+        if (parent == null && stage != null) parent = stage.prefabContentsRoot.transform;
+
+        GameObject created = PlacementBuilders.Build(_armed, point, parent);
+        if (created == null) return;
+
+        Selection.activeGameObject = created;
+        EditorSceneManager.MarkSceneDirty(stage != null ? stage.scene : EditorSceneManager.GetActiveScene());
+        Debug.Log($"World Palette: placed '{created.name}' at {point}. Ctrl+S to save " +
+                  (stage != null ? "the prefab." : "the scene."));
+    }
+
+    /// <summary>
+    /// Vehicles have no scene object to create — VehicleSpawner instantiates them at runtime from
+    /// the chunk's own list, so authoring one means appending to that list (CLAUDE.md §11).
+    /// </summary>
+    private void PlaceVehicle(Vector3 point)
+    {
+        if (_vehicleChunk == null)
+        {
+            Debug.LogWarning("World Palette: pick a target chunk before placing a vehicle.");
+            return;
+        }
+        if (_armed.Vehicle == null)
+        {
+            Debug.LogWarning($"World Palette: vehicle preset '{_armed.Label}' has no VehicleData assigned.");
+            return;
+        }
+
+        Undo.RecordObject(_vehicleChunk, "Add vehicle spawn");
+
+        if (_vehicleChunk.VehicleSpawns == null)
+            _vehicleChunk.VehicleSpawns = new List<VehicleSpawn>();
+
+        point.y = GroundPlaneY;   // vehicles sit on the ground plane
+        _vehicleChunk.VehicleSpawns.Add(new VehicleSpawn
+        {
+            Vehicle = _armed.Vehicle,
+            Position = point,
+            YRotation = 0f
+        });
+
+        EditorUtility.SetDirty(_vehicleChunk);
+        AssetDatabase.SaveAssets();
+        Debug.Log($"World Palette: added {_armed.Vehicle.VehicleName} to " +
+                  $"{_vehicleChunk.ChunkName} at {point}.");
+    }
+}
