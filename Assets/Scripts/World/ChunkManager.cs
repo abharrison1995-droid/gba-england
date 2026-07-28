@@ -46,6 +46,20 @@ namespace ExiledAlvaston.World
         private bool _isTransitioning = false;
         private float _nextEdgeTriggerAllowedAt = 0f;
 
+        // ChunkEdge re-offers a crossing every physics tick via OnTriggerStay, so anything that
+        // declines one needs its own throttle or the warning re-shows continuously.
+        private float _nextDeadEndWarningAt = 0f;
+        private const float DeadEndWarningCooldown = 3f;
+
+        // Arrival always lands 12 units clear of every trigger, so this only needs to cover the
+        // teleport itself — not a walk back. A full second made turning straight around after a
+        // crossing eat the return trip and drop you off the edge.
+        private const float EdgeTriggerGrace = 0.25f;
+
+        // Last-resort net: nothing should get under the ground plane at y=0, but a gap in a
+        // chunk's geometry would otherwise drop the player forever with no way back.
+        private const float VoidFloorY = -20f;
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -88,6 +102,16 @@ namespace ExiledAlvaston.World
                     _cityLockoutTimers.Remove(key);
                     _activeLockoutKeys.RemoveAt(i);
                 }
+            }
+
+            // Void catcher. Chunks are flat ground at y=0; falling well below that means the
+            // player found a hole, so put them back at the middle of the chunk they're in.
+            if (!_isTransitioning
+                && PlayerTransform != null
+                && PlayerTransform.position.y < VoidFloorY)
+            {
+                TeleportPlayer(Vector3.zero);
+                ShowWarning("You slipped. Back to the middle of the map.");
             }
         }
 
@@ -141,6 +165,13 @@ namespace ExiledAlvaston.World
                 }
 
                 StartCoroutine(TransitionToChunkRoutine(targetChunk, edgeDirection));
+            }
+            else if (Time.unscaledTime >= _nextDeadEndWarningAt)
+            {
+                // Dead end. Outer chunks link back to Home only, so three of their four edges
+                // lead nowhere — say so instead of letting the player walk into silence.
+                _nextDeadEndWarningAt = Time.unscaledTime + DeadEndWarningCooldown;
+                ShowWarning("There's nothing that way.");
             }
         }
 
@@ -205,7 +236,7 @@ namespace ExiledAlvaston.World
                 if (previousInstance != null)
                     Destroy(previousInstance);
 
-                _nextEdgeTriggerAllowedAt = Time.unscaledTime + 1f;
+                _nextEdgeTriggerAllowedAt = Time.unscaledTime + EdgeTriggerGrace;
 
                 // Save inside the new chunk must be loadable later, so the chunk has to be
                 // findable by name even if the scene's AllChunks list predates it.
@@ -321,7 +352,7 @@ namespace ExiledAlvaston.World
                     Destroy(previousInstance);
 
                 // Grace period so landing near the new chunk's own edge trigger can't instantly bounce us back.
-                _nextEdgeTriggerAllowedAt = Time.unscaledTime + 1f;
+                _nextEdgeTriggerAllowedAt = Time.unscaledTime + EdgeTriggerGrace;
 
                 // Checkpoint: every chunk crossing is a save point.
                 ExiledAlvaston.Flow.SaveGameManager.Save();
@@ -346,14 +377,19 @@ namespace ExiledAlvaston.World
             // Must clear the new chunk's own edge-trigger depth (2 units) by a wide margin,
             // or we spawn straight back inside a trigger that bounces us right back out.
             float buffer = 12f;
+            float limit = mapSize / 2f - buffer;
 
+            // The lateral coordinate carries over from where the player crossed, so crossing
+            // near a corner used to drop them inside the new chunk's *perpendicular* edge
+            // trigger — a chain teleport where that neighbour exists, a dead trigger where it
+            // doesn't. Clamping to the same buffer keeps arrivals clear of all four edges.
             Vector3 pos = PlayerTransform.position;
             switch(travelDir)
             {
-                case Direction.North: pos.z = -mapSize/2 + buffer; break;
-                case Direction.South: pos.z = mapSize/2 - buffer; break;
-                case Direction.East:  pos.x = -mapSize/2 + buffer; break;
-                case Direction.West:  pos.x = mapSize/2 - buffer; break;
+                case Direction.North: pos.z = -limit; pos.x = Mathf.Clamp(pos.x, -limit, limit); break;
+                case Direction.South: pos.z =  limit; pos.x = Mathf.Clamp(pos.x, -limit, limit); break;
+                case Direction.East:  pos.x = -limit; pos.z = Mathf.Clamp(pos.z, -limit, limit); break;
+                case Direction.West:  pos.x =  limit; pos.z = Mathf.Clamp(pos.z, -limit, limit); break;
             }
             TeleportPlayer(pos);
         }

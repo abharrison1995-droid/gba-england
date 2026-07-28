@@ -15,7 +15,7 @@ MonoBehaviour:
   ChunkName: Manor Cellars
   Coordinates:
     X: -1
-    Y: 0
+    Y: -1
   IsCity: 0
   IsTutorialDungeon: 1
   LockExitsUntilTutorialComplete: 1
