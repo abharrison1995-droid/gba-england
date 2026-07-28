@@ -75,13 +75,17 @@ public static class PlacementBuilders
         var talk = go.AddComponent<NPCDialogueInteractable>();
         talk.Conversation = preset.Conversation;
 
-        if (preset.NpcSprite != null || preset.NpcController != null)
+        // A sprite, not a controller, is what decides whether this NPC has a visual. An Animator
+        // does not evaluate in edit mode, so a preset carrying a controller and no NpcSprite used
+        // to take this branch and leave the SpriteRenderer empty — placing an NPC that is
+        // invisible in the Scene view and in the prefab stage you author in.
+        if (preset.NpcSprite != null)
         {
             var visual = go.AddComponent<WorldActorVisual>();
             visual.ActorSprite = preset.NpcSprite;
             // Resize through Height, never by scaling ActorVisual — ApplyVisual positions that
             // child at Height/2 assuming scale 1, so scaling it buries the feet (CLAUDE.md §12).
-            visual.Height = EKVibe.CharacterHeight;
+            visual.Height = HeightFor(preset);
             visual.Width = EKVibe.CharacterWidth;
             visual.ApplyVisual();
 
@@ -90,12 +94,28 @@ public static class PlacementBuilders
         }
         else
         {
+            if (preset.NpcController != null)
+                Debug.LogWarning($"PlacementBuilders: '{preset.Label}' has an NpcController but no " +
+                                 "NpcSprite, so there would be nothing to see until the Animator " +
+                                 "ran. Placed as a placeholder body instead — import the subject's " +
+                                 "idle sheet, or set NpcSprite by hand.");
+
             BuildPlaceholderBody(go.transform);
         }
 
         ApplyQuestKey(preset, go);
         return go;
     }
+
+    /// <summary>
+    /// World height to build an actor at. <see cref="PlacementPreset.NpcHeight"/> of 0 means
+    /// inherit: the art importer writes the subject's own <c>worldHeight</c> there when its sheets
+    /// land, and the shared character height stands in until they do. Anything above 0 was set
+    /// deliberately and wins. An angry squirrel is 0.45 units against a councillor's 1.35, so this
+    /// is not cosmetic — it is the difference between a squirrel and a man in a squirrel suit.
+    /// </summary>
+    private static float HeightFor(PlacementPreset preset) =>
+        preset.NpcHeight > 0f ? preset.NpcHeight : EKVibe.CharacterHeight;
 
     /// <summary>
     /// Puts an Animator where the generated clips expect it.
