@@ -38,3 +38,9 @@ MonoBehaviour:
   Vehicle: {fileID: 0}
   SpawnPointId: 
   QuestKey: 
+  ArtSubject: squirrel
+  NpcHeight: 0
+  Roams: 1
+  RoamRadius: 6
+  Speaker: {fileID: 0}
+  AmbientLine: 

@@ -33,6 +33,16 @@ public class WorldPaletteWindow : EditorWindow
     /// <summary>Vehicles are authored onto a chunk asset, not into a scene — this is the target.</summary>
     private MapChunkData _vehicleChunk;
 
+    /// <summary>
+    /// Everything this window has placed, and the parent the last one went into.
+    ///
+    /// Placing selects what it just made, so you can nudge it straight away — but the parent is
+    /// read from the selection, so without these the next stamp would land *inside* the previous
+    /// one. Holding Shift for a run of five would bury the fifth four levels deep.
+    /// </summary>
+    private readonly HashSet<int> _placed = new HashSet<int>();
+    private Transform _lastParent;
+
     [MenuItem("Tools/GBA/World Palette")]
     public static void Open()
     {
@@ -302,18 +312,53 @@ public class WorldPaletteWindow : EditorWindow
         }
 
         PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
-        Transform parent = Selection.activeTransform;
-        // Same rule the old Place windows used: an explicit selection wins, then the open prefab's
-        // root, then the scene root.
-        if (parent == null && stage != null) parent = stage.prefabContentsRoot.transform;
+        Transform parent = ResolveParent(stage);
 
         GameObject created = PlacementBuilders.Build(_armed, point, parent);
         if (created == null) return;
+
+        _placed.Add(created.GetInstanceID());
+        _lastParent = parent;
 
         Selection.activeGameObject = created;
         EditorSceneManager.MarkSceneDirty(stage != null ? stage.scene : EditorSceneManager.GetActiveScene());
         Debug.Log($"World Palette: placed '{created.name}' at {point}. Ctrl+S to save " +
                   (stage != null ? "the prefab." : "the scene."));
+    }
+
+    /// <summary>
+    /// Where a placement is parented.
+    ///
+    /// The rule the old Place windows used still holds — an explicit selection wins, then the open
+    /// prefab's root, then the scene root — with one exception this window needs and they did not:
+    /// a placement of ours is never allowed to become a parent. Placing selects what it made, so
+    /// without that exception each stamp would nest inside the last, and a Shift-held run would
+    /// build a chain instead of a row. When the selection is ours, the parent that one went into
+    /// is used again, which is what "keep stamping into the same group" should mean.
+    /// </summary>
+    private Transform ResolveParent(PrefabStage stage)
+    {
+        Transform selected = Selection.activeTransform;
+
+        if (selected != null && IsOurs(selected))
+            return _lastParent != null ? _lastParent
+                 : (stage != null ? stage.prefabContentsRoot.transform : null);
+
+        if (selected != null) return selected;
+
+        return stage != null ? stage.prefabContentsRoot.transform : null;
+    }
+
+    /// <summary>
+    /// True if this transform is something this window placed, or sits inside one — selecting a
+    /// child of a placement is just as bad a parent as the placement itself.
+    /// </summary>
+    private bool IsOurs(Transform t)
+    {
+        for (Transform c = t; c != null; c = c.parent)
+            if (_placed.Contains(c.gameObject.GetInstanceID())) return true;
+
+        return false;
     }
 
     /// <summary>

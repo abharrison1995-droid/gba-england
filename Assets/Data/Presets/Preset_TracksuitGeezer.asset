@@ -38,3 +38,9 @@ MonoBehaviour:
   Vehicle: {fileID: 0}
   SpawnPointId: 
   QuestKey: 
+  ArtSubject: underhoused
+  NpcHeight: 0
+  Roams: 0
+  RoamRadius: 6
+  Speaker: {fileID: 0}
+  AmbientLine: 
