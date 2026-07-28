@@ -105,6 +105,7 @@ public static class ArtImportTool
         var problems = new List<string>();
         var questions = new List<string>();
         ShapesBySubject.Clear();
+        RejectedSheets.Clear();
 
         // Controllers are built after every clip exists, so a subject's states can all be wired
         // in one pass rather than rebuilt per action.
@@ -122,8 +123,20 @@ public static class ArtImportTool
 
         AssetDatabase.Refresh();
 
+        // Shapes are compared before any controller is built, so a sheet that fails can be kept
+        // out of the animator rather than reported and wired up regardless.
+        CompareSubjectShapes(problems);
+
         foreach (var kv in clipsBySubject)
         {
+            foreach (string action in kv.Value.Keys.Where(a => IsRejected(kv.Key, a)).ToList())
+            {
+                kv.Value.Remove(action);
+                report.Add($"    {kv.Key} '{action}' left out of the controller — it failed a check");
+            }
+
+            if (kv.Value.Count == 0) continue;
+
             try
             {
                 BuildController(kv.Key, kv.Value, report);
@@ -134,7 +147,6 @@ public static class ArtImportTool
             }
         }
 
-        CompareSubjectShapes(problems);
         AutoAssign(report, problems);
 
         AssetDatabase.SaveAssets();
@@ -622,6 +634,21 @@ public static class ArtImportTool
         new Dictionary<string, List<SubjectShape>>();
 
     /// <summary>
+    /// "subject/action" for every sheet that failed a check. These are still imported as art —
+    /// deleting a user's files is not this tool's business — but they are kept out of the
+    /// AnimatorController, so a rejected sheet cannot end up playing in the game. Reporting a
+    /// problem and then wiring the asset up anyway is how a rejected attack animation reached
+    /// play mode.
+    /// </summary>
+    private static readonly HashSet<string> RejectedSheets = new HashSet<string>();
+
+    private static void Reject(string subject, string action) =>
+        RejectedSheets.Add($"{subject}/{action}");
+
+    private static bool IsRejected(string subject, string action) =>
+        RejectedSheets.Contains($"{subject}/{action}");
+
+    /// <summary>
     /// A subject's sheets must agree with each other, not just internally. The first generated
     /// walk cycle sat on a correct baseline but was drawn near edge-on — 47 px wide against the
     /// idle sheet's 122 — so the character would have turned into a sliver the moment they moved.
@@ -652,17 +679,23 @@ public static class ArtImportTool
                 // they stand except drawing them edge-on.
                 float narrowness = reference.Width / s.Width;
                 if (narrowness > 1.4f)
+                {
+                    Reject(kv.Key, s.Action);
                     problems.Add($"{kv.Key}: '{s.Sheet}' is {narrowness:0.#}× narrower than " +
                                  $"'{reference.Sheet}' — the character is drawn at a different angle, " +
                                  "not the same person from the same view. Regenerate it using " +
                                  $"'{reference.Sheet}' as the visual reference.");
+                }
 
                 if (ShapeChanges(s.Action)) continue;
 
                 float ratio = Mathf.Max(reference.Height, s.Height) / Mathf.Min(reference.Height, s.Height);
                 if (ratio > 1.15f)
+                {
+                    Reject(kv.Key, s.Action);
                     problems.Add($"{kv.Key}: '{s.Sheet}' differs from '{reference.Sheet}' in height by " +
                                  $"{ratio:0.##}× — the character will change size between animations.");
+                }
             }
         }
     }
@@ -738,9 +771,12 @@ public static class ArtImportTool
             report.Add($"    feet move {spread} px between frames ({atFinalSize:0.#} px at final " +
                        "size) — expected for this action, not flagged");
         else if (atFinalSize >= 2f)
+        {
+            Reject(ResolveSubject(m, m.name ?? ""), (m.action ?? "").ToLowerInvariant());
             problems.Add($"{m.name}: the subject's feet move {spread} px between frames " +
                          $"({atFinalSize:0.#} px at final size) — it will bob. Frames should share " +
                          "a baseline; regenerate rather than importing.");
+        }
         else if (spread > 0)
             report.Add($"    baseline drift {spread} px across frames (negligible at final size)");
     }
