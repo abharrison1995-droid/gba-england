@@ -24,3 +24,7 @@ MonoBehaviour:
   SouthChunk: {fileID: 11400000, guid: 0f592a0de10c4274a9f52bd86c74eaa6, type: 2}
   EastChunk: {fileID: 11400000, guid: 93880a9f5caac2f4889b9e26122ac8f4, type: 2}
   WestChunk: {fileID: 11400000, guid: f7f9afa3895876b4dae6178882646c61, type: 2}
+  VehicleSpawns:
+  - Vehicle: {fileID: 11400000, guid: bf8535607fc732c439e3307b3c8dae0b, type: 2}
+    Position: {x: 0.31101713, y: 0, z: 22.072083}
+    YRotation: 0
