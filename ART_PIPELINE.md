@@ -134,7 +134,8 @@ horizontally centred. The importer reduces the whole sheet so each cell lands at
 recalculates the grid itself — you always work at source size.
 
 Name actions from this list so the importer can build the animator: `idle`, `walk`, `attack`,
-`hurt`, `death`, `cast`. Anything else is fine but will be imported as a clip with no state wiring.
+`hurt`, `death`, `cast`, `cycle`. Anything else is fine but will be imported as a clip with no
+state wiring. The full mapping to animator states is in §4.
 
 ## 4. The sidecar JSON
 
@@ -163,14 +164,17 @@ Sheet:
   "worldHeight": 1.35,
   "frameWidth": 512,
   "frameHeight": 512,
-  "columns": 8,
+  "columns": 4,
   "rows": 1,
-  "frameCount": 8,
-  "fps": 10,
+  "frameCount": 4,
+  "fps": 8,
   "loop": true,
-  "description": "Eight-frame walk cycle, contact-down-pass-up ×2."
+  "description": "Four-frame walk cycle: contact, down, pass, up."
 }
 ```
+
+Those numbers are the real ones for a walk — the frame table in §7.3 is authoritative, and the
+importer warns when a sheet deviates from it. Copy from the table, not from this example.
 
 `category` is one of `characters`, `vehicles`, `props`, `fx`, `ui`. It decides the destination
 folder. `frameCount` may be fewer than `columns × rows` if the last row is partly empty — say so.
@@ -211,13 +215,27 @@ same filename** — do not create `_v2`.
 
 `Tools → GBA → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
 
-1. Moves the PNG to `Assets/Art/Generated/<category>/`.
-2. Applies the import settings: Sprite (2D and UI), 100 PPU, bilinear, alpha is transparency,
-   max size 2048, Single or Multiple as the JSON says.
+1. Keys out the backdrop, trims (singles only), and area-averages the image down to 48 px per
+   world unit, writing the result to `Assets/Art/Generated/<category>/`.
+2. Applies the import settings: Sprite (2D and UI), **48 PPU**, **Point** filtering, alpha is
+   transparency, no mipmaps, uncompressed, max size 2048, NPOT scale None, Single or Multiple as
+   the JSON says.
 3. Slices sheets on the declared grid.
 4. Generates an `AnimationClip` per sheet at the declared fps and loop flag.
 5. Builds or updates an `AnimatorController` for a subject with recognised action names.
 6. Reports what it wired and what it could not.
+7. Moves the PNG and JSON of every asset that imported cleanly to `art_incoming/processed/`.
+   Anything that reported a problem **stays where it is**, so a re-run shows only what is still
+   wrong rather than re-reporting the whole folder.
+
+PPU matches the reduction density, which is what lets a sprite sit at its natural size in the
+scene with a scale factor of 1. Point filtering is the art direction, not an oversight — the
+pixels are the art by that stage, and bilinear would smear the thing the reduction just made.
+
+Two subfolders of `art_incoming/` are ignored by the importer, which only reads the top level:
+
+- `processed/` — written automatically by step 7 above.
+- `rejected/` — moved by hand, for sheets that failed a check and are waiting to be redrawn.
 
 Nothing is imported automatically. `art_incoming/` is staging — files sit there until the tool runs.
 Re-running is safe and idempotent: an asset of the same name overwrites in place, keeping its GUID
@@ -231,50 +249,42 @@ The importer prints a summary to the Console listing what it wired, anything it 
 
 ## 7. Current requests
 
-### 7.1 First run — this one asset, on its own
+### 7.1 Already delivered — use these as reference, do not regenerate
 
-Nothing in this pipeline has been through a full round trip yet. Produce **only** this, then stop,
-so the handoff can be checked before a batch is committed to.
+The round trip works. These are in the game and are the visual reference every new asset is
+matched against:
 
-| File | Type | Notes |
-|---|---|---|
-| `spr_vehicle_ebike.png` | single | A **public hire e-bike**, parked and unattended, side-on three-quarter view facing camera-right. The dockless rental sort you find dumped on British pavements: chunky step-through frame, fat tyres, basket on the front, battery pack on the down tube, a rear rack, small solar panel or branding plate. Scuffed and slightly abused. Photoreal, ~512 px tall. |
+| File | Notes |
+|---|---|
+| `spr_vehicle_ebike.png` | The hire e-bike, wired into `EBike.prefab`. |
+| `sheet_char_player_idle.png` | 4 frames. **The canonical player.** |
+| `sheet_char_player_walk.png` | 4 frames. |
+| `sheet_char_player_hurt.png` | 3 frames. |
 
-Two earlier attempts at this asset failed. The first came back as clean vector cartoon with heavy
-black outlines — wrong style, see §1. The second had a purple gradient painted into the background
-— wrong background, see §2. Photographic subject, flat magenta backdrop.
+**Open `sheet_char_player_idle.png` before drawing any player sheet** and work from the image.
+It defines the face, build, clothes and — the part that keeps failing — the body width. See §3.
 
-Do not brand it with a real hire company's livery. Invent one, or leave it unbranded.
+### 7.2 The rest of the player
 
-### 7.2 The rest of the mount system
-
-The mount system works but has no art at all — the code-generated placeholder was deleted with the
-rename. `spr_vehicle_ebike` above plus these two are what fill it in.
-
-| File | Type | Notes |
-|---|---|---|
 The player is **sheets, not singles** — they animate. One character serves all four classes; the
-classes differ in stats only, so there are no per-class variants.
+classes differ in stats only, so there are no per-class variants. Frame counts, columns, fps and
+loop flags all come from the table in §7.3.
 
-`sheet_char_player_<action>.png`, using the frame table in §7.3:
+Still needed, as `sheet_char_player_<action>.png`:
 
 | Action | Notes |
 |---|---|
-| `idle` | Standing, small weight shift or breath. |
-| `walk` | Walk cycle. |
 | `attack` | Melee swing. |
 | `cast` | Casting a spell — this is a magic game, played straight. |
-| `hurt` | Taking a hit. |
 | `death` | Falling. |
-| `cycle` | **Sat on the e-bike, pedalling.** The whole cell is rider *and* bike as one image, so it must match `spr_vehicle_ebike.png`. Held for as long as the player is riding, so it loops. |
+| `cycle` | **Sat on the e-bike, pedalling.** The whole cell is rider *and* bike drawn as one image, matching `spr_vehicle_ebike.png`. Loops for as long as the player is riding. |
 
-The player: a young modern Brit in street clothes — hoodie, tracksuit bottoms, trainers. Ordinary,
-slightly scruffy. Same person in every sheet: same face, build, clothes and colours.
+`cycle` is the whole mount system's art. There is **no** separate `spr_char_player_ebike` single —
+an earlier version of this document asked for one and nothing consumes it. The rider is animated by
+the `cycle` sheet and the parked bike by `spr_vehicle_ebike`; those two files are all that is
+needed.
 
-**Generate `idle` first and use it as visual reference for every other sheet.** Separately-prompted
-photoreal humans will not be the same person unless told to be.
-
-These three are **auto-assigned on import**, so use exactly those filenames.
+Player sheets are **auto-assigned on import**, so use exactly those filenames.
 
 ### 7.3 Characters — sprite sheets
 

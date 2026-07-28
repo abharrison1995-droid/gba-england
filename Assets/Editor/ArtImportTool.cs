@@ -67,7 +67,7 @@ public static class ArtImportTool
         public string type;          // "single" | "sheet"
         public string category;      // characters | vehicles | props | fx | ui
         public string subject;       // optional; defaults to name minus the action suffix
-        public string action;        // idle | walk | attack | hurt | death | cast
+        public string action;        // idle | walk | attack | hurt | death | cast | cycle
         public string rendererPath;  // optional animation binding path; empty = same GameObject
         public float worldHeight;
         public int frameWidth;
@@ -163,7 +163,9 @@ public static class ArtImportTool
     {
         AssignPlayerSprite("spr_char_player", false, report, problems);
         AssignPlayerRestingFrame(report, problems);
-        AssignPlayerSprite("spr_char_player_ebike", true, report, problems);
+        // No spr_char_player_ebike assignment. WorldActorVisual.MountedSprite is superseded by the
+        // `cycle` sheet — a single sprite there is overwritten by the Animator every frame, and the
+        // pipeline no longer asks for that filename (ART_PIPELINE.md §7.2).
         AssignVehicleSprite("spr_vehicle_ebike", report, problems);
         AssignPlayerController("player", report, problems);
     }
