@@ -824,35 +824,58 @@ public static class ArtImportTool
         importer.maxTextureSize      = MaxTextureSize;
         importer.textureCompression  = TextureImporterCompression.Uncompressed;
         importer.spriteImportMode    = isSheet ? SpriteImportMode.Multiple : SpriteImportMode.Single;
+        // Sheet dimensions are whatever the grid needs and are rarely powers of two. Left at the
+        // default the texture is rescaled to the nearest power of two and every slice rectangle
+        // lands in the wrong place.
+        importer.npotScale           = TextureImporterNPOTScale.None;
 
         if (isSheet)
         {
             SpriteMetaData[] slices = Slice(assetPath, m, problems);
-            if (slices == null) return false;
-            importer.spritesheet = slices;
+            // Deliberately not an early return. Slicing is the part most likely to go wrong, and
+            // bailing here once left the asset imported with Unity's defaults — Default type,
+            // PPU 100, bilinear — which is far worse than an unsliced sprite.
+            if (slices != null) importer.spritesheet = slices;
         }
 
         importer.SaveAndReimport();
+
+        if (isSheet) VerifySliced(assetPath, m, problems);
         return true;
+    }
+
+    /// <summary>
+    /// Confirms the slices actually became sub-sprites. TextureImporter.spritesheet is deprecated
+    /// with a message claiming support has been removed; if it ever becomes a genuine no-op this
+    /// is what will say so, rather than the sheet quietly importing as one undivided image.
+    /// </summary>
+    private static void VerifySliced(string assetPath, ArtManifest m, List<string> problems)
+    {
+        int found = AssetDatabase.LoadAllAssetRepresentationsAtPath(assetPath).OfType<Sprite>().Count();
+        int expected = m.frameCount > 0 ? m.frameCount : Mathf.Max(1, m.columns) * Mathf.Max(1, m.rows);
+        if (found >= expected) return;
+
+        problems.Add($"{m.name}: expected {expected} sub-sprites after slicing but found {found}. " +
+                     "If this is zero, TextureImporter.spritesheet has stopped working in this Unity " +
+                     "version and the slicing needs moving to ISpriteEditorDataProvider.");
     }
 
     private static SpriteMetaData[] Slice(string assetPath, ArtManifest m, List<string> problems)
     {
-        var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
-        if (texture == null)
-        {
-            problems.Add($"{assetPath}: could not load the texture to slice it.");
-            return null;
-        }
-
         if (m.frameWidth <= 0 || m.frameHeight <= 0)
         {
             problems.Add($"{assetPath}: sheet needs frameWidth and frameHeight.");
             return null;
         }
 
-        int columns = m.columns > 0 ? m.columns : Mathf.Max(1, texture.width / m.frameWidth);
-        int rows    = m.rows    > 0 ? m.rows    : Mathf.Max(1, texture.height / m.frameHeight);
+        // Measured from the manifest, never from the imported texture. Reduce() has already
+        // rewritten these to the post-reduction cell size, and asking Unity for the texture's
+        // dimensions here returns whatever the *previous* import settings produced — for a
+        // not-yet-a-sprite texture that is the power-of-two rescale, which is one pixel short and
+        // throws the whole grid out.
+        int columns = Mathf.Max(1, m.columns);
+        int rows    = Mathf.Max(1, m.rows);
+        int sheetHeight = rows * m.frameHeight;
         int total   = m.frameCount > 0 ? Mathf.Min(m.frameCount, columns * rows) : columns * rows;
 
         var slices = new List<SpriteMetaData>(total);
@@ -863,7 +886,7 @@ public static class ArtImportTool
 
             // Frames read left-to-right then top-to-bottom, but Unity's texture origin is
             // bottom-left, so row 0 sits at the top of the image.
-            float y = texture.height - (row + 1) * m.frameHeight;
+            float y = sheetHeight - (row + 1) * m.frameHeight;
             if (y < 0f)
             {
                 problems.Add($"{assetPath}: frame {i} falls outside the image — check rows/frameHeight.");
