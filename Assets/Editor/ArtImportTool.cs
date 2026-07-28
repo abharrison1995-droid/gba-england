@@ -23,9 +23,13 @@ using UnityEditor.Animations;
 public static class ArtImportTool
 {
     private const string StagingFolder  = "art_incoming";
+    private const string ProcessedFolder = "processed";
     private const string ArtRoot        = "Assets/Art/Generated";
     private const string AnimRoot       = "Assets/Animations/Generated";
     private const int    MaxTextureSize = 2048;
+
+    /// <summary>The key colour the contract asks for. Anything else flat is refused, not keyed.</summary>
+    private static readonly Color32 KeyColour = new Color32(255, 0, 255, 255);
 
     /// <summary>
     /// The whole art direction in one number. Sources arrive photoreal and high-resolution and are
@@ -59,6 +63,40 @@ public static class ArtImportTool
         { "death",  "Death"       },
         { "cast",   "CastSpell"   },   // nothing in the project defines this yet — see CLAUDE.md §8
     };
+
+    /// <summary>The frame/fps/loop table from ART_PIPELINE.md §7.3, so the two cannot drift apart.</summary>
+    private class ActionSpec
+    {
+        public int Frames;
+        public float Fps;
+        public bool Loop;
+    }
+
+    private static readonly Dictionary<string, ActionSpec> ActionContract = new Dictionary<string, ActionSpec>
+    {
+        { "idle",   new ActionSpec { Frames = 4, Fps = 6f,  Loop = true  } },
+        { "walk",   new ActionSpec { Frames = 4, Fps = 8f,  Loop = true  } },
+        { "attack", new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
+        { "cast",   new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
+        { "hurt",   new ActionSpec { Frames = 3, Fps = 12f, Loop = false } },
+        { "death",  new ActionSpec { Frames = 6, Fps = 10f, Loop = false } },
+        { "cycle",  new ActionSpec { Frames = 6, Fps = 12f, Loop = true  } },
+    };
+
+    /// <summary>
+    /// One staged pair, tracked across the whole run so its files can be moved out of staging at
+    /// the end. Cleanliness is per asset, not per run: one bad sheet must not pin seven good ones
+    /// in the folder for the next run to re-process and re-report.
+    /// </summary>
+    private class PendingAsset
+    {
+        public string ManifestPath;
+        public string PngPath;
+        public string BaseName;
+        public string Subject = "";
+        public string Action = "";
+        public bool Clean;
+    }
 
     [Serializable]
     private class ArtManifest
@@ -97,12 +135,14 @@ public static class ArtImportTool
         {
             EditorUtility.DisplayDialog("Import Generated Art",
                 "Nothing waiting in art_incoming/.\n\nEach asset needs a PNG and a .json of the " +
-                "same name — see ART_PIPELINE.md.", "OK");
+                "same name — see ART_PIPELINE.md. Anything already imported cleanly has been " +
+                $"moved to {StagingFolder}/{ProcessedFolder}/.", "OK");
             return;
         }
 
         var report = new List<string>();
         var problems = new List<string>();
+        var warnings = new List<string>();
         var questions = new List<string>();
         ShapesBySubject.Clear();
         RejectedSheets.Clear();
@@ -111,6 +151,8 @@ public static class ArtImportTool
         // in one pass rather than rebuilt per action.
         var clipsBySubject = new Dictionary<string, Dictionary<string, AnimationClip>>();
 
+        var pending = new List<PendingAsset>();
+
         // Deliberately not wrapped in StartAssetEditing/StopAssetEditing. That batches — and
         // therefore defers — the ImportAsset calls, so AssetImporter.GetAtPath returns null for a
         // file that was only just written, the import settings never apply, and the asset lands
@@ -118,8 +160,18 @@ public static class ArtImportTool
         // per run makes the batching worthless anyway.
         foreach (string manifestPath in manifests)
         {
-            ImportOne(manifestPath, staging, report, problems, questions, clipsBySubject);
+            int problemsBefore = problems.Count;
+            PendingAsset asset = ImportOne(manifestPath, staging, report, problems, warnings,
+                questions, clipsBySubject);
+            if (asset == null) continue;
+
+            asset.Clean = problems.Count == problemsBefore;
+            pending.Add(asset);
         }
+
+        // The loop above only ever looks at JSONs, so a PNG delivered without its sidecar is
+        // otherwise ignored in complete silence.
+        ReportOrphanPngs(staging, manifests, problems);
 
         AssetDatabase.Refresh();
 
@@ -150,7 +202,87 @@ public static class ArtImportTool
         AutoAssign(report, problems);
 
         AssetDatabase.SaveAssets();
-        Summarise(report, problems, questions);
+
+        // Last, because CompareSubjectShapes above is the final thing that can fail an asset —
+        // moving inside ImportOne would archive a sheet that the cross-sheet check then rejects.
+        ArchiveProcessed(staging, pending, report, problems);
+
+        Summarise(report, problems, warnings, questions);
+    }
+
+    /// <summary>
+    /// Moves the PNG and JSON of everything that imported without complaint into
+    /// `art_incoming/processed/`. Anything that reported a problem stays put, so the folder
+    /// converges on "only what is still wrong" instead of growing forever and burying each new
+    /// batch's report lines under every previous batch's.
+    /// </summary>
+    private static void ArchiveProcessed(string staging, List<PendingAsset> pending,
+        List<string> report, List<string> problems)
+    {
+        List<PendingAsset> movable = pending
+            .Where(p => p.Clean && !IsRejected(p.Subject, p.Action))
+            .ToList();
+        if (movable.Count == 0) return;
+
+        string processed = Path.Combine(staging, ProcessedFolder);
+        try
+        {
+            Directory.CreateDirectory(processed);
+        }
+        catch (Exception e)
+        {
+            problems.Add($"could not create {StagingFolder}/{ProcessedFolder}/ — {e.Message}. " +
+                         "Imports succeeded; the staged files were left where they are.");
+            return;
+        }
+
+        int moved = 0;
+        foreach (PendingAsset p in movable)
+        {
+            try
+            {
+                MoveOverwrite(p.PngPath, Path.Combine(processed, Path.GetFileName(p.PngPath)));
+                MoveOverwrite(p.ManifestPath, Path.Combine(processed, Path.GetFileName(p.ManifestPath)));
+                moved++;
+            }
+            catch (Exception e)
+            {
+                problems.Add($"{p.BaseName}: imported fine, but the staged pair could not be moved " +
+                             $"to {ProcessedFolder}/ — {e.Message}");
+            }
+        }
+
+        if (moved > 0)
+            report.Add($"moved {moved} clean pair(s) to {StagingFolder}/{ProcessedFolder}/");
+
+        int left = pending.Count - moved;
+        if (left > 0)
+            report.Add($"{left} pair(s) left in {StagingFolder}/ — they still have problems to fix");
+    }
+
+    private static void MoveOverwrite(string from, string to)
+    {
+        // File.Move refuses an existing destination on .NET Framework, and re-importing a
+        // regenerated asset of the same name is the normal case rather than the exception.
+        if (File.Exists(to)) File.Delete(to);
+        File.Move(from, to);
+    }
+
+    /// <summary>Reports PNGs in staging that no manifest claims, rather than skipping them silently.</summary>
+    private static void ReportOrphanPngs(string staging, string[] manifests, List<string> problems)
+    {
+        var claimed = new HashSet<string>(
+            manifests.Select(Path.GetFileNameWithoutExtension),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (string png in Directory.GetFiles(staging, "*.png", SearchOption.TopDirectoryOnly))
+        {
+            string baseName = Path.GetFileNameWithoutExtension(png);
+            if (claimed.Contains(baseName)) continue;
+
+            problems.Add($"{baseName}.png has no {baseName}.json beside it, so it was skipped " +
+                         "entirely. Every asset needs both — see ART_PIPELINE.md §4.");
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════
@@ -161,7 +293,7 @@ public static class ArtImportTool
 
     private static void AutoAssign(List<string> report, List<string> problems)
     {
-        AssignPlayerSprite("spr_char_player", false, report, problems);
+        AssignPlayerSprite("spr_char_player", report, problems);
         AssignPlayerRestingFrame(report, problems);
         // No spr_char_player_ebike assignment. WorldActorVisual.MountedSprite is superseded by the
         // `cycle` sheet — a single sprite there is overwritten by the Animator every frame, and the
@@ -182,8 +314,8 @@ public static class ArtImportTool
         return null;
     }
 
-    /// <summary>Player sprite, or the riding variant, on the WorldActorVisual in the open scene.</summary>
-    private static void AssignPlayerSprite(string baseName, bool mounted, List<string> report, List<string> problems)
+    /// <summary>Player sprite on the WorldActorVisual in the open scene.</summary>
+    private static void AssignPlayerSprite(string baseName, List<string> report, List<string> problems)
     {
         Sprite sprite = FindImported(baseName);
         if (sprite == null) return;
@@ -204,13 +336,11 @@ public static class ArtImportTool
         }
 
         Undo.RecordObject(visual, "Assign generated sprite");
-        if (mounted) visual.MountedSprite = sprite;
-        else visual.ActorSprite = sprite;
+        visual.ActorSprite = sprite;
 
         EditorUtility.SetDirty(visual);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(player.gameObject.scene);
-        report.Add($"    assigned to player WorldActorVisual.{(mounted ? "MountedSprite" : "ActorSprite")} " +
-                   "— save the scene (Ctrl+S)");
+        report.Add("    assigned to player WorldActorVisual.ActorSprite — save the scene (Ctrl+S)");
     }
 
     /// <summary>
@@ -334,26 +464,28 @@ public static class ArtImportTool
     //  ONE ASSET
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    private static void ImportOne(string manifestPath, string staging, List<string> report,
-        List<string> problems, List<string> questions,
+    private static PendingAsset ImportOne(string manifestPath, string staging, List<string> report,
+        List<string> problems, List<string> warnings, List<string> questions,
         Dictionary<string, Dictionary<string, AnimationClip>> clipsBySubject)
     {
         string baseName = Path.GetFileNameWithoutExtension(manifestPath);
 
+        string rawJson;
         ArtManifest m;
         try
         {
-            m = JsonUtility.FromJson<ArtManifest>(File.ReadAllText(manifestPath));
+            rawJson = File.ReadAllText(manifestPath);
+            m = JsonUtility.FromJson<ArtManifest>(rawJson);
         }
         catch (Exception e)
         {
             problems.Add($"{baseName}.json is not valid JSON — {e.Message}");
-            return;
+            return null;
         }
         if (m == null)
         {
             problems.Add($"{baseName}.json parsed as empty.");
-            return;
+            return null;
         }
 
         if (!string.IsNullOrEmpty(m.question))
@@ -363,8 +495,19 @@ public static class ArtImportTool
         if (!File.Exists(png))
         {
             problems.Add($"{baseName}.json has no matching {baseName}.png.");
-            return;
+            return null;
         }
+
+        // From here the pair is real, so it is tracked whatever happens next — the Clean flag the
+        // caller sets is what decides whether it gets archived.
+        var pending = new PendingAsset
+        {
+            ManifestPath = manifestPath,
+            PngPath = png,
+            BaseName = baseName,
+            Subject = ResolveSubject(m, baseName),
+            Action = (m.action ?? "").ToLowerInvariant()
+        };
 
         string category = string.IsNullOrEmpty(m.category) ? "props" : m.category.ToLowerInvariant();
         string destFolder = $"{ArtRoot}/{category}";
@@ -372,36 +515,39 @@ public static class ArtImportTool
 
         bool isSheet = string.Equals(m.type, "sheet", StringComparison.OrdinalIgnoreCase);
 
+        ValidateManifest(m, baseName, isSheet, problems, warnings);
+        if (isSheet) ApplyActionContract(m, rawJson, baseName, warnings);
+
         string destPath = $"{destFolder}/{baseName}.png";
         string destAbsolute = Path.Combine(Directory.GetParent(Application.dataPath).FullName, destPath);
 
-        if (!Reduce(png, destAbsolute, m, isSheet, problems, report)) return;
+        if (!Reduce(png, destAbsolute, m, isSheet, baseName, problems, report)) return pending;
 
         AssetDatabase.ImportAsset(destPath, ImportAssetOptions.ForceUpdate);
-        if (!ApplyImportSettings(destPath, m, isSheet, problems)) return;
+        if (!ApplyImportSettings(destPath, m, isSheet, problems)) return pending;
 
         if (!isSheet)
         {
             report.Add($"{baseName} → {destFolder} (single)");
-            return;
+            return pending;
         }
 
         Sprite[] frames = LoadFramesInOrder(destPath, baseName, m);
         if (frames.Length == 0)
         {
             problems.Add($"{baseName}: sliced to zero frames — check frameWidth/frameHeight against the image.");
-            return;
+            return pending;
         }
 
         AnimationClip clip = BuildClip(baseName, m, frames);
         report.Add($"{baseName} → {destFolder} ({frames.Length} frames, {m.fps:0.#} fps) + clip");
 
-        string subject = ResolveSubject(m, baseName);
-        string action = (m.action ?? "").ToLowerInvariant();
+        string subject = pending.Subject;
+        string action = pending.Action;
         if (string.IsNullOrEmpty(action) || !ActionToState.ContainsKey(action))
         {
             report.Add($"    (no recognised action — clip made, not wired into a controller)");
-            return;
+            return pending;
         }
 
         if (!clipsBySubject.TryGetValue(subject, out var byAction))
@@ -410,7 +556,87 @@ public static class ArtImportTool
             clipsBySubject[subject] = byAction;
         }
         byAction[action] = clip;
+        return pending;
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  MANIFEST VALIDATION
+    //  Every one of these was previously silent, so a malformed manifest produced a plausible
+    //  looking import that was wrong in a way only visible in game.
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private static void ValidateManifest(ArtManifest m, string baseName, bool isSheet,
+        List<string> problems, List<string> warnings)
+    {
+        // ART_PIPELINE.md §5 names files spr_<category>_<name> and sheet_<category>_<name>_<action>,
+        // so the JSON's `name` is the *tail* of the filename rather than all of it: "player_idle"
+        // for sheet_char_player_idle.png. Anything that is not a tail is a mismatch worth saying
+        // out loud, because the filename is what every asset, clip and controller is named from.
+        if (!string.IsNullOrEmpty(m.name)
+            && !baseName.EndsWith(m.name, StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"{baseName}: JSON name is '{m.name}', which is not the tail of the " +
+                         "filename. The filename wins — nothing is named from the JSON.");
+        }
+
+        if (!isSheet) return;
+
+        int columns = Mathf.Max(1, m.columns);
+        int rows = Mathf.Max(1, m.rows);
+        if (m.frameCount > columns * rows)
+        {
+            problems.Add($"{baseName}: frameCount is {m.frameCount} but the grid is {columns}×{rows} " +
+                         $"= {m.frameCount - columns * rows} frame(s) short. Frames past the end of " +
+                         "the grid cannot be sliced.");
+        }
+    }
+
+    /// <summary>
+    /// Checks a sheet against the frame/fps/loop table in ART_PIPELINE.md §7.3, and fills in fps
+    /// and loop from it when the manifest omits them. Warns rather than refuses: the numbers are a
+    /// house style, and a deliberate deviation should not cost a regeneration cycle.
+    /// </summary>
+    private static void ApplyActionContract(ArtManifest m, string rawJson, string baseName,
+        List<string> warnings)
+    {
+        string action = (m.action ?? "").ToLowerInvariant();
+        if (!ActionContract.TryGetValue(action, out ActionSpec spec)) return;
+
+        if (m.fps <= 0f)
+        {
+            m.fps = spec.Fps;
+            warnings.Add($"{baseName}: no fps given — defaulted to {spec.Fps:0.#} for '{action}'.");
+        }
+        else if (!Mathf.Approximately(m.fps, spec.Fps))
+        {
+            warnings.Add($"{baseName}: fps is {m.fps:0.#} where '{action}' is specified as " +
+                         $"{spec.Fps:0.#}. Imported as given.");
+        }
+
+        // JsonUtility cannot distinguish an omitted bool from an explicit false, so the raw text is
+        // what says whether the author had an opinion.
+        if (rawJson.IndexOf("\"loop\"", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            m.loop = spec.Loop;
+            warnings.Add($"{baseName}: no loop flag — defaulted to {Lower(spec.Loop)} for '{action}'.");
+        }
+        else if (m.loop != spec.Loop)
+        {
+            warnings.Add($"{baseName}: loop is {Lower(m.loop)} where '{action}' is specified as " +
+                         $"{Lower(spec.Loop)}. Imported as given.");
+        }
+
+        int declared = m.frameCount > 0
+            ? m.frameCount
+            : Mathf.Max(1, m.columns) * Mathf.Max(1, m.rows);
+        if (declared != spec.Frames)
+        {
+            warnings.Add($"{baseName}: {declared} frames where '{action}' is specified as " +
+                         $"{spec.Frames}. Imported as given.");
+        }
+    }
+
+    private static string Lower(bool b) => b ? "true" : "false";
 
     private static string ResolveSubject(ArtManifest m, string baseName)
     {
@@ -432,7 +658,7 @@ public static class ArtImportTool
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
     private static bool Reduce(string sourcePath, string destAbsolute, ArtManifest m, bool isSheet,
-        List<string> problems, List<string> report)
+        string baseName, List<string> problems, List<string> report)
     {
         var src = new Texture2D(2, 2, TextureFormat.RGBA32, false);
         if (!src.LoadImage(File.ReadAllBytes(sourcePath)))
@@ -441,12 +667,20 @@ public static class ArtImportTool
             return false;
         }
 
+        // Must happen before the reduction below, which rewrites frameWidth/frameHeight/columns/rows
+        // on the manifest to the post-reduction cell size — after that the declared grid always
+        // agrees with the image and the check is worthless.
+        if (isSheet) ValidateSheetDimensions(src, m, baseName, problems);
+
         float worldHeight = m.worldHeight > 0f ? m.worldHeight : 1.35f;
 
         // Generators are poor at producing a real alpha channel and good at putting a subject on a
         // plain backdrop, so the contract asks for flat magenta and the backdrop is removed here.
-        string keyNote = KeyOutBackground(src);
-        if (keyNote != null) report.Add("    " + keyNote);
+        if (!KeyOutBackground(src, baseName, report, problems))
+        {
+            UnityEngine.Object.DestroyImmediate(src);
+            return false;
+        }
 
         // Trimming is not left to the generator either — sizing is derived from full image height,
         // so untrimmed art silently renders small. Sheets are never trimmed: the grid must stay
@@ -457,7 +691,7 @@ public static class ArtImportTool
             if (trimNote != null) report.Add("    " + trimNote);
         }
 
-        if (isSheet) CheckFrameAlignment(src, m, report, problems);
+        if (isSheet) CheckFrameAlignment(src, m, baseName, report, problems);
 
         if (!HasUsableAlpha(src))
         {
@@ -531,16 +765,17 @@ public static class ArtImportTool
     /// enclosed by the subject — between spokes, inside a basket. The cost is that anything
     /// genuinely this colour in the subject disappears, which is why the contract forbids it.
     ///
-    /// Returns a note for the report, or null if the image already had alpha.
+    /// Returns false only when the image must be refused outright.
     /// </summary>
-    private static string KeyOutBackground(Texture2D tex)
+    private static bool KeyOutBackground(Texture2D tex, string baseName, List<string> report,
+        List<string> problems)
     {
         Color32[] px = tex.GetPixels32();
         int w = tex.width, h = tex.height;
 
         // Already has real transparency at the edges — nothing to key.
         if (px[0].a < 8 && px[w - 1].a < 8 && px[(h - 1) * w].a < 8 && px[h * w - 1].a < 8)
-            return null;
+            return true;
 
         // Average the border, then check the border actually is one flat colour. A gradient
         // backdrop is not safely keyable and is better reported than half-removed.
@@ -552,7 +787,25 @@ public static class ArtImportTool
         float worst = 0f;
         foreach (int i in BorderIndices(w, h)) worst = Mathf.Max(worst, Distance(px[i], seed));
         if (worst > 90f)
-            return $"background is not flat (border varies by {worst:0}) — not keyed, expect a backdrop";
+        {
+            report.Add($"    background is not flat (border varies by {worst:0}) — not keyed, expect a backdrop");
+            return true;
+        }
+
+        // Keying is global, so whatever colour is found on the border is removed from the *whole*
+        // image. That is deliberate — it clears backdrop trapped between a bike's spokes — but it
+        // makes keying a colour the contract did not ask for actively destructive: a prop delivered
+        // on flat white would lose every white pixel inside the subject too. Refuse instead.
+        float fromKey = Distance(seed, KeyColour);
+        if (fromKey > 90f)
+        {
+            problems.Add($"{baseName}: the backdrop is flat but is not the magenta the contract asks " +
+                         $"for (it is RGB {seed.r},{seed.g},{seed.b}). Keying it would delete every " +
+                         "pixel of that colour inside the subject as well, so nothing was keyed and " +
+                         "the asset was not imported. Regenerate on flat #FF00FF, or deliver real " +
+                         "alpha — see ART_PIPELINE.md §2.");
+            return false;
+        }
 
         // Below Inner the pixel is backdrop; above Outer it is untouched subject; between the two
         // it is a blend and gets unmixed. Values measured against a real 512px render.
@@ -589,7 +842,41 @@ public static class ArtImportTool
 
         tex.SetPixels32(px);
         tex.Apply();
-        return $"keyed out backdrop ({cleared * 100 / px.Length}% cleared, {unmixed} edge pixels unmixed)";
+        report.Add($"    keyed out backdrop ({cleared * 100 / px.Length}% cleared, {unmixed} edge pixels unmixed)");
+        return true;
+    }
+
+    /// <summary>
+    /// Confirms the image is actually the grid the manifest declares. Slicing is measured from the
+    /// manifest rather than the texture (deliberately — see Slice), so a manifest that disagrees
+    /// with its own PNG puts every single frame in the wrong place while importing without error.
+    /// </summary>
+    private static void ValidateSheetDimensions(Texture2D src, ArtManifest m, string baseName,
+        List<string> problems)
+    {
+        if (m.frameWidth <= 0 || m.frameHeight <= 0)
+        {
+            problems.Add($"{baseName}: sheet has no frameWidth/frameHeight, so the grid is unknown.");
+            return;
+        }
+
+        int columns = m.columns > 0 ? m.columns : Mathf.Max(1, src.width / m.frameWidth);
+        int rows    = m.rows    > 0 ? m.rows    : Mathf.Max(1, src.height / m.frameHeight);
+
+        int expectedW = m.frameWidth * columns;
+        int expectedH = m.frameHeight * rows;
+        const int tolerance = 4;   // a few px of encoder slop is not worth a regeneration
+
+        if (Mathf.Abs(src.width - expectedW) <= tolerance
+            && Mathf.Abs(src.height - expectedH) <= tolerance) return;
+
+        problems.Add($"{baseName}: the image is {src.width}×{src.height}, but the manifest declares " +
+                     $"{columns}×{rows} cells of {m.frameWidth}×{m.frameHeight}, which needs " +
+                     $"{expectedW}×{expectedH}. Every slice would land off the grid.");
+
+        // Kept out of the controller as well as reported — a sheet sliced off-grid is worse in game
+        // than a missing animation.
+        Reject(ResolveSubject(m, baseName), (m.action ?? "").ToLowerInvariant());
     }
 
     /// <summary>Recovers S from P = a·S + (1−a)·K for one channel.</summary>
@@ -610,12 +897,6 @@ public static class ArtImportTool
         return Mathf.Sqrt(dr * dr + dg * dg + db * db);
     }
 
-    /// <summary>
-    /// Warns when the subject does not sit on the same baseline in every cell. Sheets are not
-    /// trimmed, so a figure that drifts up the cell between frames bobs and floats once it is
-    /// playing — and at 65 px that is very visible while being almost impossible to spot in the
-    /// source. Cheap to measure here, painful to notice in game.
-    /// </summary>
     /// <summary>How much of its cell the subject fills, for comparing sheets of the same subject.</summary>
     private class SubjectShape
     {
@@ -660,14 +941,19 @@ public static class ArtImportTool
         foreach (var kv in ShapesBySubject)
         {
             List<SubjectShape> shapes = kv.Value;
-            if (shapes.Count < 2) continue;
 
             // Idle is the canonical standing pose and the reference every other sheet is asked to
-            // match; without one, fall back to the widest, which is the least likely to be the
-            // edge-on mistake being hunted for.
-            SubjectShape reference = shapes.Find(s => s.Action == "idle");
+            // match. If this batch has no idle of its own, fall back to one already in the project
+            // — a redelivered walk is normally alone in the folder, and comparing it against
+            // nothing is how the mismatched sheets kept getting through.
+            SubjectShape reference = shapes.Find(s => s.Action == "idle")
+                                     ?? LoadReferenceShape(kv.Key);
+
             if (reference == null)
             {
+                // Nothing authoritative anywhere: the widest of this batch is the least likely to
+                // be the edge-on mistake being hunted for. Needs at least two to mean anything.
+                if (shapes.Count < 2) continue;
                 reference = shapes[0];
                 foreach (SubjectShape s in shapes) if (s.Width > reference.Width) reference = s;
             }
@@ -702,31 +988,39 @@ public static class ArtImportTool
         }
     }
 
-    private static void CheckFrameAlignment(Texture2D tex, ArtManifest m, List<string> report,
-        List<string> problems)
+    /// <summary>Opaque bounds of every cell of a sheet, averaged, plus how far the feet wander.</summary>
+    private struct CellMetrics
     {
-        if (m.frameWidth <= 0 || m.frameHeight <= 0) return;
+        public float WidthFraction;    // mean opaque width as a fraction of cell width
+        public float HeightFraction;   // mean opaque height as a fraction of cell height
+        public int BaselineSpread;     // px between the lowest and highest first opaque row
+        public int Measured;           // cells that had any opaque pixel at all
+    }
 
-        int columns = Mathf.Max(1, m.columns);
-        int rows = Mathf.Max(1, m.rows);
-        int frames = m.frameCount > 0 ? Mathf.Min(m.frameCount, columns * rows) : columns * rows;
-        if (frames < 2) return;
-
+    /// <summary>
+    /// The one implementation of "measure the subject inside each cell". Shared by the per-sheet
+    /// baseline check and by the cross-run reference loader, so the numbers a new sheet is judged
+    /// against are measured exactly the same way as its own.
+    /// </summary>
+    private static CellMetrics MeasureCells(Texture2D tex, int cellW, int cellH, int columns, int frames)
+    {
+        var result = new CellMetrics();
         Color32[] px = tex.GetPixels32();
+
         int lowest = int.MaxValue, highest = int.MinValue;
         long widthSum = 0, heightSum = 0;
-        int measured = 0;
 
         for (int f = 0; f < frames; f++)
         {
-            int cx = (f % columns) * m.frameWidth;
+            int cx = (f % columns) * cellW;
             // Texture origin is bottom-left, so row 0 of the sheet is the top of the image.
-            int cy = tex.height - ((f / columns) + 1) * m.frameHeight;
+            int cy = tex.height - ((f / columns) + 1) * cellH;
+            if (cy < 0 || cx + cellW > tex.width || cy + cellH > tex.height) continue;
 
             int bottom = -1, top = -1, left = int.MaxValue, right = -1;
-            for (int y = 0; y < m.frameHeight; y++)
+            for (int y = 0; y < cellH; y++)
             {
-                for (int x = 0; x < m.frameWidth; x++)
+                for (int x = 0; x < cellW; x++)
                 {
                     if (px[(cy + y) * tex.width + cx + x].a <= 8) continue;
                     if (bottom < 0) bottom = y;
@@ -741,12 +1035,42 @@ public static class ArtImportTool
             highest = Mathf.Max(highest, bottom);
             widthSum += right - left + 1;
             heightSum += top - bottom + 1;
-            measured++;
+            result.Measured++;
         }
 
-        if (measured > 0)
+        if (result.Measured > 0)
         {
-            string subject = ResolveSubject(m, m.name ?? "");
+            result.WidthFraction = (float)widthSum / result.Measured / cellW;
+            result.HeightFraction = (float)heightSum / result.Measured / cellH;
+            result.BaselineSpread = highest - lowest;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Warns when the subject does not sit on the same baseline in every cell. Sheets are not
+    /// trimmed, so a figure that drifts up the cell between frames bobs and floats once it is
+    /// playing — and at 65 px that is very visible while being almost impossible to spot in the
+    /// source. Cheap to measure here, painful to notice in game.
+    /// </summary>
+    private static void CheckFrameAlignment(Texture2D tex, ArtManifest m, string baseName,
+        List<string> report, List<string> problems)
+    {
+        if (m.frameWidth <= 0 || m.frameHeight <= 0) return;
+
+        int columns = Mathf.Max(1, m.columns);
+        int rows = Mathf.Max(1, m.rows);
+        int frames = m.frameCount > 0 ? Mathf.Min(m.frameCount, columns * rows) : columns * rows;
+        if (frames < 2) return;
+
+        CellMetrics metrics = MeasureCells(tex, m.frameWidth, m.frameHeight, columns, frames);
+
+        string subject = ResolveSubject(m, baseName);
+        string action = (m.action ?? "").ToLowerInvariant();
+
+        if (metrics.Measured > 0)
+        {
             if (!ShapesBySubject.TryGetValue(subject, out var list))
             {
                 list = new List<SubjectShape>();
@@ -754,33 +1078,93 @@ public static class ArtImportTool
             }
             list.Add(new SubjectShape
             {
-                Sheet  = m.name,
-                Action = (m.action ?? "").ToLowerInvariant(),
-                Width  = (float)widthSum / measured / m.frameWidth,
-                Height = (float)heightSum / measured / m.frameHeight
+                Sheet  = baseName,
+                Action = action,
+                Width  = metrics.WidthFraction,
+                Height = metrics.HeightFraction
             });
         }
+        else return;
 
-        if (lowest == int.MaxValue) return;
-
-        int spread = highest - lowest;
+        int spread = metrics.BaselineSpread;
         float atFinalSize = spread * (m.worldHeight > 0f ? m.worldHeight : 1.35f)
                             * PixelsPerWorldUnit / m.frameHeight;
 
-        bool shapeChanges = ShapeChanges((m.action ?? "").ToLowerInvariant());
-
-        if (atFinalSize >= 2f && shapeChanges)
+        if (atFinalSize >= 2f && ShapeChanges(action))
             report.Add($"    feet move {spread} px between frames ({atFinalSize:0.#} px at final " +
                        "size) — expected for this action, not flagged");
         else if (atFinalSize >= 2f)
         {
-            Reject(ResolveSubject(m, m.name ?? ""), (m.action ?? "").ToLowerInvariant());
-            problems.Add($"{m.name}: the subject's feet move {spread} px between frames " +
+            Reject(subject, action);
+            problems.Add($"{baseName}: the subject's feet move {spread} px between frames " +
                          $"({atFinalSize:0.#} px at final size) — it will bob. Frames should share " +
                          "a baseline; regenerate rather than importing.");
         }
         else if (spread > 0)
             report.Add($"    baseline drift {spread} px across frames (negligible at final size)");
+    }
+
+    /// <summary>
+    /// Measures an already-imported idle sheet so a later batch can be compared against it.
+    ///
+    /// Without this, ShapesBySubject only ever holds the current run, and the check that exists
+    /// precisely to catch "the walk does not match the idle" is dead whenever the two arrive in
+    /// separate batches — which is the normal case, since a rejected sheet is redelivered alone.
+    /// </summary>
+    private static SubjectShape LoadReferenceShape(string subject)
+    {
+        // Subject → filename is not reversible ("characters" becomes the "char" of
+        // sheet_char_player_idle), so the sheet is found by matching the tail of the name.
+        foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = Path.GetFileNameWithoutExtension(path);
+            if (file != $"{subject}_idle"
+                && !file.EndsWith($"_{subject}_idle", StringComparison.OrdinalIgnoreCase)) continue;
+
+            var sprites = AssetDatabase.LoadAllAssetRepresentationsAtPath(path).OfType<Sprite>().ToList();
+            if (sprites.Count == 0) return null;
+
+            // The slice rects are the cell grid, which is why the manifest is not needed here.
+            int cellW = Mathf.RoundToInt(sprites[0].rect.width);
+            int cellH = Mathf.RoundToInt(sprites[0].rect.height);
+            if (cellW <= 0 || cellH <= 0) return null;
+
+            // Imported textures are not readable, and flipping that setting would reimport the
+            // asset as a side effect — so the PNG is re-read off disk instead.
+            string absolute = Path.Combine(Directory.GetParent(Application.dataPath).FullName, path);
+            if (!File.Exists(absolute)) return null;
+
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                if (!tex.LoadImage(File.ReadAllBytes(absolute))) return null;
+
+                int columns = Mathf.Max(1, tex.width / cellW);
+                int rows = Mathf.Max(1, tex.height / cellH);
+                int frames = Mathf.Min(sprites.Count, columns * rows);
+
+                CellMetrics metrics = MeasureCells(tex, cellW, cellH, columns, frames);
+                if (metrics.Measured == 0) return null;
+
+                return new SubjectShape
+                {
+                    Sheet  = file + " (already imported)",
+                    Action = "idle",
+                    Width  = metrics.WidthFraction,
+                    Height = metrics.HeightFraction
+                };
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(tex);
+            }
+        }
+        return null;
     }
 
     /// <summary>Crops to the opaque bounding box, so untrimmed art cannot silently render small.</summary>
@@ -1180,7 +1564,8 @@ public static class ArtImportTool
         }
     }
 
-    private static void Summarise(List<string> report, List<string> problems, List<string> questions)
+    private static void Summarise(List<string> report, List<string> problems, List<string> warnings,
+        List<string> questions)
     {
         var log = new System.Text.StringBuilder();
         log.AppendLine("Import Generated Art");
@@ -1196,10 +1581,19 @@ public static class ArtImportTool
             foreach (string q in questions) log.AppendLine("  ? " + q);
         }
 
+        // Kept apart from problems on purpose: a warning does not hold the asset in staging, so
+        // lumping the two together would strand a perfectly good sheet over a house-style nit.
+        if (warnings.Count > 0)
+        {
+            log.AppendLine();
+            log.AppendLine("Warnings (imported anyway):");
+            foreach (string w in warnings) log.AppendLine("  ~ " + w);
+        }
+
         if (problems.Count > 0)
         {
             log.AppendLine();
-            log.AppendLine("Problems:");
+            log.AppendLine("Problems (these pairs stay in art_incoming/):");
             foreach (string p in problems) log.AppendLine("  ! " + p);
         }
 
@@ -1207,7 +1601,7 @@ public static class ArtImportTool
         else Debug.Log(log.ToString());
 
         EditorUtility.DisplayDialog("Import Generated Art",
-            $"{report.Count} imported, {problems.Count} problem(s), {questions.Count} question(s).\n\n" +
-            "Full detail in the Console.", "OK");
+            $"{report.Count} imported, {problems.Count} problem(s), {warnings.Count} warning(s), " +
+            $"{questions.Count} question(s).\n\nFull detail in the Console.", "OK");
     }
 }
