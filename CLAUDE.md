@@ -2,13 +2,19 @@
 
 Guidance for Claude Code sessions in this repo. Written from a codebase audit (2026-07-26),
 revised the same day after the consequence mechanics were recovered from a stash and landed,
-and again after the mount/vehicle work on `fix/moped-mount-and-melee-flag` (see §9 and §11).
-Facts here are verified against code, not against design docs. Where code and a design doc
-disagree, this file records **what the code actually does**.
+again after the mount/vehicle work on `fix/moped-mount-and-melee-flag` (see §9 and §11), and
+again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
+`fix/chunk-edges-and-tooling` (§5, §4, §9b, §12). Facts here are verified against code, not
+against design docs. Where code and a design doc disagree, this file records **what the code
+actually does**.
 
-> **§11 is not verified in a running editor.** Everything else in this file was read off code
-> that has at least been compiled. The vehicle work has not been — no Unity session has opened
-> since it was written. Treat §11 as "what the code says it does", not "what the game does".
+> ⚠️ **Nothing on `fix/chunk-edges-and-tooling` has been compiled or run.** The edge fixes, the
+> menu move, the importer hardening and the whole World Palette were written without a Unity
+> session or a C# compiler. Balanced braces and clean reference integrity are all that has been
+> checked. Everything in §5's edge-fix list, §9b and §12's animated-NPC note is "what the code
+> says it does". The same caveat still applies to §11, for the same reason.
+>
+> **`ChunkBoundaryWallTool` has not been run**, so no chunk prefab has boundary walls yet.
 
 > **Stale-brief warning.** An older written brief describes this as a "2D mobile RPG".
 > That is out of date. The game is **isometric by design** (confirmed 2026-07-26) and the
@@ -142,13 +148,39 @@ load-game and the arrest return for free. Watch `CurrentChunkInstance` too if a 
 Current chunks: `Home_Alvaston` (0,0 — the "London" hub, `IsCity: 1`), `North_Wasteland`,
 `South_Slums`, `East_RetailPark`, `West_Canal`, `Manor_Cellars` (tutorial dungeon, reached
 by `InstanceDoor`, not by edge). Outer chunks link back to Home only — their other three
-directions are null and walking into them silently does nothing.
+directions are null.
 
-Two live defects here, both still open:
-- **Dead-end edges give no feedback.** `OnPlayerHitEdge` returns silently when the adjacent
-  chunk is null, so the player walks into nothing and nothing happens — no wall, no message.
-- **`Manor_Cellars` and `West_Canal` both claim `Coordinates (-1, 0)`.** Harmless today
-  because city lockout only keys on `IsCity` chunks, latent if either becomes one.
+### Edge crossings — how they fail, and what now catches it
+
+The prefab and adjacency data are correct: all six chunk prefabs carry all four `ChunkEdge`
+triggers at ±109 (2 units deep, `IsTrigger`), and every outer chunk links back to Home. The
+failures were all behavioural, and all had the same shape — **`OnPlayerHitEdge` declines a
+crossing and the trigger never fires again.** `ChunkEdge` only had `OnTriggerEnter`, the trigger
+is 2 units deep, and the ground stops at ±110, so a declined crossing walked the player off the
+world with no kill floor.
+
+Fixed (all unverified in a running editor — see §10):
+
+- `ChunkEdge` re-offers the crossing from **`OnTriggerStay`** as well as Enter. The manager's
+  `_isTransitioning` and grace-window guards dedupe, and arrival always lands 12 units clear, so
+  it cannot ping-pong. **Do not add a `Debug.Log` back to that path** — it fires every physics tick.
+- **Arrivals clamp the lateral axis too.** `RepositionPlayerForTransition` used to preserve the
+  crossing's lateral coordinate, so crossing near a corner landed the player inside the new
+  chunk's *perpendicular* edge trigger.
+- The post-arrival grace is **0.25s**, not 1s. A full second ate the return trip if you turned
+  straight around after a crossing.
+- Dead ends call `ShowWarning("There's nothing that way.")`, throttled — `OnTriggerStay` would
+  otherwise re-show it every tick.
+- **`ChunkBoundaryWallTool`** (`Tools/GBA/World/Add Chunk Boundary Walls`) puts invisible solid
+  walls at ±111 on all four sides of all six chunk prefabs. Where a neighbour exists the teleport
+  at 109 fires first, so they are inert; where the crossing is declined you bump a wall. Idempotent,
+  and it edits prefabs in place, so re-running is safe.
+  ⚠️ **This tool has not been run yet — the prefabs do not have walls until someone runs it.**
+- `ChunkManager.Update` teleports anyone below `y = -20` back to the chunk centre.
+
+`Manor_Cellars` was moved to `Coordinates (-1, -1)`; it used to collide with `West_Canal`'s
+`(-1, 0)`. All six are now unique. `Coordinates` is **not** a save key — only `ChunkName` is (§6)
+— so it was safe to edit.
 
 ## 6. Save system — highest-risk area in the repo
 
@@ -265,10 +297,12 @@ is the single most load-bearing line in the whole consequence loop.
   stash commit is permanently reachable and **the branch itself is safe to delete.**
 - **`fix/moped-mount-and-melee-flag` is merged into `main`** (the melee-flag fix and all of §11),
   along with the art pipeline in §12. The branch is safe to delete.
-- ⚠️ **`4b93ccc` on `feat/quest-placement-tools-and-mosley-quest` is NOT merged.** It holds one
-  fix worth keeping — a `PauseManager.IsPaused` guard in `CombatController.Update` that stops
-  spell/attack input firing through open menus — tangled together with 1,789 craftpix renames
-  that would resurrect the deleted sprite folder. Cherry-pick the fix; do not merge the branch.
+- ~~**`4b93ccc` on `feat/quest-placement-tools-and-mosley-quest` is NOT merged.**~~ **Nothing to
+  do here.** That commit and that branch no longer exist in this repository — `git cat-file`
+  cannot find the object, and `origin` carries only `main`. The fix it was said to hold, the
+  `PauseManager.IsPaused` guard in `CombatController.Update`, has been present since the
+  **initial commit** (`git log -S "PauseManager.IsPaused"`), so there was never anything to
+  cherry-pick. The craftpix merge hazard below is likewise moot while no such branch exists.
 - `Assets/` is ~672 MB with `.psd`/`.fbx`/`.glb`/`.aseprite` committed and **no Git LFS**
   (no `.gitattributes`). Pruning will not shrink `.git` — history keeps the blobs.
 ### Asset pruning — how it was done, and how to redo it
@@ -308,10 +342,12 @@ root** — exclude it, or every pack looks used.
   verifying zero of its 2,123 assets were referenced. Policy going forward: **pull individual
   sprites in when a system needs them, rather than carrying whole packs speculatively.**
   Recoverable from history; note `.git` still carries the blobs.
-- ⚠️ **Merge hazard:** `feat/quest-placement-tools-and-mosley-quest` (`4b93ccc`) *renamed* 1,789
-  of those craftpix files rather than deleting them. Merging that branch after the deletion can
-  resurrect the whole folder via git's rename detection. Check `3DModels/Sprites/` is still
-  absent after any merge involving that branch.
+- ⚠️ **Merge hazard (historical, currently inert):** `feat/quest-placement-tools-and-mosley-quest`
+  (`4b93ccc`) *renamed* 1,789 of those craftpix files rather than deleting them, and merging it
+  after the deletion could resurrect the whole folder via git's rename detection. **Neither the
+  branch nor the commit exists in this repo any more** (see §9), so there is nothing to merge —
+  but if either is ever restored from a clone, check `3DModels/Sprites/` is still absent
+  afterwards.
 - The five loose fantasy art packs (Bringer Of Death, EVil Wizard, Medieval Warrior Pack 1–2,
   Monsters Creatures Fantasy) were deleted — never committed, effectively unreferenced.
 - **Reference integrity is clean.** A full pass over every tracked `.unity`/`.prefab`/`.asset`/
@@ -323,6 +359,26 @@ root** — exclude it, or every pack looks used.
   Next largest unreferenced: `psx urban pack` (105 MB), `Characters_psx` (54 MB),
   `Magic+atk animations` (50 MB).
 - One tracked `__MACOSX` junk file remains.
+
+## 9b. Content authoring — the World Palette
+
+`Tools → GBA → World Palette` (`Editor/WorldPaletteWindow.cs`) is how content gets placed now.
+Arm a preset, click in the Scene view, Shift to keep stamping, Esc to disarm.
+
+| Piece | File | What it does |
+|---|---|---|
+| The thing to place | `Data/PlacementPreset` | Label, category, icon, and either a `Prefab` or the recipe fields the old windows exposed. |
+| How to build it | `Editor/PlacementBuilders` | Each old window's `Create…()` body, taking a position and a parent. |
+| Where to build it | `Editor/WorldPaletteWindow` | Grid, arming, SceneView raycast, ghost, parenting. |
+| A starting set | `Editor/StarterPresetGenerator` | `Tools → GBA → Content → Create Starter Presets`. Skips what exists; never overwrites. |
+
+- **`PlacementCategory` is serialized by index — append only** (§7).
+- **Vehicles are not GameObjects here.** They are authored onto `MapChunkData.VehicleSpawns`, so
+  the palette shows a target-chunk field and a click appends a spawn entry (§11).
+- **Prefab Mode uses the stage's own physics scene** for the placement raycast. `Physics.Raycast`
+  would hit the main scene's colliders, which are not even visible in the stage.
+- The five `Place/…` windows still exist and still work. The plan retires them only once the
+  palette has placed real content in a chunk — that needs a human in the editor.
 
 ## 10. Working agreement
 
@@ -358,6 +414,10 @@ above it. Run it before and after anything that deletes, moves or renames assets
 
 Everything else — does the scene load, is anything pink, do the mechanics behave — needs the
 Unity editor and therefore needs a human. Say so plainly rather than implying otherwise.
+
+A brace/paren balance scan over the `.cs` files is worth running when a change is large and
+nothing can compile it. It catches a truncated edit; it says nothing about whether the code is
+correct, or even whether it builds. Do not report it as though it were a compile.
 
 ⚠️ **Changes made in the Inspector while Play mode is running are discarded when it stops.** This
 has wasted real time: a value is tuned in play, it looks right, play stops, the old value returns,
@@ -431,10 +491,14 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
 
 **Still open, to move off the hand-placed instance:**
 
-1. Create a `VehicleData` (`Assets > Create > ExiledAlvaston > Data > Vehicle Data`), set
-   `ChassisPrefab` to `EBike.prefab`. An earlier attempt left `Home_Alvaston_Data` pointing at one
-   that was never written to disk — check the asset exists before trusting a spawn entry.
-2. `Tools → GBA → Place → Vehicle Placement` — add it to `Home_Alvaston_Data`.
+1. Run `Tools → GBA → Content → Create Starter Presets`. It writes
+   `Assets/Data/Vehicles/Limey_EBike_Data.asset` with `ChassisPrefab` set to `EBike.prefab`, and
+   confirms the asset reached disk before using it — an earlier attempt left `Home_Alvaston_Data`
+   pointing at a `VehicleData` that was never written, so **check the asset exists before trusting
+   a spawn entry.**
+2. `Tools → GBA → World Palette` → arm the "Limey E-Bike" preset, set the target chunk to
+   `Home_Alvaston_Data`, click where it should sit. (`Place → Vehicle Placement` still works and
+   does the same thing by typed coordinates.)
 3. **Delete the EBike instance at the root of `c.unity`**, or the hand-placed every-chunk one and
    the spawned one both exist.
 
@@ -517,15 +581,30 @@ reference style.
 Delivered and in the game:
 
 - `spr_vehicle_ebike` — the hire e-bike, wired into `EBike.prefab`.
-- `sheet_char_player_idle` (4 frames) and `sheet_char_player_walk` (4 frames) — sliced, clipped,
-  and driving `player_Controller`, which is assigned to the player's Animator in place of
-  `Bandit_Controller`. The player is `Height 1.6`, `GroundOffset 0`, `ActorVisual` scale 1.
+- `sheet_char_player_idle` (4 frames), `sheet_char_player_walk` (4 frames) and
+  `sheet_char_player_hurt` (3 frames) — sliced, clipped, and driving `player_Controller`, which is
+  assigned to the player's Animator in place of `Bandit_Controller`. The player is `Height 1.6`,
+  `GroundOffset 0`, `ActorVisual` scale 1.
 
-Requested but not yet generated, all specced in `ART_PIPELINE.md` §7: the player's `attack`,
-`cast`, `hurt`, `death` and `cycle` sheets; the five NPCs in §7.3 (Councillor Mosley, Daniel
-Pauls, the tracksuit geezer, the angry squirrel, the roaming pharmacist); the office block and
-shed in §7.4.
+Generated and **rejected**, sitting in `art_incoming/rejected/` waiting to be redrawn: the
+player's `attack`, `cast`, `cycle` and `death` sheets. They were all delivered as 6 frames at
+3072×512.
 
-Not yet solved: those NPCs are spawned in code by `MagicTutorial`, which assigns a single `Sprite`
-rather than an `AnimatorController`. Animated NPCs need that changed before their sheets are
-worth generating.
+Requested but not yet generated, all specced in `ART_PIPELINE.md` §7: the five NPCs in §7.3
+(Councillor Mosley, Daniel Pauls, the tracksuit geezer, the angry squirrel, the roaming
+pharmacist); the office block and shed in §7.4.
+
+**The importer now archives what it accepts.** A clean pair moves to `art_incoming/processed/`;
+anything that reported a problem stays in `art_incoming/` so the next run shows only what is
+still wrong. `rejected/` is the hand-sorted pile above. Neither subfolder is read by the importer,
+which only ever looks at the top level.
+
+**Authored NPCs can now be animated.** `PlacementPreset.NpcController` carries a
+`RuntimeAnimatorController`, and `PlacementBuilders.AttachAnimator` puts an `Animator` on
+`ActorVisual/SwingRoot` — the same GameObject as the `SpriteRenderer`, which is what the generated
+clips require, since the importer binds every one of them with an **empty path**. One level up and
+the clips animate nothing while looking perfectly well wired in the Inspector.
+
+Still not solved: the NPCs spawned **in code** by `MagicTutorial` assign a single `Sprite` rather
+than a controller. Either move that spawning onto presets, or give it the same
+Animator-on-SwingRoot treatment, before those characters' sheets are worth generating.
