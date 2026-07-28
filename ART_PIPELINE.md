@@ -114,11 +114,20 @@ to bottom. Unlike single sprites, sheet cells are **not** trimmed.
 Keep the full body in frame in every cell — no legs cut off at the bottom edge.
 
 > **Every sheet of the same character must agree with every other one.** Same view angle, same
-> body width, same height, same clothes. A character drawn three-quarter when idle and in profile
-> when walking changes shape the moment they move. Generate `idle` first and use it as the visual
-> reference for every other action — do not work from the text description twice.
+> body width, same height, same clothes.
 >
-> The importer compares sheets of the same subject and refuses ones that disagree.
+> **The failure that keeps happening is body width.** Six sheets across three runs have come back
+> with the character drawn nearly edge-on — around half the body width of the `idle` sheet — which
+> makes them a sliver the moment that animation plays. Before delivering any sheet, compare it to
+> `sheet_char_player_idle.png` side by side: the shoulders should be the same width on screen.
+>
+> **Open the idle PNG and work from the image, not from this description.** Prompting the same
+> text twice produces two different people. The importer refuses sheets more than 1.4× narrower
+> than the idle sheet, and it does not care how good the pose is.
+
+Actions where the body legitimately changes shape — `death` (falling), `cycle` (sat on a bike) —
+are exempt from the height and baseline checks, but not from the width one. Nothing makes a
+character half as wide as they stand except drawing them from the wrong angle.
 
 Standard character cell at source resolution: **512×512**, subject filling most of the cell height,
 horizontally centred. The importer reduces the whole sheet so each cell lands at ~65×65, and

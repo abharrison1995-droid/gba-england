@@ -606,9 +606,17 @@ public static class ArtImportTool
     private class SubjectShape
     {
         public string Sheet;
+        public string Action;
         public float Width;   // fraction of cell width
         public float Height;  // fraction of cell height
     }
+
+    /// <summary>
+    /// Actions where the figure is *supposed* to change shape — falling over, sitting on a bike.
+    /// Height and baseline comparisons are meaningless for these; width still is not, because no
+    /// legitimate pose makes a character half as wide as they are standing.
+    /// </summary>
+    private static bool ShapeChanges(string action) => action == "death" || action == "cycle";
 
     private static readonly Dictionary<string, List<SubjectShape>> ShapesBySubject =
         new Dictionary<string, List<SubjectShape>>();
@@ -625,29 +633,37 @@ public static class ArtImportTool
             List<SubjectShape> shapes = kv.Value;
             if (shapes.Count < 2) continue;
 
-            var widest = shapes[0];
-            var narrowest = shapes[0];
-            var tallest = shapes[0];
-            var shortest = shapes[0];
+            // Idle is the canonical standing pose and the reference every other sheet is asked to
+            // match; without one, fall back to the widest, which is the least likely to be the
+            // edge-on mistake being hunted for.
+            SubjectShape reference = shapes.Find(s => s.Action == "idle");
+            if (reference == null)
+            {
+                reference = shapes[0];
+                foreach (SubjectShape s in shapes) if (s.Width > reference.Width) reference = s;
+            }
 
             foreach (SubjectShape s in shapes)
             {
-                if (s.Width > widest.Width) widest = s;
-                if (s.Width < narrowest.Width) narrowest = s;
-                if (s.Height > tallest.Height) tallest = s;
-                if (s.Height < shortest.Height) shortest = s;
+                if (s == reference || s.Width < 0.001f || s.Height < 0.001f) continue;
+
+                // Only ever flagged for being too narrow. Wider is legitimate — a prone body or a
+                // rider on a bike takes more room — but nothing makes a character half as wide as
+                // they stand except drawing them edge-on.
+                float narrowness = reference.Width / s.Width;
+                if (narrowness > 1.4f)
+                    problems.Add($"{kv.Key}: '{s.Sheet}' is {narrowness:0.#}× narrower than " +
+                                 $"'{reference.Sheet}' — the character is drawn at a different angle, " +
+                                 "not the same person from the same view. Regenerate it using " +
+                                 $"'{reference.Sheet}' as the visual reference.");
+
+                if (ShapeChanges(s.Action)) continue;
+
+                float ratio = Mathf.Max(reference.Height, s.Height) / Mathf.Min(reference.Height, s.Height);
+                if (ratio > 1.15f)
+                    problems.Add($"{kv.Key}: '{s.Sheet}' differs from '{reference.Sheet}' in height by " +
+                                 $"{ratio:0.##}× — the character will change size between animations.");
             }
-
-            if (narrowest.Width > 0.001f && widest.Width / narrowest.Width > 1.4f)
-                problems.Add($"{kv.Key}: '{narrowest.Sheet}' is {widest.Width / narrowest.Width:0.#}× " +
-                             $"narrower than '{widest.Sheet}' — the view angle differs between sheets, " +
-                             "so the character changes shape between animations. Regenerate the narrow one " +
-                             "using the other as reference.");
-
-            if (shortest.Height > 0.001f && tallest.Height / shortest.Height > 1.15f)
-                problems.Add($"{kv.Key}: '{shortest.Sheet}' is {tallest.Height / shortest.Height:0.#}× " +
-                             $"shorter than '{tallest.Sheet}' — the character will change size between " +
-                             "animations.");
         }
     }
 
@@ -704,6 +720,7 @@ public static class ArtImportTool
             list.Add(new SubjectShape
             {
                 Sheet  = m.name,
+                Action = (m.action ?? "").ToLowerInvariant(),
                 Width  = (float)widthSum / measured / m.frameWidth,
                 Height = (float)heightSum / measured / m.frameHeight
             });
@@ -715,7 +732,12 @@ public static class ArtImportTool
         float atFinalSize = spread * (m.worldHeight > 0f ? m.worldHeight : 1.35f)
                             * PixelsPerWorldUnit / m.frameHeight;
 
-        if (atFinalSize >= 2f)
+        bool shapeChanges = ShapeChanges((m.action ?? "").ToLowerInvariant());
+
+        if (atFinalSize >= 2f && shapeChanges)
+            report.Add($"    feet move {spread} px between frames ({atFinalSize:0.#} px at final " +
+                       "size) — expected for this action, not flagged");
+        else if (atFinalSize >= 2f)
             problems.Add($"{m.name}: the subject's feet move {spread} px between frames " +
                          $"({atFinalSize:0.#} px at final size) — it will bob. Frames should share " +
                          "a baseline; regenerate rather than importing.");
