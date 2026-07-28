@@ -12,9 +12,9 @@ using UnityEngine;
 /// post-arrival grace window — used to leave the player walking straight through the trigger and
 /// off the world, with no kill floor to catch them. These walls are the physical backstop.
 ///
-/// Where a neighbour exists the teleport at 109 fires long before the wall at 111 is reached, so
-/// they are inert on every working crossing. They are outside the ground plane and are not marked
-/// navigation static, so they take no part in the NavMesh bake.
+/// Where a neighbour exists the crossing is triggered on entering at 108, long before the wall at
+/// 110 is reached, so they are inert on every working crossing. They sit on the very edge of the
+/// ground plane and are not marked navigation static, so they take no part in the NavMesh bake.
 ///
 /// Idempotent: walls are matched by name, so re-running updates existing ones rather than stacking
 /// duplicates. Prefabs are edited in place via LoadPrefabContents/SaveAsPrefabAsset — never deleted
@@ -24,8 +24,22 @@ public static class ChunkBoundaryWallTool
 {
     private const string ChunkPrefabFolder = "Assets/Prefabs/Chunks";
 
-    /// <summary>Just outside the edge triggers at ±109, which are 2 units deep (so they end at 110).</summary>
-    private const float WallDistance = 111f;
+    private const float WallThickness = 1f;
+
+    /// <summary>
+    /// Centre of the wall, placed so its **inner face lands exactly on the edge of the ground** at
+    /// ±110 (the ground is a 220-unit plane).
+    ///
+    /// This has to be flush, not merely "outside". A wall standing clear of the ground stops the
+    /// player's collider with its centre — and therefore its ground contact point — already past
+    /// the edge of the floor, so they get blocked and fall anyway, which is the entire failure the
+    /// wall exists to prevent.
+    ///
+    /// It also leaves the player still inside the edge trigger (108→110) while blocked, so
+    /// OnTriggerStay keeps re-offering the crossing: when a city lockout expires or the grace
+    /// window passes, they go through without having to back up and walk in again.
+    /// </summary>
+    private const float WallDistance = 110f + WallThickness * 0.5f;
 
     /// <summary>
     /// Longer than the chunk is wide so the four walls overlap at the corners — a gap there is
@@ -34,7 +48,6 @@ public static class ChunkBoundaryWallTool
     private const float WallLength = 230f;
 
     private const float WallHeight = 6f;
-    private const float WallThickness = 1f;
 
     /// <summary>Spans y −0.5 to 5.5: buried slightly so nothing can clip under it at ground level.</summary>
     private const float WallCentreY = 2.5f;
