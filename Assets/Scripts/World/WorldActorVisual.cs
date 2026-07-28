@@ -55,6 +55,7 @@ namespace ExiledAlvaston.World
         private bool _isMounted;
         private Animator _spriteAnimator;
         private bool _animatorWasEnabled;
+        private Sprite _fittedTo;
         private Coroutine _swingRoutine;
         private Vector3 _swingBaseLocalPos;
         private GameObject _slashFx;
@@ -442,6 +443,19 @@ namespace ExiledAlvaston.World
             }
         }
 
+        /// <summary>
+        /// An Animator drives m_Sprite, so the sprite being displayed is not the one that was
+        /// there when the scale was last worked out — and sprites of different pixel sizes or
+        /// import PPUs have wildly different bounds. Fitting once at Awake against a stale
+        /// ActorSprite produced a player rendered at 4.5 units instead of 1.6, buried to the
+        /// waist. Refitting is a reference compare and only recalculates when the sprite changes.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (_sr == null || _sr.sprite == _fittedTo) return;
+            FitScaleToHeight();
+        }
+
         private void FitScaleToHeight()
         {
             if (_swingRoot == null) return;
@@ -449,6 +463,7 @@ namespace ExiledAlvaston.World
             if (_sr == null || _sr.sprite == null)
             {
                 _swingRoot.localScale = new Vector3(Width, Height, 1f);
+                _fittedTo = null;
                 return;
             }
 
@@ -456,6 +471,7 @@ namespace ExiledAlvaston.World
             if (spriteH < 0.001f) spriteH = 1f;
             float scale = Height / spriteH;
             _swingRoot.localScale = new Vector3(scale, scale, 1f);
+            _fittedTo = _sr.sprite;
         }
 
         private void HidePrimitiveMesh()

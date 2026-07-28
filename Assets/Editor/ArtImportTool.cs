@@ -150,6 +150,7 @@ public static class ArtImportTool
     private static void AutoAssign(List<string> report, List<string> problems)
     {
         AssignPlayerSprite("spr_char_player", false, report, problems);
+        AssignPlayerRestingFrame(report, problems);
         AssignPlayerSprite("spr_char_player_ebike", true, report, problems);
         AssignVehicleSprite("spr_vehicle_ebike", report, problems);
         AssignPlayerController("player", report, problems);
@@ -196,6 +197,37 @@ public static class ArtImportTool
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(player.gameObject.scene);
         report.Add($"    assigned to player WorldActorVisual.{(mounted ? "MountedSprite" : "ActorSprite")} " +
                    "— save the scene (Ctrl+S)");
+    }
+
+    /// <summary>
+    /// Points ActorSprite at the first frame of the idle sheet when the player has no single
+    /// sprite of their own. It is what shows in edit mode and before the Animator takes over, so
+    /// leaving it on whatever placeholder was there means the editor shows one character and the
+    /// game shows another.
+    /// </summary>
+    private static void AssignPlayerRestingFrame(List<string> report, List<string> problems)
+    {
+        if (FindImported("spr_char_player") != null) return;   // a proper single wins
+
+        string[] hits = AssetDatabase.FindAssets("sheet_char_player_idle t:Texture2D", new[] { ArtRoot });
+        if (hits.Length == 0) return;
+
+        string path = AssetDatabase.GUIDToAssetPath(hits[0]);
+        Sprite first = AssetDatabase.LoadAllAssetRepresentationsAtPath(path)
+            .OfType<Sprite>()
+            .FirstOrDefault(s => s.name.EndsWith("_0"));
+        if (first == null) return;
+
+        var player = UnityEngine.Object.FindObjectOfType<ExiledAlvaston.Combat.CombatController>();
+        var visual = player != null ? player.GetComponent<ExiledAlvaston.World.WorldActorVisual>() : null;
+        if (visual == null) return;
+        if (visual.ActorSprite == first) return;
+
+        Undo.RecordObject(visual, "Assign resting frame");
+        visual.ActorSprite = first;
+        EditorUtility.SetDirty(visual);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(player.gameObject.scene);
+        report.Add($"    player ActorSprite set to {first.name} — save the scene (Ctrl+S)");
     }
 
     /// <summary>
