@@ -7,7 +7,7 @@ using ExiledAlvaston.Vibe;
 
 /// <summary>
 /// Drops a talkable NPC (billboard sprite + Interactable + NPCDialogueInteractable) into the
-/// open scene or prefab. Pair with Tools/Exiled Alvaston/Content/Create Sample NPC Dialogues for
+/// open scene or prefab. Pair with Tools/GBA/Content/Create Sample NPC Dialogues for
 /// ready-made conversation assets.
 /// </summary>
 public class NPCPlacementTool : EditorWindow
@@ -16,7 +16,7 @@ public class NPCPlacementTool : EditorWindow
     private Sprite _sprite;
     private DialogueData _conversation;
 
-    [MenuItem("Tools/Exiled Alvaston/Place/NPC Placement")]
+    [MenuItem("Tools/GBA/Place/NPC Placement")]
     public static void Open()
     {
         GetWindow<NPCPlacementTool>("NPC Placement");
@@ -96,7 +96,7 @@ public class NPCPlacementTool : EditorWindow
 /// <summary>Generates two ready-to-use NPC conversation assets under Assets/Data/Dialogue.</summary>
 public static class SampleDialogueGenerator
 {
-    [MenuItem("Tools/Exiled Alvaston/Content/Create Sample NPC Dialogues")]
+    [MenuItem("Tools/GBA/Content/Create Sample NPC Dialogues")]
     public static void Run()
     {
         const string folder = "Assets/Data/Dialogue";
@@ -167,7 +167,7 @@ public static class SampleDialogueGenerator
 
         AssetDatabase.SaveAssets();
         Debug.Log($"SampleDialogueGenerator: created Warden Alcott + Old Tam under {folder}. " +
-                  "Assign them via Tools/Exiled Alvaston/Place/NPC Placement.");
+                  "Assign them via Tools/GBA/Place/NPC Placement.");
     }
 
     private static CharacterData GetOrCreateCharacter(string folder, string name)

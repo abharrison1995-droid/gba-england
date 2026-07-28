@@ -209,7 +209,7 @@ same filename** — do not create `_v2`.
 
 ## 6. Importing (Claude Code's side)
 
-`Tools → Exiled Alvaston → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
+`Tools → GBA → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
 
 1. Moves the PNG to `Assets/Art/Generated/<category>/`.
 2. Applies the import settings: Sprite (2D and UI), 100 PPU, bilinear, alpha is transparency,

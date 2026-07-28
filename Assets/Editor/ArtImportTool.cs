@@ -11,7 +11,7 @@ using UnityEditor.Animations;
 /// slicing, animation clips and an AnimatorController wired to the parameter names the game
 /// already calls.
 ///
-/// Run via: Tools → Exiled Alvaston → Art → Import Generated Art
+/// Run via: Tools → GBA → Art → Import Generated Art
 ///
 /// The contract with the generating agent is `ART_PIPELINE.md`. Staging lives at `art_incoming/`
 /// beside `Assets/`, deliberately outside the project so Unity never imports a half-written file.
@@ -81,7 +81,7 @@ public static class ArtImportTool
         public string question;
     }
 
-    [MenuItem("Tools/Exiled Alvaston/Art/Import Generated Art")]
+    [MenuItem("Tools/GBA/Art/Import Generated Art")]
     public static void Run()
     {
         string staging = Path.Combine(Directory.GetParent(Application.dataPath).FullName, StagingFolder);

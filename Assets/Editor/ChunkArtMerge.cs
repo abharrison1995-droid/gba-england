@@ -13,7 +13,7 @@ public static class ChunkArtMerge
 {
     const string HomePrefabPath = "Assets/Prefabs/Chunks/Home_Alvaston_Prefab.prefab";
 
-    [MenuItem("Tools/Exiled Alvaston/World/Merge Selected Into Home Alvaston Prefab")]
+    [MenuItem("Tools/GBA/World/Merge Selected Into Home Alvaston Prefab")]
     public static void MergeSelected()
     {
         GameObject[] selection = Selection.gameObjects;
@@ -74,17 +74,17 @@ public static class ChunkArtMerge
 
         Debug.Log($"Merged {selection.Length} object(s) into {HomePrefabPath} and disabled the scene copies. " +
                   "Verify in Play Mode, then delete the disabled objects and save the scene. " +
-                  "Re-run Tools/Bake Navigation Mesh if props should block walking.");
+                  "Re-run Tools/GBA/World/Bake Navigation Mesh if props should block walking.");
     }
 
-    [MenuItem("Tools/Exiled Alvaston/Repair/Fix Missing Materials In Chunk Prefabs")]
+    [MenuItem("Tools/GBA/Repair/Fix Missing Materials In Chunk Prefabs")]
     public static void FixMissingMaterials()
     {
         Material dungeonMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Placeholders/mat_dungeon_wall.mat");
         Material stoneMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Placeholders/mat_stone.mat");
         if (dungeonMat == null && stoneMat == null)
         {
-            Debug.LogError("No placeholder materials found in Assets/Art/Placeholders — run Tools/Exiled Alvaston/Repair/Generate Placeholder Art first.");
+            Debug.LogError("No placeholder materials found in Assets/Art/Placeholders — run Tools/GBA/Danger Zone/Generate Placeholder Art first.");
             return;
         }
 

@@ -19,7 +19,7 @@ using ExiledAlvaston.Vibe;
 ///   6. Adds StealthController to the player in the active scene
 ///   7. Places a Nosey Parker, an EBike, and a Pub into the active scene near the player
 ///
-/// Run via: Tools → Exiled Alvaston → Setup (one-time) → Build Modern Britain Prefabs + Wire Scene
+/// Run via: Tools → GBA → Danger Zone → Build Modern Britain Prefabs + Wire Scene
 /// </summary>
 public static class ModernBritainSetup
 {
@@ -39,9 +39,28 @@ public static class ModernBritainSetup
     //  MENU ENTRY — the one button to rule them all
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    [MenuItem("Tools/Exiled Alvaston/Setup (one-time)/Build Modern Britain Prefabs + Wire Scene")]
+    [MenuItem("Tools/GBA/Danger Zone/Build Modern Britain Prefabs + Wire Scene")]
     public static void Run()
     {
+        // Every prefab below is deleted and re-saved rather than edited in place, which takes the
+        // .meta with it and mints a fresh GUID. Anything already placed in c.unity that points at
+        // the old GUID detaches silently and leaves an empty stub behind, so this is only safe on
+        // a project that has not had these prefabs placed yet.
+        if (AssetDatabase.IsValidFolder(PrefabFolder))
+        {
+            bool proceed = EditorUtility.DisplayDialog(
+                "Rebuild Modern Britain prefabs?",
+                $"{PrefabFolder} already exists.\n\n" +
+                "This rebuilds every prefab in it by DELETING and re-creating it, which gives each " +
+                "one a new GUID. The NoseyParker, EBike and Pub instances already placed in " +
+                "c.unity will silently detach from their prefabs and be left as empty stubs.\n\n" +
+                "Only run this on a project where those have not been placed yet. To change an " +
+                "existing prefab, edit it in place instead.\n\nContinue?",
+                "Yes, rebuild and orphan the instances",
+                "Cancel");
+            if (!proceed) return;
+        }
+
         CreateFolderRecursive(PrefabFolder);
 
         // ─── 1. Build Police prefabs ───

@@ -26,7 +26,7 @@ Unity mobile RPG. Working title **Exiled Alvaston** (`ProjectSettings` → `prod
 | Name | Where it lives | Notes |
 |---|---|---|
 | `Exiled Alvaston` | `productName`, root C# namespace, most editor menus | The canonical one |
-| `Discover England` | `EKVibe.DisplayTitle`, `DiscoverEnglandSetup.cs`, `Tools/Discover England/` menu | In-game title shown to player |
+| `Discover England` | `EKVibe.DisplayTitle`, `DiscoverEnglandSetup.cs` | In-game title shown to player |
 | `EK` / Exiled Kingdoms | `EKVibe`, `EKNavMeshBaker` | Refers to the *inspiration* game, not this project |
 
 Do not "unify" these without an explicit task — `DisplayTitle` is player-facing copy,
@@ -96,8 +96,12 @@ editor code out of builds, so editor-only code **must** live there.
 - **Tuning constants belong in `EKVibe`** (`Assets/Scripts/Vibe/EKVibe.cs`) — colours,
   sizes, camera, `ChunkSize`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
-- **Editor menu path**: `Tools/Exiled Alvaston/...` (existing tools also use
-  `Tools/Combat`, `Tools/World`, `Tools/Art`, `Tools/Discover England` — inconsistent)
+- **Editor menu path**: `Tools/GBA/<Category>/...`. All 27 items live under this root, in six
+  categories: `Place`, `Art`, `World`, `Debug`, `Repair`, `Content`, plus **`Danger Zone`** for
+  the four tools that overwrite or re-create assets — `Build Modern Britain Prefabs`,
+  `Build Enemy Prefabs`, `Discover England Bootstrap` and `Generate Placeholder Art`. Each of
+  those confirms first and names what it destroys. Nothing else may go in `Danger Zone`, and
+  nothing destructive may go anywhere else.
 - Mobile-first: hot paths avoid allocation deliberately (preallocated
   `Collider[] _hitResults`, parallel key lists to avoid dictionary-iteration garbage).
   Respect this when editing `Update()` paths.
@@ -430,7 +434,7 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
 1. Create a `VehicleData` (`Assets > Create > ExiledAlvaston > Data > Vehicle Data`), set
    `ChassisPrefab` to `EBike.prefab`. An earlier attempt left `Home_Alvaston_Data` pointing at one
    that was never written to disk — check the asset exists before trusting a spawn entry.
-2. `Tools → Exiled Alvaston → Place → Vehicle Placement` — add it to `Home_Alvaston_Data`.
+2. `Tools → GBA → Place → Vehicle Placement` — add it to `Home_Alvaston_Data`.
 3. **Delete the EBike instance at the root of `c.unity`**, or the hand-placed every-chunk one and
    the spawned one both exist.
 
@@ -447,7 +451,7 @@ contract is `AGENTS.md` (hard rules) and `ART_PIPELINE.md` (the spec and the req
 
 - The art agent writes **PNG + sidecar JSON to `art_incoming/`, and nothing else** — never inside
   `Assets/`, never a `.meta`, never git. `art_incoming/` is gitignored apart from its README.
-- `Tools → Exiled Alvaston → Art → Import Generated Art` (`Editor/ArtImportTool.cs`) does the rest:
+- `Tools → GBA → Art → Import Generated Art` (`Editor/ArtImportTool.cs`) does the rest:
   keys out the backdrop, trims, reduces, sets import settings, slices sheets, builds clips and an
   `AnimatorController`, then assigns known assets to what was waiting for them.
 

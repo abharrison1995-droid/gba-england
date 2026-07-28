@@ -18,7 +18,7 @@ public static class DiscoverEnglandSetup
     const string DataFolder = "Assets/Data/Chunks";
     const string PrefabFolder = "Assets/Prefabs/Chunks";
 
-    [MenuItem("Tools/Exiled Alvaston/Setup (one-time)/Discover England Bootstrap (rebuilds scene + prefabs!)")]
+    [MenuItem("Tools/GBA/Danger Zone/Discover England Bootstrap (rebuilds scene + prefabs!)")]
     public static void SetupAll()
     {
         string manorPrefabPath = PrefabFolder + "/Manor_Cellars_Prefab.prefab";

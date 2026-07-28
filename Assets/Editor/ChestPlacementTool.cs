@@ -19,7 +19,7 @@ public class ChestPlacementTool : EditorWindow
     private readonly List<LootDrop> _loot = new List<LootDrop>();
     private string _questKey = "";
 
-    [MenuItem("Tools/Exiled Alvaston/Place/Chest Placement")]
+    [MenuItem("Tools/GBA/Place/Chest Placement")]
     public static void Open()
     {
         var window = GetWindow<ChestPlacementTool>("Chest Placement");

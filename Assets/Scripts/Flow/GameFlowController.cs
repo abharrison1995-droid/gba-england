@@ -38,9 +38,9 @@ namespace ExiledAlvaston.Flow
         public Vector3 ManorSpawnPosition = new Vector3(0f, 0f, -8f);
 
         [Header("Tutorial")]
-        [Tooltip("Sprite for the tutorial bandit. Wire via Tools/Discover England/Wire Tutorial Bandit Sprite; falls back to a capsule if empty.")]
+        [Tooltip("Sprite for the tutorial bandit. Assign here in the Inspector; falls back to a capsule if empty.")]
         public Sprite TutorialBanditSprite;
-        [Tooltip("Prefab for the tutorial supply chest. Wire via Tools/Discover England/Wire Tutorial Chest Prefab; falls back to a plain box if empty.")]
+        [Tooltip("Prefab for the tutorial supply chest. Assign here in the Inspector; falls back to a plain box if empty.")]
         public GameObject TutorialChestPrefab;
 
         /// <summary>Blocks InstanceDoor briefly after exiting so spawn doesn't re-enter.</summary>

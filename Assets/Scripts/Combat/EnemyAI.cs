@@ -111,7 +111,7 @@ namespace ExiledAlvaston.Combat
             }
             else
             {
-                Debug.LogWarning($"{name}: No NavMesh nearby. Bake with Tools/Bake Navigation Mesh after loading a chunk.");
+                Debug.LogWarning($"{name}: No NavMesh nearby. Bake with Tools/GBA/World/Bake Navigation Mesh after loading a chunk.");
             }
         }
 

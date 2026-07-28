@@ -10,14 +10,14 @@ using ExiledAlvaston.World;
 ///
 /// Workflow for a new instanced area (e.g. another cellar):
 ///   1. Open the area's chunk prefab in Prefab Mode.
-///   2. Tools > Exiled Alvaston > Place > Player Spawn Point, then Create Spawn Point.
+///   2. Tools > GBA > Place > Player Spawn Point, then Create Spawn Point.
 ///   3. Drag the green marker where the player should appear, Ctrl+S to save the prefab.
 /// </summary>
 public class SpawnPointPlacementTool : EditorWindow
 {
     private string _id = "";
 
-    [MenuItem("Tools/Exiled Alvaston/Place/Spawn Point Placement")]
+    [MenuItem("Tools/GBA/Place/Spawn Point Placement")]
     public static void Open()
     {
         GetWindow<SpawnPointPlacementTool>("Player Spawn Point");

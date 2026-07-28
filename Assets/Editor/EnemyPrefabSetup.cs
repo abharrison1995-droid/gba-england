@@ -29,9 +29,25 @@ public static class EnemyPrefabSetup
         public AnimationClip Idle, Move, Attack, Hurt, Death;
     }
 
-    [MenuItem("Tools/Exiled Alvaston/Setup (one-time)/Build Enemy Prefabs (Orc + Bot Wheel)")]
+    [MenuItem("Tools/GBA/Danger Zone/Build Enemy Prefabs (Orc + Bot Wheel)")]
     public static void Run()
     {
+        // The prefabs and clips here are deleted and re-created, not edited in place, so each one
+        // comes back with a new GUID. Any enemy already placed in a chunk prefab or in c.unity
+        // detaches from it silently.
+        if (AssetDatabase.IsValidFolder(PrefabFolder))
+        {
+            bool proceed = EditorUtility.DisplayDialog(
+                "Rebuild enemy prefabs?",
+                $"{PrefabFolder} already exists.\n\n" +
+                "This deletes and re-creates Enemy_Orc1/2/3 and Enemy_BotWheel along with their " +
+                "animation clips, giving each a new GUID. Enemies already placed in chunk prefabs " +
+                "or in c.unity will detach and be left as empty stubs.\n\nContinue?",
+                "Yes, rebuild and orphan the instances",
+                "Cancel");
+            if (!proceed) return;
+        }
+
         CreateFolderRecursive(AnimFolder);
         CreateFolderRecursive(PrefabFolder);
 
@@ -41,8 +57,8 @@ public static class EnemyPrefabSetup
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("Enemy prefabs ready: Enemy_Orc1, Enemy_Orc2, Enemy_Orc3, Enemy_BotWheel (Assets/Prefabs/Enemies). " +
-                  "Use Tools/Exiled Alvaston/Debug/Spawn Enemy For Testing/... to drop one in near the player for combat testing, " +
-                  "or Tools/Exiled Alvaston/Place/Enemy Placement for a permanent, authored placement.");
+                  "Use Tools/GBA/Debug/Spawn Enemy For Testing/... to drop one in near the player for combat testing, " +
+                  "or Tools/GBA/Place/Enemy Placement for a permanent, authored placement.");
     }
 
     // ---------- Orc ----------
@@ -354,16 +370,16 @@ public static class EnemyPrefabSetup
 
     // ---------- Spawn commands ----------
 
-    [MenuItem("Tools/Exiled Alvaston/Debug/Spawn Enemy For Testing/Orc1")]
+    [MenuItem("Tools/GBA/Debug/Spawn Enemy For Testing/Orc1")]
     public static void SpawnOrc1() => SpawnEnemy("Enemy_Orc1");
 
-    [MenuItem("Tools/Exiled Alvaston/Debug/Spawn Enemy For Testing/Orc2")]
+    [MenuItem("Tools/GBA/Debug/Spawn Enemy For Testing/Orc2")]
     public static void SpawnOrc2() => SpawnEnemy("Enemy_Orc2");
 
-    [MenuItem("Tools/Exiled Alvaston/Debug/Spawn Enemy For Testing/Orc3")]
+    [MenuItem("Tools/GBA/Debug/Spawn Enemy For Testing/Orc3")]
     public static void SpawnOrc3() => SpawnEnemy("Enemy_Orc3");
 
-    [MenuItem("Tools/Exiled Alvaston/Debug/Spawn Enemy For Testing/Bot Wheel")]
+    [MenuItem("Tools/GBA/Debug/Spawn Enemy For Testing/Bot Wheel")]
     public static void SpawnBotWheel() => SpawnEnemy("Enemy_BotWheel");
 
     private static void SpawnEnemy(string prefabName)
@@ -372,7 +388,7 @@ public static class EnemyPrefabSetup
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
         if (prefab == null)
         {
-            Debug.LogWarning($"EnemyPrefabSetup: {path} not found — run Tools/Exiled Alvaston/Setup Enemy Prefabs (Orc + Bot Wheel) first.");
+            Debug.LogWarning($"EnemyPrefabSetup: {path} not found — run Tools/GBA/Danger Zone/Build Enemy Prefabs (Orc + Bot Wheel) first.");
             return;
         }
 
@@ -391,7 +407,7 @@ public static class EnemyPrefabSetup
         if (NavMesh.SamplePosition(spawnPos, out NavMeshHit navHit, 10f, NavMesh.AllAreas))
             spawnPos = navHit.position;
         else
-            Debug.LogWarning("EnemyPrefabSetup: no NavMesh here — enemy will still spawn, but may not path. Run Tools/World/Bake Navigation Mesh.");
+            Debug.LogWarning("EnemyPrefabSetup: no NavMesh here — enemy will still spawn, but may not path. Run Tools/GBA/World/Bake Navigation Mesh.");
 
         GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
         Undo.RegisterCreatedObjectUndo(instance, "Spawn Enemy");

@@ -5,14 +5,41 @@ using ExiledAlvaston.Vibe;
 
 /// <summary>
 /// Generates muted EK-style placeholder textures + sprites under Assets/Art/Placeholders.
+///
+/// Run via: Tools → GBA → Danger Zone → Generate Placeholder Art
+///
+/// Superseded for characters and props by the generated-art pipeline (ART_PIPELINE.md), which
+/// writes to Assets/Art/Generated instead. It is kept — rather than retired — because the editor
+/// tooling still loads its output by hardcoded path: ChunkArtMerge's material repair wants
+/// mat_dungeon_wall and friends, and BanditPracticeSpawner wants spr_bandit. Nothing else can
+/// regenerate those if they are ever lost.
+///
+/// It overwrites every file it produces, so it belongs in the Danger Zone rather than under
+/// Repair, where it read as a safe thing to reach for.
 /// </summary>
 public static class PlaceholderArtGenerator
 {
     public const string ArtFolder = "Assets/Art/Placeholders";
 
-    [MenuItem("Tools/Exiled Alvaston/Repair/Generate Placeholder Art")]
+    [MenuItem("Tools/GBA/Danger Zone/Generate Placeholder Art")]
     public static void GenerateAll()
     {
+        if (AssetDatabase.IsValidFolder(ArtFolder))
+        {
+            bool proceed = EditorUtility.DisplayDialog(
+                "Regenerate placeholder art?",
+                $"{ArtFolder} already exists.\n\n" +
+                "Every texture, sprite and material this tool produces will be overwritten with a " +
+                "freshly generated placeholder. Any hand-edited or replacement art sitting under " +
+                "those names is lost.\n\n" +
+                "Character and prop art now comes from the generated-art pipeline instead " +
+                "(Tools → GBA → Art → Import Generated Art), which writes to Assets/Art/Generated " +
+                "and is not affected.\n\nContinue?",
+                "Yes, overwrite the placeholders",
+                "Cancel");
+            if (!proceed) return;
+        }
+
         EnsureFolders();
 
         SaveOpaque("tex_grass", MakeNoiseTile(64, EKVibe.GroundGrass, 0.08f));

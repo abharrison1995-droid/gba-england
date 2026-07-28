@@ -8,7 +8,7 @@ namespace ExiledAlvaston.World
     /// <summary>
     /// Generic two-way door between chunks: drop one in the overworld pointing at a dungeon
     /// chunk, and one inside the dungeon prefab pointing back. Uses the range-based interact
-    /// system (walk up, press USE). Place via Tools/Exiled Alvaston/Portal Placement, or add
+    /// system (walk up, press USE). Place via Tools/GBA/Place/Portal Placement, or add
     /// by hand and fill in the fields.
     /// </summary>
     public class DungeonPortal : MonoBehaviour

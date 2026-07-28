@@ -27,7 +27,7 @@ namespace ExiledAlvaston.World
         public GameObject CurrentChunkInstance;
 
         [Header("Save / Load")]
-        [Tooltip("Every chunk that Save/Load needs to be able to find by name. Populated by Tools/Exiled Alvaston/Setup Death Screen.")]
+        [Tooltip("Every chunk that Save/Load needs to be able to find by name. A chunk missing from this list cannot be loaded even if the save names it.")]
         public MapChunkData[] AllChunks;
 
         [Header("Dependencies")]

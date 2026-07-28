@@ -21,7 +21,7 @@ public class PortalPlacementTool : EditorWindow
     private bool _addVisual = true;
     private Color _visualColor = new Color(0.35f, 0.22f, 0.12f);
 
-    [MenuItem("Tools/Exiled Alvaston/Place/Portal Placement")]
+    [MenuItem("Tools/GBA/Place/Portal Placement")]
     public static void Open()
     {
         GetWindow<PortalPlacementTool>("Portal Placement");

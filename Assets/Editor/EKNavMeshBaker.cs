@@ -8,7 +8,7 @@ using ExiledAlvaston.World;
 /// </summary>
 public static class EKNavMeshBaker
 {
-    [MenuItem("Tools/Exiled Alvaston/World/Bake Navigation Mesh")]
+    [MenuItem("Tools/GBA/World/Bake Navigation Mesh")]
     public static void Bake()
     {
         MarkChunkNavigationStatic();
@@ -21,7 +21,7 @@ public static class EKNavMeshBaker
 
         Debug.Log(verts > 0
             ? $"NavMesh baked ({verts} verts) from active chunk geometry."
-            : "NavMesh bake produced no surface. Open a chunk scene (Tools/Setup Chunk Scene) and ensure Ground is Navigation Static.");
+            : "NavMesh bake produced no surface. Load a chunk into Assets/c.unity and ensure its Ground is marked Navigation Static.");
     }
 
     public static void MarkChunkNavigationStatic()
