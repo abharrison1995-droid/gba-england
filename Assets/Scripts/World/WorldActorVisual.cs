@@ -12,8 +12,17 @@ namespace ExiledAlvaston.World
     {
         public Sprite ActorSprite;
         public Color Tint = Color.white;
+
+        [Tooltip("World height of the sprite. THIS is how you resize an actor — scaling the " +
+                 "ActorVisual child instead grows the sprite about its centre and buries the " +
+                 "feet, because this component positions that child at Height/2 assuming scale 1.")]
         public float Height = EKVibe.CharacterHeight;
         public float Width = EKVibe.CharacterWidth;
+
+        [Tooltip("Nudges the sprite up or down relative to the actor's feet. Sheet cells are not " +
+                 "trimmed, so a subject drawn with space below its feet floats, and a vertical " +
+                 "billboard sitting exactly on the floor gets its base clipped by the ground mesh.")]
+        public float GroundOffset = 0f;
 
         [Tooltip("Untick if ActorSprite's artwork faces camera-left by default (e.g. the Bandit pack). Determines which way flipping goes.")]
         public bool SpriteFacesRightByDefault = true;
@@ -66,10 +75,24 @@ namespace ExiledAlvaston.World
 
             _sr.color = Tint;
             FitScaleToHeight();
-            _visualRoot.localPosition = new Vector3(0f, Height * 0.5f, 0f);
+            _visualRoot.localPosition = new Vector3(0f, Height * 0.5f + GroundOffset, 0f);
             _swingRoot.localPosition = Vector3.zero;
             _swingRoot.localRotation = Quaternion.identity;
             _swingBaseLocalPos = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Re-applies size and offset when they are edited, so Height and GroundOffset can be tuned
+        /// in the Inspector — including in play mode — instead of needing a restart to see the
+        /// result. Only ever adjusts an existing hierarchy: creating objects from OnValidate is
+        /// not allowed.
+        /// </summary>
+        private void OnValidate()
+        {
+            if (_visualRoot == null || _swingRoot == null) return;
+
+            FitScaleToHeight();
+            _visualRoot.localPosition = new Vector3(0f, Height * 0.5f + GroundOffset, 0f);
         }
 
         /// <summary>
