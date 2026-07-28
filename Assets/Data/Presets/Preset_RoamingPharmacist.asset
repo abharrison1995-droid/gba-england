@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f611db80a0d2341448c09c7c80cd9d1f, type: 3}
+  m_Name: Preset_RoamingPharmacist
+  m_EditorClassIdentifier: 
+  Label: Roaming Pharmacist
+  Category: 0
+  Icon: {fileID: 0}
+  Prefab: {fileID: 0}
+  NpcName: Roaming Pharmacist
+  NpcSprite: {fileID: 0}
+  NpcController: {fileID: 0}
+  Conversation: {fileID: 0}
+  EnemyPrefab: {fileID: 0}
+  OverrideHealth: 0
+  Health: 45
+  OverrideDamage: 0
+  Damage: 7
+  Loot: []
+  ChestName: Chest
+  ChestVisualPrefab: {fileID: 0}
+  ChestLoot: []
+  TargetChunk: {fileID: 0}
+  PortalSpawnPosition: {x: 0, y: 0, z: -8}
+  PortalPrompt: Enter
+  RequireTutorialComplete: 0
+  AddDoorVisual: 1
+  DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
+  Vehicle: {fileID: 0}
+  SpawnPointId: 
+  QuestKey: 

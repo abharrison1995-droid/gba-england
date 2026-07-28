@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a2217a7c3cf4654942ec765aa5cfbea, type: 3}
+  m_Name: Limey_EBike_Data
+  m_EditorClassIdentifier: 
+  VehicleName: Limey E-Bike
+  ChassisPrefab: {fileID: 6147360563080730129, guid: 8f1ab68633f986544a174b0c5efd4d28, type: 3}
+  SpeedMultiplier: 2
+  IsNickable: 1
+  ParkedPrompt: Nick this e-bike
+  VehicleSprite: {fileID: 0}
+  ParkedHeight: 0.9
