@@ -6,8 +6,10 @@ again after the mount/vehicle work on `fix/moped-mount-and-melee-flag` (see §9 
 again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
 `fix/chunk-edges-and-tooling` (§5, §4, §9b, §12), and again on 2026-07-29 for the NPC pipeline on
 `feat/npc-preset-pipeline` (**§13**, plus §5, §9, §9b, §11 and §12 where that work closed items
-they had open). Facts here are verified against code, not against design docs. Where code and a
-design doc disagree, this file records **what the code actually does**.
+they had open), and again the same day on `docs/art-brief-and-queue` for the art brief (§11 and
+§12 — the `cycle` sheet is cancelled and the rejected player sheets have been measured). Facts
+here are verified against code, not against design docs. Where code and a design doc disagree,
+this file records **what the code actually does**.
 
 > ⚠️ **§13 compiles, but has never been run.** All of it is now imported and built, and
 > `Assets/Resources/PlacementPresetLibrary.asset` exists and binds to the pinned script GUID, so
@@ -527,10 +529,16 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
 - **The player must not gain a stray `SpriteRenderer` lookup.** `WorldActorVisual.ActorRenderer`
   exists because `GetComponentInChildren<SpriteRenderer>()` starts returning the layered vehicle
   sprite once one exists — `StealthController`'s crouch tint used to do exactly that.
-- **`MountedSprite` is superseded by the `cycle` sheet.** It writes `_sr.sprite`, which an Animator
-  overwrites every frame — the player's Animator sits on `SwingRoot` with a controller assigned, so
-  `WorldActorVisual` suspends it while a `MountedSprite` shows. Now that riding has an animated
-  `Cycle` state, prefer a `cycle` sheet: it animates, and it needs no per-character rider art.
+- **Riding is drawn by layering, and that is now the decision, not a fallback.** The `cycle` sheet
+  is cancelled (2026-07-29): `WorldActorVisual.SetMounted` draws the vehicle sprite over the
+  actor's feet whenever `MountedSprite` is null, which it is on every character, so any character
+  reads as riding with no bespoke rider art. Leave `MountedSprite` unassigned — it writes
+  `_sr.sprite`, which an Animator overwrites every frame, so the code has to suspend the animator
+  to use it. Nothing does.
+- **Riding plays the idle animation, by design.** `CombatController.ApplyLocomotionAnimation` holds
+  `Speed` at 0 and sets `Cycling` only when the controller declares the parameter. With no `cycle`
+  sheet there is no `Cycle` state and no `Cycling` parameter, so the rider idles under the bike
+  sprite rather than running on the spot. No code change was needed to cancel the sheet.
 - **Nicking does not persist**, by decision. `IsOwnedByNPC` is cleared on the instance, and the
   instance is replaced when the chunk reloads — so you re-nick and re-spike on every visit.
   Consistent with §6, where wanted level and inventory are not saved either.
@@ -612,7 +620,9 @@ figure to drift, and at 65 px the difference is barely visible.
 
 The generated controller defines `Speed`, `MeleeAttack`, `Hit`, `Death`, `CastSpell` and a
 `Cycling` bool. `CastSpell` is the one nothing else in the project defines, which is the console
-error noted in §8. `Cycling` holds a `Cycle` state for as long as the player is riding — see §11.
+error noted in §8. `Cycling` would hold a `Cycle` state while riding, but **no `cycle` sheet is
+requested any more**, so no controller has that state and the parameter is never created — see
+§11. The importer still supports the action; the pipeline just no longer asks for it.
 Once a subject's sheets import, the tool points the player's Animator at the controller it built;
 without that the sheets would import and the player would carry on playing `Bandit_Controller`.
 
@@ -630,20 +640,46 @@ Delivered and in the game:
   assigned to the player's Animator in place of `Bandit_Controller`. The player is `Height 1.6`,
   `GroundOffset 0`, `ActorVisual` scale 1.
 
-Generated and **rejected**, sitting in `art_incoming/rejected/` waiting to be redrawn: the
-player's `attack`, `cast`, `cycle` and `death` sheets. They were all delivered as 6 frames at
-3072×512.
-
 - `sheet_char_mosley_idle` and `sheet_char_pharmacist_idle` — 4 frames each, sliced, clipped, and
   built into `mosley_Controller` and `pharmacist_Controller`. Both wired into their presets by the
   importer, and both standing in `Home_Alvaston_Prefab` as the first NPCs authored end to end.
 
-`sheet_char_danielpauls_idle.json` is in `art_incoming/` **with no PNG beside it**. The importer
-reports it and skips it every run; it is a delivery that never happened, not a bug.
+Generated and **rejected**, sitting in `art_incoming/rejected/` waiting to be redrawn: the
+player's `attack`, `cast` and `death` sheets. **The `cycle` sheet was rejected too and has been
+discarded** — that sheet is cancelled, not pending (§11).
 
-Requested but not yet generated, all specced in `ART_PIPELINE.md` §7: `walk` for Mosley and the
-pharmacist, everything for Daniel Pauls, the tracksuit geezer and the angry squirrel; the office
-block and shed in §7.4.
+**Why those three failed, measured rather than guessed** (2026-07-29, replicating the importer's
+own checks outside Unity):
+
+- **All three are laid out 6×2 — twelve drawings — while their JSON declares 6×1 of 512×512.**
+  Both readings total 3072×512, so `ValidateSheetDimensions` passes and the importer slices six
+  cells each holding two stacked figures. This is the root cause and it was not recorded anywhere.
+- The figure fills **50–73% of its cell height** against the accepted idle's **89%**, which is what
+  actually trips the width check. Their drawn proportions are close to right — `attack` is only
+  0.85× the idle figure's aspect — so **"drawn edge-on" is not what happened here**, despite being
+  the failure mode §12 and `ART_PIPELINE.md` §3 both described. Both files now describe both modes.
+- `cast` has 1 empty cell of 12 and 3 fragment frames; `death` has 2 empty and 4 fragments. Those
+  are failed generations occupying frame slots.
+- Baseline drift at final size: `attack` 12.7 px, `cast` 43.0 px, `death` 57.0 px, against a 2 px
+  limit. `death` is exempt from the check by action, but the exemption is for the pose changing
+  shape, not for the figure wandering around its cell.
+
+`sheet_char_danielpauls_idle.json` — the manifest that sat in `art_incoming/` with no PNG beside
+it — **has been deleted**. It was a delivery that never happened, and the importer reported it
+every run. Daniel Pauls is requested properly in the queue's band 2.
+
+**`ART_PIPELINE.md` §7 is now a banded queue for the whole world, not a request list.** Five bands
+in order: the three player redraws → the tutorial cast (Daniel Pauls, the tracksuit geezer) →
+**21 world props** → the ambient cast (Mosley/pharmacist walks, villager, Nosey Parker, squirrel) →
+the police tiers. Props are band 3 because `North_Wasteland`, `South_Slums`, `East_RetailPark` and
+`West_Canal` contain a ground plane, four edge triggers and four boundary walls and **nothing
+else** — that band is what unblocks world-building. `Home_Alvaston` is the only dressed chunk, and
+it is dressed with 3D pack models rather than generated sprites.
+
+⚠️ **Only the player, the e-bike, and NPC subjects named by a preset's `ArtSubject` are
+auto-assigned** (`ArtImportTool.AutoAssign`). The police tiers, the Nosey Parker and the pub are
+hand-built prefabs with `PlaceholderBody` primitives and no `SpriteRenderer`, so their art will
+import and land nowhere until someone either gives them presets or wires the prefabs by hand.
 
 **The importer now archives what it accepts.** A clean pair moves to `art_incoming/processed/`;
 anything that reported a problem stays in `art_incoming/` so the next run shows only what is

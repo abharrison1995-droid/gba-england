@@ -4,10 +4,12 @@ How art gets from a generation agent into the game. Read `AGENTS.md` first for t
 
 **Deliver to `art_incoming/`. One PNG plus one JSON per asset. Nothing else, nowhere else.**
 
-**Work the whole request list in §7 in one run.** Do not stop after one asset to check in — the
-importer processes a folder at a time, and a batch of eight costs the same number of Unity steps
-as a batch of one. If something in a request is unclear, put it in that asset's `"question"` field
-and keep going.
+**§7 is a banded queue. Work one whole band in a run.** Do not stop after one asset to check in —
+the importer processes a folder at a time, and a batch of eight costs the same number of Unity
+steps as a batch of one. Equally, do not run ahead into the next band: each one is drawn against
+art the previous band established, and a band drawn against the wrong reference is a band
+redrawn. If something in a request is unclear, put it in that asset's `"question"` field and keep
+going.
 
 **Suggested model: Gemini 3.1 Pro, high reasoning**, for a first batch or any request involving new
 subject matter — the sizing and facing rules below are easy to violate plausibly. Once a batch has
@@ -78,7 +80,9 @@ The `worldHeight` in the JSON is what drives the reduction, so it must be right:
 | Trees | 2.2 | ~106 px |
 | Office buildings | 6.0 | ~288 px |
 
-Width follows whatever the subject needs — only height is normalised.
+Width follows whatever the subject needs — only height is normalised. **Every prop in the queue
+carries its own `worldHeight` in §7.6** — that table is the authority for anything listed there,
+and it goes up to 9.0 for a pylon.
 
 ### Backgrounds — the rule that has failed twice now
 
@@ -104,6 +108,17 @@ renders of a shed help nobody.
 A sheet must be a **uniform grid** — every cell identical in size, frames left to right, then top
 to bottom. Unlike single sprites, sheet cells are **not** trimmed.
 
+> **One frame per cell, and the grid must be the grid the JSON declares.** If the JSON says
+> `columns: 6, rows: 1` of `512×512`, the image is 3072×512 containing **six** drawings in a
+> single row — not twelve drawings in two rows of half-height cells. This is not a cosmetic
+> difference: the importer slices from the manifest, so a sheet laid out 6×2 and declared 6×1
+> gives every frame two characters stacked on top of each other.
+>
+> The total image size is not enough to catch this — 6×2 cells of 512×256 and 6×1 cells of
+> 512×512 are both 3072×512 — so the importer's dimension check passes and the sheet fails
+> later, on width, for what looks like an unrelated reason. **Count the drawings in the image and
+> make `frameCount` that number.**
+
 > **Every frame must share the same baseline.** The subject's feet land on the same row of pixels
 > in every cell, and the figure stays the same height and scale throughout. Never crop, shrink or
 > re-frame between frames. A walk cycle moves the *limbs*; the ground does not move.
@@ -116,14 +131,26 @@ Keep the full body in frame in every cell — no legs cut off at the bottom edge
 > **Every sheet of the same character must agree with every other one.** Same view angle, same
 > body width, same height, same clothes.
 >
-> **The failure that keeps happening is body width.** Six sheets across three runs have come back
-> with the character drawn nearly edge-on — around half the body width of the `idle` sheet — which
-> makes them a sliver the moment that animation plays. Before delivering any sheet, compare it to
-> `sheet_char_player_idle.png` side by side: the shoulders should be the same width on screen.
+> **The check that keeps failing is body width**, measured as the subject's mean opaque width as
+> a fraction of its cell. The importer refuses anything more than 1.4× narrower than the `idle`
+> sheet, and it does not care how good the pose is.
+>
+> **Two different mistakes trip that one check, and they need different fixes.** Both have
+> happened:
+>
+> 1. **Drawn edge-on.** The figure's own proportions are wrong — a walk drawn side-on was 47 px
+>    wide against the idle sheet's 122. Fix: same three-quarter view as the idle sheet.
+> 2. **Drawn too small in the cell.** The figure's proportions are fine but it occupies half its
+>    cell, so its width *as a fraction of the cell* collapses. This is what the last four player
+>    sheets did — measured at 50–73% of cell height where the accepted `idle` fills **89%** — and
+>    it is the more common mistake, because each frame looks perfectly good on its own. Fix: scale
+>    the figure up until it nearly fills the cell.
+>
+> **The subject fills ~90% of its cell height, with the feet a few pixels off the bottom edge.**
+> That one number prevents mistake 2 outright, and it is measured, not judged.
 >
 > **Open the idle PNG and work from the image, not from this description.** Prompting the same
-> text twice produces two different people. The importer refuses sheets more than 1.4× narrower
-> than the idle sheet, and it does not care how good the pose is.
+> text twice produces two different people.
 
 Actions where the body legitimately changes shape — `death` (falling), `cycle` (sat on a bike) —
 are exempt from the height and baseline checks, but not from the width one. Nothing makes a
@@ -201,7 +228,10 @@ a state machine:
 | `hurt` | `Hurt` | `Hit` trigger |
 | `death` | `Death` | `Death` trigger, no return to idle |
 | `cast` | `Cast` | `CastSpell` trigger |
-| `cycle` | `Cycle` | `Cycling` bool, held while riding |
+| `cycle` | `Cycle` | `Cycling` bool, held while riding — **cancelled, do not draw one** (§7.9) |
+
+`cycle` still imports and still wires itself into a controller, which is why it is listed. Nothing
+asks for one any more: riding is drawn by layering the bike sprite over the character.
 
 ## 5. Naming
 
@@ -247,12 +277,23 @@ The importer prints a summary to the Console listing what it wired, anything it 
 
 ---
 
-## 7. Current requests
+## 7. The generation queue
 
-### 7.1 Already delivered — use these as reference, do not regenerate
+Everything the world needs, in the order it is needed. **One band per run** (see the note at the
+top of this file). A band is finished when its assets have imported cleanly and been accepted —
+not when they have been delivered.
 
-The round trip works. These are in the game and are the visual reference every new asset is
-matched against:
+| Band | What | Assets | Why this order |
+|---|---|---|---|
+| **1** | §7.3 The three refused player sheets | 3 sheets | Nothing else is drawn until the player is right — every other character is matched against them. |
+| **2** | §7.5 The tutorial cast | 8 sheets | The opening quest is the only scripted content that exists; it currently runs with placeholder capsules. |
+| **3** | §7.6 World props | 21 singles | Four of the six chunks are **completely empty** — ground, edges and nothing else. This is the band that unblocks world-building. |
+| **4** | §7.7 The ambient cast | 11 sheets | Civilians and roamers. Needed before the consequence layer means anything, since Nosey Parkers are civilians. |
+| **5** | §7.8 The consequence layer | 10 sheets | Police tiers, first two only. Last because they are five variations on one silhouette and the game is playable without them. |
+
+### 7.1 Delivered — the visual reference, do not regenerate
+
+The round trip works. These are in the game and are what every new asset is matched against:
 
 | File | Notes |
 |---|---|
@@ -260,86 +301,242 @@ matched against:
 | `sheet_char_player_idle.png` | 4 frames. **The canonical player.** |
 | `sheet_char_player_walk.png` | 4 frames. |
 | `sheet_char_player_hurt.png` | 3 frames. |
+| `sheet_char_mosley_idle.png` | 4 frames. Councillor Mosley, standing in the world. |
+| `sheet_char_pharmacist_idle.png` | 4 frames. The pharmacist, standing in the world. |
 
-**Open `sheet_char_player_idle.png` before drawing any player sheet** and work from the image.
-It defines the face, build, clothes and — the part that keeps failing — the body width. See §3.
+**Open `sheet_char_player_idle.png` before drawing any player sheet** and work from the image. It
+defines the face, build, clothes, and — the part that keeps failing — how much of the cell the
+figure fills. See §3.
 
-### 7.2 The rest of the player
+Its measurements, which are the numbers every other sheet is scored against:
 
-The player is **sheets, not singles** — they animate. One character serves all four classes; the
-classes differ in stats only, so there are no per-class variants. Frame counts, columns, fps and
-loop flags all come from the table in §7.3.
-
-Still needed, as `sheet_char_player_<action>.png`:
-
-| Action | Notes |
+| | Value |
 |---|---|
-| `attack` | Melee swing. |
-| `cast` | Casting a spell — this is a magic game, played straight. |
-| `death` | Falling. |
-| `cycle` | **Sat on the e-bike, pedalling.** The whole cell is rider *and* bike drawn as one image, matching `spr_vehicle_ebike.png`. Loops for as long as the player is riding. |
+| Figure height | **89% of cell height** |
+| Figure width | 26% of cell width |
+| Figure aspect (w ÷ h) | 0.29 |
+| Baseline drift across frames | **0 px** |
 
-`cycle` is the whole mount system's art. There is **no** separate `spr_char_player_ebike` single —
-an earlier version of this document asked for one and nothing consumes it. The rider is animated by
-the `cycle` sheet and the parked bike by `spr_vehicle_ebike`; those two files are all that is
-needed.
+### 7.2 Standard frame counts
 
-Player sheets are **auto-assigned on import**, so use exactly those filenames.
+All source cells **512×512** unless stated, one drawing per cell, subject filling ~90% of the cell
+height, feet near the bottom, facing camera-right. `worldHeight` 1.35 for people.
 
-### 7.3 Characters — sprite sheets
-
-All source cells **512×512** unless stated, subject filling most of the cell height, feet near the
-bottom, facing camera-right. `worldHeight` 1.35. Standard actions and frame counts:
-
-| Action | Frames | Columns | fps | Loop |
-|---|---|---|---|---|
-| `idle` | 4 | 4 | 6 | yes |
-| `walk` | 4 | 4 | 8 | yes |
-| `attack` | 6 | 6 | 12 | no |
-| `cast` | 6 | 6 | 12 | no |
-| `hurt` | 3 | 3 | 12 | no |
-| `death` | 6 | 6 | 10 | no |
-| `cycle` | 6 | 6 | 12 | yes |
+| Action | Frames | Columns | Rows | fps | Loop |
+|---|---|---|---|---|---|
+| `idle` | 4 | 4 | 1 | 6 | yes |
+| `walk` | 4 | 4 | 1 | 8 | yes |
+| `attack` | 6 | 6 | 1 | 12 | no |
+| `cast` | 6 | 6 | 1 | 12 | no |
+| `hurt` | 3 | 3 | 1 | 12 | no |
+| `death` | 6 | 6 | 1 | 10 | no |
 
 Frame counts are deliberately low. Every extra frame is another chance for the figure to drift in
 scale or angle, and at 65 px the difference between a 4-frame and an 8-frame walk is barely
 visible. Fewer, consistent frames beat more, inconsistent ones.
 
-**Councillor Mosley** — `sheet_char_mosley_<action>.png`, actions: `idle`, `walk`.
-An elderly UK city councillor. Pensioner, ill-fitting grey suit, lanyard, comb-over, self-important
-posture. A quest-giver who stands and talks — no combat.
+**`cycle` is cancelled** — see §7.9. Do not draw it for any character.
+
+### 7.3 Band 1 — the three refused player sheets
+
+`sheet_char_player_attack`, `sheet_char_player_cast` and `sheet_char_player_death` were delivered,
+refused, and are sitting in `art_incoming/rejected/`. They were measured against
+`sheet_char_player_idle`; these are the real numbers, not an impression.
+
+**Every one of them was laid out as 12 drawings in a 6×2 grid while its JSON declared 6 columns ×
+1 row of 512×512 cells.** The image really is 3072×512, so the importer's dimension check passed
+and it sliced six cells each containing two stacked figures. That is the first thing to fix, and
+it is a layout fix, not a redraw: **six drawings, one row, one drawing per 512×512 cell.**
+
+The second thing is scale. Measured on the grid the pixels actually show:
+
+| Sheet | Figure fills | Aspect vs idle | Empty cells | Fragment frames | Baseline drift |
+|---|---|---|---|---|---|
+| `attack` | **73%** of cell height | 0.85× (15% narrower) | 0 | 0 | 12.7 px at final size |
+| `cast` | **54%** | 1.07× | 1 of 12 | 3 | 43.0 px |
+| `death` | **50%** | 1.57× (prone, expected) | 2 of 12 | 4 | 57.0 px |
+
+Read that table as three separate instructions:
+
+- **Scale the figure up.** The accepted `idle` fills 89% of its cell height. These fill half to
+  three-quarters, which is why the width check refused all three — a figure drawn at 60% scale is
+  60% as wide, whatever its proportions. The drawings themselves are close to correctly
+  proportioned; `attack` is only 15% narrower than the idle figure, which alone would have passed.
+- **`cast` and `death` have broken frames.** `cast` has one completely empty cell and three more
+  holding a fragment under half the height of the others; `death` has two empty and four
+  fragments. Those are not poses, they are failed generations, and they must not be delivered as
+  frames. Six good frames or fewer — say so in `frameCount` — beats six slots with gaps.
+- **Baselines wander.** The limit is 2 px at final size. `attack` at 12.7 px is close enough that
+  fixing the scale and layout may fix it; `cast` at 43 px and `death` at 57 px are frames drawn at
+  unrelated positions in their cells. `death` is exempt from this check because a falling body
+  legitimately changes shape — but the exemption is for the *pose*, not for the figure wandering
+  around the cell between frames.
+
+Requested, as `sheet_char_player_<action>.png`:
+
+| Action | Notes |
+|---|---|
+| `attack` | Melee swing. 6 frames, one row. |
+| `cast` | Casting a spell — this is a magic game, played straight. 6 frames, one row. |
+| `death` | Falling. 6 frames, one row. The figure changes shape; it does not change position in the cell. |
+
+Player sheets are **auto-assigned on import**, so use exactly those filenames.
+
+### 7.4 The cast — who exists and what they still need
+
+One table so nothing is drawn twice. ✅ delivered, ⬜ requested, — not wanted.
+
+| Subject | `idle` | `walk` | `attack` | `hurt` | `death` | `cast` | Band |
+|---|---|---|---|---|---|---|---|
+| `player` | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | 1 |
+| `danielpauls` | ⬜ | ⬜ | — | — | — | ⬜ | 2 |
+| `underhoused` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 2 |
+| `mosley` | ✅ | ⬜ | — | — | — | — | 4 |
+| `pharmacist` | ✅ | ⬜ | — | — | — | — | 4 |
+| `villager` | ⬜ | ⬜ | — | — | — | — | 4 |
+| `noseyparker` | ⬜ | ⬜ | — | — | — | — | 4 |
+| `squirrel` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 4 |
+| `police_pcso` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 5 |
+| `police_bobby` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 5 |
+| `police_armed` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | later |
+| `police_occultagent` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | later |
+| `police_occultcommander` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | later |
+
+A subject with no `walk` sheet slides along the ground when it moves, so a roaming character needs
+one and a standing one does not.
+
+### 7.5 Band 2 — the tutorial cast
+
+The opening magic quest is the only scripted sequence in the game and both of its characters are
+untextured capsules today.
 
 **Daniel Pauls** — `sheet_char_danielpauls_<action>.png`, actions: `idle`, `walk`, `cast`.
 A stage magician in a **pink jazzy Las Vegas suit** — sequins, wide lapels, ruffled shirt, far too
 much for a British council estate, which is the joke. Middle-aged, theatrical. He teaches the
 player their first spell, so `cast` should be a showman's flourish rather than a grim incantation.
 
-**The tracksuit geezer** — `sheet_char_underhoused_<action>.png`, actions: `idle`, `walk`, `attack`,
-`hurt`, `death`. Sketchy bloke in a full tracksuit, **wild unkempt hair**, twitchy. He panics and
-zaps the player during the opening magic quest and is then killed, so he needs the full hostile set.
-`attack` is a wild flailing magic zap, not a weapon swing.
+**The tracksuit geezer** — `sheet_char_underhoused_<action>.png`, actions: `idle`, `walk`,
+`attack`, `hurt`, `death`. Sketchy bloke in a full tracksuit, **wild unkempt hair**, twitchy. He
+panics and zaps the player during the opening magic quest and is then killed, so he needs the full
+hostile set. `attack` is a wild flailing magic zap, not a weapon swing.
 
-**Angry squirrel** — `sheet_char_squirrel_<action>.png`, actions: `idle`, `walk`, `attack`, `hurt`,
-`death`. **`worldHeight` 0.45** — it finishes around 22 px, so source cells of 256×256 are plenty
-rather than the usual 512. A genuinely furious grey squirrel. Comic menace, not cute.
+### 7.6 Band 3 — world props
 
-**Roaming pharmacist** — `sheet_char_pharmacist_<action>.png`, actions: `idle`, `walk`.
-A drug dealer with the bearing and costume of a high-street pharmacist — white coat, name badge,
-clipboard, entirely straight-faced about it. The gag is deadpan; play it completely seriously.
-
-### 7.4 Props — single sprites
+**This is the band that unblocks world-building.** `Home_Alvaston` is dressed with 3D models
+(houses, trees, fences, a bus stop); `North_Wasteland`, `South_Slums`, `East_RetailPark` and
+`West_Canal` contain a ground plane, four edge triggers and four boundary walls — nothing else.
 
 Buildings are billboards, but the camera is **fixed** at pitch 30°, yaw −45° and never rotates, so
 draw them **in that same isometric projection** — two faces of the box visible, seen from slightly
 above. Not a flat straight-on elevation. Do not paint ground, shadow or surroundings.
 
+Props are **single sprites**, not sheets: no grid, no baseline, no frame count. They are the
+cheapest thing in this pipeline and the highest-value.
+
+*Anywhere*
+
 | File | `worldHeight` | Notes |
 |---|---|---|
-| `spr_prop_office_building.png` | 6.0 | A sketchy, boxy low-rise office block. Plain, cheap, slightly grim — think a two- or three-storey building on a British retail park. Simple massing, few details. |
 | `spr_prop_shed.png` | 2.2 | A small garden shed. Timber, weathered, single door, maybe one window. |
+| `spr_prop_wheelie_bins.png` | 1.1 | Two or three council wheelie bins together, lids down, one slightly askew. |
+| `spr_prop_dead_tree.png` | 2.2 | Bare, scrubby, half-dead. Not a picturesque winter tree. |
 
-### 7.5 Later
+*North_Wasteland — edgeland scrub, fly-tipping, nothing maintained*
 
-Five police tiers (PCSO hi-vis yellow, Bobby navy, Armed Response black, Occult Agent trench-coat
-brown, Occult Commander Ministry red), the Nosey Parker civilian, and the pub exterior — all
-currently coloured capsules and primitives.
+| File | `worldHeight` | Notes |
+|---|---|---|
+| `spr_prop_pylon.png` | 9.0 | Electricity pylon, steel lattice. Tall and thin — width follows the subject. |
+| `spr_prop_burnt_car.png` | 1.5 | Burnt-out hatchback, no glass, blackened. |
+| `spr_prop_flytip_pile.png` | 1.4 | Fly-tipped heap: a mattress, a fridge on its side, split bin bags. |
+| `spr_prop_portacabin.png` | 2.6 | Site portacabin, grubby, one door and a barred window. |
+
+*South_Slums — council estate*
+
+| File | `worldHeight` | Notes |
+|---|---|---|
+| `spr_prop_lowrise_flats.png` | 7.5 | Three- or four-storey council block, walkway balconies, pebbledash. |
+| `spr_prop_boarded_house.png` | 4.5 | Terraced house with steel security screens over the door and windows. |
+| `spr_prop_lockup_garages.png` | 2.4 | A run of three or four lock-up garages, up-and-over doors, one dented. |
+| `spr_prop_offlicence.png` | 3.6 | Corner off-licence, shutters half down, cluttered window, cheap signage. |
+
+*East_RetailPark*
+
+| File | `worldHeight` | Notes |
+|---|---|---|
+| `spr_prop_office_building.png` | 6.0 | A sketchy, boxy low-rise office block. Plain, cheap, slightly grim. Simple massing, few details. |
+| `spr_prop_retail_unit.png` | 5.0 | Big-box retail shed, flat roof, glazed front, blank fascia — no real brand names. |
+| `spr_prop_pylon_sign.png` | 4.5 | Tall illuminated retail-park sign on a pole, blank panels. |
+| `spr_prop_trolley_bay.png` | 1.6 | Steel trolley bay with a few trolleys in it. |
+
+*West_Canal*
+
+| File | `worldHeight` | Notes |
+|---|---|---|
+| `spr_prop_narrowboat.png` | 1.8 | Moored narrowboat, painted, slightly shabby. Drawn side-on-ish to the camera like everything else. |
+| `spr_prop_lock_gate.png` | 2.4 | Canal lock gate, black timber, white-tipped balance beam. |
+| `spr_prop_canal_bridge.png` | 3.2 | Small brick humpback bridge over the cut. |
+| `spr_prop_reeds.png` | 1.1 | A clump of canal-bank reeds. |
+
+*Home_Alvaston*
+
+| File | `worldHeight` | Notes |
+|---|---|---|
+| `spr_prop_pub_exterior.png` | 5.0 | A proper British estate pub — brick, hanging sign, frosted glass. **The pub is the game's manual save point**, so it must read as a pub at 240 px and from across the street. |
+| `spr_prop_corner_shop.png` | 4.0 | Newsagent-style corner shop, awning, ice-cream A-board. |
+
+> **Note for the Unity side, not the art agent:** props import to `Assets/Art/Generated/props/` and
+> are wired by hand or by a `PlacementPreset`. Only the player, the e-bike and NPC subjects with a
+> matching `ArtSubject` on a preset are auto-assigned.
+
+### 7.7 Band 4 — the ambient cast
+
+**Councillor Mosley** — `sheet_char_mosley_walk.png`. Idle is delivered; match it exactly.
+Elderly UK city councillor, pensioner, ill-fitting grey suit, lanyard, comb-over, self-important
+posture.
+
+**Roaming pharmacist** — `sheet_char_pharmacist_walk.png`. Idle is delivered; match it exactly.
+A drug dealer with the bearing and costume of a high-street pharmacist — white coat, name badge,
+clipboard, entirely straight-faced about it. The gag is deadpan; play it completely seriously.
+
+**Villager** — `sheet_char_villager_<action>.png`, actions: `idle`, `walk`.
+The generic background human. Unremarkable on purpose: jeans, jacket, carrier bag. This one gets
+placed dozens of times, so it must be forgettable rather than characterful.
+
+**Nosey Parker** — `sheet_char_noseyparker_<action>.png`, actions: `idle`, `walk`.
+A civilian who phones the police when they see you casting. **Must be recognisable at a glance and
+distinct from the villager** — this is a gameplay signal, not decoration; the player has to learn
+to spot one across a street. Suggested read: middle-aged, arms folded or phone already in hand,
+net-curtain energy, a hi-vis "community watch" tabard if that helps them stand out.
+
+**Angry squirrel** — `sheet_char_squirrel_<action>.png`, actions: `idle`, `walk`, `attack`,
+`hurt`, `death`. **`worldHeight` 0.45** — it finishes around 22 px, so source cells of 256×256 are
+plenty rather than the usual 512. A genuinely furious grey squirrel. Comic menace, not cute.
+
+### 7.8 Band 5 — the consequence layer
+
+Five police tiers escalate as the wanted level rises. All five are untextured capsules today.
+Actions for each: `idle`, `walk`, `attack`, `hurt`, `death`. **Band 5 is the first two only** —
+`police_pcso` and `police_bobby`. The rest are listed so the visual escalation can be designed as
+a set, and are requested later.
+
+| Subject | Tier | Look |
+|---|---|---|
+| `police_pcso` | 1 | Community support officer. Hi-vis yellow, no kit, apologetic. |
+| `police_bobby` | 2 | Regular constable. Navy, stab vest, radio. |
+| `police_armed` | 3 | Armed response. Black, helmet, carbine. |
+| `police_occultagent` | 4 | Occult Agent. Brown trench coat, sigils where the insignia should be. |
+| `police_occultcommander` | 5 | Occult Commander. Ministry red, ceremonial, unmistakably the worst thing that has happened to you. |
+
+The escalation has to read at 65 px, so **separate the tiers by silhouette and colour block**, not
+by detail: yellow → navy → black → brown → red, getting bulkier as they go.
+
+### 7.9 Cancelled and not requested
+
+- **`cycle` — cancelled.** The rider is drawn by layering the e-bike sprite over the ordinary
+  character sprite, which is what the game already does. There is no `Cycle` animation state to
+  fill. Do not draw a `cycle` sheet for the player or anyone else; the rejected
+  `sheet_char_player_cycle` has been discarded rather than sent back.
+- **`spr_char_player_ebike` — not requested.** An old version of this document asked for a single
+  sprite of the player on the bike. Nothing consumes it.
+- **Per-class player variants — not requested.** One character serves all four classes; the classes
+  differ in stats only.
