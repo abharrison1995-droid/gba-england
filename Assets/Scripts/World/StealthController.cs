@@ -24,7 +24,8 @@ namespace ExiledAlvaston.World
 
         private void Update()
         {
-            // Simple toggle for PC. On mobile, this would be wired to a UI button.
+            // Kept alongside the HUD's CRO button (UIManager.OnCrouchPressed) rather than replaced
+            // by it — the keyboard toggle is how this gets tested in the editor.
             if (Input.GetKeyDown(KeyCode.C))
             {
                 ToggleStealth();
@@ -60,6 +61,10 @@ namespace ExiledAlvaston.World
                     UIManager.Instance?.ShowToast("Out of stealth.");
                 }
             }
+
+            // Outside the null-player branch: the button must still repaint even if the toggle
+            // could not be applied, or it would show a crouch state the player is not in.
+            UIManager.Instance?.RefreshCrouchButton();
         }
 
         /// <summary>

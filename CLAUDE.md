@@ -8,7 +8,8 @@ again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
 `feat/npc-preset-pipeline` (**§13**, plus §5, §9, §9b, §11 and §12 where that work closed items
 they had open), and again the same day on `docs/art-brief-and-queue` for the art brief (§11 and
 §12 — the `cycle` sheet is cancelled and the rejected player sheets have been measured) and
-`fix/scene-root-props` for the scene-root props (§8, §9b, §11). Facts
+`fix/scene-root-props` for the scene-root props (§8, §9b, §11 — all verified in the
+editor) and `feat/crouch-button` for the mobile crouch toggle (§7, §8). Facts
 here are verified against code, not against design docs. Where code and a design doc disagree,
 this file records **what the code actually does**.
 
@@ -236,6 +237,12 @@ Renaming these breaks Unity serialization silently (fields go null / enums shift
 - **Enums are serialized by integer index.** Reordering or inserting values silently remaps
   existing data. Live enums: `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`,
   `GameFlowState`, `HUDActionButton.ActionKind`, `InstanceDoor.Destination`. Always append.
+  `HUDActionButton.ActionKind` is the one with values proven live in serialized data: `c.unity`
+  holds **six** authored `HUDActionButton` components covering all four original values —
+  `Attack=0` on `AttackButton`, `Ability=1` on `Skill0/1/2`, `Inventory=2` on `MapBagShortcut`,
+  `Interact=3` on `InteractButton`. They belong to the legacy cluster that `BuildActionButtons`
+  deactivates, but they are still serialized, so a reorder would repoint them. `Crouch` was
+  appended as 4.
 - **`Assets/Data/Chunks/*.asset` reference each other by GUID** for adjacency. Deleting or
   regenerating a `.meta` breaks the adjacency graph.
 - ⚠️ **Never rebuild an existing prefab by deleting and re-saving it.**
@@ -280,11 +287,14 @@ is the single most load-bearing line in the whole consequence loop.
 
 ### Known issues in these systems (verified, all open)
 
-- **Stealth is keyboard-only.** `StealthController.Update` reads `Input.GetKeyDown(KeyCode.C)`,
-  with its own comment noting mobile needs a UI button. On a touchscreen-first game this makes
-  stealth unreachable — and since `TryPickpocket` requires `IsCrouched`, **pickpocketing is
-  unreachable on mobile too.** It also means the crouch-plus-vehicle composition that §11's
-  modifier stack exists to handle cannot be exercised on a device at all.
+- ~~**Stealth is keyboard-only.**~~ **Fixed** on `feat/crouch-button`. The HUD has a **CRO** button
+  (`HUDActionButton.ActionKind.Crouch` → `UIManager.OnCrouchPressed` →
+  `StealthController.ToggleStealth`), built in code beside ATK and USE, reading `ATK, USE, CRO`
+  right to left along the bottom. `KeyCode.C` still works and is how it gets tested in the editor.
+  The button shows its state — `EKVibe.ButtonBrownActive` and the label **STAND** while crouched —
+  repainted by `UIManager.RefreshCrouchButton`, which `ToggleStealth` calls so the key and the
+  button can never disagree. This also makes **pickpocketing reachable on mobile** for the first
+  time, since `TryPickpocket` requires `IsCrouched`.
 - ~~**The ModernBritain props are in every chunk.**~~ **Fixed** on `fix/scene-root-props`. All
   three scene-root instances are gone from `c.unity`, each by the route that suits it:
   - `Pub_TheWinchester` is now a **nested prefab instance inside `Home_Alvaston_Prefab`** at local
@@ -299,8 +309,10 @@ is the single most load-bearing line in the whole consequence loop.
     the event survive. Author a new civilian type from scratch and it will not be robbable.
   - `Moped` (the hand-placed e-bike) was deleted — see §11, which this closes.
 
-  ⚠️ **There are now zero Nosey Parkers in the game until they are stamped.** The preset exists;
-  nothing has been placed with it. Same for the pub in any chunk other than Home.
+  **All four verified in the editor on 2026-07-29**: the scene loads clean, the parkers were
+  stamped through the palette, the pub is where it was, and the bike spawns. The hand-written
+  nested `PrefabInstance` block was accepted by Unity — which is worth knowing, because it means
+  mirroring the blocks already in a prefab file is a workable way to author one without Unity.
 - ~~**`MovementSpeed` has no single owner.**~~ **Fixed** (`a6b387e`, on `main`). Modifiers are
   keyed by source via `CombatController.SetSpeedMultiplier` / `ClearSpeedMultiplier`, and
   movement reads `EffectiveMovementSpeed`. `MovementSpeed` is now a read-only base — never
@@ -506,8 +518,10 @@ A colon is illegal in Windows paths and git repo names, so any repo/folder would
 ## 11. Mounts and vehicles
 
 Merged to `main`, compiled, and play-tested in the editor: mounting, dismounting, the boost, the
-prompt flip and the visuals all work. The **data-driven spawner path is not yet exercised** — the
-scene still holds a hand-placed vehicle instance and no chunk has a `VehicleSpawns` entry.
+prompt flip and the visuals all work. **The data-driven spawner path has now been exercised too**
+(2026-07-29): the hand-placed instance is deleted, `Home_Alvaston_Data.VehicleSpawns` is the only
+source of the bike, and it was confirmed in the editor to spawn. Nothing in §11 is unverified any
+more.
 
 The stealable vehicle is a **hire e-bike** ("Limey E-Bike"). It was a Deliveroo moped until
 `EBike.prefab` was renamed; if you find "moped" in a comment it is describing history.
@@ -569,9 +583,9 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
 3. ~~Delete the hand-placed instance in `c.unity`.~~ **Done** on `fix/scene-root-props`. The
    scene-root `Moped` — a leftover name override from before the prefab was renamed, which is why
    searching the Hierarchy for "EBike" or "Limey" found nothing — is gone. `VehicleSpawner` and
-   `Home_Alvaston_Data.VehicleSpawns` are now the only source of the bike, which means **the
-   data-driven spawner path is no longer optional and has still never been run.** If no bike
-   appears in Home_Alvaston, that path is what to debug, not the missing instance.
+   `Home_Alvaston_Data.VehicleSpawns` are now the only source of the bike, **and that path was
+   confirmed working in the editor.** If no bike appears in Home_Alvaston, debug the spawner; there
+   is no longer an instance to fall back on.
 
 `EBike.prefab` currently has **no sprite assigned** — the code-generated placeholder was deleted
 with the rename, and the art comes from §12 instead.

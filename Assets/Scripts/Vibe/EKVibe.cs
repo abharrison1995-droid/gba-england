@@ -40,6 +40,8 @@ namespace ExiledAlvaston.Vibe
         public static readonly Color SlotFrame = new Color(0.38f, 0.3f, 0.2f, 1f);
         public static readonly Color SlotEmpty = new Color(0.55f, 0.48f, 0.35f, 0.85f);
         public static readonly Color ButtonBrown = new Color(0.5f, 0.38f, 0.22f, 1f);
+        /// <summary>ButtonBrown, lit — a HUD toggle that is currently ON, e.g. the crouch button.</summary>
+        public static readonly Color ButtonBrownActive = new Color(0.72f, 0.58f, 0.28f, 1f);
         public static readonly Color TextDark = new Color(0.15f, 0.1f, 0.05f, 1f);
         public static readonly Color TextLight = new Color(0.95f, 0.93f, 0.88f, 1f);
 

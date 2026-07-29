@@ -10,7 +10,13 @@ namespace ExiledAlvaston.UI
     [RequireComponent(typeof(Button))]
     public class HUDActionButton : MonoBehaviour
     {
-        public enum ActionKind { Attack, Ability, Inventory, Interact }
+        /// <summary>
+        /// ⚠ Serialized by integer index — APPEND ONLY (CLAUDE.md §7). All four original values are
+        /// live in c.unity's legacy action cluster (Attack=0 on AttackButton, Ability=1 on Skill0-2,
+        /// Inventory=2 on MapBagShortcut, Interact=3 on InteractButton), so reordering would silently
+        /// turn the attack button into something else. Crouch was appended as 4.
+        /// </summary>
+        public enum ActionKind { Attack, Ability, Inventory, Interact, Crouch }
 
         public ActionKind Kind = ActionKind.Ability;
         public int AbilityIndex;
@@ -77,6 +83,9 @@ namespace ExiledAlvaston.UI
                     break;
                 case ActionKind.Interact:
                     UIManager.Instance.OnInteractPressed();
+                    break;
+                case ActionKind.Crouch:
+                    UIManager.Instance.OnCrouchPressed();
                     break;
                 default:
                     UIManager.Instance.OnActionButtonPressed(AbilityIndex);

@@ -58,6 +58,14 @@ namespace ExiledAlvaston.UI
         private readonly Image[] _spellSlotImages = new Image[4];
         private readonly TextMeshProUGUI[] _spellSlotLabels = new TextMeshProUGUI[4];
 
+        /// <summary>
+        /// The crouch button's background and label. Unlike the spell slots these are not polled
+        /// every frame — IsCrouched only ever changes inside StealthController.ToggleStealth, which
+        /// calls RefreshCrouchButton itself, so both the button and the C key keep it in step.
+        /// </summary>
+        private Image _crouchButtonImage;
+        private TextMeshProUGUI _crouchButtonLabel;
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -265,6 +273,17 @@ namespace ExiledAlvaston.UI
             World.PlayerInteractor.Instance?.TryInteract();
         }
 
+        /// <summary>
+        /// Crouch toggle. Until this existed, stealth was reachable only by pressing C, which on a
+        /// touchscreen-first game meant stealth — and therefore pickpocketing, which requires
+        /// IsCrouched — could not be used on a device at all.
+        /// </summary>
+        public void OnCrouchPressed()
+        {
+            var stealth = World.StealthController.Instance ?? FindObjectOfType<World.StealthController>();
+            stealth?.ToggleStealth();
+        }
+
         /// <summary>Called by PlayerInteractor whenever the closest in-range Interactable changes.</summary>
         public void SetInteractPrompt(string prompt)
         {
@@ -414,7 +433,37 @@ namespace ExiledAlvaston.UI
                 _spellSlotLabels[i] = b.GetComponentInChildren<TextMeshProUGUI>();
             }
 
+            // CRO — crouch toggle, third in the bottom row: ATK, USE, CRO reading right to left.
+            // Same size as USE and permanently visible, unlike USE, which hides with its prompt.
+            var crouch = CreateActionButton(panel.transform, "CRO", HUDActionButton.ActionKind.Crouch, 0,
+                new Vector2(110f, 110f), new Vector2(-424f, 40f), EKVibe.ButtonBrown);
+            _crouchButtonImage = crouch.GetComponent<Image>();
+            _crouchButtonLabel = crouch.GetComponentInChildren<TextMeshProUGUI>();
+            RefreshCrouchButton();
+
             RepositionInteractButton();
+        }
+
+        /// <summary>
+        /// Paints the crouch button to match StealthController.IsCrouched. Called by the controller
+        /// on every toggle — from the button and from the C key alike — and once at build time, so a
+        /// HUD rebuilt while already crouching does not come back showing "stood up".
+        /// </summary>
+        public void RefreshCrouchButton()
+        {
+            if (_crouchButtonImage == null && _crouchButtonLabel == null) return;
+
+            var stealth = World.StealthController.Instance;
+            bool crouched = stealth != null && stealth.IsCrouched;
+
+            if (_crouchButtonImage != null)
+                _crouchButtonImage.color = crouched ? EKVibe.ButtonBrownActive : EKVibe.ButtonBrown;
+
+            if (_crouchButtonLabel != null)
+            {
+                _crouchButtonLabel.text = crouched ? "STAND" : "CRO";
+                _crouchButtonLabel.fontSize = crouched ? 20 : 24;
+            }
         }
 
         private GameObject CreateActionButton(Transform parent, string label, HUDActionButton.ActionKind kind,
