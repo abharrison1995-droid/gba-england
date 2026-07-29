@@ -61,89 +61,28 @@ public static class PlacementBuilders
         return instance;
     }
 
+    /// <summary>
+    /// The NPC recipe itself lives in <see cref="NpcFactory"/>, so the running game builds exactly
+    /// the same character from exactly the same preset. Everything left here is the editor's own
+    /// concern and would not compile — or would not be wanted — at runtime.
+    /// </summary>
     private static GameObject BuildNPC(PlacementPreset preset, Vector3 position, Transform parent)
     {
-        string npcName = string.IsNullOrEmpty(preset.NpcName) ? "Villager" : preset.NpcName;
+        GameObject go = NpcFactory.Build(preset, position, parent);
+        if (go == null) return null;
 
-        var go = new GameObject($"NPC_{npcName}");
-        Place(go, position, parent, $"Place {preset.Label}");
+        // Registered after the fact rather than at creation: undoing the root takes the whole
+        // hierarchy the factory built underneath it.
+        Undo.RegisterCreatedObjectUndo(go, $"Place {preset.Label}");
 
-        var interactable = go.AddComponent<Interactable>();
-        interactable.Prompt = $"Talk to {npcName}";
-        interactable.InteractRange = 3f;
-
-        var talk = go.AddComponent<NPCDialogueInteractable>();
-        talk.Conversation = preset.Conversation;
-
-        // A sprite, not a controller, is what decides whether this NPC has a visual. An Animator
-        // does not evaluate in edit mode, so a preset carrying a controller and no NpcSprite used
-        // to take this branch and leave the SpriteRenderer empty — placing an NPC that is
-        // invisible in the Scene view and in the prefab stage you author in.
-        if (preset.NpcSprite != null)
-        {
-            var visual = go.AddComponent<WorldActorVisual>();
-            visual.ActorSprite = preset.NpcSprite;
-            // Resize through Height, never by scaling ActorVisual — ApplyVisual positions that
-            // child at Height/2 assuming scale 1, so scaling it buries the feet (CLAUDE.md §12).
-            visual.Height = HeightFor(preset);
-            visual.Width = EKVibe.CharacterWidth;
-            visual.ApplyVisual();
-
-            if (preset.NpcController != null)
-                AttachAnimator(go, preset.NpcController, preset.Label);
-        }
-        else
-        {
-            if (preset.NpcController != null)
-                Debug.LogWarning($"PlacementBuilders: '{preset.Label}' has an NpcController but no " +
-                                 "NpcSprite, so there would be nothing to see until the Animator " +
-                                 "ran. Placed as a placeholder body instead — import the subject's " +
-                                 "idle sheet, or set NpcSprite by hand.");
-
+        // Something to see and click on while authoring. Animators do not evaluate in edit mode,
+        // so a character placed before their art exists would otherwise be an invisible object
+        // sitting in the middle of the prefab stage you are placing into. Editor-only on purpose:
+        // a capsule loose in the running game is worse than a hole where a character should be.
+        if (preset.NpcSprite == null)
             BuildPlaceholderBody(go.transform);
-        }
 
-        ApplyQuestKey(preset, go);
         return go;
-    }
-
-    /// <summary>
-    /// World height to build an actor at. <see cref="PlacementPreset.NpcHeight"/> of 0 means
-    /// inherit: the art importer writes the subject's own <c>worldHeight</c> there when its sheets
-    /// land, and the shared character height stands in until they do. Anything above 0 was set
-    /// deliberately and wins. An angry squirrel is 0.45 units against a councillor's 1.35, so this
-    /// is not cosmetic — it is the difference between a squirrel and a man in a squirrel suit.
-    /// </summary>
-    private static float HeightFor(PlacementPreset preset) =>
-        preset.NpcHeight > 0f ? preset.NpcHeight : EKVibe.CharacterHeight;
-
-    /// <summary>
-    /// Puts an Animator where the generated clips expect it.
-    ///
-    /// The importer binds every clip with an empty path, meaning "the SpriteRenderer is on the
-    /// same GameObject as the Animator". WorldActorVisual puts the renderer on ActorVisual/SwingRoot,
-    /// so that is where the Animator has to go — one level up and the clips animate nothing while
-    /// looking perfectly well wired in the Inspector. This is the gap that made animated NPCs
-    /// impossible, since NPC placement only ever assigned a static sprite.
-    /// </summary>
-    private static void AttachAnimator(GameObject npc, RuntimeAnimatorController controller, string label)
-    {
-        Transform swingRoot = npc.transform.Find("ActorVisual/SwingRoot");
-        if (swingRoot == null)
-        {
-            Debug.LogWarning($"PlacementBuilders: '{label}' has an NpcController but no " +
-                             "ActorVisual/SwingRoot to put the Animator on — WorldActorVisual.ApplyVisual " +
-                             "did not build its hierarchy. The NPC will not animate.");
-            return;
-        }
-
-        var animator = swingRoot.GetComponent<Animator>();
-        if (animator == null) animator = swingRoot.gameObject.AddComponent<Animator>();
-        animator.runtimeAnimatorController = controller;
-        // Sprites are billboards with no bones; culling by a skinned bounds nobody set would stop
-        // the clip updating whenever the actor is off the (nonexistent) renderer's bounds.
-        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-        animator.applyRootMotion = false;
     }
 
     private static GameObject BuildEnemy(PlacementPreset preset, Vector3 position, Transform parent)
