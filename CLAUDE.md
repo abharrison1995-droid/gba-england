@@ -9,19 +9,11 @@ again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
 they had open). Facts here are verified against code, not against design docs. Where code and a
 design doc disagree, this file records **what the code actually does**.
 
-> ⚠️ **§13 is only partly compiled.** Unity last built this project at **01:27 on 2026-07-29**
-> (`Library/ScriptAssemblies/Assembly-CSharp.dll`), which covered `NpcFactory`, `NPCWander` and the
-> preset work. **`PlacementPresetLibrary.cs` was written at 01:38, after that build**, so it has
-> never been imported or compiled — and `MagicTutorial` and `StarterPresetGenerator` both call into
-> it. Play mode has not been run against any of §13.
->
-> Two consequences to clear on the next Unity open, in this order:
-> 1. Its `.meta` is now committed (`e130481`) with a pinned GUID, so do **not** let Unity mint a
->    different one — it is already there and correct.
-> 2. **`Assets/Resources/PlacementPresetLibrary.asset` does not exist.** `Resources/` holds only
->    `Items`. Until `Tools → GBA → Content → Create Starter Presets` is run to write it,
->    `PlacementPresetLibrary.Get` returns null on every lookup and says so in the console.
->    Commit that asset *and* its meta.
+> ⚠️ **§13 compiles, but has never been run.** All of it is now imported and built, and
+> `Assets/Resources/PlacementPresetLibrary.asset` exists and binds to the pinned script GUID, so
+> `PlacementPresetLibrary.Get` resolves. **Play mode has still not been entered against any of
+> §13** — nothing here has been observed to behave, only to build. `NPCWander`, `NpcFactory` and
+> the tutorial's preset-built cast are all unexercised.
 >
 > Everything before §13 **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
 > boundary walls are generated and committed, the hardened importer has done a real round trip
@@ -214,11 +206,20 @@ Consequences to respect:
 - `Manor_Cellars_Data` has `ChunkName: "Manor Cellars"` (space) while every other chunk uses
   underscores. Do not "normalise" this casually — it is a save key.
 
-**Not saved:** `PlayerSession.TutorialComplete`, quest state, inventory, wanted level, and
-whether you are riding anything (§11 — a load puts you on foot with vehicles back at their
-authored spots, and a vehicle you had already nicked is nickable again).
-`PlayerSession` is `DontDestroyOnLoad` (memory only) so tutorial state resets on app restart
-while the position save survives — gates keyed off `TutorialComplete` will re-lock.
+**Inventory IS saved** — an earlier version of this file said it was not, and that was wrong.
+`SaveGameManager` writes one `InventorySaveEntry` per stack as `ItemID` + `Quantity`, and
+`PlayerSession.RestoreInventory` resolves each back through `Resources/Items`. Two consequences:
+
+- **`ItemData.ItemID` is a save key**, in the same class as `ChunkName`. Changing the `ItemID`
+  *value* on an existing item orphans it out of every save silently — the entry is read, the
+  lookup fails, the item is dropped and nothing is reported.
+- An item must stay reachable from `Resources/Items`, since that is how the load resolves it.
+
+**Not saved:** `PlayerSession.TutorialComplete`, quest state, wanted level, and whether you are
+riding anything (§11 — a load puts you on foot with vehicles back at their authored spots, and a
+vehicle you had already nicked is nickable again). `PlayerSession` is `DontDestroyOnLoad` (memory
+only) so tutorial state resets on app restart while the position save survives — gates keyed off
+`TutorialComplete` will re-lock.
 
 ## 7. Serialized-reference hazards
 
@@ -312,8 +313,10 @@ is the single most load-bearing line in the whole consequence loop.
 - **`fix/chunk-edges-and-tooling` is merged into `main` and deleted** — edge fixes, boundary walls,
   the `Tools/GBA` menu move, the importer hardening and the World Palette. So is
   `fix/moped-mount-and-melee-flag` (the melee-flag fix and all of §11).
-- **`feat/npc-preset-pipeline` is the live branch**: §13, pushed to `origin`, not merged into
-  `main` yet. `main` holds nothing the branch is missing. Partly compiled — see the header.
+- **`feat/npc-preset-pipeline` is merged (PR #1) and deleted**, both locally and on `origin`. Its
+  last commit landed separately: the PR merged at `0fb5046`, and the Resources library asset was
+  cherry-picked onto `main` afterwards as `2382c36`. **`main` is the only branch that exists** —
+  cut a new one before starting work.
 - ⚠️ **Commit a script's `.meta` with the script. This has now happened twice.** `PlacementPreset.cs`
   went in without one, and that file holds the GUID all fourteen `Preset_*.asset` files bind to via
   `m_Script` — a fresh clone would have minted a new one and silently detached every preset. Fixed
