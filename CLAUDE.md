@@ -9,13 +9,21 @@ again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
 they had open). Facts here are verified against code, not against design docs. Where code and a
 design doc disagree, this file records **what the code actually does**.
 
-> ⚠️ **`feat/npc-preset-pipeline` has not been compiled or run.** The NPC pipeline in §13 — the
-> preset fields, the importer's preset wiring, `NpcFactory`, `NPCWander`, the dialogue quick-path
-> and the tutorial migration — was written without a C# compiler. Balanced braces, matching call
-> sites and clean reference integrity are all that has been checked. Treat §13 as "what the code
-> says it does" until someone opens Unity.
+> ⚠️ **§13 is only partly compiled.** Unity last built this project at **01:27 on 2026-07-29**
+> (`Library/ScriptAssemblies/Assembly-CSharp.dll`), which covered `NpcFactory`, `NPCWander` and the
+> preset work. **`PlacementPresetLibrary.cs` was written at 01:38, after that build**, so it has
+> never been imported or compiled — and `MagicTutorial` and `StarterPresetGenerator` both call into
+> it. Play mode has not been run against any of §13.
 >
-> Everything before it **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
+> Two consequences to clear on the next Unity open, in this order:
+> 1. Its `.meta` is now committed (`e130481`) with a pinned GUID, so do **not** let Unity mint a
+>    different one — it is already there and correct.
+> 2. **`Assets/Resources/PlacementPresetLibrary.asset` does not exist.** `Resources/` holds only
+>    `Items`. Until `Tools → GBA → Content → Create Starter Presets` is run to write it,
+>    `PlacementPresetLibrary.Get` returns null on every lookup and says so in the console.
+>    Commit that asset *and* its meta.
+>
+> Everything before §13 **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
 > boundary walls are generated and committed, the hardened importer has done a real round trip
 > (Mosley and the pharmacist), and the World Palette has authored live content into
 > `Home_Alvaston_Prefab`.
@@ -304,12 +312,20 @@ is the single most load-bearing line in the whole consequence loop.
 - **`fix/chunk-edges-and-tooling` is merged into `main` and deleted** — edge fixes, boundary walls,
   the `Tools/GBA` menu move, the importer hardening and the World Palette. So is
   `fix/moped-mount-and-melee-flag` (the melee-flag fix and all of §11).
-- **`feat/npc-preset-pipeline` is the live branch**: §13, unmerged and uncompiled.
-- ⚠️ **Commit a script's `.meta` with the script.** `PlacementPreset.cs` was committed without its
-  own, and that file holds the GUID all fourteen `Preset_*.asset` files bind to via `m_Script` —
-  a fresh clone would have minted a new one and silently detached every preset. Fixed in `37e90d7`.
-  Unity writes metas on its next open, so a session that adds a `.cs` from outside the editor
-  leaves them untracked until someone opens the project and stages them.
+- **`feat/npc-preset-pipeline` is the live branch**: §13, pushed to `origin`, not merged into
+  `main` yet. `main` holds nothing the branch is missing. Partly compiled — see the header.
+- ⚠️ **Commit a script's `.meta` with the script. This has now happened twice.** `PlacementPreset.cs`
+  went in without one, and that file holds the GUID all fourteen `Preset_*.asset` files bind to via
+  `m_Script` — a fresh clone would have minted a new one and silently detached every preset. Fixed
+  in `37e90d7`. Then `PlacementPresetLibrary.cs` did the same; fixed in `e130481`, before anything
+  bound to it, which is the only reason a fresh GUID was safe to invent.
+  **The check is one command, so run it after adding any `.cs` from outside the editor:**
+  ```
+  git ls-files 'Assets/**/*.cs' | while read f; do [ -f "$f.meta" ] || echo "NO META: $f"; done
+  ```
+  Unity writes metas on its next open, so a session that adds a script without opening Unity leaves
+  the meta missing entirely — and if two machines then open it independently, they mint different
+  GUIDs and whatever binds to the script resolves on one and is null on the other.
 - ~~**`4b93ccc` on `feat/quest-placement-tools-and-mosley-quest` is NOT merged.**~~ **Nothing to
   do here.** That commit and that branch no longer exist in this repository — `git cat-file`
   cannot find the object, and `origin` carries only `main`. The fix it was said to hold, the
