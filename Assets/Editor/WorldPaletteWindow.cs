@@ -97,7 +97,10 @@ public class WorldPaletteWindow : EditorWindow
             EditorGUILayout.HelpBox(
                 "Pick a preset, then click in the Scene view to place it.\n" +
                 "In Prefab Mode placements go into the open prefab — which is where chunk content " +
-                "has to live, since chunks are instantiated from their prefab at runtime.",
+                "has to live, since chunks are instantiated from their prefab at runtime.\n\n" +
+                "A placement is a copy, not a link: editing a preset afterwards — or importing art " +
+                "that rewires it — changes what you place NEXT, not what is already standing there. " +
+                "To update an existing one, delete it and stamp it again.",
                 MessageType.None);
         }
 

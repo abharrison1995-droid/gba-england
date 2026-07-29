@@ -4,17 +4,21 @@ Guidance for Claude Code sessions in this repo. Written from a codebase audit (2
 revised the same day after the consequence mechanics were recovered from a stash and landed,
 again after the mount/vehicle work on `fix/moped-mount-and-melee-flag` (see §9 and §11), and
 again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
-`fix/chunk-edges-and-tooling` (§5, §4, §9b, §12). Facts here are verified against code, not
-against design docs. Where code and a design doc disagree, this file records **what the code
-actually does**.
+`fix/chunk-edges-and-tooling` (§5, §4, §9b, §12), and again on 2026-07-29 for the NPC pipeline on
+`feat/npc-preset-pipeline` (**§13**, plus §5, §9, §9b, §11 and §12 where that work closed items
+they had open). Facts here are verified against code, not against design docs. Where code and a
+design doc disagree, this file records **what the code actually does**.
 
-> ⚠️ **Nothing on `fix/chunk-edges-and-tooling` has been compiled or run.** The edge fixes, the
-> menu move, the importer hardening and the whole World Palette were written without a Unity
-> session or a C# compiler. Balanced braces and clean reference integrity are all that has been
-> checked. Everything in §5's edge-fix list, §9b and §12's animated-NPC note is "what the code
-> says it does". The same caveat still applies to §11, for the same reason.
+> ⚠️ **`feat/npc-preset-pipeline` has not been compiled or run.** The NPC pipeline in §13 — the
+> preset fields, the importer's preset wiring, `NpcFactory`, `NPCWander`, the dialogue quick-path
+> and the tutorial migration — was written without a C# compiler. Balanced braces, matching call
+> sites and clean reference integrity are all that has been checked. Treat §13 as "what the code
+> says it does" until someone opens Unity.
 >
-> **`ChunkBoundaryWallTool` has not been run**, so no chunk prefab has boundary walls yet.
+> Everything before it **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
+> boundary walls are generated and committed, the hardened importer has done a real round trip
+> (Mosley and the pharmacist), and the World Palette has authored live content into
+> `Home_Alvaston_Prefab`.
 
 > **Stale-brief warning.** An older written brief describes this as a "2D mobile RPG".
 > That is out of date. The game is **isometric by design** (confirmed 2026-07-26) and the
@@ -172,11 +176,13 @@ Fixed (all unverified in a running editor — see §10):
 - Dead ends call `ShowWarning("There's nothing that way.")`, throttled — `OnTriggerStay` would
   otherwise re-show it every tick.
 - **`ChunkBoundaryWallTool`** (`Tools/GBA/World/Add Chunk Boundary Walls`) puts invisible solid
-  walls at ±111 on all four sides of all six chunk prefabs. Where a neighbour exists the teleport
-  at 109 fires first, so they are inert; where the crossing is declined you bump a wall. Idempotent,
-  and it edits prefabs in place, so re-running is safe.
-  ⚠️ **This tool has not been run yet — the prefabs do not have walls until someone runs it.**
-- `ChunkManager.Update` teleports anyone below `y = -20` back to the chunk centre.
+  walls on all four sides of all six chunk prefabs. Where a neighbour exists the teleport at 109
+  fires first, so they are inert; where the crossing is declined you bump a wall. Idempotent, and
+  it edits prefabs in place, so re-running is safe. **It has been run** — every chunk prefab
+  carries `BoundaryWall_North/South/East/West`, committed in `a27d25a`.
+- `ChunkManager.Update` teleports anyone below `y = -20` to the chunk's default `PlayerSpawnPoint`,
+  falling back to the origin. It used to always use the origin, which stops being a recovery once
+  a chunk has buildings near the middle.
 
 `Manor_Cellars` was moved to `Coordinates (-1, -1)`; it used to collide with `West_Canal`'s
 `(-1, 0)`. All six are now unique. `Coordinates` is **not** a save key — only `ChunkName` is (§6)
@@ -295,8 +301,15 @@ is the single most load-bearing line in the whole consequence loop.
   `main` was unnecessary — everything in it had already landed via PR #2 — but it did no harm:
   nothing was resurrected and no file diverged. Because it is now an ancestor of `main`, the
   stash commit is permanently reachable and **the branch itself is safe to delete.**
-- **`fix/moped-mount-and-melee-flag` is merged into `main`** (the melee-flag fix and all of §11),
-  along with the art pipeline in §12. The branch is safe to delete.
+- **`fix/chunk-edges-and-tooling` is merged into `main` and deleted** — edge fixes, boundary walls,
+  the `Tools/GBA` menu move, the importer hardening and the World Palette. So is
+  `fix/moped-mount-and-melee-flag` (the melee-flag fix and all of §11).
+- **`feat/npc-preset-pipeline` is the live branch**: §13, unmerged and uncompiled.
+- ⚠️ **Commit a script's `.meta` with the script.** `PlacementPreset.cs` was committed without its
+  own, and that file holds the GUID all fourteen `Preset_*.asset` files bind to via `m_Script` —
+  a fresh clone would have minted a new one and silently detached every preset. Fixed in `37e90d7`.
+  Unity writes metas on its next open, so a session that adds a `.cs` from outside the editor
+  leaves them untracked until someone opens the project and stages them.
 - ~~**`4b93ccc` on `feat/quest-placement-tools-and-mosley-quest` is NOT merged.**~~ **Nothing to
   do here.** That commit and that branch no longer exist in this repository — `git cat-file`
   cannot find the object, and `origin` carries only `main`. The fix it was said to hold, the
@@ -377,8 +390,18 @@ Arm a preset, click in the Scene view, Shift to keep stamping, Esc to disarm.
   the palette shows a target-chunk field and a click appends a spawn entry (§11).
 - **Prefab Mode uses the stage's own physics scene** for the placement raycast. `Physics.Raycast`
   would hit the main scene's colliders, which are not even visible in the stage.
-- The five `Place/…` windows still exist and still work. The plan retires them only once the
-  palette has placed real content in a chunk — that needs a human in the editor.
+- **A placement of the palette's own is never the parent of the next one.** Placing selects what it
+  made, and the parent is read from the selection, so a Shift-held run of five used to bury the
+  fifth four levels deep. It reuses the parent that placement went into instead. Selecting anything
+  else still re-targets.
+- **A placement is a copy, not a link.** Editing a preset — or importing art that rewires it —
+  changes what you place *next*. To update something already standing in a chunk, delete it and
+  stamp it again. There is deliberately no resync tool; at current content volume restamping is
+  cheaper than the tool would be.
+- The five `Place/…` windows still exist and still work. The gate for retiring them (the palette
+  having authored real content) is now met — Mosley, the pharmacist and the e-bike spawn are all
+  palette output — but they have not been removed, because none of them has been checked for
+  anything the palette cannot yet do.
 
 ## 10. Working agreement
 
@@ -489,18 +512,16 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
   instance is replaced when the chunk reloads — so you re-nick and re-spike on every visit.
   Consistent with §6, where wanted level and inventory are not saved either.
 
-**Still open, to move off the hand-placed instance:**
+**Moving off the hand-placed instance — two down, one to go:**
 
-1. Run `Tools → GBA → Content → Create Starter Presets`. It writes
-   `Assets/Data/Vehicles/Limey_EBike_Data.asset` with `ChassisPrefab` set to `EBike.prefab`, and
-   confirms the asset reached disk before using it — an earlier attempt left `Home_Alvaston_Data`
-   pointing at a `VehicleData` that was never written, so **check the asset exists before trusting
-   a spawn entry.**
-2. `Tools → GBA → World Palette` → arm the "Limey E-Bike" preset, set the target chunk to
-   `Home_Alvaston_Data`, click where it should sit. (`Place → Vehicle Placement` still works and
-   does the same thing by typed coordinates.)
-3. **Delete the EBike instance at the root of `c.unity`**, or the hand-placed every-chunk one and
-   the spawned one both exist.
+1. ~~Create `Limey_EBike_Data.asset`.~~ **Done.** It exists with `ChassisPrefab` resolving to
+   `EBike.prefab`, committed in `37e90d7`.
+2. ~~Author a spawn onto `Home_Alvaston_Data`.~~ **Done.** `VehicleSpawns` carries one entry at
+   `(0.31, 0, 22.07)`, placed through the palette (`9b65d94`).
+3. ⚠️ **Still open: delete the hand-placed instance in `c.unity`.** Until it goes, the every-chunk
+   one and the spawned one both exist. **It is the scene-root GameObject named `Moped`**, at
+   `(-4, 0, 10.05)` — a leftover name override from before the prefab was renamed, which is why
+   searching the Hierarchy for "EBike" or "Limey" finds nothing.
 
 `EBike.prefab` currently has **no sprite assigned** — the code-generated placeholder was deleted
 with the rename, and the art comes from §12 instead.
@@ -590,21 +611,84 @@ Generated and **rejected**, sitting in `art_incoming/rejected/` waiting to be re
 player's `attack`, `cast`, `cycle` and `death` sheets. They were all delivered as 6 frames at
 3072×512.
 
-Requested but not yet generated, all specced in `ART_PIPELINE.md` §7: the five NPCs in §7.3
-(Councillor Mosley, Daniel Pauls, the tracksuit geezer, the angry squirrel, the roaming
-pharmacist); the office block and shed in §7.4.
+- `sheet_char_mosley_idle` and `sheet_char_pharmacist_idle` — 4 frames each, sliced, clipped, and
+  built into `mosley_Controller` and `pharmacist_Controller`. Both wired into their presets by the
+  importer, and both standing in `Home_Alvaston_Prefab` as the first NPCs authored end to end.
+
+`sheet_char_danielpauls_idle.json` is in `art_incoming/` **with no PNG beside it**. The importer
+reports it and skips it every run; it is a delivery that never happened, not a bug.
+
+Requested but not yet generated, all specced in `ART_PIPELINE.md` §7: `walk` for Mosley and the
+pharmacist, everything for Daniel Pauls, the tracksuit geezer and the angry squirrel; the office
+block and shed in §7.4.
 
 **The importer now archives what it accepts.** A clean pair moves to `art_incoming/processed/`;
 anything that reported a problem stays in `art_incoming/` so the next run shows only what is
 still wrong. `rejected/` is the hand-sorted pile above. Neither subfolder is read by the importer,
 which only ever looks at the top level.
 
-**Authored NPCs can now be animated.** `PlacementPreset.NpcController` carries a
-`RuntimeAnimatorController`, and `PlacementBuilders.AttachAnimator` puts an `Animator` on
-`ActorVisual/SwingRoot` — the same GameObject as the `SpriteRenderer`, which is what the generated
-clips require, since the importer binds every one of them with an **empty path**. One level up and
-the clips animate nothing while looking perfectly well wired in the Inspector.
+**Animated NPCs are §13.** The Animator goes on `ActorVisual/SwingRoot` — the same GameObject as
+the `SpriteRenderer` — because the importer binds every clip with an **empty path**. One level up
+and the clips animate nothing while looking perfectly well wired in the Inspector.
+`WorldActorVisual.AttachAnimator` owns that, and both the editor and the game call it.
 
-Still not solved: the NPCs spawned **in code** by `MagicTutorial` assign a single `Sprite` rather
-than a controller. Either move that spawning onto presets, or give it the same
-Animator-on-SwingRoot treatment, before those characters' sheets are worth generating.
+---
+
+## 13. The NPC pipeline
+
+⚠️ **Written without a compiler — see the warning at the top of this file.**
+
+Adding an NPC is meant to cost two clicks in Unity and no code at all:
+
+1. Spec the subject in `ART_PIPELINE.md` §7.3 and have the art agent deliver
+   `sheet_char_<subject>_*.png` + JSON to `art_incoming/`.
+2. Create a `PlacementPreset` (or let the starter generator make it): `Label`, `Category: NPC`,
+   `ArtSubject`, `AmbientLine` or a `Conversation`, `Roams` if it should wander.
+3. ⚑ `Tools → GBA → Art → Import Generated Art`. Sheets slice, clips build, a controller builds,
+   and **the preset wires itself** — controller, resting sprite, palette icon, height.
+4. ⚑ `Tools → GBA → World Palette`: arm it, click it into a chunk prefab.
+
+| Piece | File | What it owns |
+|---|---|---|
+| What an NPC *is* | `Data/PlacementPreset` | Art subject, height, dialogue, temperament, quest key. |
+| Building one | `World/NpcFactory` | The recipe. **Runtime**, so the game can call it too. |
+| Editor extras | `Editor/PlacementBuilders` | Undo, and the authoring capsule. Nothing else. |
+| Wiring art to presets | `Editor/ArtImportTool` | `AutoAssign`, plus a re-runnable menu item. |
+| Wandering | `AI/NPCWander` | Stroll, dwell, face, drive `Speed`. |
+| Ambient dialogue | `Editor/PresetDialogueTools` | Generates `DialogueData` from a one-liner. |
+| Runtime lookup | `Data/PlacementPresetLibrary` | The few presets code resolves by name. |
+
+**Things that will catch you out:**
+
+- **`NpcFactory` is runtime and must stay that way.** `Assets/Editor/` is stripped from builds, so
+  a recipe living there is unreachable from anything spawning an NPC while the game runs — which
+  is exactly how `MagicTutorial`'s characters ended up composed by hand, sharing one sprite between
+  them. Nothing in `NpcFactory` may touch `UnityEditor`.
+- **Dialogue is generated at authoring time, never at build time.** `AssetDatabase.CreateAsset`
+  does not exist at runtime. `NpcFactory` only ever *reads* `preset.Conversation`.
+- **`NpcHeight` of 0 means inherit** — the importer writes the subject's `worldHeight` there. No
+  preset hardcodes a value, including the squirrel, who is 0.45 against a councillor's 1.35 and
+  will read as a man in a squirrel suit until his sheets land.
+- **The importer always wins on controller and sprite, never on height.** Those two are derived
+  from the art, so a fresh import replaces placeholder wiring with no manual step; height is
+  tunable, so a hand-set value survives. Point a preset at another subject's animations on purpose
+  and the next import of its own subject reverts it.
+- **`Wire Presets From Imported Art`** (`Tools/GBA/Content/`) exists because an import only knows
+  the batch in front of it, and a clean batch is archived out of staging immediately. Art imported
+  months ago, or a preset written after its subject arrived, is only reachable this way.
+- **`NPCWander` is deliberately NavMesh-free.** `EKNavMeshBaker` bakes one mesh from whichever
+  chunk is loaded, and all six instantiate at the same origin — right for one, wrong for five.
+  `RuntimeNavMeshBaker` would fix it at the cost of a runtime bake per chunk crossing on a
+  mobile-first game. It probes ahead with a `SphereCast` and gives up on the stroll instead.
+- **`NPCWander` calls `SetFacing` every step.** Without it half of every wander is walked
+  backwards, which reads as a rendering bug.
+- **Tutorial presets must not carry a `Conversation`.** Daniel Pauls and the geezer run dialogue
+  off quest state and own their own `Interactable`; a preset conversation would answer the same
+  button press. `MagicTutorial.OwnInteraction` warns if it finds one.
+- **`PlacementPresetLibrary` lives in `Resources/`; the presets do not.** Everything reachable from
+  `Resources/` ships in the build, and the chest preset alone would drag in a 45 MB prop pack.
+  Entries are keyed by an authored string, so renaming a preset asset is safe.
+- **`EnemyAI.Animator` is a public field nothing assigns unless asked.** The geezer's attack, hurt
+  and death sheets would import, build a controller, and never play a frame. `MagicTutorial` sets
+  it from `WorldActorVisual.SpriteAnimator` when he turns hostile; anything else spawning an
+  animated enemy in code needs the same line.

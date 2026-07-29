@@ -105,14 +105,30 @@ namespace ExiledAlvaston.World
             }
 
             // Void catcher. Chunks are flat ground at y=0; falling well below that means the
-            // player found a hole, so put them back at the middle of the chunk they're in.
+            // player found a hole, so put them back somewhere standable in the chunk they're in.
             if (!_isTransitioning
                 && PlayerTransform != null
                 && PlayerTransform.position.y < VoidFloorY)
             {
-                TeleportPlayer(Vector3.zero);
-                ShowWarning("You slipped. Back to the middle of the map.");
+                TeleportPlayer(RecoveryPoint());
+                ShowWarning("You slipped. Back to solid ground.");
             }
+        }
+
+        /// <summary>
+        /// Where to put someone who has fallen out of the world: the chunk's own default arrival
+        /// point, falling back to the origin.
+        ///
+        /// The origin alone was fine while chunks were empty ground. It stops being fine the moment
+        /// one is built up — Home_Alvaston has houses near the middle — because recovering from a
+        /// hole in the floor by being posted inside a building is not much of a recovery.
+        ///
+        /// One GetComponentsInChildren, on a path that only runs once someone has already fallen
+        /// through the world.
+        /// </summary>
+        private Vector3 RecoveryPoint()
+        {
+            return PlayerSpawnPoint.ResolveWorldPosition(CurrentChunkInstance, Vector3.zero);
         }
 
         /// <summary>
