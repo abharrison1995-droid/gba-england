@@ -342,8 +342,18 @@ is the single most load-bearing line in the whole consequence loop.
   `fix/moped-mount-and-melee-flag` (the melee-flag fix and all of §11).
 - **`feat/npc-preset-pipeline` is merged (PR #1) and deleted**, both locally and on `origin`. Its
   last commit landed separately: the PR merged at `0fb5046`, and the Resources library asset was
-  cherry-picked onto `main` afterwards as `2382c36`. **`main` is the only branch that exists** —
-  cut a new one before starting work.
+  cherry-picked onto `main` afterwards as `2382c36`.
+- **2026-07-29: five stacked branches were fast-forwarded into `main` and deleted** —
+  `docs/art-brief-and-queue` (`6de4cda`), `fix/scene-root-props` (`14c5d91`, `ebc2f66`),
+  `feat/crouch-button` (`b9d5124`, `7b620f0`) and `feat/pickpocket-preset` (`b1de7fd`). They were
+  cut in sequence off each other, so the merge was a fast-forward and no merge commit exists.
+  ⚠️ **`b1de7fd` reached `main` without ever being compiled** — the pickpocket preset work was
+  written after the last editor session. Everything before it has at least compiled;
+  `fix/scene-root-props` was fully verified in the editor.
+- **`main` is the only branch that exists** — cut a new one before starting work.
+- **The next task is written up in `docs/STAGE_F_BRIEF.md`**: the `Home_Alvaston` → `Home_London`
+  rename (a save key — mapping table is in that file) and the six-commit inventory and loot
+  overhaul. It is a self-contained brief meant to be pasted into a fresh session.
 - ⚠️ **Commit a script's `.meta` with the script. This has now happened twice.** `PlacementPreset.cs`
   went in without one, and that file holds the GUID all fourteen `Preset_*.asset` files bind to via
   `m_Script` — a fresh clone would have minted a new one and silently detached every preset. Fixed
