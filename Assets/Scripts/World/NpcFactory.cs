@@ -51,6 +51,13 @@ namespace ExiledAlvaston.World
                 go.AddComponent<NPCDialogueInteractable>().Conversation = preset.Conversation;
 
             ApplyVisual(preset, go);
+
+            if (preset.Roams)
+            {
+                var wander = go.AddComponent<AI.NPCWander>();
+                wander.WanderRadius = preset.RoamRadius;
+            }
+
             ApplyQuestKey(preset, go);
 
             return go;

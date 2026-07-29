@@ -79,6 +79,7 @@ public static class StarterPresetGenerator
         // After creation, so a preset made moments ago already carries its subject and is skipped
         // rather than written twice.
         BackfillNpcPresets(filled);
+        GenerateAmbientConversations(filled);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -258,6 +259,27 @@ public static class StarterPresetGenerator
 
         AssetDatabase.CreateAsset(preset, path);
         created.Add(label);
+    }
+
+    /// <summary>
+    /// Turns any preset's typed ambient line into a real conversation asset.
+    ///
+    /// Ungated, unlike the back-fill above, and over every preset rather than only the starter
+    /// NPCs. It acts only where a line has been typed and no conversation is linked, which is
+    /// already exactly "asked for, not yet done" — so it is safe to run every time, and it picks up
+    /// a line typed into a preset that was back-filled months ago.
+    /// </summary>
+    private static void GenerateAmbientConversations(List<string> filled)
+    {
+        foreach (string guid in AssetDatabase.FindAssets("t:PlacementPreset"))
+        {
+            var preset = AssetDatabase.LoadAssetAtPath<PlacementPreset>(
+                AssetDatabase.GUIDToAssetPath(guid));
+            if (preset == null) continue;
+
+            if (PresetDialogueTools.EnsureAmbientConversation(preset))
+                filled.Add($"{preset.Label}: conversation generated from its ambient line");
+        }
     }
 
     private static MapChunkData LoadChunk(string assetName)
