@@ -136,8 +136,13 @@ public static class DiscoverEnglandSetup
             gr.sharedMaterial = floorMat;
         else
             gr.sharedMaterial = MakeFallbackMat(new Color(0.25f, 0.22f, 0.2f));
+        // CS0618 — see EKNavMeshBaker.MarkObject: the replacement API ships in
+        // com.unity.ai.navigation, which this project does not have, and the built-in bake reads
+        // this flag.
+#pragma warning disable 618
         GameObjectUtility.SetStaticEditorFlags(ground,
             StaticEditorFlags.NavigationStatic | StaticEditorFlags.BatchingStatic);
+#pragma warning restore 618
 
         // Black void skirt
         GameObject voidPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -236,8 +241,11 @@ public static class DiscoverEnglandSetup
         if (mat != null) r.sharedMaterial = mat;
         else r.sharedMaterial = MakeFallbackMat(EKVibe.DungeonWall);
         wall.AddComponent<EnvironmentBlocker>();
+        // CS0618 — see EKNavMeshBaker.MarkObject.
+#pragma warning disable 618
         GameObjectUtility.SetStaticEditorFlags(wall,
             StaticEditorFlags.NavigationStatic | StaticEditorFlags.BatchingStatic);
+#pragma warning restore 618
     }
 
     private static void CreateProp(Transform parent, Vector3 pos, Vector3 scale, Color color)

@@ -496,6 +496,19 @@ A brace/paren balance scan over the `.cs` files is worth running when a change i
 nothing can compile it. It catches a truncated edit; it says nothing about whether the code is
 correct, or even whether it builds. Do not report it as though it were a compile.
 
+**The four CS0618 warnings are suppressed on purpose — do not "modernise" them.** Both replacement
+APIs live in packages this project does not have (`Packages/manifest.json` lists neither
+`com.unity.ai.navigation` nor `com.unity.2d.sprite`), so the deprecated call is the only one that
+exists here:
+
+| Site | Deprecated | Replacement lives in | Why it stays |
+|---|---|---|---|
+| `EKNavMeshBaker.MarkObject`, `DiscoverEnglandSetup` ×2 | `StaticEditorFlags.NavigationStatic` | `com.unity.ai.navigation` | The baker calls built-in `UnityEditor.AI.NavMeshBuilder.BuildNavMesh()`, which is driven by this exact flag. Removing it stops the bake, it does not modernise it. |
+| `ArtImportTool` slicing | `TextureImporter.spritesheet` | `com.unity.2d.sprite` | Still functional. `VerifySliced` already checks the sub-sprites actually appeared, so if it ever becomes a no-op the tool reports it rather than importing an undivided sheet. |
+
+Each is a narrow `#pragma warning disable 618` / `restore 618` around the single statement, with
+the reason at the site. Revisit if either package is ever added.
+
 ⚠️ **Changes made in the Inspector while Play mode is running are discarded when it stops.** This
 has wasted real time: a value is tuned in play, it looks right, play stops, the old value returns,
 the scene is saved over the top. When asking for an editor change, say whether Play must be

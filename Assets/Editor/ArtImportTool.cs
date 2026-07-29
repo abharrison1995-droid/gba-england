@@ -1494,7 +1494,15 @@ public static class ArtImportTool
             // Deliberately not an early return. Slicing is the part most likely to go wrong, and
             // bailing here once left the asset imported with Unity's defaults — Default type,
             // PPU 100, bilinear — which is far worse than an unsliced sprite.
+            //
+            // CS0618: the replacement, UnityEditor.U2D.Sprites.ISpriteEditorDataProvider, ships in
+            // com.unity.2d.sprite, which is not in Packages/manifest.json — so in this project the
+            // modern API does not exist and this one still works. VerifySliced below is the guard
+            // for the day that stops being true: it checks the sub-sprites actually appeared rather
+            // than trusting the assignment.
+#pragma warning disable 618
             if (slices != null) importer.spritesheet = slices;
+#pragma warning restore 618
         }
 
         importer.SaveAndReimport();

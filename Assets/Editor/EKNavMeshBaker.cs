@@ -92,7 +92,15 @@ public static class EKNavMeshBaker
         if (go == null) return 0;
         StaticEditorFlags flags = GameObjectUtility.GetStaticEditorFlags(go);
         StaticEditorFlags next = flags | StaticEditorFlags.BatchingStatic;
+        // CS0618: NavigationStatic is deprecated in favour of NavMeshBuilder.CollectSources() and
+        // NavMeshBuildMarkup — which belong to com.unity.ai.navigation, a package this project does
+        // not have (Packages/manifest.json). This baker calls the built-in
+        // UnityEditor.AI.NavMeshBuilder.BuildNavMesh(), and that bake is driven by exactly this
+        // flag, so dropping it does not modernise the bake, it stops it working. Suppressed rather
+        // than migrated until the package is actually added.
+#pragma warning disable 618
         if (navigationStatic) next |= StaticEditorFlags.NavigationStatic;
+#pragma warning restore 618
         if (next == flags) return 0;
         GameObjectUtility.SetStaticEditorFlags(go, next);
         return 1;
