@@ -31,7 +31,7 @@ public static class DiscoverEnglandSetup
                 "from scratch — destroying any NPCs/enemies/chests/markers hand-placed into it since it was " +
                 "last generated — and will also destroy and rebuild the Title/Character-Creator UI and " +
                 "GameFlowController in the open scene.\n\n" +
-                "This does NOT touch Home_Alvaston_Prefab (where Mosley/the Neek Box live) — only Manor " +
+                "This does NOT touch Home_London_Prefab (where Mosley/the Neek Box live) — only Manor " +
                 "Cellars and the flow UI are affected.\n\nContinue?",
                 "Yes, rebuild",
                 "Cancel");
@@ -48,7 +48,7 @@ public static class DiscoverEnglandSetup
         BuildFlowUiAndController(london, manor);
         EnsureQuestTrackerOnHud();
         // NOTE: not calling FixPinkGrounds.FixAll() here — it would overwrite the custom
-        // ground/path materials already set up on Home_Alvaston. Only run that tool manually
+        // ground/path materials already set up on Home_London. Only run that tool manually
         // if a ground actually shows up pink/broken.
 
         Debug.Log("Discover England ready: Title → Creator → Manor Cellars quest → London gates door (re-enter). Enter Play Mode.");
@@ -64,15 +64,15 @@ public static class DiscoverEnglandSetup
 
     private static MapChunkData EnsureLondonData()
     {
-        string path = DataFolder + "/Home_Alvaston_Data.asset";
+        string path = DataFolder + "/Home_London_Data.asset";
         MapChunkData london = AssetDatabase.LoadAssetAtPath<MapChunkData>(path);
         if (london == null)
         {
-            Debug.LogError("Home_Alvaston_Data.asset missing — run chunk skeleton first or create London data.");
+            Debug.LogError("Home_London_Data.asset missing — run chunk skeleton first or create London data.");
             return null;
         }
 
-        // Keep ChunkName as "Home_Alvaston" — SaveGameManager/DeathScreenUI look chunks up by
+        // ChunkName stays "Home_London" — SaveGameManager/DeathScreenUI look chunks up by
         // this exact name. "London" is used as display-only flavor text elsewhere (UI labels).
         london.IsCity = true;
         london.IsTutorialDungeon = false;
@@ -404,7 +404,7 @@ public static class DiscoverEnglandSetup
 
     private static void EnsureManorEntranceOnLondonPrefab()
     {
-        string prefabPath = PrefabFolder + "/Home_Alvaston_Prefab.prefab";
+        string prefabPath = PrefabFolder + "/Home_London_Prefab.prefab";
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         if (prefab == null)
         {

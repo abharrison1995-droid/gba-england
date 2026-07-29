@@ -96,6 +96,9 @@ namespace ExiledAlvaston.Flow
             try
             {
                 var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(SavePath));
+                // Legacy save-key migration: the hub chunk was renamed Home_Alvaston -> Home_London.
+                if (data != null && data.ChunkName == "Home_Alvaston")
+                    data.ChunkName = "Home_London";
                 return data != null && !string.IsNullOrEmpty(data.ChunkName) ? data : null;
             }
             catch (Exception e)

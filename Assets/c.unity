@@ -19287,7 +19287,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Discover England
+  m_text: 'GBA: England'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -23807,7 +23807,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8511938320657510861, guid: 94b71e78235ab1e4284eb2fbaadd87f2, type: 3}
       propertyPath: m_Name
-      value: Home_Alvaston_Prefab
+      value: Home_London_Prefab
       objectReference: {fileID: 0}
     - target: {fileID: 8808671022403964524, guid: 94b71e78235ab1e4284eb2fbaadd87f2, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -73668,7 +73668,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '> Welcome to Discover England.'
+  m_text: '> Welcome to GBA: England.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

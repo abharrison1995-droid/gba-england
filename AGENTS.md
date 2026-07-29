@@ -106,7 +106,7 @@ art_incoming/         # generated-art staging (gitignored except its README)
 
 The world is discrete 220×220-unit chunks (`EKVibe.ChunkSize`), one live at a time, linked by
 explicit `NorthChunk`/`SouthChunk`/`EastChunk`/`WestChunk` references on `MapChunkData`.
-Current chunks: `Home_Alvaston` (hub city), `North_Wasteland`, `South_Slums`,
+Current chunks: `Home_London` (hub city), `North_Wasteland`, `South_Slums`,
 `East_RetailPark`, `West_Canal`, `Manor_Cellars` (tutorial dungeon, reached by door).
 
 ## Build and verification commands
@@ -150,11 +150,13 @@ one.
 
 ## High-risk areas — read `CLAUDE.md` before touching these
 
-- **Save system** (`Flow/SaveGameManager.cs`, PlayerPrefs, `EA_` prefix). Saves key chunks by
+- **Save system** (`Flow/SaveGameManager.cs` — one JSON file written with `JsonUtility` to
+  `persistentDataPath/savegame.json`; **not** PlayerPrefs, no `EA_` prefix exists). Saves key
+  chunks by
   `ChunkName` string — editing a chunk's `ChunkName` value silently invalidates existing
   saves. `Manor_Cellars_Data` uses `"Manor Cellars"` (with a space); that is a save key, not a
-  typo. Saves trigger on chunk-edge crossings and `PubInteractable.HaveAPint()` (pubs are the
-  manual save point).
+  typo. Saves trigger on chunk-edge crossings, portal travel, new-game start, tutorial
+  completion, and `PubInteractable.HaveAPint()` (pubs are the manual save point).
 - **Serialized-reference hazards** (CLAUDE.md §7). Renaming public fields, class names, or
   reordering enums breaks Unity serialization **silently**. Enums serialize by index — always
   append. Never rebuild an existing prefab by delete-and-re-save (it mints a fresh GUID and
@@ -192,5 +194,5 @@ asking for an editor change, say whether Play must be stopped first, and give th
   `Tools/asset_reachability.py`, never a text search. A pack's own demo scene is not a root.
 - **Generated art people must be synthetic, not real** — no photographs of real identifiable
   people (likeness rights survive any licence); the cast is fictional anyway.
-- No secrets, credentials or network services exist in the project; saves are local
-  PlayerPrefs only.
+- No secrets, credentials or network services exist in the project; saves are a single local
+  JSON file only.

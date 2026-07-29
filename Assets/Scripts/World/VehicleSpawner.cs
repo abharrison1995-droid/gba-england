@@ -48,7 +48,7 @@ namespace ExiledAlvaston.World
         // Polls rather than hooking a transition, for the reason given on VehicleController.Update:
         // CurrentChunkData is written from seven places across six files, so any one hook would
         // miss the other transition paths. Watching the instance as well as the data catches a
-        // reload of the same chunk — dying in Home_Alvaston and respawning into it, for one.
+        // reload of the same chunk — dying in Home_London and respawning into it, for one.
         private void Update()
         {
             var chunks = ChunkManager.Instance;

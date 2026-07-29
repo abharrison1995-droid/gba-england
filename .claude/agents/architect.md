@@ -26,9 +26,11 @@ code and trust that.
 
 This project has specific ways of breaking silently. Before proposing any rename or refactor:
 
-- **Save keys.** `SaveGameManager` stores `MapChunkData.ChunkName` as a *string* and resolves it
-  through `ChunkManager.AllChunks`. Changing a `ChunkName` value invalidates existing saves and
-  `Load()` fails silently with no error surfaced. `Home_Alvaston` and `Manor Cellars` are save
+- **Save keys.** `SaveGameManager` stores `MapChunkData.ChunkName` as a *string* (one JSON file
+  at `persistentDataPath/savegame.json` — not PlayerPrefs) and resolves it
+  through `ChunkManager.AllChunks`. Changing a `ChunkName` value invalidates existing saves;
+  `ContinueFromSave` then logs a warning and falls back to spawning at the London gates, so the
+  saved chunk and position are quietly lost. `Home_London` and `Manor Cellars` are save
   keys, not just labels.
 - **Serialized field names.** Unity matches by name. Renaming a public field on a MonoBehaviour
   or ScriptableObject drops its value from every prefab, scene and `.asset` unless you add

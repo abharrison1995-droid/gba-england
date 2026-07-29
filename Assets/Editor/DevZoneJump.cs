@@ -6,7 +6,7 @@ using ExiledAlvaston.Data;
 using ExiledAlvaston.Flow;
 
 /// <summary>
-/// Dev shortcut: teleport between the Manor Cellars tutorial dungeon and Home_Alvaston
+/// Dev shortcut: teleport between the Manor Cellars tutorial dungeon and Home_London
 /// during Play Mode, without replaying the title screen / tutorial exit gate each time.
 /// Looks chunks up directly from disk rather than ChunkManager.AllChunks, so it works even
 /// if that registry hasn't been refreshed since a new chunk was added.
@@ -22,10 +22,10 @@ public static class DevZoneJump
         Jump("Manor Cellars", spawn);
     }
 
-    [MenuItem("Tools/GBA/Debug/Jump To Home Alvaston")]
-    public static void JumpToHomeAlvaston()
+    [MenuItem("Tools/GBA/Debug/Jump To Home London")]
+    public static void JumpToHomeLondon()
     {
-        Jump("Home_Alvaston", Vector3.up);
+        Jump("Home_London", Vector3.up);
     }
 
     private static void Jump(string chunkName, Vector3 spawnPos)

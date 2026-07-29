@@ -422,7 +422,7 @@ hostile set. `attack` is a wild flailing magic zap, not a weapon swing.
 
 ### 7.6 Band 3 — world props
 
-**This is the band that unblocks world-building.** `Home_Alvaston` is dressed with 3D models
+**This is the band that unblocks world-building.** `Home_London` is dressed with 3D models
 (houses, trees, fences, a bus stop); `North_Wasteland`, `South_Slums`, `East_RetailPark` and
 `West_Canal` contain a ground plane, four edge triggers and four boundary walls — nothing else.
 
@@ -477,7 +477,7 @@ cheapest thing in this pipeline and the highest-value.
 | `spr_prop_canal_bridge.png` | 3.2 | Small brick humpback bridge over the cut. |
 | `spr_prop_reeds.png` | 1.1 | A clump of canal-bank reeds. |
 
-*Home_Alvaston*
+*Home_London*
 
 | File | `worldHeight` | Notes |
 |---|---|---|

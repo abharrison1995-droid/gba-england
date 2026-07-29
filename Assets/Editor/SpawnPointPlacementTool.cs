@@ -38,7 +38,7 @@ public class SpawnPointPlacementTool : EditorWindow
         var stage = PrefabStageUtility.GetCurrentPrefabStage();
         if (stage == null)
             EditorGUILayout.HelpBox(
-                "You're not in Prefab Mode. Double-click a chunk prefab (e.g. Home_Alvaston_Prefab) " +
+                "You're not in Prefab Mode. Double-click a chunk prefab (e.g. Home_London_Prefab) " +
                 "to edit it, or this marker will be created in the main scene and won't drive runtime spawns.",
                 MessageType.Warning);
 

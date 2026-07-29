@@ -33,7 +33,7 @@ public class VehiclePlacementTool : EditorWindow
             MessageType.Info);
 
         _chunk = (MapChunkData)EditorGUILayout.ObjectField(
-            new GUIContent("Chunk", "The chunk asset to add the spawn to, e.g. Home_Alvaston_Data."),
+            new GUIContent("Chunk", "The chunk asset to add the spawn to, e.g. Home_London_Data."),
             _chunk, typeof(MapChunkData), false);
 
         _vehicle = (VehicleData)EditorGUILayout.ObjectField(

@@ -46,7 +46,7 @@ MonoBehaviour:
           GrantQuestObjective: "Councillor Mosley wants the men in the walled yard
             behind his house dealt with. Go in through the pipe, finish what his
             \"programme\" started, and bring him proof."
-          GrantQuestLocation: Home Alvaston
+          GrantQuestLocation: London
           TeachSpark: 0
           CompleteQuestId:
         - ChoiceText: "This is eugenics. You're a monster."
@@ -71,7 +71,7 @@ MonoBehaviour:
               GrantQuestObjective: "Councillor Mosley wants the men in the walled
                 yard behind his house dealt with. Go in through the pipe, finish
                 what his \"programme\" started, and bring him proof."
-              GrantQuestLocation: Home Alvaston
+              GrantQuestLocation: London
               TeachSpark: 0
               CompleteQuestId:
             - ChoiceText: "Get someone else."

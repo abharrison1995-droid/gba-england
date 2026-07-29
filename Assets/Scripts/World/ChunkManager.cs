@@ -120,7 +120,7 @@ namespace ExiledAlvaston.World
         /// point, falling back to the origin.
         ///
         /// The origin alone was fine while chunks were empty ground. It stops being fine the moment
-        /// one is built up — Home_Alvaston has houses near the middle — because recovering from a
+        /// one is built up — Home_London has houses near the middle — because recovering from a
         /// hole in the floor by being posted inside a building is not much of a recovery.
         ///
         /// One GetComponentsInChildren, on a path that only runs once someone has already fallen

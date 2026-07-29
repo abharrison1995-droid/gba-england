@@ -1,5 +1,9 @@
 # Stage R + Stage F brief
 
+> **STATUS (2026-07-29): SUPERSEDED — use `docs/STAGE_RF_PLAN_REVISED.md`.** Stage R has
+> already been executed (rename + save-key migration, in the working tree pending commit), so
+> the Stage R section below no longer applies. This file is kept for history only.
+
 Paste everything below the line into a new Claude Code session for this repo, and re-attach
 the inventory mockup image if you still have it. The brief is written to work without the
 image, but it helps.
@@ -123,9 +127,11 @@ STAGE F — six commits, in this order
         Equip/Unequip/UnequipAll respecting ItemData.CanBeUsedBy; OnEquipmentChanged
         mirroring OnInventoryChanged; aggregate armour/damage totals. Append Neck, Legs,
         Gloves, Ammo to ItemType to reach 11 doll slots. EXTEND SaveGameManager, do not
-        rebuild it — store ItemID per slot, EA_ prefix, exactly as inventory stores
-        ItemID + quantity. Include gold storage here so the save format is extended once
-        rather than twice.
+        rebuild it — add equipment (slot + ItemID per slot) and gold as new fields on the
+        `SaveData` JSON, exactly as inventory stores ItemID + quantity. (Saves are JSON via
+        `JsonUtility`, not PlayerPrefs; there is no EA_ prefix — see
+        docs/STAGE_RF_PLAN_REVISED.md, which supersedes this file.) Include gold storage here
+        so the save format is extended once rather than twice.
     F2  Append Fire/Cold/Poison/Magic resist to ItemData so the armour summary is more
         than two numbers.
     F3  Build the screen in code; deactivate the legacy scene panel. Header, three panels,

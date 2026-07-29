@@ -99,7 +99,7 @@ namespace ExiledAlvaston.UI
 
             if (chunkMgr != null && player != null)
             {
-                Data.MapChunkData home = chunkMgr.FindChunkByName("Home_Alvaston");
+                Data.MapChunkData home = chunkMgr.FindChunkByName("Home_London");
                 if (home != null && home.ChunkPrefab != null)
                 {
                     if (chunkMgr.CurrentChunkInstance != null)

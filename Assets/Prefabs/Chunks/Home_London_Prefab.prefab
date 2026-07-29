@@ -2407,7 +2407,7 @@ GameObject:
   - component: {fileID: 7239306531049707905}
   - component: {fileID: 8892310525840460464}
   m_Layer: 0
-  m_Name: Portal_Home_Alvaston
+  m_Name: Portal_Home_London
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10610,7 +10610,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7208322745594294504}
   m_Layer: 0
-  m_Name: Home_Alvaston_Prefab
+  m_Name: Home_London_Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

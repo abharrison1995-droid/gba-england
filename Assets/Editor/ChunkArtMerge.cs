@@ -4,16 +4,16 @@ using UnityEditor.SceneManagement;
 
 /// <summary>
 /// Chunk art utilities:
-/// 1) Merge whatever is SELECTED in the Hierarchy into Home_Alvaston_Prefab (so scene-built
+/// 1) Merge whatever is SELECTED in the Hierarchy into Home_London_Prefab (so scene-built
 ///    decoration loads/unloads with the chunk instead of floating over every chunk).
 /// 2) Fix magenta/missing materials inside chunk prefabs (in-memory materials created by the
 ///    old setup scripts don't survive being saved into a prefab).
 /// </summary>
 public static class ChunkArtMerge
 {
-    const string HomePrefabPath = "Assets/Prefabs/Chunks/Home_Alvaston_Prefab.prefab";
+    const string HomePrefabPath = "Assets/Prefabs/Chunks/Home_London_Prefab.prefab";
 
-    [MenuItem("Tools/GBA/World/Merge Selected Into Home Alvaston Prefab")]
+    [MenuItem("Tools/GBA/World/Merge Selected Into Home London Prefab")]
     public static void MergeSelected()
     {
         GameObject[] selection = Selection.gameObjects;

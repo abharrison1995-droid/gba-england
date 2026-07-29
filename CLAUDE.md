@@ -23,7 +23,7 @@ this file records **what the code actually does**.
 > Everything before §13 **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
 > boundary walls are generated and committed, the hardened importer has done a real round trip
 > (Mosley and the pharmacist), and the World Palette has authored live content into
-> `Home_Alvaston_Prefab`.
+> `Home_London_Prefab`.
 
 > **Stale-brief warning.** An older written brief describes this as a "2D mobile RPG".
 > That is out of date. The game is **isometric by design** (confirmed 2026-07-26) and the
@@ -152,9 +152,9 @@ one hook misses the other paths, and turning the field into a property to raise 
 stop Unity serialising the scene's authored starting chunk. `VehicleSpawner` and
 `VehicleController` both compare against a remembered reference instead — cheap, and it catches
 load-game and the arrest return for free. Watch `CurrentChunkInstance` too if a reload of the
-*same* chunk matters to you (dying in Home_Alvaston and respawning into it).
+*same* chunk matters to you (dying in Home_London and respawning into it).
 
-Current chunks: `Home_Alvaston` (0,0 — the "London" hub, `IsCity: 1`), `North_Wasteland`,
+Current chunks: `Home_London` (0,0 — the "London" hub, `IsCity: 1`), `North_Wasteland`,
 `South_Slums`, `East_RetailPark`, `West_Canal`, `Manor_Cellars` (tutorial dungeon, reached
 by `InstanceDoor`, not by edge). Outer chunks link back to Home only — their other three
 directions are null.
@@ -195,18 +195,24 @@ Fixed (all unverified in a running editor — see §10):
 
 ## 6. Save system — highest-risk area in the repo
 
-`Assets/Scripts/Flow/SaveGameManager.cs`. PlayerPrefs, keys prefixed `EA_`.
-Saves: chunk name, position, health, mana, stamina.
+`Assets/Scripts/Flow/SaveGameManager.cs`. One JSON file, written with `JsonUtility` to
+`persistentDataPath/savegame.json` — **not** PlayerPrefs, and no `EA_` prefix exists anywhere
+(an earlier version of this file said both, and was wrong). `SaveData` holds: character name,
+class, `TutorialComplete`, chunk name, position, health, mana, stamina, quest list, inventory.
 
-Two triggers write a save: every chunk edge crossing, and `PubInteractable.HaveAPint()`.
-Pubs are therefore the deliberate manual save point — see §9.
+Five call sites write a save: every chunk edge crossing
+(`ChunkManager.TransitionToChunkRoutine`), portal travel (`ChunkManager.TravelToChunk`),
+new-game start and tutorial completion (both `GameFlowController` checkpoints), and
+`PubInteractable.HaveAPint()` — pubs are the deliberate manual save point, see §9.
 
 **The save stores `MapChunkData.ChunkName` as a string** and resolves it on load via
 `ChunkManager.FindChunkByName` against the `ChunkManager.AllChunks` array.
 
 Consequences to respect:
 - Editing the `ChunkName` **value** in any `Assets/Data/Chunks/*.asset` invalidates existing
-  saves. `Load()` returns `false` and "Load Last Game" silently fails — no error surfaced.
+  saves. The lookup fails, `ContinueFromSave` logs a warning and falls back to spawning at the
+  London gates (`GameFlowController.LoadLondonAtWestGates`) — the run continues, but the saved
+  chunk and position are gone.
 - A chunk missing from the `AllChunks` array is unloadable even if it exists.
 - `Manor_Cellars_Data` has `ChunkName: "Manor Cellars"` (space) while every other chunk uses
   underscores. Do not "normalise" this casually — it is a save key.
@@ -220,11 +226,16 @@ Consequences to respect:
   lookup fails, the item is dropped and nothing is reported.
 - An item must stay reachable from `Resources/Items`, since that is how the load resolves it.
 
-**Not saved:** `PlayerSession.TutorialComplete`, quest state, wanted level, and whether you are
-riding anything (§11 — a load puts you on foot with vehicles back at their authored spots, and a
-vehicle you had already nicked is nickable again). `PlayerSession` is `DontDestroyOnLoad` (memory
-only) so tutorial state resets on app restart while the position save survives — gates keyed off
-`TutorialComplete` will re-lock.
+**Also saved: `TutorialComplete` and quest state.** `GameFlowController.ContinueFromSave` passes
+both back through `PlayerSession.RestoreFromSave` and `QuestManager.RestoreQuests`. Tutorial
+completion is checkpointed the moment it happens (`GameFlowController`, "tutorial completion
+must survive an app restart"), and a *mid*-tutorial save restarts the tutorial cleanly on load
+rather than resuming half-staged. Gates keyed off `TutorialComplete` do **not** re-lock after an
+app restart — an earlier version of this file claimed they did, and that was wrong.
+
+**Not saved:** wanted level, and whether you are riding anything (§11 — a load puts you on foot
+with vehicles back at their authored spots, and a vehicle you had already nicked is nickable
+again).
 
 ## 7. Serialized-reference hazards
 
@@ -298,7 +309,7 @@ is the single most load-bearing line in the whole consequence loop.
   time, since `TryPickpocket` requires `IsCrouched`.
 - ~~**The ModernBritain props are in every chunk.**~~ **Fixed** on `fix/scene-root-props`. All
   three scene-root instances are gone from `c.unity`, each by the route that suits it:
-  - `Pub_TheWinchester` is now a **nested prefab instance inside `Home_Alvaston_Prefab`** at local
+  - `Pub_TheWinchester` is now a **nested prefab instance inside `Home_London_Prefab`** at local
     `(8, 0, -4)` — the same world position it held, since chunks instantiate at the origin. Pubs
     are cities only, and Home is the only city, so one instance in one chunk is the whole of it.
   - `NoseyParker` was deleted and replaced by **`Preset_NoseyParker`** (`Prop`, `Prefab` →
@@ -351,9 +362,11 @@ is the single most load-bearing line in the whole consequence loop.
   written after the last editor session. Everything before it has at least compiled;
   `fix/scene-root-props` was fully verified in the editor.
 - **`main` is the only branch that exists** — cut a new one before starting work.
-- **The next task is written up in `docs/STAGE_F_BRIEF.md`**: the `Home_Alvaston` → `Home_London`
-  rename (a save key — mapping table is in that file) and the six-commit inventory and loot
-  overhaul. It is a self-contained brief meant to be pasted into a fresh session.
+- **The next task is Stage F, written up in `docs/STAGE_RF_PLAN_REVISED.md`**: the six-commit
+  inventory and loot overhaul. Stage R (the `Home_Alvaston` → `Home_London` rename) is **done**
+  — renamed in the working tree with the save-key migration in `SaveGameManager.ReadSaveData`;
+  the original brief (`docs/STAGE_F_BRIEF.md`) is kept for history and its R section no longer
+  applies. The revised plan is a self-contained brief meant to be pasted into a fresh session.
 - ⚠️ **Commit a script's `.meta` with the script. This has now happened twice.** `PlacementPreset.cs`
   went in without one, and that file holds the GUID all fourteen `Preset_*.asset` files bind to via
   `m_Script` — a fresh clone would have minted a new one and silently detached every preset. Fixed
@@ -530,10 +543,13 @@ object to select — not just what to set.
 nothing about whether the project builds. Anything written without a Unity session is unverified
 in both senses; §11 is the current example.
 
-A rename to **GBA: England** (Great British Annals) is under consideration. Notes if it
-proceeds: the `ExiledAlvaston` namespace appears in 46 `.cs` files and **zero serialized
-assets**, so a namespace rename is safe — Unity binds scripts by `.meta` GUID, not type name.
-What is *not* safe is `Home_Alvaston`, which is a `ChunkName` and therefore a save key (§6).
+A rename to **GBA: England** (Great British Annals) has begun: `EKVibe.DisplayTitle` is now
+"GBA: England" and the hub chunk is renamed `Home_Alvaston` → `Home_London` (Stage R — the
+`ChunkName` was a save key, so `SaveGameManager.ReadSaveData` migrates the legacy string on
+load; old saves survive). Still open: the `ExiledAlvaston` namespace appears in 46 `.cs`
+files and **zero serialized assets**, so a namespace rename is safe — Unity binds scripts by
+`.meta` GUID, not type name — but it is not done. `productName` in ProjectSettings is also
+still "Exiled Alvaston".
 A colon is illegal in Windows paths and git repo names, so any repo/folder would be
 `gba-england` with `GBA: England` only as a display string.
 
@@ -543,7 +559,7 @@ A colon is illegal in Windows paths and git repo names, so any repo/folder would
 
 Merged to `main`, compiled, and play-tested in the editor: mounting, dismounting, the boost, the
 prompt flip and the visuals all work. **The data-driven spawner path has now been exercised too**
-(2026-07-29): the hand-placed instance is deleted, `Home_Alvaston_Data.VehicleSpawns` is the only
+(2026-07-29): the hand-placed instance is deleted, `Home_London_Data.VehicleSpawns` is the only
 source of the bike, and it was confirmed in the editor to spawn. Nothing in §11 is unverified any
 more.
 
@@ -596,19 +612,28 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
   sprite rather than running on the spot. No code change was needed to cancel the sheet.
 - **Nicking does not persist**, by decision. `IsOwnedByNPC` is cleared on the instance, and the
   instance is replaced when the chunk reloads — so you re-nick and re-spike on every visit.
-  Consistent with §6, where wanted level and inventory are not saved either.
+  Consistent with §6, where wanted level and ride state are not saved either (inventory is).
+- ⚠️ **KNOWN ISSUE (found in Stage R play-test, 2026-07-29, open): death-respawn keeps you
+  mounted.** A mounted vehicle unparents from its chunk, so `LoadWorld`'s destroy-and-rebuild
+  never touches it, and nothing in the death path (`DeathScreenUI` → `ContinueFromSave`) calls
+  `Dismount()` — you wake at your last save still on the bike. §6's "a load puts you on foot"
+  is only true for an app-restart load. Fixing it properly is a design call (GTA would take
+  the bike) plus real work: a bare `Dismount()` strands a scene-root bike at the death spot,
+  and returning it to its authored spot means coordinating with `VehicleSpawner`'s instance
+  tracking. Deferred to Stage F — needs the editor, and the owner's answer on intent.
 
 **Moving off the hand-placed instance — two down, one to go:**
 
 1. ~~Create `Limey_EBike_Data.asset`.~~ **Done.** It exists with `ChassisPrefab` resolving to
    `EBike.prefab`, committed in `37e90d7`.
 2. ~~Author a spawn onto `Home_Alvaston_Data`.~~ **Done.** `VehicleSpawns` carries one entry at
-   `(0.31, 0, 22.07)`, placed through the palette (`9b65d94`).
+   `(0.31, 0, 22.07)`, placed through the palette (`9b65d94`). (The asset has since been renamed
+   `Home_London_Data` in Stage R.)
 3. ~~Delete the hand-placed instance in `c.unity`.~~ **Done** on `fix/scene-root-props`. The
    scene-root `Moped` — a leftover name override from before the prefab was renamed, which is why
    searching the Hierarchy for "EBike" or "Limey" found nothing — is gone. `VehicleSpawner` and
-   `Home_Alvaston_Data.VehicleSpawns` are now the only source of the bike, **and that path was
-   confirmed working in the editor.** If no bike appears in Home_Alvaston, debug the spawner; there
+   `Home_London_Data.VehicleSpawns` are now the only source of the bike, **and that path was
+   confirmed working in the editor.** If no bike appears in Home_London, debug the spawner; there
    is no longer an instance to fall back on.
 
 `EBike.prefab` currently has **no sprite assigned** — the code-generated placeholder was deleted
@@ -699,7 +724,7 @@ Delivered and in the game:
 
 - `sheet_char_mosley_idle` and `sheet_char_pharmacist_idle` — 4 frames each, sliced, clipped, and
   built into `mosley_Controller` and `pharmacist_Controller`. Both wired into their presets by the
-  importer, and both standing in `Home_Alvaston_Prefab` as the first NPCs authored end to end.
+  importer, and both standing in `Home_London_Prefab` as the first NPCs authored end to end.
 
 Generated and **rejected**, sitting in `art_incoming/rejected/` waiting to be redrawn: the
 player's `attack`, `cast` and `death` sheets. **The `cycle` sheet was rejected too and has been
@@ -730,7 +755,7 @@ in order: the three player redraws → the tutorial cast (Daniel Pauls, the trac
 **21 world props** → the ambient cast (Mosley/pharmacist walks, villager, Nosey Parker, squirrel) →
 the police tiers. Props are band 3 because `North_Wasteland`, `South_Slums`, `East_RetailPark` and
 `West_Canal` contain a ground plane, four edge triggers and four boundary walls and **nothing
-else** — that band is what unblocks world-building. `Home_Alvaston` is the only dressed chunk, and
+else** — that band is what unblocks world-building. `Home_London` is the only dressed chunk, and
 it is dressed with 3D pack models rather than generated sprites.
 
 ⚠️ **Only the player, the e-bike, and NPC subjects named by a preset's `ArtSubject` are
