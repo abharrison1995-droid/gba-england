@@ -48,10 +48,17 @@ namespace ExiledAlvaston.Data
         public GameObject Prefab;
 
         // ── NPC recipe ──────────────────────────────────────────────────────────────────────
+        // More NPC fields live in the "NPC — art pipeline and behaviour" block at the bottom.
+        // They are down there rather than here because §7 asks for appends: a field added to the
+        // end of the class is the shape existing .asset files can be read against without
+        // surprises. Inspector order follows declaration order, so the split is visible.
         [Header("NPC (when no Prefab is set)")]
         public string NpcName = "Villager";
 
-        [Tooltip("Static sprite. Ignored when NpcController is set, since the Animator drives the sprite.")]
+        [Tooltip("The sprite shown when no Animator is driving one — in the Scene view while you " +
+                 "author, and before the controller takes over at runtime. Not optional for an " +
+                 "animated NPC: Animators do not evaluate in edit mode, so a preset with a " +
+                 "controller and no sprite places something you cannot see.")]
         public Sprite NpcSprite;
 
         [Tooltip("Animator controller built by the art importer, e.g. player_Controller. Setting " +
@@ -108,5 +115,37 @@ namespace ExiledAlvaston.Data
         [Header("Shared")]
         [Tooltip("Adds a QuestActor with this key so quest code can find this exact object.")]
         public string QuestKey = "";
+
+        // ── NPC — art pipeline and behaviour ────────────────────────────────────────────────
+        // Appended rather than slotted in beside the NPC recipe above, per §7.
+        [Header("NPC — art pipeline and behaviour")]
+        [Tooltip("The art importer's subject for this character — 'mosley' for the sheets named " +
+                 "sheet_char_mosley_idle, sheet_char_mosley_walk and so on. When that subject's " +
+                 "art imports, the importer fills in NpcController, NpcSprite, NpcHeight and Icon " +
+                 "on every preset carrying this subject. Leave empty for an NPC with no generated art.")]
+        public string ArtSubject = "";
+
+        [Tooltip("World height of the sprite, in units. Leave at 0 to inherit: the importer writes " +
+                 "the art's own worldHeight here when it lands, and until then the shared " +
+                 "EKVibe.CharacterHeight is used. Set it by hand only to override the art — a " +
+                 "value above 0 is treated as deliberate and the importer will not touch it.")]
+        public float NpcHeight = 0f;
+
+        [Tooltip("Wanders around the spot it was placed instead of standing still. Needs a walk " +
+                 "animation to look right; an idle-only character will slide.")]
+        public bool Roams = false;
+
+        [Tooltip("How far from its placed position a roaming NPC will stray.")]
+        public float RoamRadius = 6f;
+
+        [Tooltip("Who the dialogue panel says is talking. Without one the panel keeps showing " +
+                 "whoever spoke last, so an ambient NPC should always have this set.")]
+        public CharacterData Speaker;
+
+        [Tooltip("One line of throwaway chat, for an NPC that does not warrant a written " +
+                 "conversation. A DialogueData asset is generated from it and written into " +
+                 "Conversation above; if Conversation is already set, this is ignored.")]
+        [TextArea(2, 4)]
+        public string AmbientLine = "";
     }
 }

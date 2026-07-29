@@ -111,6 +111,61 @@ namespace ExiledAlvaston.World
         }
 
         /// <summary>
+        /// The Animator driving this actor's sprite, or null if it has none. It sits on
+        /// <c>ActorVisual/SwingRoot</c> beside the renderer, which is not a path other components
+        /// should have to know — EnemyAI wants one for its own field and would otherwise hardcode
+        /// the same string this class already owns.
+        /// </summary>
+        public Animator SpriteAnimator
+        {
+            get
+            {
+                if (_spriteAnimator == null)
+                {
+                    EnsureHierarchy();
+                    _spriteAnimator = _swingRoot.GetComponent<Animator>();
+                }
+                return _spriteAnimator;
+            }
+        }
+
+        /// <summary>
+        /// Puts an Animator where the generated clips expect to find it, and points it at
+        /// <paramref name="controller"/>. Returns the Animator, since callers that also drive it
+        /// through another component — EnemyAI, which has its own Animator field — would otherwise
+        /// have to go looking for it down a path only this class knows.
+        ///
+        /// That path is <c>ActorVisual/SwingRoot</c>: the same GameObject as the SpriteRenderer,
+        /// because the art importer binds every clip with an empty path, which means "the renderer
+        /// is on the Animator's own GameObject". One level up and the clips animate nothing while
+        /// looking perfectly well wired in the Inspector.
+        ///
+        /// Lives here rather than in the placement tooling so the editor and the game can share it.
+        /// Assets/Editor/ is stripped from builds, so a copy over there is unreachable from
+        /// anything that spawns an actor while the game is running.
+        /// </summary>
+        public Animator AttachAnimator(RuntimeAnimatorController controller)
+        {
+            if (controller == null) return null;
+
+            EnsureHierarchy();
+
+            var animator = _swingRoot.GetComponent<Animator>();
+            if (animator == null) animator = _swingRoot.gameObject.AddComponent<Animator>();
+
+            animator.runtimeAnimatorController = controller;
+            // Billboards have no bones, so culling against a skinned bounds nobody ever set would
+            // stop the clip updating the moment the actor left those nonexistent bounds.
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.applyRootMotion = false;
+
+            // SetMounted looks this up lazily off the renderer; caching it now keeps the mount
+            // suspend/restore path in step from the moment an Animator exists.
+            _spriteAnimator = animator;
+            return animator;
+        }
+
+        /// <summary>
         /// Puts the actor on or off a vehicle. With a MountedSprite assigned that art takes over
         /// the billboard; otherwise <paramref name="vehicleSprite"/> is drawn over the actor's
         /// feet, so any character sprite reads as riding without bespoke art per character.

@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Councillor Mosley
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: -8915839385288641541, guid: 8442fe31da941dc478ee7c1ff954db49, type: 3}
   Prefab: {fileID: 0}
   NpcName: Councillor Mosley
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: -8915839385288641541, guid: 8442fe31da941dc478ee7c1ff954db49, type: 3}
+  NpcController: {fileID: 9100000, guid: a8943cc710b3c3c4d9ba9a8464c879eb, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -38,3 +38,9 @@ MonoBehaviour:
   Vehicle: {fileID: 0}
   SpawnPointId: 
   QuestKey: 
+  ArtSubject: mosley
+  NpcHeight: 0
+  Roams: 0
+  RoamRadius: 6
+  Speaker: {fileID: 0}
+  AmbientLine: 

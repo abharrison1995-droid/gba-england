@@ -1,0 +1,71 @@
+# Line endings are decided here rather than by each machine's core.autocrlf, because this repo is
+# worked on from both Windows and Linux.
+#
+# Why it matters more than usual: Unity rewrites whole YAML files whenever it touches them, so a
+# line-ending difference and a real edit look identical in a diff — and c.unity is over 100,000
+# lines. Without this, the two machines quietly re-line-ending each other's assets and there is no
+# way to tell a change from a checkout artefact.
+#
+# `text=auto` stores LF in the repository and lets each working tree have what it wants: CRLF on
+# Windows via autocrlf, LF on Linux. Both commit LF, so nothing churns.
+
+* text=auto
+
+# ── Text, declared rather than detected ────────────────────────────────────────────────────────
+*.cs        text diff=csharp
+*.shader    text
+*.cginc     text
+*.hlsl      text
+*.md        text
+*.txt       text
+*.json      text
+*.yml       text
+*.yaml      text
+*.xml       text
+*.py        text
+.gitignore      text
+.gitattributes  text
+
+# Unity's own YAML. Text, and every one of these formats is present in this repo.
+*.unity              text
+*.prefab             text
+*.asset              text
+*.mat                text
+*.anim               text
+*.controller         text
+*.overridecontroller text
+*.meta               text
+*.physicMaterial     text
+
+# ── Binary ─────────────────────────────────────────────────────────────────────────────────────
+# A line-ending "fix" applied to any of these is silent corruption, and `text=auto` decides by
+# heuristic. On 226 PNGs and 52 FBXs, a heuristic is not worth relying on.
+#
+# Present in the repo today: png jpg tga psd fbx glb ttf pdf. The rest are listed because they are
+# the formats this project is most likely to gain — art and audio arrive through art_incoming/.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.tga       binary
+*.psd       binary
+*.tif       binary
+*.tiff      binary
+*.aseprite  binary
+*.fbx       binary
+*.glb       binary
+*.gltf      binary
+*.blend     binary
+*.obj       binary
+*.ttf       binary
+*.otf       binary
+*.pdf       binary
+*.wav       binary
+*.mp3       binary
+*.ogg       binary
+*.aif       binary
+*.dll       binary
+*.so        binary
+*.a         binary
+*.unitypackage binary
+*.cubemap   binary

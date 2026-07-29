@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Roaming Pharmacist
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: 6286465221450647866, guid: 29abfc1169ab70045b39de9af719cbd9, type: 3}
   Prefab: {fileID: 0}
   NpcName: Roaming Pharmacist
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: 6286465221450647866, guid: 29abfc1169ab70045b39de9af719cbd9, type: 3}
+  NpcController: {fileID: 9100000, guid: a39001dd9fdc5eb46b04f46d420de6f0, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -38,3 +38,9 @@ MonoBehaviour:
   Vehicle: {fileID: 0}
   SpawnPointId: 
   QuestKey: 
+  ArtSubject: pharmacist
+  NpcHeight: 0
+  Roams: 1
+  RoamRadius: 6
+  Speaker: {fileID: 0}
+  AmbientLine: 

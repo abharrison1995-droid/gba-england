@@ -25,7 +25,15 @@ namespace ExiledAlvaston.Flow
         public enum Stage { NotMet, SeekUnderHoused, ReturnToDaniel, Done }
         public Stage CurrentStage = Stage.NotMet;
 
-        private Sprite _npcSprite;
+        /// <summary>
+        /// Which presets these two are built from. These are keys into
+        /// <see cref="PlacementPresetLibrary"/>, not asset names — so the presets can be renamed,
+        /// re-arted, resized or given a different temperament without this file changing, which is
+        /// the entire point of routing the tutorial through them.
+        /// </summary>
+        public const string DanielPresetKey = "DanielPauls";
+        public const string GeezerPresetKey = "TracksuitGeezer";
+
         private CharacterData _danielData, _underHousedData;
         private DialogueData _intro, _nudge, _reward, _done, _underHousedTalk;
         private GameObject _daniel, _underHoused;
@@ -38,10 +46,15 @@ namespace ExiledAlvaston.Flow
             if (Instance == this) Instance = null;
         }
 
-        /// <summary>Kick the quest off in London (called by GameFlow once the chunk is up).</summary>
-        public void Begin(Sprite npcSprite)
+        /// <summary>
+        /// Kick the quest off in London (called by GameFlow once the chunk is up).
+        ///
+        /// Takes no art any more. It used to be handed one sprite for both characters — which is
+        /// why Daniel Pauls and the geezer looked identical, and identical to a bandit. Each now
+        /// resolves its own preset, and looks like whatever that preset's subject was drawn as.
+        /// </summary>
+        public void Begin()
         {
-            _npcSprite = npcSprite;
             BuildData();
 
             // Resume from quest state so re-entering London shows the right beat.
@@ -184,12 +197,10 @@ namespace ExiledAlvaston.Flow
         {
             if (_daniel != null) return;
             Vector3 pos = SceneMarker.ResolveWorldPosition(ChunkRoot(), "DanielPaulsSpawn", new Vector3(-72f, 0f, 70f));
-            _daniel = BuildNpc("Daniel Pauls", pos);
+            _daniel = BuildNpc(DanielPresetKey, pos);
+            if (_daniel == null) return;
 
-            var interactable = _daniel.AddComponent<Interactable>();
-            interactable.Prompt = "Talk to Daniel Pauls";
-            interactable.InteractRange = 3f;
-            interactable.Reusable = true;
+            Interactable interactable = OwnInteraction(_daniel, "Talk to Daniel Pauls");
             var mentor = _daniel.AddComponent<MagicMentorNPC>();
             interactable.OnInteract.AddListener(mentor.Interact);
         }
@@ -198,45 +209,60 @@ namespace ExiledAlvaston.Flow
         {
             if (_underHoused != null) return;
             Vector3 basePos = _daniel != null ? _daniel.transform.position : Vector3.zero;
-            _underHoused = BuildNpc("Under Housed", basePos + new Vector3(16f, 0f, -12f));
+            _underHoused = BuildNpc(GeezerPresetKey, basePos + new Vector3(16f, 0f, -12f));
+            if (_underHoused == null) return;
 
-            var interactable = _underHoused.AddComponent<Interactable>();
-            interactable.Prompt = "Talk to the twitchy geezer";
-            interactable.InteractRange = 3f;
-            interactable.Reusable = true;
+            Interactable interactable = OwnInteraction(_underHoused, "Talk to the twitchy geezer");
             var under = _underHoused.AddComponent<UnderHousedNPC>();
             under.Talk = _underHousedTalk;
             under.Data = _underHousedData;
             interactable.OnInteract.AddListener(under.Interact);
         }
 
-        private GameObject BuildNpc(string name, Vector3 pos)
+        /// <summary>
+        /// Builds one of the quest's characters from its preset, the same way the World Palette
+        /// builds every other NPC in the game.
+        ///
+        /// This used to compose the character here — one sprite, a fixed height, a hand-rolled
+        /// capsule when the sprite was missing — which is how these two ended up outside the preset
+        /// system while everything else moved into it, and how they ended up identical to each
+        /// other. Nothing about how they look or behave lives in this file now.
+        /// </summary>
+        private GameObject BuildNpc(string presetKey, Vector3 pos)
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(ChunkRoot() != null ? ChunkRoot().transform : null, true);
-            go.transform.position = pos;
+            PlacementPreset preset = PlacementPresetLibrary.Get(presetKey);
+            if (preset == null) return null;   // Get already said which of the three things was wrong
 
-            if (_npcSprite != null)
+            GameObject chunk = ChunkRoot();
+            return NpcFactory.Build(preset, pos, chunk != null ? chunk.transform : null);
+        }
+
+        /// <summary>
+        /// Takes over the Interactable <see cref="NpcFactory"/> already put on the NPC rather than
+        /// adding a second one beside it. Both of these characters run their conversations off
+        /// quest state, so the tutorial owns what pressing Interact does.
+        /// </summary>
+        private static Interactable OwnInteraction(GameObject npc, string prompt)
+        {
+            var interactable = npc.GetComponent<Interactable>();
+            if (interactable == null) interactable = npc.AddComponent<Interactable>();
+
+            interactable.Prompt = prompt;
+            interactable.InteractRange = 3f;
+            interactable.Reusable = true;
+
+            // The factory adds this when a preset carries a Conversation — right for an ordinary
+            // NPC, wrong for these two, where it would answer the same button press with a fixed
+            // line while the quest script is trying to run a scene.
+            if (npc.GetComponent<NPCDialogueInteractable>() != null)
             {
-                var visual = go.AddComponent<WorldActorVisual>();
-                visual.ActorSprite = _npcSprite;
-                visual.Height = EKVibe.CharacterHeight;
-                visual.Width = EKVibe.CharacterWidth;
-                visual.ApplyVisual();
+                Debug.LogWarning(
+                    $"MagicTutorial: '{npc.name}' was built from a preset with a Conversation " +
+                    "assigned. Clear it — this character's dialogue comes from quest state, and the " +
+                    "preset's line will fire alongside it.", npc);
             }
-            else
-            {
-                var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                body.name = "PlaceholderBody";
-                Destroy(body.GetComponent<Collider>());
-                body.transform.SetParent(go.transform, false);
-                float h = EKVibe.CharacterHeight;
-                body.transform.localPosition = new Vector3(0f, h * 0.5f, 0f);
-                body.transform.localScale = new Vector3(0.5f, h * 0.5f, 0.5f);
-                var sh = Shader.Find("Unlit/Color") ?? Shader.Find("Standard");
-                body.GetComponent<Renderer>().sharedMaterial = new Material(sh) { color = new Color(0.35f, 0.3f, 0.45f) };
-            }
-            return go;
+
+            return interactable;
         }
 
         private GameObject ChunkRoot()
@@ -322,6 +348,12 @@ namespace ExiledAlvaston.Flow
             ai.SightRadius = 16f;
             ai.AttackCooldown = 1.6f;
             ai.Damage = 8;
+
+            // EnemyAI's Animator is a public field nothing assigns unless asked, so without this the
+            // geezer fights through his whole attack, hurt and death animations without playing any
+            // of them — the art imports, the controller builds, and nothing moves.
+            var visual = GetComponent<WorldActorVisual>();
+            if (visual != null) ai.Animator = visual.SpriteAnimator;
 
             if (UIManager.Instance != null)
                 UIManager.Instance.LogCombat("Under Housed panics — and throws a bolt!");

@@ -84,6 +84,19 @@ namespace ExiledAlvaston.Dialogue
                     PortraitImage.enabled = node.Speaker.Portrait != null;
                 }
             }
+            else
+            {
+                // These fields are never cleared otherwise, and the panel is reused between
+                // conversations — so a speakerless node showed the name and face of whoever you
+                // last spoke to, attributing an anonymous line to a named character.
+                _currentSpeakerName = null;
+                if (SpeakerNameText != null) SpeakerNameText.text = "";
+                if (PortraitImage != null)
+                {
+                    PortraitImage.sprite = null;
+                    PortraitImage.enabled = false;
+                }
+            }
 
             if (MainDialogueText != null)
                 MainDialogueText.text = node.DialogueText;

@@ -151,6 +151,10 @@ public static class ArtImportTool
         // in one pass rather than rebuilt per action.
         var clipsBySubject = new Dictionary<string, Dictionary<string, AnimationClip>>();
 
+        // The worldHeight each subject declared, carried out of the manifests so presets can be
+        // sized from the art rather than from a number retyped by hand per preset.
+        var heightBySubject = new Dictionary<string, float>();
+
         var pending = new List<PendingAsset>();
 
         // Deliberately not wrapped in StartAssetEditing/StopAssetEditing. That batches — and
@@ -162,7 +166,7 @@ public static class ArtImportTool
         {
             int problemsBefore = problems.Count;
             PendingAsset asset = ImportOne(manifestPath, staging, report, problems, warnings,
-                questions, clipsBySubject);
+                questions, clipsBySubject, heightBySubject);
             if (asset == null) continue;
 
             asset.Clean = problems.Count == problemsBefore;
@@ -199,7 +203,7 @@ public static class ArtImportTool
             }
         }
 
-        AutoAssign(report, problems);
+        AutoAssign(clipsBySubject, heightBySubject, report, problems);
 
         AssetDatabase.SaveAssets();
 
@@ -291,7 +295,10 @@ public static class ArtImportTool
     //  does not need a follow-up round of hand-dragging in the Inspector.
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    private static void AutoAssign(List<string> report, List<string> problems)
+    private static void AutoAssign(
+        Dictionary<string, Dictionary<string, AnimationClip>> clipsBySubject,
+        Dictionary<string, float> heightBySubject,
+        List<string> report, List<string> problems)
     {
         AssignPlayerSprite("spr_char_player", report, problems);
         AssignPlayerRestingFrame(report, problems);
@@ -299,7 +306,18 @@ public static class ArtImportTool
         // `cycle` sheet — a single sprite there is overwritten by the Animator every frame, and the
         // pipeline no longer asks for that filename (ART_PIPELINE.md §7.2).
         AssignVehicleSprite("spr_vehicle_ebike", report, problems);
-        AssignPlayerController("player", report, problems);
+        AssignPlayerController(PlayerSubject, report, problems);
+
+        // Every other subject in a run is an NPC, and NPCs are authored as PlacementPresets rather
+        // than as scene objects. The player is excluded because they are a scene object with their
+        // own wiring above — nothing the palette ever stamps.
+        foreach (string subject in clipsBySubject.Keys)
+        {
+            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
+
+            heightBySubject.TryGetValue(subject, out float worldHeight);
+            WirePresetsForSubject(subject, worldHeight, report);
+        }
     }
 
     private static Sprite FindImported(string baseName)
@@ -461,12 +479,172 @@ public static class ArtImportTool
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  PRESETS
+    //  An NPC is authored as a PlacementPreset, so "the art is wired up" means that preset knows
+    //  which controller drives it, which sprite stands in before the Animator runs, and how tall
+    //  the character is. All three come from the art, so all three are set here rather than being
+    //  dragged into the Inspector once per character.
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private const string PlayerSubject   = "player";
+    private const string ControllerSuffix = "_Controller";
+
+    /// <summary>
+    /// Wires every <c>PlacementPreset</c> whose <c>ArtSubject</c> matches, and reports what it
+    /// touched. Returns how many presets changed.
+    ///
+    /// Deliberately asymmetric about overwriting. The controller and the resting sprite are
+    /// *derived* from the art, so a fresh import wins outright — that is what lets a placeholder
+    /// wiring be replaced by the real character with no manual fix-up. The height is *tunable*, so
+    /// a value already set by hand is left alone. Point a preset at another subject's animations on
+    /// purpose and the next import of its own subject will revert it; that is the accepted cost of
+    /// the first property.
+    /// </summary>
+    /// <param name="worldHeight">
+    /// From the manifest. Zero means unknown — the rescan menu item below has no manifest to read,
+    /// so it leaves height alone rather than guessing it back out of the imported pixels.
+    /// </param>
+    private static int WirePresetsForSubject(string subject, float worldHeight, List<string> report)
+    {
+        if (string.IsNullOrEmpty(subject)) return 0;
+
+        var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(
+            $"{AnimRoot}/{subject}{ControllerSuffix}.controller");
+        Sprite resting = FindIdleFrameZero(subject);
+
+        if (controller == null && resting == null) return 0;
+
+        int wired = 0;
+
+        foreach (string guid in AssetDatabase.FindAssets("t:PlacementPreset"))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            var preset = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.PlacementPreset>(path);
+            if (preset == null) continue;
+            if (!string.Equals(preset.ArtSubject, subject, StringComparison.OrdinalIgnoreCase)) continue;
+
+            var changed = new List<string>();
+
+            if (controller != null && preset.NpcController != controller)
+            {
+                preset.NpcController = controller;
+                changed.Add("controller");
+            }
+
+            // Not cosmetic: an Animator does not evaluate in edit mode, so without this the preset
+            // places something invisible in the prefab stage it is being authored in.
+            if (resting != null && preset.NpcSprite != resting)
+            {
+                preset.NpcSprite = resting;
+                changed.Add("resting sprite");
+            }
+
+            if (resting != null && preset.Icon == null)
+            {
+                preset.Icon = resting;
+                changed.Add("palette icon");
+            }
+
+            if (worldHeight > 0f && preset.NpcHeight <= 0f)
+            {
+                preset.NpcHeight = worldHeight;
+                changed.Add($"height {worldHeight:0.##}");
+            }
+
+            if (changed.Count == 0) continue;
+
+            EditorUtility.SetDirty(preset);
+            report.Add($"    {Path.GetFileNameWithoutExtension(path)} ← {subject} " +
+                       $"({string.Join(", ", changed)})");
+            wired++;
+        }
+
+        return wired;
+    }
+
+    /// <summary>
+    /// First frame of a subject's idle sheet — the pose the character holds when nothing is
+    /// animating them.
+    ///
+    /// Found by matching the tail of the filename rather than building it, because subject →
+    /// filename is not reversible: "characters" becomes the "char" of sheet_char_mosley_idle.
+    /// </summary>
+    private static Sprite FindIdleFrameZero(string subject)
+    {
+        if (!AssetDatabase.IsValidFolder(ArtRoot)) return null;
+
+        foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = Path.GetFileNameWithoutExtension(path);
+            if (file != $"{subject}_idle"
+                && !file.EndsWith($"_{subject}_idle", StringComparison.OrdinalIgnoreCase)) continue;
+
+            return AssetDatabase.LoadAllAssetRepresentationsAtPath(path)
+                .OfType<Sprite>()
+                .FirstOrDefault(s => s.name.EndsWith("_0", StringComparison.Ordinal));
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Wires presets against art that is already in the project, rather than against a run that has
+    /// just happened.
+    ///
+    /// The import path only ever knows about the batch in front of it, and a clean batch is moved
+    /// out of staging afterwards — so art imported last month, or a preset written after its
+    /// subject arrived, would never be connected by an import alone. This closes that gap and is
+    /// safe to run at any time: it is the same wiring, driven off what is on disk.
+    /// </summary>
+    [MenuItem("Tools/GBA/Content/Wire Presets From Imported Art")]
+    public static void WirePresetsFromImportedArt()
+    {
+        if (!AssetDatabase.IsValidFolder(AnimRoot))
+        {
+            EditorUtility.DisplayDialog("Wire Presets From Imported Art",
+                $"No {AnimRoot} folder, so no art has been imported yet.", "OK");
+            return;
+        }
+
+        var report = new List<string>();
+        int subjects = 0;
+
+        foreach (string guid in AssetDatabase.FindAssets("t:AnimatorController", new[] { AnimRoot }))
+        {
+            string file = Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid));
+            if (!file.EndsWith(ControllerSuffix, StringComparison.Ordinal)) continue;
+
+            string subject = file.Substring(0, file.Length - ControllerSuffix.Length);
+            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
+
+            if (WirePresetsForSubject(subject, 0f, report) > 0) subjects++;
+        }
+
+        AssetDatabase.SaveAssets();
+
+        var log = new System.Text.StringBuilder();
+        log.AppendLine("Wire Presets From Imported Art");
+        log.AppendLine("──────────────────────────────");
+        if (report.Count == 0) log.AppendLine("  nothing to do — every preset already matches its art.");
+        foreach (string r in report) log.AppendLine(r);
+        Debug.Log(log.ToString());
+
+        EditorUtility.DisplayDialog("Wire Presets From Imported Art",
+            report.Count == 0
+                ? "Every preset already matches its art. Nothing changed."
+                : $"{report.Count} preset(s) wired across {subjects} subject(s).\n\n" +
+                  "Heights are left alone here — only an import knows a subject's worldHeight.\n\n" +
+                  "Detail in the Console.", "OK");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════
     //  ONE ASSET
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
     private static PendingAsset ImportOne(string manifestPath, string staging, List<string> report,
         List<string> problems, List<string> warnings, List<string> questions,
-        Dictionary<string, Dictionary<string, AnimationClip>> clipsBySubject)
+        Dictionary<string, Dictionary<string, AnimationClip>> clipsBySubject,
+        Dictionary<string, float> heightBySubject)
     {
         string baseName = Path.GetFileNameWithoutExtension(manifestPath);
 
@@ -508,6 +686,11 @@ public static class ArtImportTool
             Subject = ResolveSubject(m, baseName),
             Action = (m.action ?? "").ToLowerInvariant()
         };
+
+        // Recorded before anything can fail: a subject's height is a property of the character,
+        // not of whether this particular sheet passed its checks.
+        if (m.worldHeight > 0f && !string.IsNullOrEmpty(pending.Subject))
+            heightBySubject[pending.Subject] = m.worldHeight;
 
         string category = string.IsNullOrEmpty(m.category) ? "props" : m.category.ToLowerInvariant();
         string destFolder = $"{ArtRoot}/{category}";
