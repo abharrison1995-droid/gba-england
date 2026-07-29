@@ -7,7 +7,8 @@ again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
 `fix/chunk-edges-and-tooling` (§5, §4, §9b, §12), and again on 2026-07-29 for the NPC pipeline on
 `feat/npc-preset-pipeline` (**§13**, plus §5, §9, §9b, §11 and §12 where that work closed items
 they had open), and again the same day on `docs/art-brief-and-queue` for the art brief (§11 and
-§12 — the `cycle` sheet is cancelled and the rejected player sheets have been measured). Facts
+§12 — the `cycle` sheet is cancelled and the rejected player sheets have been measured) and
+`fix/scene-root-props` for the scene-root props (§8, §9b, §11). Facts
 here are verified against code, not against design docs. Where code and a design doc disagree,
 this file records **what the code actually does**.
 
@@ -284,11 +285,22 @@ is the single most load-bearing line in the whole consequence loop.
   stealth unreachable — and since `TryPickpocket` requires `IsCrouched`, **pickpocketing is
   unreachable on mobile too.** It also means the crouch-plus-vehicle composition that §11's
   modifier stack exists to handle cannot be exercised on a device at all.
-- **The ModernBritain props are in every chunk.** `NoseyParker` and `Pub_TheWinchester` are
-  scene-root instances in `c.unity` (`m_TransformParent: {fileID: 0}`), and every chunk is
-  instantiated at `Vector3.zero`, so both stand at the same world coordinates in all six chunks.
-  The parker reports you in the wasteland; the pub — the only manual save point — follows you
-  everywhere. The e-bike had this too and was fixed by §11's spawner; these two have not been.
+- ~~**The ModernBritain props are in every chunk.**~~ **Fixed** on `fix/scene-root-props`. All
+  three scene-root instances are gone from `c.unity`, each by the route that suits it:
+  - `Pub_TheWinchester` is now a **nested prefab instance inside `Home_Alvaston_Prefab`** at local
+    `(8, 0, -4)` — the same world position it held, since chunks instantiate at the origin. Pubs
+    are cities only, and Home is the only city, so one instance in one chunk is the whole of it.
+  - `NoseyParker` was deleted and replaced by **`Preset_NoseyParker`** (`Prop`, `Prefab` →
+    `NoseyParker.prefab`), so parkers are stamped per chunk wherever there are civilians. Placing
+    the prefab rather than composing a civilian is deliberate: `Interactable.OnInteract →
+    PickpocketInteractable.TryPickpocket` is a **persisted UnityEvent living inside that prefab**,
+    written only by `ModernBritainSetup` — a Danger Zone tool that orphans prefabs when re-run.
+    `PlacementBuilders.BuildFromPrefab` uses `PrefabUtility.InstantiatePrefab`, so the link and
+    the event survive. Author a new civilian type from scratch and it will not be robbable.
+  - `Moped` (the hand-placed e-bike) was deleted — see §11, which this closes.
+
+  ⚠️ **There are now zero Nosey Parkers in the game until they are stamped.** The preset exists;
+  nothing has been placed with it. Same for the pub in any chunk other than Home.
 - ~~**`MovementSpeed` has no single owner.**~~ **Fixed** (`a6b387e`, on `main`). Modifiers are
   keyed by source via `CombatController.SetSpeedMultiplier` / `ClearSpeedMultiplier`, and
   movement reads `EffectiveMovementSpeed`. `MovementSpeed` is now a read-only base — never
@@ -419,6 +431,11 @@ Arm a preset, click in the Scene view, Shift to keep stamping, Esc to disarm.
   changes what you place *next*. To update something already standing in a chunk, delete it and
   stamp it again. There is deliberately no resync tool; at current content volume restamping is
   cheaper than the tool would be.
+- **A preset with a `Prefab` assigned short-circuits the whole recipe** — `PlacementBuilders.Build`
+  checks `preset.Prefab != null` *before* the category switch, so `Category` is only a palette
+  heading for those. `Preset_NoseyParker` is the worked example: `Prop`, pointing at
+  `Prefabs/ModernBritain/NoseyParker.prefab`, placed with `PrefabUtility.InstantiatePrefab` so the
+  prefab link and its persisted UnityEvents survive the stamp.
 - The five `Place/…` windows still exist and still work. The gate for retiring them (the palette
   having authored real content) is now met — Mosley, the pharmacist and the e-bike spawn are all
   palette output — but they have not been removed, because none of them has been checked for
@@ -549,10 +566,12 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
    `EBike.prefab`, committed in `37e90d7`.
 2. ~~Author a spawn onto `Home_Alvaston_Data`.~~ **Done.** `VehicleSpawns` carries one entry at
    `(0.31, 0, 22.07)`, placed through the palette (`9b65d94`).
-3. ⚠️ **Still open: delete the hand-placed instance in `c.unity`.** Until it goes, the every-chunk
-   one and the spawned one both exist. **It is the scene-root GameObject named `Moped`**, at
-   `(-4, 0, 10.05)` — a leftover name override from before the prefab was renamed, which is why
-   searching the Hierarchy for "EBike" or "Limey" finds nothing.
+3. ~~Delete the hand-placed instance in `c.unity`.~~ **Done** on `fix/scene-root-props`. The
+   scene-root `Moped` — a leftover name override from before the prefab was renamed, which is why
+   searching the Hierarchy for "EBike" or "Limey" found nothing — is gone. `VehicleSpawner` and
+   `Home_Alvaston_Data.VehicleSpawns` are now the only source of the bike, which means **the
+   data-driven spawner path is no longer optional and has still never been run.** If no bike
+   appears in Home_Alvaston, that path is what to debug, not the missing instance.
 
 `EBike.prefab` currently has **no sprite assigned** — the code-generated placeholder was deleted
 with the rename, and the art comes from §12 instead.
