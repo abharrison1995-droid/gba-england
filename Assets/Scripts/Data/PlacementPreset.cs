@@ -147,5 +147,27 @@ namespace ExiledAlvaston.Data
                  "Conversation above; if Conversation is already set, this is ignored.")]
         [TextArea(2, 4)]
         public string AmbientLine = "";
+
+        // ── NPC — pickpocketing ─────────────────────────────────────────────────────────────
+        // Appended, per §7. Existing .asset files carry no value for these, and Unity runs the
+        // field initializers before applying serialized data, so they read the defaults below —
+        // which are PickpocketInteractable's own defaults, so nothing changes for anything already
+        // authored.
+        [Header("NPC — pickpocketing")]
+        [Tooltip("Makes this civilian robbable: the placed NPC gets a PickpocketInteractable wired " +
+                 "to its Interactable. Mutually exclusive with dialogue — a mark cannot also be a " +
+                 "talker, because both would answer the same button press. If a Conversation or " +
+                 "AmbientLine is set, dialogue wins and NpcFactory warns.")]
+        public bool Pickpocketable = false;
+
+        [Tooltip("Least they can be carrying.")]
+        public int PickpocketMinGold = 5;
+
+        [Tooltip("Most they can be carrying.")]
+        public int PickpocketMaxGold = 25;
+
+        [Tooltip("Chance of being caught, which spikes the wanted level instead of paying out.")]
+        [Range(0f, 1f)]
+        public float PickpocketCatchChance = 0.3f;
     }
 }

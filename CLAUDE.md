@@ -9,7 +9,8 @@ again on 2026-07-28 for the chunk-edge, tooling and World Palette work on
 they had open), and again the same day on `docs/art-brief-and-queue` for the art brief (§11 and
 §12 — the `cycle` sheet is cancelled and the rejected player sheets have been measured) and
 `fix/scene-root-props` for the scene-root props (§8, §9b, §11 — all verified in the
-editor) and `feat/crouch-button` for the mobile crouch toggle (§7, §8). Facts
+editor) and `feat/crouch-button` for the mobile crouch toggle (§7, §8), and
+`feat/pickpocket-preset` for preset-authored marks (§8, §13). Facts
 here are verified against code, not against design docs. Where code and a design doc disagree,
 this file records **what the code actually does**.
 
@@ -280,7 +281,7 @@ is the single most load-bearing line in the whole consequence loop.
 |---|---|---|
 | Nosey Parkers | `AI/NoseyParkerAI` | Civilians. Within `DetectionRadius`, if concealment is below max, they spend `ReportTime` dialling 999, then `SpikeKnives()`. |
 | Stealth | `World/StealthController` | Crouch toggle: halves move speed, halves parker detection radius. |
-| Pickpocketing | `World/PickpocketInteractable` | Requires crouch. Rolls `CatchChance`; failure spikes Knives. |
+| Pickpocketing | `World/PickpocketInteractable` | Requires crouch. Rolls `CatchChance`; failure spikes Knives. Authored by ticking `Pickpocketable` on a `PlacementPreset` (§13). |
 | Grand Theft E-Bike | `World/VehicleController` + `World/MountController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. See §11 — ride state, dismounting and spawning all changed. |
 | Pub safehouses | `World/PubInteractable` | A pint clears Knives + concealment, heals, and saves. |
 | Arrest | `Flow/GameFlowController.ArrestRoutine` | Death dealt by an `EnemyAI.IsPolice` attacker (tracked via `Health.LastAttacker`) arrests instead of killing: clears wanted level, despawns police, returns you to the cellars. |
@@ -748,14 +749,15 @@ Adding an NPC is meant to cost two clicks in Unity and no code at all:
 1. Spec the subject in `ART_PIPELINE.md` §7.3 and have the art agent deliver
    `sheet_char_<subject>_*.png` + JSON to `art_incoming/`.
 2. Create a `PlacementPreset` (or let the starter generator make it): `Label`, `Category: NPC`,
-   `ArtSubject`, `AmbientLine` or a `Conversation`, `Roams` if it should wander.
+   `ArtSubject`, `AmbientLine` or a `Conversation`, `Roams` if it should wander, `Pickpocketable`
+   if they should be robbable instead of talkable.
 3. ⚑ `Tools → GBA → Art → Import Generated Art`. Sheets slice, clips build, a controller builds,
    and **the preset wires itself** — controller, resting sprite, palette icon, height.
 4. ⚑ `Tools → GBA → World Palette`: arm it, click it into a chunk prefab.
 
 | Piece | File | What it owns |
 |---|---|---|
-| What an NPC *is* | `Data/PlacementPreset` | Art subject, height, dialogue, temperament, quest key. |
+| What an NPC *is* | `Data/PlacementPreset` | Art subject, height, dialogue, temperament, quest key, whether they can be robbed. |
 | Building one | `World/NpcFactory` | The recipe. **Runtime**, so the game can call it too. |
 | Editor extras | `Editor/PlacementBuilders` | Undo, and the authoring capsule. Nothing else. |
 | Wiring art to presets | `Editor/ArtImportTool` | `AutoAssign`, plus a re-runnable menu item. |
@@ -793,6 +795,20 @@ Adding an NPC is meant to cost two clicks in Unity and no code at all:
 - **`PlacementPresetLibrary` lives in `Resources/`; the presets do not.** Everything reachable from
   `Resources/` ships in the build, and the chest preset alone would drag in a 45 MB prop pack.
   Entries are keyed by an authored string, so renaming a preset asset is safe.
+- ⚠️ **`UnityEvent.AddListener` does not survive being saved into a prefab.** It creates a
+  *non-persistent* listener; only calls written through `UnityEditor.Events.UnityEventTools` are
+  serialized. So an authoring tool that wires an `OnInteract` handler with `AddListener` looks
+  correct in the Scene view and produces a prefab with the component present and nothing connected
+  to it. This is why `PickpocketInteractable` **subscribes itself in `Awake`**, and why that `Awake`
+  first walks `OnInteract.GetPersistentEventCount()` looking for a persistent call already pointing
+  at itself: `NoseyParker.prefab` carries exactly such a call, written by `ModernBritainSetup`, and
+  would otherwise be wired twice and rob the player twice per press. `NpcFactory` sets only
+  serialized state — the component, its tuning, the prompt.
+- **A preset is either a talker or a mark, never both.** `Pickpocketable` plus a `Conversation` is
+  two listeners answering one button press, the same bug the `Conversation != null` guard exists to
+  avoid. `NpcFactory.ApplyPickpocket` warns and **dialogue wins**, because the failure that leaves
+  is a civilian you cannot rob rather than a quest giver who will not talk. A mark's prompt becomes
+  "Pickpocket <name>" instead of "Talk to <name>", which is the player's only cue to crouch.
 - **`EnemyAI.Animator` is a public field nothing assigns unless asked.** The geezer's attack, hurt
   and death sheets would import, build a controller, and never play a frame. `MagicTutorial` sets
   it from `WorldActorVisual.SpriteAnimator` when he turns hostile; anything else spawning an

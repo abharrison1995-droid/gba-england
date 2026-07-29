@@ -50,6 +50,8 @@ namespace ExiledAlvaston.World
             if (preset.Conversation != null)
                 go.AddComponent<NPCDialogueInteractable>().Conversation = preset.Conversation;
 
+            ApplyPickpocket(preset, go, interactable);
+
             ApplyVisual(preset, go);
 
             if (preset.Roams)
@@ -61,6 +63,57 @@ namespace ExiledAlvaston.World
             ApplyQuestKey(preset, go);
 
             return go;
+        }
+
+        /// <summary>
+        /// Makes a civilian robbable.
+        ///
+        /// Until this existed, the only pickpocketable object in the game was NoseyParker.prefab,
+        /// whose Interactable.OnInteract → TryPickpocket wiring is a *persisted* UnityEvent written
+        /// by ModernBritainSetup — a Danger Zone tool that mints a fresh GUID when re-run and
+        /// orphans every instance already placed (CLAUDE.md §7). So the only way to author a new
+        /// mark was to copy that prefab, and a civilian built from a preset could never be one.
+        /// Adding the component here means the palette can author marks directly, and nothing has
+        /// to touch that tool.
+        ///
+        /// Note what this does *not* do: wire the listener. UnityEvent.AddListener produces a
+        /// non-persistent listener that is never serialized, so wiring one while authoring a chunk
+        /// prefab would look correct in the editor and be silently absent from the saved asset.
+        /// PickpocketInteractable subscribes itself in Awake instead, skipping it when the object
+        /// already carries a persistent call — which is how NoseyParker.prefab avoids being wired
+        /// twice. Everything set here (the component, its tuning, the prompt) is serialized state
+        /// that survives the save.
+        ///
+        /// Dialogue and pickpocketing are mutually exclusive, for the same reason the caller only
+        /// adds NPCDialogueInteractable when there is something to say: two listeners answering one
+        /// button press is the bug being avoided. Dialogue wins the clash because its failure is
+        /// the recoverable one — a civilian you cannot rob is a shrug, a quest giver who will not
+        /// talk is a broken quest.
+        /// </summary>
+        private static void ApplyPickpocket(PlacementPreset preset, GameObject go, Interactable interactable)
+        {
+            if (!preset.Pickpocketable) return;
+
+            if (preset.Conversation != null)
+            {
+                Debug.LogWarning(
+                    $"NpcFactory: preset '{preset.Label}' is marked Pickpocketable but also has a " +
+                    "Conversation, and one button press cannot do both. Dialogue wins; nothing was " +
+                    "made robbable. Clear Conversation and AmbientLine to make them a mark instead.",
+                    go);
+                return;
+            }
+
+            var pickpocket = go.AddComponent<PickpocketInteractable>();
+            pickpocket.MinGold = preset.PickpocketMinGold;
+            pickpocket.MaxGold = preset.PickpocketMaxGold;
+            pickpocket.CatchChance = preset.PickpocketCatchChance;
+
+            // "Talk to X" is wrong for someone who has nothing to say. The prompt is what the HUD
+            // shows while they are the closest interactable, so it is the only clue the player gets
+            // that this civilian is worth crouching next to.
+            string npcName = string.IsNullOrEmpty(preset.NpcName) ? "them" : preset.NpcName;
+            interactable.Prompt = $"Pickpocket {npcName}";
         }
 
         /// <summary>

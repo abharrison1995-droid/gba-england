@@ -11,11 +11,39 @@ namespace ExiledAlvaston.World
     {
         public int MinGold = 5;
         public int MaxGold = 25;
-        
+
         [Tooltip("Percentage chance to get caught (0.0 to 1.0)")]
         public float CatchChance = 0.3f;
 
         private bool _hasBeenRobbed = false;
+
+        /// <summary>
+        /// Wires itself to the Interactable, the way NPCDialogueInteractable does — *unless* the
+        /// object already carries a persistent call pointing back here.
+        ///
+        /// Both routes have to work and they arrive differently. NoseyParker.prefab was built by
+        /// ModernBritainSetup, which wrote OnInteract → TryPickpocket as a serialized persistent
+        /// call; self-subscribing unconditionally would give that prefab two listeners and rob the
+        /// player twice per press. A civilian stamped by the World Palette has no such call, because
+        /// UnityEvent.AddListener produces a *non-persistent* listener that is never serialized —
+        /// so wiring one at authoring time would look right in the editor and be silently gone from
+        /// the saved prefab. Deciding at Awake, from what the object actually carries, covers both
+        /// without either tool knowing about the other.
+        /// </summary>
+        private void Awake()
+        {
+            var interactable = GetComponent<Interactable>();
+            if (interactable == null || interactable.OnInteract == null) return;
+
+            int persistent = interactable.OnInteract.GetPersistentEventCount();
+            for (int i = 0; i < persistent; i++)
+            {
+                if (ReferenceEquals(interactable.OnInteract.GetPersistentTarget(i), this))
+                    return;   // authored in a prefab already — leave it alone
+            }
+
+            interactable.OnInteract.AddListener(TryPickpocket);
+        }
 
         public void TryPickpocket()
         {
