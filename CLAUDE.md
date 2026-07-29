@@ -432,6 +432,10 @@ python Tools/asset_reachability.py --check-dangling   # reference integrity; exi
 python Tools/asset_reachability.py --packs            # which asset packs are fully unused
 ```
 
+**On Linux, that is `python3`** — Mint has no bare `python`. The script itself is portable
+(`#!/usr/bin/env python3`, `os.path` throughout, backslashes normalised), and
+`.claude/settings.json` permits both spellings.
+
 `--check-dangling` knows the build scene's built-in baseline (17 unresolved GUIDs) and fails only
 above it. Run it before and after anything that deletes, moves or renames assets.
 
