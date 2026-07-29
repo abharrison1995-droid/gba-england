@@ -475,7 +475,9 @@ namespace ExiledAlvaston.Flow
             {
                 var magicGo = new GameObject("MagicTutorial");
                 magicGo.transform.SetParent(ChunkManager.CurrentChunkInstance.transform, false);
-                magicGo.AddComponent<MagicTutorial>().Begin(TutorialBanditSprite);
+                // No sprite passed any more: the quest resolves each character's own preset, so
+                // Daniel Pauls and the geezer no longer share one another's art — or the bandit's.
+                magicGo.AddComponent<MagicTutorial>().Begin();
             }
 
             // Checkpoint: tutorial completion must survive an app restart

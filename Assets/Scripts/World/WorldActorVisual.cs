@@ -111,6 +111,25 @@ namespace ExiledAlvaston.World
         }
 
         /// <summary>
+        /// The Animator driving this actor's sprite, or null if it has none. It sits on
+        /// <c>ActorVisual/SwingRoot</c> beside the renderer, which is not a path other components
+        /// should have to know — EnemyAI wants one for its own field and would otherwise hardcode
+        /// the same string this class already owns.
+        /// </summary>
+        public Animator SpriteAnimator
+        {
+            get
+            {
+                if (_spriteAnimator == null)
+                {
+                    EnsureHierarchy();
+                    _spriteAnimator = _swingRoot.GetComponent<Animator>();
+                }
+                return _spriteAnimator;
+            }
+        }
+
+        /// <summary>
         /// Puts an Animator where the generated clips expect to find it, and points it at
         /// <paramref name="controller"/>. Returns the Animator, since callers that also drive it
         /// through another component — EnemyAI, which has its own Animator field — would otherwise

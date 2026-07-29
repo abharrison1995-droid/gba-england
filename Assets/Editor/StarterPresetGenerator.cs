@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using ExiledAlvaston.Data;
+using ExiledAlvaston.Flow;
 
 /// <summary>
 /// Fills the World Palette with a usable starting set, so it is not an empty grid the first time
@@ -16,6 +17,8 @@ using ExiledAlvaston.Data;
 public static class StarterPresetGenerator
 {
     private const string PresetFolder = "Assets/Data/Presets";
+    private const string ResourcesFolder = "Assets/Resources";
+    private const string LibraryPath = ResourcesFolder + "/" + PlacementPresetLibrary.ResourcePath + ".asset";
     private const string VehicleDataPath = "Assets/Data/Vehicles/Limey_EBike_Data.asset";
     private const string EBikePrefabPath = "Assets/Prefabs/ModernBritain/EBike.prefab";
     private const string ChestPrefabPath = "Assets/3DModels/Animated Chest/OldChest/Chest.prefab";
@@ -80,6 +83,7 @@ public static class StarterPresetGenerator
         // rather than written twice.
         BackfillNpcPresets(filled);
         GenerateAmbientConversations(filled);
+        EnsureLibrary(created, filled, notes);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -259,6 +263,64 @@ public static class StarterPresetGenerator
 
         AssetDatabase.CreateAsset(preset, path);
         created.Add(label);
+    }
+
+    /// <summary>
+    /// Creates and fills the one preset library the running game can actually load.
+    ///
+    /// Presets live outside Resources/ deliberately — everything reachable from there ships in the
+    /// build, and the chest preset alone would drag a 45 MB prop pack in with it. So a small asset
+    /// sits in Resources/ instead, pointing at only the presets runtime code has to resolve by
+    /// name. Today that is the magic tutorial's two characters.
+    ///
+    /// An entry already pointing at a preset is never re-pointed: the whole reason lookup is keyed
+    /// rather than named is so the target can be changed by hand and stay changed.
+    /// </summary>
+    private static void EnsureLibrary(List<string> created, List<string> filled, List<string> notes)
+    {
+        EnsureFolder(ResourcesFolder);
+
+        var library = AssetDatabase.LoadAssetAtPath<PlacementPresetLibrary>(LibraryPath);
+        if (library == null)
+        {
+            library = ScriptableObject.CreateInstance<PlacementPresetLibrary>();
+            AssetDatabase.CreateAsset(library, LibraryPath);
+            created.Add($"PlacementPresetLibrary ({LibraryPath})");
+        }
+
+        bool changed = false;
+        changed |= EnsureLibraryEntry(library, MagicTutorial.DanielPresetKey, "Daniel Pauls", filled, notes);
+        changed |= EnsureLibraryEntry(library, MagicTutorial.GeezerPresetKey, "Tracksuit Geezer", filled, notes);
+
+        if (changed) EditorUtility.SetDirty(library);
+    }
+
+    private static bool EnsureLibraryEntry(PlacementPresetLibrary library, string key,
+        string presetLabel, List<string> filled, List<string> notes)
+    {
+        PlacementPresetLibrary.Entry entry =
+            library.Entries.Find(e => e != null && e.Key == key);
+
+        if (entry != null && entry.Preset != null) return false;
+
+        string path = $"{PresetFolder}/Preset_{Sanitise(presetLabel)}.asset";
+        var preset = AssetDatabase.LoadAssetAtPath<PlacementPreset>(path);
+        if (preset == null)
+        {
+            notes.Add($"Preset library: nothing at {path}, so '{key}' is unresolved — the magic " +
+                      "tutorial will log an error instead of spawning that character.");
+            return false;
+        }
+
+        if (entry == null)
+        {
+            entry = new PlacementPresetLibrary.Entry { Key = key };
+            library.Entries.Add(entry);
+        }
+        entry.Preset = preset;
+
+        filled.Add($"preset library: '{key}' → {presetLabel}");
+        return true;
     }
 
     /// <summary>
