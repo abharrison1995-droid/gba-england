@@ -78,3 +78,11 @@ Desktop.ini
 # Generated art sources — high-res, reduced on import, never committed (ART_PIPELINE.md)
 /art_incoming/*
 !/art_incoming/README.md
+
+# Scratch used while reviewing generated frames — the frames themselves live in
+# art_incoming/frames/, which is already ignored above.
+/review_tmp/
+
+# Python bytecode from Tools/
+__pycache__/
+*.pyc
