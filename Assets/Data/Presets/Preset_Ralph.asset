@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Ralph
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: -1541734953154856472, guid: 4382f5a60c81d904ea0e8b2f03ca9106, type: 3}
   Prefab: {fileID: 0}
   NpcName: Ralph
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: -1541734953154856472, guid: 4382f5a60c81d904ea0e8b2f03ca9106, type: 3}
+  NpcController: {fileID: 9100000, guid: cea8a1bbf8ce7fc4c9d445e4ad39f810, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -39,7 +39,7 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: ralph
-  NpcHeight: 0
+  NpcHeight: 1.35
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}

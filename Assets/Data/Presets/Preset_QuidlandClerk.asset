@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Quidland Clerk
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: -1643785627701444538, guid: 3bd7e6769f902cb448ea60a547b78ca4, type: 3}
   Prefab: {fileID: 0}
   NpcName: Quidland Clerk
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: -1643785627701444538, guid: 3bd7e6769f902cb448ea60a547b78ca4, type: 3}
+  NpcController: {fileID: 9100000, guid: 5b634bbeea4fe5b47a0bb94fcd000ef9, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -39,7 +39,7 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: quidlandclerk
-  NpcHeight: 0
+  NpcHeight: 1.35
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}

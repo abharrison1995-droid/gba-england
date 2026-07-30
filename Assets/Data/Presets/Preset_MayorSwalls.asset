@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Mayor Swalls
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: -1749248113159070636, guid: cf887eeb21330ca46a632c87d4ce37e9, type: 3}
   Prefab: {fileID: 0}
   NpcName: Mayor Swalls
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: -1749248113159070636, guid: cf887eeb21330ca46a632c87d4ce37e9, type: 3}
+  NpcController: {fileID: 9100000, guid: 8f47f13379c5e7e4c8fa11b8092b62d5, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -39,11 +39,12 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: mayor_swalls
   ArtSubject: mayorswalls
-  NpcHeight: 0
+  NpcHeight: 1.35
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: I'm the Mayor of London, I've four committees before lunch, and you are not on the agenda.
+  AmbientLine: I'm the Mayor of London, I've four committees before lunch, and you
+    are not on the agenda.
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25

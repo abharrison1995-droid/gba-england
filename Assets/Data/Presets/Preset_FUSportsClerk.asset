@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: F.U. Sports Clerk
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: -270752401736249008, guid: cbebf3ceda193f1439ed5ee3234b9730, type: 3}
   Prefab: {fileID: 0}
   NpcName: F.U. Sports Clerk
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: -270752401736249008, guid: cbebf3ceda193f1439ed5ee3234b9730, type: 3}
+  NpcController: {fileID: 9100000, guid: 37898249b874e0644a71e876230a21db, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -39,11 +39,12 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: fusportsclerk
-  NpcHeight: 0
+  NpcHeight: 1.35
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: Two for one on the hoodies, mate. Stab-proof? Couldn't tell you, but they're two for one.
+  AmbientLine: Two for one on the hoodies, mate. Stab-proof? Couldn't tell you, but
+    they're two for one.
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25

@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Sanjeet
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: 4665928151777241071, guid: 255b5afe6fe275e479bb96b7fb424c2b, type: 3}
   Prefab: {fileID: 0}
   NpcName: Sanjeet
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: 4665928151777241071, guid: 255b5afe6fe275e479bb96b7fb424c2b, type: 3}
+  NpcController: {fileID: 9100000, guid: 1a0678e8180192d4b86089d38a235dfe, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -39,11 +39,12 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: sanjeet
-  NpcHeight: 0
+  NpcHeight: 1.35
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: We're the Croydon Spartans. My mum's house is the hideout, so keep your voice down.
+  AmbientLine: We're the Croydon Spartans. My mum's house is the hideout, so keep
+    your voice down.
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25
