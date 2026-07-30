@@ -769,6 +769,44 @@ because `BuildPoseController` `DeleteAsset`s the controller and re-creates it ev
 sees its own output. That is the §7 delete-and-re-save hazard rather than this one, and it is why
 the enemy controllers are safe to leave alone.
 
+### The procedural melee swing now stands down where there is attack art
+
+Attack firing revealed what had been hiding behind a broken state machine: `WorldActorVisual`
+drew its **placeholder** melee effect on top of the real clip. Both call sites
+(`CombatController.MeleeHitboxRoutine`, `EnemyAI.PerformAttack`) set the `MeleeAttack` trigger
+*and* call `PlayMeleeSwing`, which is two attack visuals at once —
+
+- `ApplySwingPose` rotates `ActorVisual/SwingRoot` by up to `SwingAngle` (55°) and lunges it: the
+  sprite visibly tilts through the clip.
+- `SpawnSlashArc` builds a `PrimitiveType.Quad` on an **`Unlit/Color`** material. That shader
+  ignores alpha, so the intended translucent cream renders as an opaque near-white block and
+  `FadeSlash`'s alpha ramp fades nothing at all — it simply vanishes when destroyed 0.18 s later.
+  The quad is 0.2 units tall and yaw-oriented in billboard space, so it is near-invisible edge-on
+  and a solid bar face-on: hence "appears sometimes".
+
+`PlayMeleeSwing` now returns early when `HasAttackAnimation()` — `Animator.HasState(0, "Attack")`
+on the `SwingRoot` animator. **Probe by state, not by the `MeleeAttack` parameter**: both
+`ArtImportTool` and `EnemyPrefabSetup` declare that parameter unconditionally, so it says nothing
+about whether art exists. `SetFacing` still runs first — it is what points the attack clip the
+right way — and an in-flight swing is stopped and its pose cleared, since `NpcFactory` and
+`MagicTutorial` can attach an Animator after the fact.
+
+The procedural swing is **kept**, not deleted, and it is still the only attack tell for an actor
+without art. `SwingAngle` / `SwingDuration` / `LungeDistance` stay as public serialized fields
+(§7). Who this changes, checked prefab by prefab:
+
+| Actor | Animator on `SwingRoot`? | Attack state? | Effect |
+|---|---|---|---|
+| Player | yes | `player_Controller` ✓ | procedural swing off — the fix |
+| `Enemy_Orc1/2/3` | yes | `Orc_Controller` ✓ | off; plays its own craftpix attack clip |
+| `Enemy_BotWheel` | yes | `BotWheel_Controller` ✓ | off; same |
+| `Police_*` ×5 | **no Animator at all** | — | unchanged, still the only tell they have |
+| Tutorial geezer (`underhoused`) | — | sheets not delivered | unchanged |
+
+The player's attack window and its clip happen to line up exactly: `MeleeHitDelay 0.15` +
+`MeleeRecovery 0.35` = 0.50 s, and the clip is 6 frames @ 12 fps = 0.50 s, `loop: false`. Damage
+lands on frame 2. Nothing needed retuning, but changing either number now desynchronises them.
+
 **Why the first three full-sheet deliveries failed, measured rather than guessed** (2026-07-29,
 replicating the importer's own checks outside Unity):
 

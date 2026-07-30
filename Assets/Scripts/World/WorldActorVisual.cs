@@ -61,6 +61,14 @@ namespace ExiledAlvaston.World
         private GameObject _slashFx;
         private Vector3 _swingFacing = Vector3.forward;
 
+        /// <summary>
+        /// The name both <c>ArtImportTool</c> and <c>EnemyPrefabSetup</c> give the attack state.
+        /// Capability is probed by state and not by the <c>MeleeAttack</c> parameter, because every
+        /// controller either tool builds declares that parameter whether or not there is any attack
+        /// art behind it.
+        /// </summary>
+        private static readonly int AttackStateHash = Animator.StringToHash("Attack");
+
         private void Awake()
         {
             ApplyVisual();
@@ -308,16 +316,53 @@ namespace ExiledAlvaston.World
             PlayMeleeSwing(_swingFacing);
         }
 
-        /// <summary>Short wind-up + slash in the given world facing direction.</summary>
+        /// <summary>
+        /// Faces the actor, then plays the procedural wind-up-and-slash — but only for an actor with
+        /// no attack animation of its own. The sprite flip happens either way: it is how the attack
+        /// clip ends up pointing the right way.
+        /// </summary>
         public void PlayMeleeSwing(Vector3 worldFacing)
         {
             EnsureHierarchy();
             if (worldFacing.sqrMagnitude > 0.0001f)
                 SetFacing(worldFacing);
 
+            // The tilt-and-lunge pose and the slash quad are a placeholder from before any actor had
+            // attack art, and both call sites fire the MeleeAttack trigger as well as calling this.
+            // Once real art exists the two draw on top of each other: the player got a 55° tilt and
+            // an opaque quad over the top of a six-frame attack clip. Real art wins, the same way
+            // the importer's controller wins over placeholder wiring (CLAUDE.md §13).
+            if (HasAttackAnimation())
+            {
+                // An Animator can arrive after the fact — NpcFactory and MagicTutorial both attach
+                // one at runtime — so a procedural swing may be mid-flight. Drop it and clear the
+                // pose, or the actor keeps whatever tilt it was part-way through for good.
+                if (_swingRoutine != null)
+                {
+                    StopCoroutine(_swingRoutine);
+                    _swingRoutine = null;
+                    ApplySwingPose(0f, 0f);
+                }
+                return;
+            }
+
             if (_swingRoutine != null)
                 StopCoroutine(_swingRoutine);
             _swingRoutine = StartCoroutine(MeleeSwingRoutine());
+        }
+
+        /// <summary>
+        /// True when this actor's Animator holds an Attack state to play, so the procedural swing
+        /// should stand aside. False with no Animator, no controller, or a controller that never got
+        /// an attack sheet — mosley and pharmacist are Idle-only today, and so is any NPC turned
+        /// hostile before its sheets land.
+        /// </summary>
+        private bool HasAttackAnimation()
+        {
+            Animator anim = SpriteAnimator;
+            return anim != null
+                   && anim.runtimeAnimatorController != null
+                   && anim.HasState(0, AttackStateHash);
         }
 
         private IEnumerator MeleeSwingRoutine()
