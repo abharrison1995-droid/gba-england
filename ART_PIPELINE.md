@@ -392,20 +392,40 @@ Whole-sheet generation kept failing on layout (6×2 vs declared 6×1), scale, br
 wandering baselines — four independent failure modes per image. What worked instead, and is the
 recommended route for any character whose sheets keep being refused:
 
-1. **Generate one 512×512 frame at a time** (AI Studio / Nano Banana), chaining by attaching the
+1. **Generate one square frame at a time** (AI Studio / Nano Banana), chaining by attaching the
    previous frame to each prompt for consistency. Backgrounds come back near-magenta but not
-   exactly — always corner-sample the background rather than assuming `#FF00FF`.
-2. **Deliver frames to `art_incoming/frames/<action>_<n>.png`.** A local script (not the art
-   agent — see AGENTS.md) re-aligns each frame so the feet sit on the baseline row and normalises
-   the backdrop to pure magenta, then tiles six frames into the 3072×512 sheet and writes the
-   sidecar JSON. Never scale a frame to make it fit — scaling blurs dark edge pixels (shoe soles)
-   into the backdrop, and the importer's keyer then drops them, misreading the feet position.
-3. **Pre-check with `Tools/precheck_sheets.py`** before opening Unity. It replicates the
-   importer's checks, including a strict threshold-200 baseline pass that approximates the
-   importer's alpha-after-unmix feet measure.
+   exactly — the player's idle frames sampled `(238, 12, 221)`, `(234, 9, 207)` and
+   `(232, 10, 192)`, so **always corner-sample the background rather than assuming `#FF00FF`**.
+   Assume it and nothing keys at all.
+2. **Deliver frames to `art_incoming/frames/<action>_<n>.png`** (or
+   `<subject>_<action>_<n>.png` when a batch covers more than one subject), numbered from 1 and
+   contiguous.
+3. **Tile them with `Tools/tile_frames.py <subject> <action>`** — not the art agent, see
+   AGENTS.md. It corner-samples and normalises each backdrop to pure magenta, measures the feet,
+   translates each frame vertically onto one shared baseline, tiles them into a single row, and
+   writes the sheet and sidecar JSON into `art_incoming/`. It then re-measures the result and
+   exits non-zero rather than leave a sheet the importer would refuse.
+
+   Two things it enforces because each cost a round trip:
+
+   - **It never scales a frame.** Scaling blurs dark edge pixels (shoe soles) into the backdrop,
+     the importer's keyer drops them, and the feet read high — this is what got past the lenient
+     check on `cast_6`. Tile at whatever size the frames arrived at and declare it with
+     `--frame-size` (idle was 1024², attack 512²); do **not** downscale to make batches match.
+     The importer reduces to 48 px per world unit either way, so both land on the same 65 px
+     cell, and one area-averaged reduction beats two.
+   - **It aligns on the strict feet measure**, importing `key_mask` from `precheck_sheets.py` at
+     threshold 200 rather than reimplementing it. That is the measure the importer applies after
+     key-and-unmix, so the alignment performed is the alignment Unity will see. Aligning on
+     anything more lenient is precisely how `cast_6` slipped through.
+4. **Pre-check with `Tools/precheck_sheets.py`** before opening Unity. It replicates the
+   importer's checks, including the strict threshold-200 baseline pass. ⚠️ Its `main()` still
+   hardcodes the three band-1 player sheet names — point it at the new batch before running it
+   on band 2.
 
 Death is exempt from height/baseline checks (the pose changes shape) but **never** from the width
-check.
+check. `tile_frames.py` reports drift for a death sheet but does not fail on it, matching the
+importer.
 
 ### 7.4 The cast — who exists and what they still need
 
