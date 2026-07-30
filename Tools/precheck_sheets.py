@@ -6,6 +6,7 @@ Checks, per ART_PIPELINE.md / CLAUDE.md §12:
   3. Figure fills ~90% of cell height (measured on keyed mask).
   4. Baseline drift across cells <= 2 px at final size (65 px cell)  [death exempt]
   5. Mean opaque width per cell within 1.4x of *that subject's own* idle sheet  [never exempt]
+  6. Frames actually differ from one another (nothing else catches a tiled still)
 
 Checks the band-2 sheets by default (ART_PIPELINE.md §7.4). Pass sheet filenames as
 arguments to check a different set:
@@ -26,6 +27,16 @@ PROCESSED = INCOMING / "processed"
 FINAL_CELL = 65.0  # px at final size for a 512 px source cell
 DRIFT_LIMIT_FINAL_PX = 2.0
 WIDTH_TOLERANCE = 1.4
+
+# How much a frame must differ from the one before it: pixels that changed, over the mean
+# subject size of the pair. Calibrated on every sheet accepted so far rather than guessed.
+# Because each frame is an independent photographic generation, essentially every subject
+# pixel differs between frames, so real values land above 1.0 — the least-varying real pair
+# in the project is the villager's idle at 1.02, and the most subtle player idle pair is
+# 1.13. A cell tiled from another measures exactly 0.00. This threshold sits an order of
+# magnitude below anything real, so it catches a still without ever arguing with a subtle idle.
+STILL_FRAME_RATIO = 0.10
+
 MAGENTA = np.array([255, 0, 255])
 
 # Band 2 of the queue in ART_PIPELINE.md §7.4/§7.5: the tutorial cast. Daniel Pauls needs no
@@ -76,6 +87,65 @@ def cell_stats(mask: np.ndarray, fw: int, fh: int, col: int, row: int):
     }
 
 
+def check_frames_differ(img: Image.Image, mask: np.ndarray, fw: int, fh: int, cols: int,
+                        count: int, problems: list):
+    """Frames must actually be different drawings.
+
+    Nothing else in this file can catch a sheet tiled from a single frame: every other check
+    measures one cell at a time, so one drawing repeated six times reads as six flawless
+    cells. That is exactly how the first Daniel Pauls delivery passed the dimension, layout,
+    fill, baseline and width checks while being a still.
+
+    Two tests, because the two failures look different in the log. Byte-identical cells are
+    named against the earlier cell they repeat, which points straight at the tiling. Then
+    consecutive pairs are measured, catching a sheet whose frames are technically distinct
+    and visually motionless.
+
+    Deliberately applies to every action including death: in this pipeline each frame is a
+    separate generation, so even a held final pose never comes out byte-identical. If a
+    genuinely intentional held pose ever trips this, that is the point to add an exemption
+    — not before.
+    """
+    rgb = np.asarray(img.convert("RGB")).astype(np.int16)
+
+    def cell(i: int):
+        col, row = i % cols, i // cols
+        rows_ = slice(row * fh, (row + 1) * fh)
+        columns_ = slice(col * fw, (col + 1) * fw)
+        return rgb[rows_, columns_], mask[rows_, columns_]
+
+    identical = []
+    for i in range(1, count):
+        for j in range(i):
+            if np.array_equal(cell(i)[0], cell(j)[0]):
+                identical.append((i, j))
+                break
+
+    if count > 1 and len(identical) == count - 1 and all(j == 0 for _, j in identical):
+        problems.append(f"every cell is identical to cell 1 — this is one frame tiled "
+                        f"{count} times, not an animation")
+        return
+    for later, first in identical:
+        problems.append(f"cell {later + 1} is byte-identical to cell {first + 1}")
+
+    identical_consecutive = {later for later, first in identical if later - first == 1}
+
+    ratios = []
+    for i in range(1, count):
+        (before, mask_before), (after, mask_after) = cell(i - 1), cell(i)
+        subject = (int(mask_before.sum()) + int(mask_after.sum())) / 2.0
+        changed = int((np.abs(before - after).sum(axis=2) > 0).sum())
+        ratio = changed / max(1.0, subject)
+        ratios.append(ratio)
+        if ratio < STILL_FRAME_RATIO and i not in identical_consecutive:
+            problems.append(f"cells {i} and {i + 1} differ by only {ratio:.1%} of the figure "
+                            f"— effectively a still (limit {STILL_FRAME_RATIO:.0%})")
+
+    if ratios:
+        print(f"  frame-to-frame change: {', '.join(f'{r:.2f}' for r in ratios)} "
+              f"(min {min(ratios):.2f}, still below {STILL_FRAME_RATIO:.2f})")
+
+
 def load_pair(png: Path):
     j = png.with_suffix(".json")
     meta = json.loads(j.read_text()) if j.exists() else None
@@ -123,6 +193,11 @@ def check_sheet(png: Path, idle_mean_width: float | None):
     good = [s for s in stats[:fc] if s is not None]
     if len(good) < fc:
         problems.append(f"only {len(good)}/{fc} declared frames have content")
+
+    # Only meaningful once every declared cell has something in it — comparing against an
+    # empty cell would report a difference rather than the emptiness already reported above.
+    if len(good) == fc:
+        check_frames_differ(img, mask, fw, fh, cols, fc, problems)
 
     # fragment frames: figure under half the median height of the others.
     # Skipped for exempt actions (death): a prone final frame is legitimately

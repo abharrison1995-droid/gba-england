@@ -419,9 +419,27 @@ recommended route for any character whose sheets keep being refused:
      key-and-unmix, so the alignment performed is the alignment Unity will see. Aligning on
      anything more lenient is precisely how `cast_6` slipped through.
 4. **Pre-check with `Tools/precheck_sheets.py`** before opening Unity. It replicates the
-   importer's checks, including the strict threshold-200 baseline pass. ⚠️ Its `main()` still
-   hardcodes the three band-1 player sheet names — point it at the new batch before running it
-   on band 2.
+   importer's checks, including the strict threshold-200 baseline pass. It defaults to the
+   current band and takes sheet names as arguments, so a different batch needs no edit:
+
+   ```
+   python Tools/precheck_sheets.py sheet_char_villager_idle.png
+   ```
+
+   It also checks two things the importer does **not**, both added after a delivery got past
+   everything else:
+
+   - **Frames must differ from one another.** Every other check measures one cell at a time, so
+     one drawing tiled six times reads as six flawless cells — which is how the first Daniel
+     Pauls idle passed the dimension, layout, fill, baseline and width checks while being a
+     still. Byte-identical cells are named against the cell they repeat; consecutive pairs are
+     also measured, as changed pixels over mean subject size, and refused below 0.10. That
+     threshold is calibrated, not guessed: because every frame is an independent generation,
+     real pairs land above 1.0 (lowest in the project is the pharmacist's idle at 1.04), while
+     a tiled duplicate measures exactly 0.00.
+   - **The width reference is the subject's own idle sheet**, resolved from `processed/` then
+     staging, because the importer compares sheets of one subject against each other. A subject
+     with no idle yet has its width check skipped and says so.
 
 Death is exempt from height/baseline checks (the pose changes shape) but **never** from the width
 check. `tile_frames.py` reports drift for a death sheet but does not fail on it, matching the
