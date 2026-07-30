@@ -67,6 +67,7 @@ public class WorldPaletteWindow : EditorWindow
             .Select(AssetDatabase.LoadAssetAtPath<PlacementPreset>)
             .Where(p => p != null)
             .OrderBy(p => (int)p.Category)
+            .ThenBy(p => (int)p.Region)
             .ThenBy(p => p.Label)
             .ToArray();
     }
@@ -131,7 +132,11 @@ public class WorldPaletteWindow : EditorWindow
         foreach (var group in _presets.GroupBy(p => p.Category))
         {
             EditorGUILayout.LabelField(group.Key.ToString(), EditorStyles.boldLabel);
-            DrawGrid(group.ToList());
+
+            if (group.Key == PlacementPreset.PlacementCategory.NPC)
+                DrawNpcRegions(group.ToList());
+            else
+                DrawGrid(group.ToList());
 
             if (group.Key == PlacementPreset.PlacementCategory.Vehicle)
                 DrawVehicleTarget();
@@ -140,6 +145,38 @@ public class WorldPaletteWindow : EditorWindow
         }
 
         EditorGUILayout.EndScrollView();
+    }
+
+    /// <summary>
+    /// Every <see cref="PlacementPreset.CityRegion"/>, in enum order, resolved once rather than per
+    /// repaint — <c>Enum.GetValues</c> allocates a fresh array on every call and OnGUI runs many
+    /// times a second. Reading it from the enum rather than listing the regions here means an
+    /// appended region shows up in the palette without touching this file.
+    /// </summary>
+    private static readonly PlacementPreset.CityRegion[] Regions =
+        (PlacementPreset.CityRegion[])System.Enum.GetValues(typeof(PlacementPreset.CityRegion));
+
+    /// <summary>
+    /// The NPC section, split by city. Unlike the category grouping above this iterates the enum
+    /// rather than the presets, so a region with nothing in it still draws its heading: the cast is
+    /// being written city by city, and an empty Birmingham heading is the reminder that it is next.
+    /// </summary>
+    private void DrawNpcRegions(List<PlacementPreset> npcs)
+    {
+        EditorGUI.indentLevel++;
+
+        foreach (PlacementPreset.CityRegion region in Regions)
+        {
+            EditorGUILayout.LabelField(region.ToString(), EditorStyles.miniBoldLabel);
+
+            List<PlacementPreset> inRegion = npcs.Where(p => p.Region == region).ToList();
+            if (inRegion.Count == 0)
+                EditorGUILayout.LabelField("(none yet)", EditorStyles.miniLabel);
+            else
+                DrawGrid(inRegion);
+        }
+
+        EditorGUI.indentLevel--;
     }
 
     private void DrawGrid(List<PlacementPreset> presets)

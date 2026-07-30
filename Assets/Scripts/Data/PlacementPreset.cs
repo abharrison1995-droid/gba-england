@@ -35,6 +35,23 @@ namespace ExiledAlvaston.Data
             SpawnPoint = 6,
         }
 
+        /// <summary>
+        /// Which city this character belongs to. Only the palette reads it: the NPC section is
+        /// split into sub-headings so a cast of dozens stays navigable, and nothing about how an
+        /// NPC is built or behaves depends on it. <see cref="Assorted"/> is the go-anywhere
+        /// default — a villager or a Nosey Parker belongs in every chunk.
+        ///
+        /// ⚠ Serialized by integer index — APPEND ONLY, same rule as
+        /// <see cref="PlacementCategory"/> (CLAUDE.md §7). Assorted is 0 so every preset authored
+        /// before this field existed reads the right default.
+        /// </summary>
+        public enum CityRegion
+        {
+            Assorted = 0,
+            London = 1,
+            Birmingham = 2,
+        }
+
         [Header("Palette")]
         public string Label = "New Preset";
         public PlacementCategory Category = PlacementCategory.Prop;
@@ -169,5 +186,17 @@ namespace ExiledAlvaston.Data
         [Tooltip("Chance of being caught, which spikes the wanted level instead of paying out.")]
         [Range(0f, 1f)]
         public float PickpocketCatchChance = 0.3f;
+
+        // ── NPC — region ─────────────────────────────────────────────────────────────────────
+        // Appended, per §7 — and appended at the very end rather than beside the other NPC fields
+        // for the same reason the two blocks above it are: existing .asset files carry no value
+        // for it, and Unity applies the field initializer, so every preset already authored reads
+        // Assorted. That is the correct default for the villager and the Nosey Parker, which are
+        // the two placed everywhere.
+        [Header("NPC — region")]
+        [Tooltip("Which city sub-heading this appears under in the World Palette's NPC section. " +
+                 "Palette organisation only — it changes nothing about the NPC that gets built. " +
+                 "Leave on Assorted for a character who belongs in any chunk.")]
+        public CityRegion Region = CityRegion.Assorted;
     }
 }
