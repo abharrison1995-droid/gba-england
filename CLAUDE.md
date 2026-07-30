@@ -636,8 +636,10 @@ chunk-owned and uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. Do not m
    confirmed working in the editor.** If no bike appears in Home_London, debug the spawner; there
    is no longer an instance to fall back on.
 
-`EBike.prefab` currently has **no sprite assigned** — the code-generated placeholder was deleted
-with the rename, and the art comes from §12 instead.
+`EBike.prefab`'s sprite is `spr_vehicle_ebike` from the §12 pipeline — verified assigned on
+2026-07-30, the only reference to that texture's GUID in the project. The code-generated
+placeholder it replaced was deleted with the rename. (An earlier version of this line said no
+sprite was assigned, which stopped being true when the art landed.)
 
 ---
 

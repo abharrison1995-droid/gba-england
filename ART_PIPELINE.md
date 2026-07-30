@@ -337,11 +337,15 @@ visible. Fewer, consistent frames beat more, inconsistent ones.
 
 **`cycle` is cancelled** — see §7.9. Do not draw it for any character.
 
-### 7.3 Band 1 — the three refused player sheets
+### 7.3 Band 1 — the three refused player sheets ✅ RESOLVED
 
-`sheet_char_player_attack`, `sheet_char_player_cast` and `sheet_char_player_death` were delivered,
-refused, and are sitting in `art_incoming/rejected/`. They were measured against
-`sheet_char_player_idle`; these are the real numbers, not an impression.
+**Delivered and imported 2026-07-30** via single-frame generation + local tiling (see §7.3a).
+The original full-sheet deliveries were refused for the reasons recorded below; those notes are
+kept because the failure modes still apply to any future full-sheet generation.
+
+`sheet_char_player_attack`, `sheet_char_player_cast` and `sheet_char_player_death` were first
+delivered as whole sheets, refused, and measured against `sheet_char_player_idle`; these are the
+real numbers, not an impression.
 
 **Every one of them was laid out as 12 drawings in a 6×2 grid while its JSON declared 6 columns ×
 1 row of 512×512 cells.** The image really is 3072×512, so the importer's dimension check passed
@@ -382,13 +386,34 @@ Requested, as `sheet_char_player_<action>.png`:
 
 Player sheets are **auto-assigned on import**, so use exactly those filenames.
 
+### 7.3a The workflow that resolved band 1: single frames + local tiling
+
+Whole-sheet generation kept failing on layout (6×2 vs declared 6×1), scale, broken frames and
+wandering baselines — four independent failure modes per image. What worked instead, and is the
+recommended route for any character whose sheets keep being refused:
+
+1. **Generate one 512×512 frame at a time** (AI Studio / Nano Banana), chaining by attaching the
+   previous frame to each prompt for consistency. Backgrounds come back near-magenta but not
+   exactly — always corner-sample the background rather than assuming `#FF00FF`.
+2. **Deliver frames to `art_incoming/frames/<action>_<n>.png`.** A local script (not the art
+   agent — see AGENTS.md) re-aligns each frame so the feet sit on the baseline row and normalises
+   the backdrop to pure magenta, then tiles six frames into the 3072×512 sheet and writes the
+   sidecar JSON. Never scale a frame to make it fit — scaling blurs dark edge pixels (shoe soles)
+   into the backdrop, and the importer's keyer then drops them, misreading the feet position.
+3. **Pre-check with `Tools/precheck_sheets.py`** before opening Unity. It replicates the
+   importer's checks, including a strict threshold-200 baseline pass that approximates the
+   importer's alpha-after-unmix feet measure.
+
+Death is exempt from height/baseline checks (the pose changes shape) but **never** from the width
+check.
+
 ### 7.4 The cast — who exists and what they still need
 
 One table so nothing is drawn twice. ✅ delivered, ⬜ requested, — not wanted.
 
 | Subject | `idle` | `walk` | `attack` | `hurt` | `death` | `cast` | Band |
 |---|---|---|---|---|---|---|---|
-| `player` | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | 1 |
+| `player` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
 | `danielpauls` | ⬜ | ⬜ | — | — | — | ⬜ | 2 |
 | `underhoused` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 2 |
 | `mosley` | ✅ | ⬜ | — | — | — | — | 4 |
