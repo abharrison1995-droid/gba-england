@@ -726,25 +726,62 @@ Delivered and in the game:
   built into `mosley_Controller` and `pharmacist_Controller`. Both wired into their presets by the
   importer, and both standing in `Home_London_Prefab` as the first NPCs authored end to end.
 
-Generated and **rejected**, sitting in `art_incoming/rejected/` waiting to be redrawn: the
-player's `attack`, `cast` and `death` sheets. **The `cycle` sheet was rejected too and has been
-discarded** — that sheet is cancelled, not pending (§11).
+Re-delivered 2026-07-30 and **imported**: the player's `attack`, `cast` and `death` sheets.
+The earlier full-sheet generations (below) were abandoned in favour of **single-frame generation
++ local tiling**: six 512×512 frames per action generated one at a time (AI Studio, chained by
+attaching the previous frame), converted/measured/re-aligned locally into `art_incoming/frames/`,
+tiled to 3072×512 sheets by a local script, pre-checked by `Tools/precheck_sheets.py` (which
+replicates the importer's checks, including a strict threshold-200 baseline pass — added after a
+blurred shoe edge on `cast_6` passed the lenient check yet read 23 px high to the importer's
+alpha-after-unmix feet measure). All three sheets sliced, clipped and added to
+`player_Controller`. **The `cycle` sheet was rejected and has been discarded** — cancelled, not
+pending (§11).
 
-**Why those three failed, measured rather than guessed** (2026-07-29, replicating the importer's
-own checks outside Unity):
+### `BuildController` used to wire the batch, not the controller (fixed and verified 2026-07-30)
 
-- **All three are laid out 6×2 — twelve drawings — while their JSON declares 6×1 of 512×512.**
-  Both readings total 3072×512, so `ValidateSheetDimensions` passes and the importer slices six
-  cells each holding two stacked figures. This is the root cause and it was not recorded anywhere.
-- The figure fills **50–73% of its cell height** against the accepted idle's **89%**, which is what
-  actually trips the width check. Their drawn proportions are close to right — `attack` is only
-  0.85× the idle figure's aspect — so **"drawn edge-on" is not what happened here**, despite being
-  the failure mode §12 and `ART_PIPELINE.md` §3 both described. Both files now describe both modes.
-- `cast` has 1 empty cell of 12 and 3 fragment frames; `death` has 2 empty and 4 fragments. Those
-  are failed generations occupying frame slots.
-- Baseline drift at final size: `attack` 12.7 px, `cast` 43.0 px, `death` 57.0 px, against a 2 px
-  limit. `death` is exempt from the check by action, but the exemption is for the pose changing
-  shape, not for the figure wandering around its cell.
+Found because attack, cast and death imported perfectly — sheets sliced, clips built, states
+created with the right motions, `PlayerAnimator` pointed at the controller, all six parameters
+present — and **never played a frame in-game**. `player_Controller.controller` held six states and
+exactly two transitions, both of them `Hit → Hurt`, the same one twice.
+
+Two bugs, one cause: `BuildController` reasoned about the current import batch instead of about the
+controller in front of it.
+
+- **All transition wiring sat inside the `idle != null` branch**, where `idle` was only set if
+  *this* batch contained an idle sheet. A batch of attack/cast/death alone added three states and
+  no transitions (log line "controller built, but no idle sheet").
+- **The one-shot loop skipped any action not in the batch's own clips**, so even a batch containing
+  idle could not reach a state an earlier run had left orphaned. Between the two, no possible
+  sequence of batches ever wired attack/cast/death.
+- **Nothing checked whether a transition already existed**, so each idle-bearing re-run stacked
+  another full set. That is where the duplicate `Hit → Hurt` came from; the shipped controller had
+  every one of its four real transitions twice.
+
+Now: states are resolved with `FindState` over the whole state machine, `idle` falls back to
+`FindState(sm, "Idle")` and then to `sm.defaultState`, every add is guarded by
+`HasConditionalTransition` / `HasUnconditionalTransition`, and `RemoveDuplicateTransitions` clears
+existing duplicates through the controller API on each run (reported in the import log). Death
+still gets no return transition. **Re-imported and play-tested** — attack and cast fire; all five
+player sheets are archived to `art_incoming/processed/`, which only happens for a clean pair.
+
+`Editor/EnemyPrefabSetup.cs` wires its controllers just as unguardedly and is **not** affected,
+because `BuildPoseController` `DeleteAsset`s the controller and re-creates it every run — it never
+sees its own output. That is the §7 delete-and-re-save hazard rather than this one, and it is why
+the enemy controllers are safe to leave alone.
+
+**Why the first three full-sheet deliveries failed, measured rather than guessed** (2026-07-29,
+replicating the importer's own checks outside Unity):
+
+- **All three were laid out 6×2 — twelve drawings — while their JSON declared 6×1 of 512×512.**
+  Both readings total 3072×512, so `ValidateSheetDimensions` passed and the importer sliced six
+  cells each holding two stacked figures. This was the root cause; single-frame generation +
+  local tiling eliminates the whole class of layout mismatch.
+- The figure filled **50–73% of its cell height** against the accepted idle's **89%**, which is
+  what tripped the width check. **"Drawn edge-on" was not what happened** — both failure modes
+  are now described in §12 and `ART_PIPELINE.md` §3.
+- Baseline drift at final size: `attack` 12.7 px, `cast` 43.0 px, `death` 57.0 px, against a
+  2 px limit. `death` is exempt from the check by action, but the exemption is for the pose
+  changing shape, not for the figure wandering around its cell.
 
 `sheet_char_danielpauls_idle.json` — the manifest that sat in `art_incoming/` with no PNG beside
 it — **has been deleted**. It was a delivery that never happened, and the importer reported it

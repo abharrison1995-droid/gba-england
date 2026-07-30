@@ -1646,27 +1646,45 @@ public static class ArtImportTool
 
         var sm = controller.layers[0].stateMachine;
 
-        AnimatorState idle = null;
-        var states = new Dictionary<string, AnimatorState>();
+        AnimatorState batchIdle = null;
 
         foreach (var kv in clips)
         {
             string stateName = ActionToState[kv.Key];
             AnimatorState state = FindState(sm, stateName) ?? sm.AddState(stateName);
             state.motion = kv.Value;
-            states[kv.Key] = state;
-            if (kv.Key == "idle") idle = state;
+            if (kv.Key == "idle") batchIdle = state;
         }
+
+        // ⚠️ Everything below wires the controller from the states it *holds*, never from the clips
+        // this batch happened to deliver. It used to do the opposite and that broke two ways at
+        // once: all of the wiring sat behind "this batch contains an idle sheet", so a batch of
+        // attack/cast/death alone added three states and not one transition; and the one-shot loop
+        // only considered the batch's own clips, so even a batch with idle in it could not reach a
+        // state a previous run had left orphaned. The player shipped with Attack, Cast and Death
+        // fully built, motions and all, and no transition anywhere to reach them.
+        //
+        // Every add is also guarded against an equivalent already being present, because nothing
+        // here used to check: each idle-bearing re-run stacked another full set of transitions on
+        // top of the last. Re-running is now a no-op on a controller that is already wired.
+        int removed = RemoveDuplicateTransitions(sm);
+
+        // The batch's idle, else whatever the controller already calls Idle, else whatever it
+        // currently starts in — a one-shot needs somewhere to return to, and any of the three will
+        // do. Only an existing controller with no states and no default leaves this null.
+        AnimatorState idle = batchIdle ?? FindState(sm, ActionToState["idle"]) ?? sm.defaultState;
 
         if (idle == null)
         {
-            report.Add($"{subject}: controller built, but no idle sheet — default state left as-is.");
+            report.Add($"{subject}: controller built, but it has no Idle state and no default state " +
+                       "to return to — transitions left unwired.");
         }
         else
         {
             sm.defaultState = idle;
 
-            if (states.TryGetValue("walk", out AnimatorState run))
+            AnimatorState run = FindState(sm, ActionToState["walk"]);
+            if (run != null && run != idle)
             {
                 AddTransition(idle, run, "Speed", AnimatorConditionMode.Greater, 0.1f);
                 AddTransition(run, idle, "Speed", AnimatorConditionMode.Less, 0.1f);
@@ -1674,32 +1692,28 @@ public static class ArtImportTool
 
             // Cycling is held for as long as you are on the vehicle, so it is a bool from Any
             // State rather than a one-shot trigger, and it returns to idle when the bool clears.
-            if (states.TryGetValue("cycle", out AnimatorState cycle))
+            AnimatorState cycle = FindState(sm, ActionToState["cycle"]);
+            if (cycle != null && cycle != idle)
             {
-                var toCycle = sm.AddAnyStateTransition(cycle);
-                toCycle.hasExitTime = false;
-                toCycle.duration = 0.05f;
-                toCycle.canTransitionToSelf = false;
-                toCycle.AddCondition(AnimatorConditionMode.If, 0f, CyclingParameter);
-
-                var offCycle = cycle.AddTransition(idle);
-                offCycle.hasExitTime = false;
-                offCycle.duration = 0.05f;
-                offCycle.AddCondition(AnimatorConditionMode.IfNot, 0f, CyclingParameter);
+                AddAnyStateTransition(sm, cycle, CyclingParameter, 0.05f);
+                AddTransition(cycle, idle, CyclingParameter, AnimatorConditionMode.IfNot, 0f);
             }
 
             // One-shots fire from Any State on their trigger and fall back to idle when finished.
             foreach (var kv in ActionToTrigger)
             {
-                if (!states.TryGetValue(kv.Key, out AnimatorState state)) continue;
+                AnimatorState state = FindState(sm, ActionToState[kv.Key]);
+                if (state == null) continue;
 
-                var any = sm.AddAnyStateTransition(state);
-                any.hasExitTime = false;
-                any.duration = 0f;
-                any.canTransitionToSelf = false;
-                any.AddCondition(AnimatorConditionMode.If, 0f, kv.Value);
+                AddAnyStateTransition(sm, state, kv.Value, 0f);
 
                 if (kv.Key == "death") continue; // dead things stay dead
+
+                // Only reachable when idle fell back to a default state that is itself a one-shot;
+                // returning it to itself would trap the state machine in a loop.
+                if (state == idle) continue;
+
+                if (HasUnconditionalTransition(state.transitions, idle)) continue;
 
                 var back = state.AddTransition(idle);
                 back.hasExitTime = true;
@@ -1709,16 +1723,122 @@ public static class ArtImportTool
         }
 
         EditorUtility.SetDirty(controller);
-        report.Add($"{subject}_Controller → {string.Join(", ", clips.Keys.OrderBy(k => k))}");
+        string dedupeNote = removed > 0 ? $" ({removed} duplicate transition(s) removed)" : "";
+        report.Add($"{subject}_Controller → {string.Join(", ", clips.Keys.OrderBy(k => k))}{dedupeNote}");
     }
 
     private static void AddTransition(AnimatorState from, AnimatorState to, string parameter,
         AnimatorConditionMode mode, float threshold)
     {
+        if (HasConditionalTransition(from.transitions, to, parameter, mode)) return;
+
         var t = from.AddTransition(to);
         t.hasExitTime = false;
         t.duration = 0.05f;
         t.AddCondition(mode, threshold, parameter);
+    }
+
+    /// <summary>Any State → <paramref name="to"/> when <paramref name="parameter"/> is set, once.</summary>
+    private static void AddAnyStateTransition(AnimatorStateMachine sm, AnimatorState to,
+        string parameter, float duration)
+    {
+        if (HasConditionalTransition(sm.anyStateTransitions, to, parameter, AnimatorConditionMode.If))
+            return;
+
+        var any = sm.AddAnyStateTransition(to);
+        any.hasExitTime = false;
+        any.duration = duration;
+        any.canTransitionToSelf = false;
+        any.AddCondition(AnimatorConditionMode.If, 0f, parameter);
+    }
+
+    /// <summary>
+    /// True if one of <paramref name="transitions"/> already lands on <paramref name="to"/> driven by
+    /// <paramref name="parameter"/> in <paramref name="mode"/>. The threshold is deliberately not
+    /// part of the comparison: two transitions to the same state on the same condition are the same
+    /// piece of wiring however each is tuned, and only the first of them can ever fire.
+    /// </summary>
+    private static bool HasConditionalTransition(IEnumerable<AnimatorStateTransition> transitions,
+        AnimatorState to, string parameter, AnimatorConditionMode mode)
+    {
+        foreach (AnimatorStateTransition t in transitions)
+        {
+            if (t == null || t.destinationState != to || t.conditions == null) continue;
+            foreach (AnimatorCondition c in t.conditions)
+                if (c.parameter == parameter && c.mode == mode) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// True if one of <paramref name="transitions"/> reaches <paramref name="to"/> on no condition at
+    /// all — the exit-time return a one-shot state uses to fall back to idle.
+    /// </summary>
+    private static bool HasUnconditionalTransition(IEnumerable<AnimatorStateTransition> transitions,
+        AnimatorState to)
+    {
+        foreach (AnimatorStateTransition t in transitions)
+            if (t != null && t.destinationState == to && (t.conditions == null || t.conditions.Length == 0))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// A transition's identity for dedupe purposes: where it lands, and what fires it. Timing is
+    /// excluded for the reason given on <see cref="HasConditionalTransition"/>.
+    /// </summary>
+    private static string TransitionSignature(AnimatorStateTransition t)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append(t.destinationState != null ? t.destinationState.name : "-");
+        sb.Append('/');
+        sb.Append(t.destinationStateMachine != null ? t.destinationStateMachine.name : "-");
+
+        // Sorted so that two transitions carrying the same conditions in a different order still
+        // read as the same wiring.
+        AnimatorCondition[] conditions = t.conditions ?? new AnimatorCondition[0];
+        foreach (AnimatorCondition c in conditions.OrderBy(x => x.parameter).ThenBy(x => (int)x.mode))
+            sb.Append('|').Append(c.parameter).Append(':').Append((int)c.mode);
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Drops any transition that repeats one already present on the same source — same destination,
+    /// same conditions. Only the first of such a pair can ever fire, so this changes no behaviour.
+    /// It exists because the wiring above used to add transitions unguarded, and the player's
+    /// controller shipped carrying every one of its four transitions twice. Returns how many went.
+    /// </summary>
+    private static int RemoveDuplicateTransitions(AnimatorStateMachine sm)
+    {
+        int removed = 0;
+        var seen = new HashSet<string>();
+
+        // Snapshot before mutating: the getters build a fresh array today, but removing from a live
+        // collection mid-iteration is not something to leave resting on that.
+        AnimatorStateTransition[] fromAny = sm.anyStateTransitions;
+        foreach (AnimatorStateTransition t in fromAny)
+        {
+            if (t == null || seen.Add(TransitionSignature(t))) continue;
+            sm.RemoveAnyStateTransition(t);
+            removed++;
+        }
+
+        foreach (ChildAnimatorState child in sm.states)
+        {
+            if (child.state == null) continue;
+
+            seen.Clear();
+            AnimatorStateTransition[] own = child.state.transitions;
+            foreach (AnimatorStateTransition t in own)
+            {
+                if (t == null || seen.Add(TransitionSignature(t))) continue;
+                child.state.RemoveTransition(t);
+                removed++;
+            }
+        }
+
+        return removed;
     }
 
     private static AnimatorState FindState(AnimatorStateMachine sm, string name)
