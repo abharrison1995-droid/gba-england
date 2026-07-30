@@ -456,7 +456,7 @@ One table so nothing is drawn twice. ✅ delivered, ⬜ requested, — not wante
 | `underhoused` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 2 |
 | `mosley` | ✅ | ⬜ | — | — | — | — | 4 |
 | `pharmacist` | ✅ | ⬜ | — | — | — | — | 4 |
-| `villager` | ⬜ | ⬜ | — | — | — | — | 4 |
+| `villager` | ✅ | ✅ | — | — | — | — | 4 |
 | `noseyparker` | ⬜ | ⬜ | — | — | — | — | 4 |
 | `squirrel` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 4 |
 | `police_pcso` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 5 |

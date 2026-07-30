@@ -14,11 +14,19 @@ editor) and `feat/crouch-button` for the mobile crouch toggle (§7, §8), and
 here are verified against code, not against design docs. Where code and a design doc disagree,
 this file records **what the code actually does**.
 
-> ⚠️ **§13 compiles, but has never been run.** All of it is now imported and built, and
-> `Assets/Resources/PlacementPresetLibrary.asset` exists and binds to the pinned script GUID, so
-> `PlacementPresetLibrary.Get` resolves. **Play mode has still not been entered against any of
-> §13** — nothing here has been observed to behave, only to build. `NPCWander`, `NpcFactory` and
-> the tutorial's preset-built cast are all unexercised.
+> ⚠️ **§13 is partly exercised as of 2026-07-30 — the NPC path works, the tutorial path does not
+> yet.** `Assets/Resources/PlacementPresetLibrary.asset` exists and binds to the pinned script
+> GUID, so `PlacementPresetLibrary.Get` resolves.
+>
+> **Exercised, end to end and reported working by the owner:** the `villager` subject went art →
+> importer → `Preset_Villager` auto-wired (controller, sprite, icon, `NpcHeight` inherited as
+> 1.35) → World Palette → two `NPC_Villager` instances standing in `Home_London_Prefab`. That is
+> `PlacementPreset` → `PlacementBuilders` → `NpcFactory` in full, plus `AutoAssign`. He is
+> authored as a talker (`Pickpocketable: 0`, prompt "Talk to Villager") and `Roams: 1`.
+>
+> **Still unexercised:** the tutorial's preset-built cast (`MagicTutorial`, Daniel Pauls and the
+> geezer — neither subject's art exists yet), and anything keyed off `EnemyAI.Animator` being set
+> from a preset-built NPC.
 >
 > Everything before §13 **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
 > boundary walls are generated and committed, the hardened importer has done a real round trip
@@ -727,6 +735,24 @@ Delivered and in the game:
 - `sheet_char_mosley_idle` and `sheet_char_pharmacist_idle` — 4 frames each, sliced, clipped, and
   built into `mosley_Controller` and `pharmacist_Controller`. Both wired into their presets by the
   importer, and both standing in `Home_London_Prefab` as the first NPCs authored end to end.
+
+- `sheet_char_villager_idle` (4 frames, 6 fps) and `sheet_char_villager_walk` (3 frames, 6 fps) —
+  the **first subject with a walk sheet**, which matters because `Preset_Villager` has `Roams: 1`
+  and a roaming NPC without one slides along the ground. `villager_Controller` holds Idle and Run
+  and exactly two transitions, the `Speed` pair. Two instances stand in `Home_London_Prefab`.
+
+  ⚠️ **This art began life as a failed Daniel Pauls generation** — the brief asked for a stage
+  magician in a pink Las Vegas suit and the generator returned a middle-aged bloke in a patterned
+  shirt, cargo shorts and flip-flops. Rather than bin it, the frames were retiled under the
+  `villager` subject, which already had a preset waiting with `ArtSubject: villager`. Two lessons
+  worth keeping: a subject is chosen by which preset is waiting for it, not by what was asked for;
+  and the delivered *sheet* was unusable (four byte-identical cells) while the *frames* behind it
+  were fine, so check the frames before rejecting a delivery.
+
+  The walk is three frames, not four, and **frame 3 is the weak one** — fill 85% against the other
+  two at 90%, mean width 166 px against 174 and 187, and drawn more side-on, so he appears to
+  shrink and half-turn on the third step. It passes the 1.4× width tolerance, so nothing refuses
+  it. A fourth frame plus a redraw of 3 at the angle and scale of 1 and 2 is the fix.
 
 Re-delivered 2026-07-30 and **imported**: the player's `attack`, `cast` and `death` sheets.
 The earlier full-sheet generations (below) were abandoned in favour of **single-frame generation
