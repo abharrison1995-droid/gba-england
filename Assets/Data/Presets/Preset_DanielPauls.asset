@@ -44,3 +44,4 @@ MonoBehaviour:
   RoamRadius: 6
   Speaker: {fileID: 0}
   AmbientLine: 
+  Region: 1

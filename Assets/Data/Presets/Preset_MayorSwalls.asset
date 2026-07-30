@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f611db80a0d2341448c09c7c80cd9d1f, type: 3}
-  m_Name: Preset_CouncillorMosley
+  m_Name: Preset_MayorSwalls
   m_EditorClassIdentifier: 
-  Label: Councillor Mosley
+  Label: Mayor Swalls
   Category: 0
-  Icon: {fileID: -8915839385288641541, guid: 8442fe31da941dc478ee7c1ff954db49, type: 3}
+  Icon: {fileID: 0}
   Prefab: {fileID: 0}
-  NpcName: Councillor Mosley
-  NpcSprite: {fileID: -8915839385288641541, guid: 8442fe31da941dc478ee7c1ff954db49, type: 3}
-  NpcController: {fileID: 9100000, guid: a8943cc710b3c3c4d9ba9a8464c879eb, type: 2}
+  NpcName: Mayor Swalls
+  NpcSprite: {fileID: 0}
+  NpcController: {fileID: 0}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -37,11 +37,15 @@ MonoBehaviour:
   DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
   Vehicle: {fileID: 0}
   SpawnPointId: 
-  QuestKey: 
-  ArtSubject: mosley
+  QuestKey: mayor_swalls
+  ArtSubject: mayorswalls
   NpcHeight: 0
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: 
+  AmbientLine: I'm the Mayor of London, I've four committees before lunch, and you are not on the agenda.
+  Pickpocketable: 0
+  PickpocketMinGold: 5
+  PickpocketMaxGold: 25
+  PickpocketCatchChance: 0.3
   Region: 1
