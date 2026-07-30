@@ -10,7 +10,8 @@ they had open), and again the same day on `docs/art-brief-and-queue` for the art
 §12 — the `cycle` sheet is cancelled and the rejected player sheets have been measured) and
 `fix/scene-root-props` for the scene-root props (§8, §9b, §11 — all verified in the
 editor) and `feat/crouch-button` for the mobile crouch toggle (§7, §8), and
-`feat/pickpocket-preset` for preset-authored marks (§8, §13). Facts
+`feat/pickpocket-preset` for preset-authored marks (§8, §13), and again on 2026-07-30 on
+`feat/london-cast-and-region-palette` for the region split and the London cast (§9, §9b, §13). Facts
 here are verified against code, not against design docs. Where code and a design doc disagree,
 this file records **what the code actually does**.
 
@@ -372,14 +373,18 @@ is the single most load-bearing line in the whole consequence loop.
   ⚠️ **`b1de7fd` reached `main` without ever being compiled** — the pickpocket preset work was
   written after the last editor session. Everything before it has at least compiled;
   `fix/scene-root-props` was fully verified in the editor.
-- **`main` is the only branch that exists** — cut a new one before starting work.
+- **2026-07-30: `feat/london-cast-and-region-palette` is cut off `main` and not merged** — the
+  `CityRegion` field, the palette's NPC region split, the eight London cast presets and the four new
+  art-queue bands. ⚠️ **Unverified in both senses** (§10): no compiler ran, and the palette change
+  has not been opened in the editor. Three commits, none of them touching the scene, any prefab,
+  `MapChunkData`, or anything in §5–§7 beyond appending one enum and one field.
 - **The next task is Stage F, written up in `docs/STAGE_RF_PLAN_REVISED.md`**: the six-commit
   inventory and loot overhaul. Stage R (the `Home_Alvaston` → `Home_London` rename) is **done**
   — renamed in the working tree with the save-key migration in `SaveGameManager.ReadSaveData`;
   the original brief (`docs/STAGE_F_BRIEF.md`) is kept for history and its R section no longer
   applies. The revised plan is a self-contained brief meant to be pasted into a fresh session.
 - ⚠️ **Commit a script's `.meta` with the script. This has now happened twice.** `PlacementPreset.cs`
-  went in without one, and that file holds the GUID all fourteen `Preset_*.asset` files bind to via
+  went in without one, and that file holds the GUID all twenty-three `Preset_*.asset` files bind to via
   `m_Script` — a fresh clone would have minted a new one and silently detached every preset. Fixed
   in `37e90d7`. Then `PlacementPresetLibrary.cs` did the same; fixed in `e130481`, before anything
   bound to it, which is the only reason a fresh GUID was safe to invent.
@@ -396,8 +401,15 @@ is the single most load-bearing line in the whole consequence loop.
   `PauseManager.IsPaused` guard in `CombatController.Update`, has been present since the
   **initial commit** (`git log -S "PauseManager.IsPaused"`), so there was never anything to
   cherry-pick. The craftpix merge hazard below is likewise moot while no such branch exists.
-- `Assets/` is ~672 MB with `.psd`/`.fbx`/`.glb`/`.aseprite` committed and **no Git LFS**
-  (no `.gitattributes`). Pruning will not shrink `.git` — history keeps the blobs.
+- `Assets/` is ~672 MB with `.psd`/`.fbx`/`.glb`/`.aseprite` committed and **no Git LFS**.
+  Pruning will not shrink `.git` — history keeps the blobs.
+- **A `.gitattributes` does exist** (an earlier version of this line said it did not). It is not
+  LFS: it pins `* text=auto` plus an explicit binary list, so the repo stores LF and each working
+  tree gets what it wants — CRLF on Windows, LF on Linux. This matters because Unity rewrites a
+  whole YAML file whenever it touches one, so without it a line-ending difference and a real edit
+  are indistinguishable in a 100,000-line diff. **A file hand-written by an agent lands LF in the
+  Windows working tree**, which commits identically but leaves the tree inconsistent; `rm` it and
+  `git checkout --` it back to normalise.
 ### Asset pruning — how it was done, and how to redo it
 
 `Assets/` went **672 MB → 204 MB**. Two passes: the craftpix packs, then 22 packs with zero
@@ -465,7 +477,15 @@ Arm a preset, click in the Scene view, Shift to keep stamping, Esc to disarm.
 | Where to build it | `Editor/WorldPaletteWindow` | Grid, arming, SceneView raycast, ghost, parenting. |
 | A starting set | `Editor/StarterPresetGenerator` | `Tools → GBA → Content → Create Starter Presets`. Skips what exists; never overwrites. |
 
-- **`PlacementCategory` is serialized by index — append only** (§7).
+- **`PlacementCategory` is serialized by index — append only** (§7). So is
+  **`PlacementPreset.CityRegion`** (`Assorted = 0`, `London = 1`, `Birmingham = 2`), added when the
+  London cast made a single flat NPC grid unusable.
+- **The NPC section is the only one split by region**, into one sub-heading per `CityRegion`. The
+  split is drawn by iterating the enum rather than the presets, so **a region with nothing in it
+  still shows its heading** — Birmingham is empty on purpose and the heading is the reminder that it
+  is next. `Region` is read by nothing but this window: it never reaches `NpcFactory` and changes
+  nothing about the NPC that gets built. `Assorted` is 0 so every preset authored before the field
+  existed reads the go-anywhere default, which is right for the villager and the Nosey Parker.
 - **Vehicles are not GameObjects here.** They are authored onto `MapChunkData.VehicleSpawns`, so
   the palette shows a target-chunk field and a click appends a spawn entry (§11).
 - **Prefab Mode uses the stage's own physics scene** for the placement raycast. `Physics.Raycast`
@@ -887,11 +907,11 @@ and the clips animate nothing while looking perfectly well wired in the Inspecto
 
 Adding an NPC is meant to cost two clicks in Unity and no code at all:
 
-1. Spec the subject in `ART_PIPELINE.md` §7.3 and have the art agent deliver
-   `sheet_char_<subject>_*.png` + JSON to `art_incoming/`.
+1. Spec the subject in `ART_PIPELINE.md` §7.4 (the cast table) and §7.7 (the descriptions), and have
+   the art agent deliver `sheet_char_<subject>_*.png` + JSON to `art_incoming/`.
 2. Create a `PlacementPreset` (or let the starter generator make it): `Label`, `Category: NPC`,
-   `ArtSubject`, `AmbientLine` or a `Conversation`, `Roams` if it should wander, `Pickpocketable`
-   if they should be robbable instead of talkable.
+   `Region`, `ArtSubject`, `AmbientLine` or a `Conversation`, `Roams` if it should wander,
+   `Pickpocketable` if they should be robbable instead of talkable.
 3. ⚑ `Tools → GBA → Art → Import Generated Art`. Sheets slice, clips build, a controller builds,
    and **the preset wires itself** — controller, resting sprite, palette icon, height.
 4. ⚑ `Tools → GBA → World Palette`: arm it, click it into a chunk prefab.
@@ -954,3 +974,45 @@ Adding an NPC is meant to cost two clicks in Unity and no code at all:
   and death sheets would import, build a controller, and never play a frame. `MagicTutorial` sets
   it from `WorldActorVisual.SpriteAnimator` when he turns hostile; anything else spawning an
   animated enemy in code needs the same line.
+
+### The London cast — presets waiting on art
+
+`Assets/Data/Presets/` holds eight new NPC presets for London, all `Region: London`: **Mayor
+Swalls**, the **Quidland** and **F.U. Sports** clerks, **Commissioner Spencer**, **Officer Riggs**,
+**Officer Murtaugh**, and **Ralph** and **Sanjeet** of the Croydon Spartans. Councillor Mosley and
+Daniel Pauls were retagged London; the villager and the Nosey Parker stay `Assorted`, since they are
+placed everywhere.
+
+**None of them is placed, and none has any art.** Each is a plain talker: an `AmbientLine`, no
+`Prefab`, no `Icon`, no `NpcSprite`, no `NpcController`, `NpcHeight 0`. The one thing each carries
+that matters is its `ArtSubject`, which is what makes step 3 above work with no manual wiring —
+`ArtImportTool.AutoAssign` finds a preset by that string. They are queued as band 4 in
+`ART_PIPELINE.md` §7.7a.
+
+- **Murtaugh is the only one that `Roams`**, so he is the only one queued for a walk sheet as well as
+  an idle. The villager is the worked example of why (§12): a roamer with no walk sheet slides.
+- **`Preset_FUSportsClerk.asset` does not match `Sanitise("F.U. Sports Clerk")`.** Nothing resolves
+  these by path, so it is harmless — but `StarterPresetGenerator.BackfillNpcPresets` and
+  `EnsureLibraryEntry` *do* look presets up as `Preset_{Sanitise(Label)}.asset`, so anything added to
+  the generator later must either match or be found another way.
+- **Neither clerk's name is settled**, and neither is Swalls' first name. They are placeholders.
+- **The presets were hand-written, not generated**, so they are not in `StarterPresetGenerator`'s
+  `StarterNpcs` list. Deleting one and re-running Create Starter Presets will not bring it back.
+  What that tool *will* still do for them is `GenerateAmbientConversations`, which is ungated and
+  runs over every preset — that is how these eight get their `DialogueData` assets, and it is one
+  menu click, not eight.
+
+**Three things these presets imply and do not build.** None of it exists; do not read the assets as
+a claim that any of it does:
+
+- **No vendor system.** Quidland sells weapons and F.U. Sports sells armour, and both clerks are
+  currently just people who say a line. There is no shop UI, no buying, no selling, and no gold —
+  §8 records that raw gold tracking does not exist at all yet, which is also why pickpocketing pays
+  out in toasts.
+- **No bounty pay-off for Riggs.** The intent is that he hands out missions and clears your wanted
+  level on completion, announced as *"YOU'VE GOT DIPLOMATIC IMMUNITY! (it won't be revoked... this
+  time)."* Nothing is wired to `WantedManager` from a preset.
+- **No quest gate on Mayor Swalls.** He carries `QuestKey: mayor_swalls` so quest code can find the
+  placed object, but he should not be reachable until Mosley's questline completes and nothing hides
+  him. There is no visibility-gating mechanism on presets at all; `RequireTutorialComplete` exists
+  only on the Portal recipe.
