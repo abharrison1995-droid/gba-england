@@ -200,7 +200,7 @@ Sheet:
 }
 ```
 
-Those numbers are the real ones for a walk — the frame table in §7.3 is authoritative, and the
+Those numbers are the real ones for a walk — the frame table in §7.2 is authoritative, and the
 importer warns when a sheet deviates from it. Copy from the table, not from this example.
 
 `category` is one of `characters`, `vehicles`, `props`, `fx`, `ui`. It decides the destination
@@ -228,7 +228,7 @@ a state machine:
 | `hurt` | `Hurt` | `Hit` trigger |
 | `death` | `Death` | `Death` trigger, no return to idle |
 | `cast` | `Cast` | `CastSpell` trigger |
-| `cycle` | `Cycle` | `Cycling` bool, held while riding — **cancelled, do not draw one** (§7.9) |
+| `cycle` | `Cycle` | `Cycling` bool, held while riding — **cancelled, do not draw one** (§7.12) |
 
 `cycle` still imports and still wires itself into a controller, which is why it is listed. Nothing
 asks for one any more: riding is drawn by layering the bike sprite over the character.
@@ -288,8 +288,11 @@ not when they have been delivered.
 | **1** | §7.3 The three refused player sheets | 3 sheets | Nothing else is drawn until the player is right — every other character is matched against them. |
 | **2** | §7.5 The tutorial cast | 8 sheets | The opening quest is the only scripted content that exists; it currently runs with placeholder capsules. |
 | **3** | §7.6 World props | 21 singles | Four of the six chunks are **completely empty** — ground, edges and nothing else. This is the band that unblocks world-building. |
-| **4** | §7.7 The ambient cast | 11 sheets | Civilians and roamers. Needed before the consequence layer means anything, since Nosey Parkers are civilians. |
+| **4** | §7.7 The ambient cast | 20 sheets | Civilians, roamers and the named London cast. Needed before the consequence layer means anything, since Nosey Parkers are civilians. |
 | **5** | §7.8 The consequence layer | 10 sheets | Police tiers, first two only. Last because they are five variations on one silhouette and the game is playable without them. |
+| **6** | §7.9 The London buildings | 5 models | **3D, not sprites — outside this pipeline.** Read the section before starting one. |
+| **7** | §7.10 Item icons | 8 singles | Inventory icons. Cheap, and the inventory overhaul needs them. |
+| **8** | §7.11 Per-weapon attack sheets | 5 sheets | One player attack sheet per weapon. Last on purpose: each is a redraw of a pose that is already solved, and it is worth nothing until the weapons exist in code. |
 
 ### 7.1 Delivered — the visual reference, do not regenerate
 
@@ -335,7 +338,7 @@ Frame counts are deliberately low. Every extra frame is another chance for the f
 scale or angle, and at 65 px the difference between a 4-frame and an 8-frame walk is barely
 visible. Fewer, consistent frames beat more, inconsistent ones.
 
-**`cycle` is cancelled** — see §7.9. Do not draw it for any character.
+**`cycle` is cancelled** — see §7.12. Do not draw it for any character.
 
 ### 7.3 Band 1 — the three refused player sheets ✅ RESOLVED
 
@@ -459,6 +462,14 @@ One table so nothing is drawn twice. ✅ delivered, ⬜ requested, — not wante
 | `villager` | ✅ | ✅ | — | — | — | — | 4 |
 | `noseyparker` | ⬜ | ⬜ | — | — | — | — | 4 |
 | `squirrel` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 4 |
+| `mayorswalls` | ⬜ | — | — | — | — | — | 4 |
+| `quidlandclerk` | ⬜ | — | — | — | — | — | 4 |
+| `fusportsclerk` | ⬜ | — | — | — | — | — | 4 |
+| `spencer` | ⬜ | — | — | — | — | — | 4 |
+| `riggs` | ⬜ | — | — | — | — | — | 4 |
+| `murtaugh` | ⬜ | ⬜ | — | — | — | — | 4 |
+| `ralph` | ⬜ | — | — | — | — | — | 4 |
+| `sanjeet` | ⬜ | — | — | — | — | — | 4 |
 | `police_pcso` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 5 |
 | `police_bobby` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | 5 |
 | `police_armed` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | later |
@@ -575,6 +586,32 @@ net-curtain energy, a hi-vis "community watch" tabard if that helps them stand o
 `hurt`, `death`. **`worldHeight` 0.45** — it finishes around 22 px, so source cells of 256×256 are
 plenty rather than the usual 512. A genuinely furious grey squirrel. Comic menace, not cute.
 
+#### 7.7a The named London cast
+
+Eight characters who stand in specific places in `Home_London` and are spoken to. All eight already
+have a `PlacementPreset` waiting with the matching `ArtSubject`, so **they auto-assign on import** —
+controller, resting sprite, palette icon and height all wire themselves and nobody has to touch a
+prefab (CLAUDE.md §13). Getting the subject id exactly right is therefore the whole job on the
+naming side.
+
+**`idle` only for seven of the eight.** They stand and talk; a standing character does not need a
+walk sheet. **Murtaugh is the exception** — his preset has `Roams: 1`, and a roamer without a walk
+sheet slides along the ground, so he needs `idle` **and** `walk`.
+
+All eight are ordinary adult humans: `worldHeight` 1.35, cells 512×512, 4 frames, 6 fps, matched to
+`sheet_char_player_idle` for build, fill and baseline like everything else.
+
+| Subject | Sheets | Who they are |
+|---|---|---|
+| `mayorswalls` | `idle` | Mayor of London. Full ceremonial kit — chain of office over a good suit, maybe a rosette. Well-fed, chin up, visibly certain he is the most important man present. Not a villain, a self-important local politician. |
+| `quidlandclerk` | `idle` | Shop assistant in **Quidland**, a pound shop that sells weapons. Cheap branded polo shirt and lanyard, bored, slightly shabby. Retail-worker posture — he is not a fighter and should not look like one. |
+| `fusportsclerk` | `idle` | Shop assistant in **F.U. Sports**, a sports shop that sells armour. Head-to-toe own-brand tracksuit worn as a uniform, trainers, lanyard. Same bored retail energy as the Quidland clerk but sportswear rather than pound shop — the two must not read as the same person. |
+| `spencer` | `idle` | Police Commissioner. Dressed **far more formally than the job requires** — full dress uniform, peaked cap, medals, aiguillette, every badge he owns. Red-faced and angry; a hint of clumsiness in the pose, as though mid-stumble or having just knocked something over. The comedy is that the uniform is immaculate and he is not. |
+| `riggs` | `idle` | Station police officer. Deliberately plain: standard navy UK constable's uniform, stab vest, radio, no extras. He is the straight man of the pair and the baseline the other police are read against. |
+| `murtaugh` | `idle`, `walk` | Older police officer, same standard navy uniform as Riggs, but grey, heavier, tired. Weary rather than angry — sagging shoulders, hands on hips or rubbing his eyes. He walks a beat, hence the walk sheet; make the walk look like a man who would rather be sitting down. |
+| `ralph` | `idle` | Croydon Spartans hoodlum. Raggedy knock-off tracksuit, wrong-coloured trainers, hood up. Scruffy and skinny, trying and failing to look hard. |
+| `sanjeet` | `idle` | The other Croydon Spartan. Also a raggedy tracksuit, but **a visibly different design from Ralph's** — different colour blocking, different silhouette, hood down. They appear together, so at 65 px they have to be tellable apart by colour and shape alone. |
+
 ### 7.8 Band 5 — the consequence layer
 
 Five police tiers escalate as the wanted level rises. All five are untextured capsules today.
@@ -593,7 +630,104 @@ a set, and are requested later.
 The escalation has to read at 65 px, so **separate the tiers by silhouette and colour block**, not
 by detail: yellow → navy → black → brown → red, getting bulkier as they go.
 
-### 7.9 Cancelled and not requested
+### 7.9 Band 6 — the London buildings
+
+⚠ **These are 3D models, not sprites. Nothing in §1–§6 of this document applies to them.** No
+magenta backdrop, no cell grid, no `worldHeight`, no sidecar JSON, and **do not deliver them to
+`art_incoming/`** — `ArtImportTool` would treat a PNG it found there as a billboard sprite and crush
+it to 48 px per world unit. The delivery format and the import route are **not decided yet**; ask
+before generating one.
+
+Why 3D at all, when every building in §7.6 is a sprite: `Home_London` is already dressed with 3D
+pack models — houses, trees, fences, a bus stop — and these five sit in among them. The §7.6
+building props are set dressing for the four empty chunks, drawn as billboards because that is
+cheap and they are only ever seen from across the street. These five are named locations the player
+walks up to and interacts with, in the one chunk that is already 3D. Keeping them consistent with
+their neighbours matters more than keeping them consistent with the sprite pipeline.
+
+| Building | What it is |
+|---|---|
+| City Hall | Where Mayor Swalls and Councillor Mosley are. Grand civic building, over-sized for what it does. |
+| Quidland | Pound shop that sells weapons. Cheap plastic shopfront, garish signage, everything-a-quid stickers. |
+| F.U. Sports | Sports shop that sells armour. Retail unit, big brash fascia, sale banners. |
+| Police Station | Where Commissioner Spencer, Riggs and Murtaugh are. Blue lamp, sandbagged municipal 1970s brick. |
+| Gang Hideout | Ralph and Sanjeet's base — **Sanjeet's mum's house**. An ordinary terraced house that is trying to look like a headquarters and failing. |
+
+### 7.10 Band 7 — item icons
+
+Inventory icons for the eight items the inventory and loot overhaul introduces. **Singles, not
+sheets** — no grid, no baseline, no frame count, same as the §7.6 props.
+
+These go through the normal pipeline (magenta backdrop, `art_incoming/`, PNG + JSON), with one
+difference worth being explicit about: an inventory icon has no world size, but the importer only
+knows how to reduce by `worldHeight × 48 px`. So `worldHeight` here is **a way of asking for a pixel
+height, not a claim about how big the object is** — `1.5` gives a 72 px icon, which is the number to
+use for all eight so the set is uniform.
+
+> **For the Unity side, not the art agent:** 72 px is chosen to sit inside the existing bag slots,
+> but those slots (`BagSlot0..19`) are authored in `c.unity` and their size has not been measured.
+> Check one before this band is generated — regenerating eight icons at a different size is cheap,
+> but only if it is caught before they are wired to `ItemData.Icon`.
+
+Drawn straight-on as objects on a plain backdrop, not in the isometric projection the props use —
+these are icons in a menu, not things standing in the world.
+
+| File | Slot | Notes |
+|---|---|---|
+| `spr_item_butter_knife.png` | Weapon — sharp | A butter knife. Domestic, blunt-tipped, entirely unsuitable. Played straight. |
+| `spr_item_rock_in_a_sock.png` | Weapon — blunt | A rock in a white sports sock, the sock stretched by the weight. |
+| `spr_item_broom_shiv.png` | Weapon — stab | A broom handle sharpened to a point, tape wrapped round the grip. |
+| `spr_item_slingshot.png` | Weapon — ranged | Y-frame catapult, perished rubber, wooden fork. |
+| `spr_item_ski_mask.png` | Armour — head | Black balaclava, laid flat. |
+| `spr_item_protect_hoodie.png` | Armour — top | Grey hoodie, own-brand, front on. |
+| `spr_item_protect_bottoms.png` | Armour — legs | Matching grey joggers. |
+| `spr_item_max69_trainers.png` | Armour — feet | A pair of chunky white trainers, knock-off branding — **no real brand names or logos**. |
+
+### 7.11 Band 8 — per-weapon player attack sheets
+
+**Not yet — this band is after the whole cast has landed**, and after the weapons exist in code. It
+is written down now so the four weapons in §7.10 are drawn knowing their swing is coming.
+
+Each of the four weapons gets **its own player attack sheet**, so a butter knife stab does not read
+as a cricket-bat swing. Plus one base `ranged` attack for the slingshot.
+
+Every one of them matches the accepted `sheet_char_player_attack` exactly: same figure, **6 frames,
+one row, 512×512 cells, 12 fps, no loop**. The frame count is not a suggestion —
+`CombatController.MeleeHitDelay 0.15` + `MeleeRecovery 0.35` is 0.50 s, and 6 frames at 12 fps is
+0.50 s. The two are tuned to each other, damage lands on frame 2, and a sheet of a different length
+desynchronises the hit from the visible swing (CLAUDE.md §12).
+
+**Naming — this is the part that will go wrong.** The importer's action vocabulary is fixed
+(`idle`, `walk`, `attack`, `hurt`, `death`, `cast`), so the weapon cannot go after the action. It
+goes in the subject:
+
+| File | `"subject"` in the JSON | `"action"` |
+|---|---|---|
+| `sheet_char_player_butterknife_attack.png` | `player_butterknife` | `attack` |
+| `sheet_char_player_rockinasock_attack.png` | `player_rockinasock` | `attack` |
+| `sheet_char_player_broomshiv_attack.png` | `player_broomshiv` | `attack` |
+| `sheet_char_player_slingshot_attack.png` | `player_slingshot` | `attack` |
+| `sheet_char_player_ranged_attack.png` | `player_ranged` | `attack` |
+
+Set `"subject"` **explicitly** in every one of these manifests rather than letting the importer
+derive it — a derived subject would be a guess about where the name ends, and a sheet that landed on
+the bare `player` subject would overwrite the accepted attack sheet and repoint the player's
+Animator.
+
+> **For the Unity side, not the art agent.** None of this is built, and none of it is implied by
+> these sheets landing:
+>
+> - `ItemData` needs an appended weapon-identity field (§7 of CLAUDE.md — **append**, the class is
+>   serialized into `Resources/Items` and `ItemID` is a save key).
+> - On equip, an `AnimatorOverrideController` per weapon overrides **only** the Attack clip on
+>   `player_Controller`. Overriding one clip rather than building a controller per weapon is what
+>   keeps the repaired state machine — six states, four transitions, no duplicates — as the single
+>   thing that has to stay correct.
+> - The clip is the deliverable the override consumes. The importer will also build a
+>   `player_butterknife_Controller` and friends as a by-product of seeing a new subject; those are
+>   unused and harmless, but check that is actually what happens rather than assuming it.
+
+### 7.12 Cancelled and not requested
 
 - **`cycle` — cancelled.** The rider is drawn by layering the e-bike sprite over the ordinary
   character sprite, which is what the game already does. There is no `Cycle` animation state to
