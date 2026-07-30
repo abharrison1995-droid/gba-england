@@ -119,12 +119,15 @@ editor code out of builds, so editor-only code **must** live there.
 - **Tuning constants belong in `EKVibe`** (`Assets/Scripts/Vibe/EKVibe.cs`) — colours,
   sizes, camera, `ChunkSize`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
-- **Editor menu path**: `Tools/GBA/<Category>/...`. All 27 items live under this root, in six
+- **Editor menu path**: `Tools/GBA/<Category>/...`. 30 of the 31 menu items live under this root
+  (the odd one out is a `CONTEXT/PlacementPreset/` right-click item), in six
   categories: `Place`, `Art`, `World`, `Debug`, `Repair`, `Content`, plus **`Danger Zone`** for
   the four tools that overwrite or re-create assets — `Build Modern Britain Prefabs`,
   `Build Enemy Prefabs`, `Discover England Bootstrap` and `Generate Placeholder Art`. Each of
   those confirms first and names what it destroys. Nothing else may go in `Danger Zone`, and
-  nothing destructive may go anywhere else.
+  nothing destructive may go anywhere else. **`World Palette` is the one exception to the
+  category rule** — it sits directly at `Tools/GBA/World Palette`, uncategorised, because it is
+  the entry point rather than one tool among many (§9b).
 - Mobile-first: hot paths avoid allocation deliberately (preallocated
   `Collider[] _hitResults`, parallel key lists to avoid dictionary-iteration garbage).
   Respect this when editing `Update()` paths.

@@ -8,8 +8,9 @@ below. This file is the map; that one is the terrain.
 ## Project overview
 
 **Exiled Alvaston** — a Unity **mobile RPG** (working title, from `productName` in
-`ProjectSettings`). A rename to *GBA: England* is under consideration; the repo folder is
-already `gba-england`.
+`ProjectSettings`). The rename to *GBA: England* has begun: `EKVibe.DisplayTitle` is already
+"GBA: England" and the hub chunk is `Home_London`, but `productName` and the `ExiledAlvaston`
+namespace are unchanged. The repo folder is `gba-england`. See CLAUDE.md §10.
 
 - **Presentation: isometric 3D world with billboarded 2D sprites.** A fixed camera
   (pitch 30°, yaw −45°, ortho size 7), 3D physics (`Rigidbody`, `Collider`, movement on the
@@ -97,7 +98,8 @@ Assets/
   6twelve/            # third-party asset pack (has its own DEMO scene) — not our code
   c.unity             # THE main scene (only scene in build settings)
   c/                  # NavMesh data for c.unity (auto-linked by scene name)
-Tools/                # Python: asset_reachability.py, gen_placeholders.py, write_unity_metas.py
+Tools/                # Python: asset_reachability.py, precheck_sheets.py, tile_frames.py,
+                      #   gen_placeholders.py, write_unity_metas.py
 art_incoming/         # generated-art staging (gitignored except its README)
 .claude/agents/       # architect / implementer / reviewer subagent definitions
 ```
@@ -117,7 +119,13 @@ mechanically from the command line:
 ```
 python Tools/asset_reachability.py --check-dangling   # reference integrity; exits 1 on breakage
 python Tools/asset_reachability.py --packs            # which asset packs are fully unused
+python Tools/precheck_sheets.py [sheet.png ...]       # replicates the importer's sheet checks
+python Tools/tile_frames.py <subject> <action>        # tiles art_incoming/frames/ into a sheet
 ```
+
+The last two are the generated-art pipeline; `ART_PIPELINE.md` §7.3a is the workflow they belong
+to. `precheck_sheets.py` exits 1 on anything the importer would refuse, so it is the gate before
+opening Unity.
 
 `--check-dangling` knows the build scene's built-in baseline (17 unresolved Unity-internal
 GUIDs) and fails only above it. **Run it before and after anything that deletes, moves or
