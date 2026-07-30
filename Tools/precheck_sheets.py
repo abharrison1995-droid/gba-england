@@ -5,9 +5,16 @@ Checks, per ART_PIPELINE.md / CLAUDE.md §12:
   2. One drawing per cell (layout): no empty cells, no fragment frames.
   3. Figure fills ~90% of cell height (measured on keyed mask).
   4. Baseline drift across cells <= 2 px at final size (65 px cell)  [death exempt]
-  5. Mean opaque width per cell within 1.4x of the accepted idle sheet  [never exempt]
+  5. Mean opaque width per cell within 1.4x of *that subject's own* idle sheet  [never exempt]
+
+Checks the band-2 sheets by default (ART_PIPELINE.md §7.4). Pass sheet filenames as
+arguments to check a different set:
+
+    python Tools/precheck_sheets.py
+    python Tools/precheck_sheets.py sheet_char_villager_idle.png
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -20,6 +27,21 @@ FINAL_CELL = 65.0  # px at final size for a 512 px source cell
 DRIFT_LIMIT_FINAL_PX = 2.0
 WIDTH_TOLERANCE = 1.4
 MAGENTA = np.array([255, 0, 255])
+
+# Band 2 of the queue in ART_PIPELINE.md §7.4/§7.5: the tutorial cast. Daniel Pauls needs no
+# hostile set and the geezer never casts, which is why the two lists differ.
+DEFAULT_SHEETS = (
+    "sheet_char_danielpauls_idle.png",
+    "sheet_char_danielpauls_walk.png",
+    "sheet_char_danielpauls_cast.png",
+    "sheet_char_underhoused_idle.png",
+    "sheet_char_underhoused_walk.png",
+    "sheet_char_underhoused_attack.png",
+    "sheet_char_underhoused_hurt.png",
+    "sheet_char_underhoused_death.png",
+)
+
+SHEET_NAME = re.compile(r"^sheet_char_(?P<subject>.+)_(?P<action>[^_]+)\.png$")
 
 
 def key_mask(img: Image.Image, threshold: int = 60) -> np.ndarray:
@@ -163,29 +185,69 @@ def check_sheet(png: Path, idle_mean_width: float | None):
     return not problems
 
 
-def main():
-    # reference: accepted idle sheet mean opaque width per cell
-    idle_png = PROCESSED / "sheet_char_player_idle.png"
-    idle_mean = None
-    if idle_png.exists():
-        meta, img = load_pair(idle_png)
-        mask = key_mask(img)
-        widths = []
-        for i in range(meta["columns"] * meta["rows"]):
-            s = cell_stats(mask, meta["frameWidth"], meta["frameHeight"], i % meta["columns"], i // meta["columns"])
-            if s:
-                widths.append(s["mean_width"])
-        idle_mean = float(np.mean(widths))
-        print(f"reference idle: mean width {idle_mean:.0f}px/cell over {len(widths)} cells")
+def mean_width(png: Path) -> float | None:
+    """Mean opaque width per cell, or None if the sheet is unusable as a reference."""
+    if not png.exists():
+        return None
+    meta, img = load_pair(png)
+    if meta is None:
+        return None
+    mask = key_mask(img)
+    widths = []
+    for i in range(meta["columns"] * meta["rows"]):
+        s = cell_stats(mask, meta["frameWidth"], meta["frameHeight"],
+                       i % meta["columns"], i // meta["columns"])
+        if s:
+            widths.append(s["mean_width"])
+    return float(np.mean(widths)) if widths else None
 
+
+def reference_width(subject: str):
+    """The width reference for one subject: that subject's own idle sheet.
+
+    The importer compares sheets of one subject against *each other* (CLAUDE.md §12), and it
+    has to — the check catches a sheet drawn at the wrong scale for that character, and
+    characters legitimately differ in build. Measuring band 2 against the player's idle would
+    refuse Daniel Pauls for not being the player's shape.
+
+    processed/ first, then staging, so a batch delivering a subject's idle alongside its walk
+    references its own idle rather than having nothing to compare to.
+    """
+    for folder in (PROCESSED, INCOMING):
+        width = mean_width(folder / f"sheet_char_{subject}_idle.png")
+        if width is not None:
+            return width, folder
+    return None, None
+
+
+def main():
+    names = sys.argv[1:] or list(DEFAULT_SHEETS)
+    references: dict[str, float | None] = {}
     ok = True
-    for name in ("sheet_char_player_attack.png", "sheet_char_player_cast.png", "sheet_char_player_death.png"):
+
+    for name in names:
         png = INCOMING / name
         if not png.exists():
-            print(f"\n=== {name} === MISSING")
+            print(f"\n=== {name} === MISSING from {INCOMING}/")
             ok = False
             continue
-        ok = check_sheet(png, idle_mean) and ok
+
+        match = SHEET_NAME.match(png.name)
+        subject = match.group("subject") if match else None
+
+        if subject and subject not in references:
+            width, folder = reference_width(subject)
+            references[subject] = width
+            if width is None:
+                print(f"\nreference for '{subject}': none — no sheet_char_{subject}_idle.png in "
+                      f"processed/ or staging, so the width check is skipped for this subject. "
+                      f"Deliver its idle sheet first, or it goes unchecked.")
+            else:
+                print(f"\nreference for '{subject}': idle mean width {width:.0f}px/cell "
+                      f"(from {folder.name}/)")
+
+        ok = check_sheet(png, references.get(subject)) and ok
+
     sys.exit(0 if ok else 1)
 
 
