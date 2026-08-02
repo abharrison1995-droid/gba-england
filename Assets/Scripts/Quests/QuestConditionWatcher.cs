@@ -59,6 +59,9 @@ namespace ExiledAlvaston.Quests
         private PlayerSession _subscribedSession;
         private bool _collectDirty;
 
+        // ── Reach ───────────────────────────────────────────────────────────────────────────
+        private Transform _reachTarget;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
@@ -100,6 +103,7 @@ namespace ExiledAlvaston.Quests
             }
 
             ApplyPending();
+            PollReach();
         }
 
         // ── Subscription ────────────────────────────────────────────────────────────────────
@@ -224,6 +228,10 @@ namespace ExiledAlvaston.Quests
                     BindCollect(_boundStage, def);
                     break;
 
+                case QuestConditionType.Reach:
+                    BindReach(_boundStage);
+                    break;
+
                 case QuestConditionType.Manual:
                     // Nothing to watch. Bespoke code calls QuestManager.CompleteQuest itself; the
                     // reward scan picks the completion up wherever it came from.
@@ -240,6 +248,7 @@ namespace ExiledAlvaston.Quests
             UnbindTalkTo();
             UnbindKill();
             UnbindCollect();
+            UnbindReach();
 
             _boundQuestId = null;
             _boundStageIndex = -1;
@@ -488,6 +497,53 @@ namespace ExiledAlvaston.Quests
             if (progress.Objective == desired) return;
 
             mgr.UpdateObjective(_boundQuestId, desired);
+        }
+
+        // ── Reach ───────────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Caches the destination transform: a <see cref="SceneMarker"/> first, since a "go here"
+        /// objective usually points at empty ground, falling back to a <see cref="QuestActor"/> for
+        /// "go to where this thing is". Silent if neither is in the live chunk — the destination is
+        /// very often in a chunk the player has not walked into yet.
+        /// </summary>
+        private void BindReach(QuestStage stage)
+        {
+            _reachTarget = SceneMarker.Find(_boundChunkInstance, stage.QuestKey);
+            if (_reachTarget != null) return;
+
+            GameObject actor = QuestActor.Find(_boundChunkInstance, stage.QuestKey);
+            if (actor != null) _reachTarget = actor.transform;
+        }
+
+        private void UnbindReach()
+        {
+            _reachTarget = null;
+        }
+
+        /// <summary>
+        /// The one polled condition — <see cref="SceneMarker"/> has no collider, trigger or event,
+        /// so there is nothing to subscribe to. Costs a squared-distance compare per frame, and
+        /// only while a Reach stage is actually bound with its destination resolved in the live
+        /// chunk. Allocates nothing (CLAUDE.md §4).
+        /// </summary>
+        private void PollReach()
+        {
+            if (_boundStage == null || _boundStage.ConditionType != QuestConditionType.Reach) return;
+            if (_reachTarget == null) return;
+
+            CombatController player = CombatController.Instance;
+            if (player == null) return;
+
+            // Horizontal only: movement is on the X/Z plane, Y is up (CLAUDE.md §2). Comparing in
+            // 3D would refuse an arrival standing on a step or a kerb.
+            Vector3 delta = player.transform.position - _reachTarget.position;
+            delta.y = 0f;
+
+            float radius = Mathf.Max(0.1f, _boundStage.ReachRadius);
+            if (delta.sqrMagnitude > radius * radius) return;
+
+            AdvanceStage();
         }
     }
 }
