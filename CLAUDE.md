@@ -11,9 +11,10 @@ they had open), and again the same day on `docs/art-brief-and-queue` for the art
 `fix/scene-root-props` for the scene-root props (§8, §9b, §11 — all verified in the
 editor) and `feat/crouch-button` for the mobile crouch toggle (§7, §8), and
 `feat/pickpocket-preset` for preset-authored marks (§8, §13), and again on 2026-07-30 on
-`feat/london-cast-and-region-palette` for the region split and the London cast (§9, §9b, §13). Facts
-here are verified against code, not against design docs. Where code and a design doc disagree,
-this file records **what the code actually does**.
+`feat/london-cast-and-region-palette` for the region split and the London cast (§9, §9b, §13), and
+again on 2026-08-02 on `feat/quest-definitions` for data-authored quests (**§14**, plus §6, §8 and
+§9). Facts here are verified against code, not against design docs. Where code and a design doc
+disagree, this file records **what the code actually does**.
 
 > ⚠️ **§13 is partly exercised as of 2026-07-30 — the NPC path works, the tutorial path does not
 > yet.** `Assets/Resources/PlacementPresetLibrary.asset` exists and binds to the pinned script
@@ -238,6 +239,13 @@ Consequences to respect:
   lookup fails, the item is dropped and nothing is reported.
 - An item must stay reachable from `Resources/Items`, since that is how the load resolves it.
 
+`QuestProgress` gained three **appended** fields on `feat/quest-definitions` — `StageIndex`,
+`StageProgress`, `RewardsClaimed` (§14). `SaveGameManager` needed no change and was not touched:
+it hands the whole `List<QuestProgress>` to `JsonUtility`, so new fields are picked up
+automatically and an old save reads them as zero/false, which is the correct default. They are
+public fields rather than properties because `JsonUtility` only serializes public fields — a
+property there would have silently never persisted.
+
 **Also saved: `TutorialComplete` and quest state.** `GameFlowController.ContinueFromSave` passes
 both back through `PlayerSession.RestoreFromSave` and `QuestManager.RestoreQuests`. Tutorial
 completion is checkpointed the moment it happens (`GameFlowController`, "tutorial completion
@@ -378,6 +386,13 @@ is the single most load-bearing line in the whole consequence loop.
   art-queue bands. ⚠️ **Unverified in both senses** (§10): no compiler ran, and the palette change
   has not been opened in the editor. Three commits, none of them touching the scene, any prefab,
   `MapChunkData`, or anything in §5–§7 beyond appending one enum and one field.
+- **2026-08-02: `feat/quest-definitions` is cut off `feat/london-cast-and-region-palette` and not
+  merged** — `QuestDefinition`/`QuestDatabase`, `QuestConditionWatcher`, the three appended
+  `QuestProgress` fields, `QuestActor.FindAll` and `WantedManager.ClearWanted` (§14, §6, §8). Nine
+  commits, none touching the scene, any prefab, `MapChunkData`, `SaveGameManager`, `DialogueData`,
+  `DialogueManager` or any tutorial flow file. ⚠️ **Unverified in both senses** (§10): no compiler
+  ran and nothing was opened in the editor. It authors **zero** `QuestDefinition` assets, so the
+  system is inert until one exists.
 - **The next task is Stage F, written up in `docs/STAGE_RF_PLAN_REVISED.md`**: the six-commit
   inventory and loot overhaul. Stage R (the `Home_Alvaston` → `Home_London` rename) is **done**
   — renamed in the working tree with the save-key migration in `SaveGameManager.ReadSaveData`;
@@ -1016,3 +1031,103 @@ a claim that any of it does:
   placed object, but he should not be reachable until Mosley's questline completes and nothing hides
   him. There is no visibility-gating mechanism on presets at all; `RequireTutorialComplete` exists
   only on the Portal recipe.
+
+---
+
+## 14. Data-authored quests
+
+⚠️ **Written without a compiler and never opened in the editor** — unverified in both senses (§10).
+
+⚠️ **There are zero `QuestDefinition` assets in the project.** The system is built and completely
+inert: no quest in the game behaves differently until someone authors one. Nothing here has been
+exercised end to end, not even once.
+
+Dialogue still *starts* a quest (`DialogueChoice.GrantQuestId`) and, for a hand-in, still *finishes*
+it (`CompleteQuestId`). What a `QuestDefinition` adds is the middle — ordered stages with objective
+text, a condition per stage saying when it is done, and one reward on completion.
+
+| Piece | File | What it owns |
+|---|---|---|
+| What a quest *is* | `Data/QuestDefinition` | `Id`, title/giver/location, the `QuestStage` list, one `QuestReward`. |
+| Finding one | `Data/QuestDatabase` | `Find(id)` over `Resources/Quests`. A near-copy of `ItemDatabase`. |
+| Watching one | `Quests/QuestConditionWatcher` | Binds the active stage's condition, advances it, pays the reward. Self-bootstraps like `VehicleSpawner`. |
+| Where stage state lives | `Quests/QuestManager` | `QuestProgress.StageIndex` / `StageProgress` / `RewardsClaimed`, plus `SetStage` / `SetStageProgress`. |
+
+**The containment rule is the whole safety argument. `QuestConditionWatcher` is completely inert
+for any quest id with no definition asset.** `QuestDatabase.Find` returns null and every path bails
+out. `escape_manor` and `spark_of_talent` deliberately have no definition, so `GameFlowController`,
+`TutorialSequence` and `MagicTutorial` are untouched by all of this — none of those three files was
+edited, and neither were `DialogueData` or `DialogueManager`. **Do not author a definition for
+either tutorial quest** without working out what happens to the bespoke code that already drives it.
+
+| `QuestConditionType` | Bound to | Advances when |
+|---|---|---|
+| `TalkTo = 0` | `Interactable.OnInteract` on the `QuestActor` keyed `QuestKey` | the player interacts |
+| `Kill = 1` | `Health.OnDeath` on every `QuestActor` keyed `QuestKey` | `Count` of them have died |
+| `Collect = 2` | `PlayerSession.OnInventoryChanged` | **never — see below** |
+| `Reach = 3` | nothing; polled | the player is within `ReachRadius` (X/Z) of the keyed `SceneMarker`, or of a `QuestActor` if no marker matches |
+| `Manual = 4` | nothing | never — bespoke code calls `CompleteQuest` itself |
+
+`QuestConditionType` is serialized by index. **Append only** (§7).
+
+**`Collect` tracks and reports; the hand-in is dialogue's job.** A `Collect` stage never completes
+the quest, consumes the item, advances the stage or pays a reward. All it does is swap
+`Objective` for `ObjectiveWhenMet` once the player is carrying enough — and swap it back if they
+drop or sell it, which is why the text is *derived from the inventory every time* rather than
+toggled once. The hand-in is `DialogueChoice.RequiredItem` + `RequiredItemQuantity` (greys the
+choice out until they have it), `ConsumeRequiredItem` (takes the stack) and `CompleteQuestId`
+(ends the quest) — machinery that already existed and already works. **A `Collect` stage in a
+quest that no dialogue anywhere completes can never end**, and nothing checks that for you:
+dialogue assets live outside `Resources/`, so they cannot be enumerated at runtime. The watcher
+does warn if a `Collect` stage is not the last stage, since nothing after it is reachable.
+
+**Rewards are scanned by completion state, not by "did I just complete this."** Any quest that is
+`IsComplete && !RewardsClaimed` and has a definition gets paid, so a quest finished purely through
+dialogue is rewarded identically to one the watcher advanced. `Reward.Item` goes through
+`PlayerSession.AddItem`; `ClearsWantedLevel` calls the new `WantedManager.ClearWanted()` (the
+reusable version of what `GameFlowController.ArrestRoutine` still does inline — that routine was
+deliberately left alone). **`Reward.GoldAmount` warns and pays nothing** — there is no gold system
+(§8), and this is not the commit that adds one.
+
+**Things that will catch you out:**
+
+- **All quest-state mutation happens in `Update()`.** Event callbacks only set a flag or bump a
+  counter. A `QuestManager` call from inside an `OnInteract` / `OnDeath` listener raises
+  `OnQuestsChanged`, which rebinds listeners, from inside the listener list being invoked. Do not
+  "simplify" the indirection away.
+- **`Update` runs while the game is paused.** `PauseManager` only zeroes `Time.timeScale`, which
+  stops `FixedUpdate`, not `Update`. That is why the reward scan explicitly defers while
+  `DialogueManager.IsDialogueOpen`: `OnChoiceSelected` runs grant → complete → *consume the
+  handed-over item* in that order, and a reward applied the instant the completion landed would
+  fall inside a half-finished hand-in. Deferring loses nothing — `RewardsClaimed` is not set until
+  the reward actually applies, so a quit mid-conversation pays on the next load.
+- **Only the *first* active quest is watched.** The watcher binds `QuestManager.GetActiveQuest()`,
+  which is the first active, incomplete entry — the same one the HUD tracker shows. Two quests
+  active at once means the second one's conditions are not being watched at all, including if the
+  first has no definition. This is a real limitation, not a subtlety.
+- **Every rebind is a full teardown first, never an incremental top-up.** A `Health` subscribed
+  twice counts one death as two, and a "kill 3" stage then finishes on the second kill. Unbinds
+  null-check each entry before touching it, because a `Health` or `Interactable` destroyed with its
+  chunk is Unity's fake null.
+- **Chunk changes are polled**, against remembered `CurrentChunkData` *and* `CurrentChunkInstance`
+  references, for the reason in §5 — seven writers across six files, so no single hook catches
+  them all.
+- **`Kill` targets respawn with their chunk.** The count is seeded from `QuestProgress.StageProgress`
+  so it survives a crossing or a load, but the actors are re-instantiated fresh, so leaving and
+  returning re-arms them: a "kill 3" stage can be finished by killing one respawning actor three
+  times. **Author kill stages against targets in a single chunk** and expect nothing better.
+- **`SetStageProgress` deliberately raises no `OnQuestsChanged`.** Nothing renders `StageProgress` —
+  the journal and the HUD tracker both show `Objective` — so an event per kill would force a HUD
+  layout rebuild for no visible change. If a counter ever appears in the UI, raise it there.
+- **Do not author a quest that completes itself twice.** A last stage that completes the quest
+  *and* a dialogue node with a matching `CompleteQuestId` is a double completion. It is harmless
+  today — `CompleteQuest` early-returns on an already-complete quest and `RewardsClaimed` stops a
+  double pay — but it is still wrong, and nothing warns. Progress and completion being *split* is
+  fine and is exactly the shape `Collect` wants.
+- **`Resources/Quests/` ships in the build**, like everything reachable from a `Resources/` folder.
+  **Never add a `GameObject`, `Sprite`, `Prefab` or `AudioClip` field to `QuestDefinition`** — one
+  prefab reference drags its whole dependency graph in. `ItemData` is already Resources-resident and
+  is the only asset reference a definition may hold. Same reasoning as `PlacementPresetLibrary`
+  keying by string (§13).
+- **The three new `QuestProgress` fields are appended, and `SaveGameManager` needed no change** —
+  see §6.
