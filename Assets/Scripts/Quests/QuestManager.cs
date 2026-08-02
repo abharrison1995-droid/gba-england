@@ -16,6 +16,17 @@ namespace ExiledAlvaston.Quests
         public string Location;
         public bool IsActive;
         public bool IsComplete;
+
+        // ── Appended for QuestDefinition-driven quests. Appending is safe; inserting is not —
+        // this whole class is serialized wholesale into savegame.json by JsonUtility (CLAUDE.md
+        // §6/§7). Public fields, not properties: JsonUtility only serializes public fields, so a
+        // property here would silently never persist.
+        [Tooltip("Which stage of the quest's QuestDefinition is current. 0 for quests with no definition.")]
+        public int StageIndex;
+        [Tooltip("Partial progress within the current stage (e.g. 2 of 3 killed).")]
+        public int StageProgress;
+        [Tooltip("Set once QuestConditionWatcher has paid out this quest's reward, so it pays once.")]
+        public bool RewardsClaimed;
     }
 
     /// <summary>
@@ -92,9 +103,46 @@ namespace ExiledAlvaston.Quests
             OnQuestsChanged?.Invoke();
         }
 
+        /// <summary>
+        /// Moves an already-started quest onto a new stage of its <c>QuestDefinition</c>: records
+        /// the stage index, clears any partial progress carried over from the previous stage, and
+        /// swaps in that stage's objective text. Does nothing for an id that isn't in the list —
+        /// callers only ever reach here for a quest they've already confirmed active.
+        /// </summary>
+        public void SetStage(string id, int stageIndex, string objective)
+        {
+            var q = Find(id);
+            if (q == null) return;
+            q.StageIndex = stageIndex;
+            q.StageProgress = 0;
+            q.Objective = objective;
+            OnQuestsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Records partial progress inside the current stage (e.g. 2 of 3 bandits down) so it
+        /// survives a save. Deliberately does NOT raise <see cref="OnQuestsChanged"/>: nothing
+        /// displays <c>StageProgress</c> — the journal and the HUD tracker both render
+        /// <c>Objective</c> — so an event here would force a HUD layout rebuild per kill for no
+        /// visible change. If a counter ever appears in the UI, raise it here as well.
+        /// </summary>
+        public void SetStageProgress(string id, int progress)
+        {
+            var q = Find(id);
+            if (q == null) return;
+            q.StageProgress = progress;
+        }
+
         public void CompleteQuest(string id)
         {
             var q = Find(id);
+
+            // Already done — say nothing and change nothing. Two things can legitimately try to
+            // complete the same quest (a definition's last stage and a dialogue node carrying a
+            // matching CompleteQuestId), and a second OnQuestsChanged for a no-op change would
+            // re-run every subscriber's refresh for nothing.
+            if (q != null && q.IsComplete) return;
+
             if (q == null)
             {
                 _quests.Add(new QuestProgress
@@ -148,7 +196,8 @@ namespace ExiledAlvaston.Quests
             OnQuestsChanged?.Invoke();
         }
 
-        private QuestProgress Find(string id)
+        /// <summary>The live progress record for an id, or null if the quest was never started.</summary>
+        public QuestProgress Find(string id)
         {
             for (int i = 0; i < _quests.Count; i++)
             {
