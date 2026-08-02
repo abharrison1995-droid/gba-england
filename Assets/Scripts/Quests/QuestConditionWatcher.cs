@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.Data;
+using ExiledAlvaston.Flow;
 using ExiledAlvaston.World;
 
 namespace ExiledAlvaston.Quests
@@ -54,6 +55,10 @@ namespace ExiledAlvaston.Quests
         private int _killCount;
         private bool _killDirty;
 
+        // ── Collect ─────────────────────────────────────────────────────────────────────────
+        private PlayerSession _subscribedSession;
+        private bool _collectDirty;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
@@ -76,12 +81,16 @@ namespace ExiledAlvaston.Quests
             if (_subscribedManager != null)
                 _subscribedManager.OnQuestsChanged -= OnQuestsChanged;
             _subscribedManager = null;
+            if (_subscribedSession != null)
+                _subscribedSession.OnInventoryChanged -= OnInventoryChanged;
+            _subscribedSession = null;
             if (Instance == this) Instance = null;
         }
 
         private void Update()
         {
             EnsureSubscribed();
+            EnsureSessionSubscribed();
             PollChunk();
 
             if (_rebindNeeded)
@@ -115,10 +124,38 @@ namespace ExiledAlvaston.Quests
             _rebindNeeded = true;
         }
 
+        /// <summary>
+        /// PlayerSession survives scene loads but is created by the flow, so it may not exist when
+        /// this bootstraps. Same reference-compare-per-frame deal as <see cref="EnsureSubscribed"/>.
+        /// The subscription is lifetime-scoped rather than stage-scoped: the callback only raises a
+        /// flag, which nothing but a bound Collect stage ever reads.
+        /// </summary>
+        private void EnsureSessionSubscribed()
+        {
+            PlayerSession session = PlayerSession.Instance;
+            if (session == _subscribedSession) return;
+
+            if (_subscribedSession != null)
+                _subscribedSession.OnInventoryChanged -= OnInventoryChanged;
+
+            _subscribedSession = session;
+
+            if (_subscribedSession != null)
+                _subscribedSession.OnInventoryChanged += OnInventoryChanged;
+
+            _collectDirty = true;
+        }
+
         /// <summary>Flag only — Update does the work. See the re-entrancy note on the class.</summary>
         private void OnQuestsChanged()
         {
             _rebindNeeded = true;
+        }
+
+        /// <summary>Flag only. Fires on every pickup, drop, hand-in and load.</summary>
+        private void OnInventoryChanged()
+        {
+            _collectDirty = true;
         }
 
         private void PollChunk()
@@ -183,6 +220,10 @@ namespace ExiledAlvaston.Quests
                     BindKill(_boundStage);
                     break;
 
+                case QuestConditionType.Collect:
+                    BindCollect(_boundStage, def);
+                    break;
+
                 case QuestConditionType.Manual:
                     // Nothing to watch. Bespoke code calls QuestManager.CompleteQuest itself; the
                     // reward scan picks the completion up wherever it came from.
@@ -198,6 +239,7 @@ namespace ExiledAlvaston.Quests
         {
             UnbindTalkTo();
             UnbindKill();
+            UnbindCollect();
 
             _boundQuestId = null;
             _boundStageIndex = -1;
@@ -233,6 +275,14 @@ namespace ExiledAlvaston.Quests
                             // nothing renders the count, so a per-kill HUD rebuild would be waste.
                             QuestManager.Instance.SetStageProgress(_boundQuestId, _killCount);
                         }
+                    }
+                    break;
+
+                case QuestConditionType.Collect:
+                    if (_collectDirty)
+                    {
+                        _collectDirty = false;
+                        ApplyCollectObjective();
                     }
                     break;
             }
@@ -369,6 +419,75 @@ namespace ExiledAlvaston.Quests
         {
             _killCount++;
             _killDirty = true;
+        }
+
+        // ── Collect ─────────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// A Collect stage <b>tracks and reports, and nothing else</b>. It never completes the
+        /// quest, never consumes the item, never applies a reward and never advances the stage —
+        /// all it does is swap the objective text once the player is carrying enough.
+        ///
+        /// The hand-in is existing, proven dialogue machinery: a <c>DialogueChoice</c> with
+        /// <c>RequiredItem</c> + <c>RequiredItemQuantity</c> (which greys the choice out until the
+        /// player has them), <c>ConsumeRequiredItem</c> (which removes the stack on pick) and
+        /// <c>CompleteQuestId</c> (which ends the quest). <b>A Collect stage whose quest has no
+        /// such dialogue choice anywhere can never end.</b> That cannot be checked here — dialogue
+        /// assets live outside <c>Resources/</c> and are not loadable at runtime — so it is a rule
+        /// to follow rather than a guard that catches you.
+        /// </summary>
+        private void BindCollect(QuestStage stage, QuestDefinition def)
+        {
+            _collectDirty = true; // Evaluate once on bind, so arriving already-carrying reads right.
+
+            if (stage.Item == null)
+            {
+                Debug.LogWarning($"QuestConditionWatcher: Collect stage {_boundStageIndex} of " +
+                                 $"'{def.name}' has no Item, so it will never read as met.", def);
+            }
+
+            if (def.Stages != null && _boundStageIndex < def.Stages.Count - 1)
+            {
+                Debug.LogWarning($"QuestConditionWatcher: Collect stage {_boundStageIndex} of " +
+                                 $"'{def.name}' is not the last stage. A Collect stage only reports " +
+                                 "progress and never advances, so every stage after it is " +
+                                 "unreachable.", def);
+            }
+        }
+
+        private void UnbindCollect()
+        {
+            _collectDirty = false;
+        }
+
+        /// <summary>
+        /// Derives the objective text from what the player is currently carrying and writes it only
+        /// if it differs from what the journal is already showing. Derived rather than toggled once
+        /// so that dropping or selling the item <i>reverts</i> the text — a one-shot flip would
+        /// leave "take it back to Mosley" showing over an empty bag.
+        ///
+        /// The write raises OnQuestsChanged, which flags a rebind, which re-flags this — but the
+        /// second pass finds the text already correct and writes nothing, so it settles.
+        /// </summary>
+        private void ApplyCollectObjective()
+        {
+            QuestManager mgr = QuestManager.Instance;
+            if (mgr == null || _boundStage == null) return;
+
+            QuestProgress progress = mgr.Find(_boundQuestId);
+            if (progress == null) return;
+
+            bool met = _boundStage.Item != null
+                       && PlayerSession.Instance != null
+                       && PlayerSession.Instance.HasItem(_boundStage.Item, Mathf.Max(1, _boundStage.Quantity));
+
+            string desired = met && !string.IsNullOrEmpty(_boundStage.ObjectiveWhenMet)
+                ? _boundStage.ObjectiveWhenMet
+                : _boundStage.Objective;
+
+            if (progress.Objective == desired) return;
+
+            mgr.UpdateObjective(_boundQuestId, desired);
         }
     }
 }
