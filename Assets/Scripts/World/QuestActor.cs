@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ExiledAlvaston.World
@@ -21,6 +22,22 @@ namespace ExiledAlvaston.World
             foreach (var actor in chunkRoot.GetComponentsInChildren<QuestActor>(true))
                 if (actor.Key == key) return actor.gameObject;
             return null;
+        }
+
+        /// <summary>
+        /// Every GameObject tagged with the given key inside a chunk. <see cref="Find"/> stops at
+        /// the first, which is no use to a "kill three of them" objective. The caller owns
+        /// <paramref name="results"/> and it is cleared first, so the list can be reused across
+        /// rebinds instead of allocating a fresh one each time (CLAUDE.md §4).
+        /// </summary>
+        public static void FindAll(GameObject chunkRoot, string key, List<GameObject> results)
+        {
+            if (results == null) return;
+            results.Clear();
+            if (chunkRoot == null || string.IsNullOrEmpty(key)) return;
+
+            foreach (var actor in chunkRoot.GetComponentsInChildren<QuestActor>(true))
+                if (actor.Key == key) results.Add(actor.gameObject);
         }
     }
 }
