@@ -3,6 +3,7 @@ using UnityEngine;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.Data;
 using ExiledAlvaston.Flow;
+using ExiledAlvaston.Systems;
 using ExiledAlvaston.World;
 
 namespace ExiledAlvaston.Quests
@@ -43,6 +44,7 @@ namespace ExiledAlvaston.Quests
         // ── Rebind bookkeeping ──────────────────────────────────────────────────────────────
         private QuestManager _subscribedManager;
         private bool _rebindNeeded = true;
+        private bool _rewardScanNeeded = true;
 
         // ── TalkTo ──────────────────────────────────────────────────────────────────────────
         private Interactable _talkTarget;
@@ -104,6 +106,7 @@ namespace ExiledAlvaston.Quests
 
             ApplyPending();
             PollReach();
+            ScanRewards();
         }
 
         // ── Subscription ────────────────────────────────────────────────────────────────────
@@ -126,6 +129,7 @@ namespace ExiledAlvaston.Quests
                 _subscribedManager.OnQuestsChanged += OnQuestsChanged;
 
             _rebindNeeded = true;
+            _rewardScanNeeded = true;
         }
 
         /// <summary>
@@ -154,6 +158,7 @@ namespace ExiledAlvaston.Quests
         private void OnQuestsChanged()
         {
             _rebindNeeded = true;
+            _rewardScanNeeded = true;
         }
 
         /// <summary>Flag only. Fires on every pickup, drop, hand-in and load.</summary>
@@ -544,6 +549,72 @@ namespace ExiledAlvaston.Quests
             if (delta.sqrMagnitude > radius * radius) return;
 
             AdvanceStage();
+        }
+
+        // ── Rewards ─────────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Pays out any completed-but-unpaid quest that has a definition. Scans by completion
+        /// state rather than by "did I just complete this", so a quest finished entirely through
+        /// dialogue — with no involvement from this watcher at all — still gets its reward the
+        /// moment someone authors a definition for it. That generality is the point.
+        ///
+        /// Quests with no definition are skipped, which is the containment rule again.
+        /// </summary>
+        private void ScanRewards()
+        {
+            if (!_rewardScanNeeded) return;
+
+            QuestManager mgr = QuestManager.Instance;
+            if (mgr == null) return;
+
+            // Defer while a conversation is open. DialogueManager.OnChoiceSelected runs
+            // grant -> complete -> consume RequiredItem in that order, so a reward applied the
+            // instant the completion landed would fall inside a half-finished hand-in. Waiting
+            // costs nothing: RewardsClaimed is not set until the reward is actually applied, so
+            // even quitting mid-conversation just pays it on the next Update after the panel
+            // closes, or on the next load. Note Update still runs while paused — PauseManager
+            // only zeroes Time.timeScale — which is what makes this deferral necessary rather
+            // than automatic.
+            if (Dialogue.DialogueManager.IsDialogueOpen) return;
+
+            _rewardScanNeeded = false;
+
+            // Indexed for, not foreach: Quests is an IReadOnlyList, and foreach over an interface
+            // boxes the enumerator and allocates on every call (CLAUDE.md §4).
+            IReadOnlyList<QuestProgress> quests = mgr.Quests;
+            for (int i = 0; i < quests.Count; i++)
+            {
+                QuestProgress q = quests[i];
+                if (q == null || !q.IsComplete || q.RewardsClaimed) continue;
+
+                QuestDefinition def = QuestDatabase.Find(q.Id);
+                if (def == null) continue;
+
+                // Claimed before applied, deliberately: if ApplyReward throws partway through, the
+                // flag already being true stops the next frame paying the whole thing again.
+                q.RewardsClaimed = true;
+                ApplyReward(def, q);
+            }
+        }
+
+        private void ApplyReward(QuestDefinition def, QuestProgress quest)
+        {
+            QuestReward reward = def.Reward;
+            if (reward == null) return;
+
+            if (reward.Item != null && reward.Quantity > 0 && PlayerSession.Instance != null)
+                PlayerSession.Instance.AddItem(reward.Item, reward.Quantity);
+
+            if (reward.ClearsWantedLevel && WantedManager.Instance != null)
+                WantedManager.Instance.ClearWanted();
+
+            if (reward.GoldAmount > 0)
+            {
+                Debug.LogWarning($"QuestConditionWatcher: '{quest.Id}' is authored to pay " +
+                                 $"{reward.GoldAmount} gold, but there is no gold system yet " +
+                                 "(CLAUDE.md §8) — nothing was granted.", def);
+            }
         }
     }
 }

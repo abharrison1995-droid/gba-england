@@ -85,6 +85,20 @@ namespace ExiledAlvaston.Systems
             }
         }
 
+        /// <summary>
+        /// Wipes the wanted level and restores concealment, refreshing both HUD readouts. The
+        /// reusable version of what <c>GameFlowController.ArrestRoutine</c> does inline — that
+        /// routine is deliberately left alone, since rerouting the arrest path is a separate
+        /// change needing its own play-test.
+        /// </summary>
+        public void ClearWanted()
+        {
+            CurrentKnives = 0;
+            CurrentConcealment = MaxConcealment;
+            UpdateUIIndicator();
+            UpdateConcealmentUI();
+        }
+
         private void SpawnPlod()
         {
             if (PolicePrefabs == null || PolicePrefabs.Length == 0) return;
