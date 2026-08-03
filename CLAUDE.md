@@ -27,8 +27,10 @@ disagree, this file records **what the code actually does**.
 > authored as a talker (`Pickpocketable: 0`, prompt "Talk to Villager") and `Roams: 1`.
 >
 > **Still unexercised:** the tutorial's preset-built cast (`MagicTutorial`, Daniel Pauls and the
-> geezer — neither subject's art exists yet), and anything keyed off `EnemyAI.Animator` being set
-> from a preset-built NPC.
+> geezer). ⚠️ **Correction (2026-08-03): both now have art** — `Preset_DanielPauls` and
+> `Preset_TracksuitGeezer` both carry resolved `NpcSprite`/`NpcController` references, so "neither
+> subject's art exists yet" is stale. What's still unexercised is anything keyed off
+> `EnemyAI.Animator` being set from a preset-built NPC.
 >
 > Everything before §13 **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
 > boundary walls are generated and committed, the hardened importer has done a real round trip
@@ -922,7 +924,7 @@ without art. `SwingAngle` / `SwingDuration` / `LungeDistance` stay as public ser
 | `Enemy_Orc1/2/3` | yes | `Orc_Controller` ✓ | off; plays its own craftpix attack clip |
 | `Enemy_BotWheel` | yes | `BotWheel_Controller` ✓ | off; same |
 | `Police_*` ×5 | **no Animator at all** | — | unchanged, still the only tell they have |
-| Tutorial geezer (`underhoused`) | — | sheets not delivered | unchanged |
+| Tutorial geezer (`underhoused`) | — | art now delivered (2026-08-03 correction — was "sheets not delivered"; whether it declares an `Attack` state was not re-verified) | unchanged |
 
 The player's attack window and its clip happen to line up exactly: `MeleeHitDelay 0.15` +
 `MeleeRecovery 0.35` = 0.50 s, and the clip is 6 frames @ 12 fps = 0.50 s, `loop: false`. Damage
@@ -1267,3 +1269,77 @@ None of these can corrupt a save. All were found reviewing the branch before mer
 - **`Assets/Resources/Quests/README.txt` ships in the build** as a `TextAsset` — 16 lines, so the
   cost is nil, but it is a doc file inside a `Resources` folder in the very system whose rule is
   that `Resources/` is not a place to put things. Move it to `docs/` when convenient.
+
+---
+
+## 15. Dialogue graphs
+
+**Landed on `fix/dialogue-graph-ids`.** `DialogueData` used to be a tree of `DialogueNode`
+objects stored *by value* — `DialogueChoice.NextNode` was a nested `DialogueNode`, not a
+reference — which made two problems structural rather than incidental: no two choices could ever
+converge on the same node (no hub-and-spoke, the most common CRPG dialogue shape), and Unity
+2022.3.20f1's nested custom-class serialization depth caps at 7, which a branching conversation
+burns through in roughly three exchanges. Zero `DialogueData` assets existed anywhere in the
+project at the time this was found — confirmed by a repo-wide GUID search — so this was a free
+rename with nothing to migrate and no `[FormerlySerializedAs]` needed. That window is now closed;
+any future rename of these fields needs the usual §7 treatment.
+
+**The format is now flat.** `DialogueData.Nodes` is a `List<DialogueNode>`; each `DialogueNode`
+carries a string `Id`. `DialogueChoice.NextNodeId` (a string, was `NextNode`, a nested object)
+names the node a choice leads to. `DialogueData.StartNodeId` (default `"start"`,
+`DialogueData.DefaultStartId`) names the opening node; `DialogueData.StartNode()` resolves it,
+falling back to `Nodes[0]` and warning if `StartNodeId` is set but matches nothing.
+`DialogueData.FindNode(id)` is a linear scan, deliberately — a conversation is tens of nodes, this
+runs once per button press while the game is already paused, and a `Dictionary` would need
+invalidating on every Inspector edit for a benefit too small to measure (§4's mobile-first
+discipline applied even though this isn't a hot path). An empty or null `NextNodeId` is now the
+**only** way a conversation ends — the old "or the next node has empty `DialogueText`" fallback
+was deliberately dropped; nothing in the codebase relied on it.
+
+- **Convergence is the point, and cycles are legal.** Two choices can both name the same
+  `NextNodeId`, and a node can eventually loop back to an earlier `Id` (hub-and-spoke, `A -> B ->
+  A`, etc.) — `DialogueManager.DisplayNode` is driven by button clicks, never a recursive call
+  stack, so there is no cycle guard and none is needed.
+- **A duplicate `Id` within one `DialogueData` is an authoring error nothing validates.**
+  `FindNode` returns the first match by list order; every other node sharing that `Id` is silently
+  unreachable. No importer or inspector check catches this — keep ids unique by hand until
+  something does.
+- **The twelve `DialogueChoice` side-effect fields are an existing §14 save/quest contract and must
+  not be renamed without the usual serialized-field treatment (§7).** `RequiredStat`,
+  `RequiredStatLevel`, `RequiredItem`, `RequiredItemQuantity`, `ConsumeRequiredItem`,
+  `GrantQuestId`, `GrantQuestTitle`, `GrantQuestObjective`, `GrantQuestLocation`, `TeachSpark`,
+  `CompleteQuestId`, plus `ChoiceText` itself — none of these changed name, type, attribute or
+  order in the flattening; only `NextNode` → `NextNodeId` changed. `QuestConditionWatcher` and
+  `QuestDefinition` document the `RequiredItem`/`ConsumeRequiredItem`/`CompleteQuestId` string
+  contract in comments (§14) and were not touched by this work.
+- **`MagicTutorial` builds its five conversations (`_intro`, `_nudge`, `_reward`, `_done`,
+  `_underHousedTalk`) at runtime**, via local helpers (`Tree`/`Node`/`Choice`/`QuestChoice`/
+  `RewardChoice`) that assign each node an id automatically (`"n" + a monotonic counter`) and
+  collect them into the enclosing `Tree(...)`'s `Nodes` list. This relies on C# evaluating method
+  arguments left-to-right and fully before the enclosing call runs: every nested `Node(...)` call
+  inside one `Tree(...)` expression fires — pushing into a pending-nodes list — before `Tree()`
+  itself runs and drains that list into the new `DialogueData`. **Keep every `Node()` call inside
+  the `Tree(...)` argument list it belongs to** — a `Node()` called outside that expression, or a
+  second `Tree(...)` started before the first one's nodes are drained, would misfile nodes between
+  conversations. The dialogue prose in `BuildData()` itself is untouched by any of this; only the
+  helper bodies below it changed.
+- **No `[SerializeReference]`.** It was considered and rejected: it serializes the target's
+  assembly+namespace+class name into the asset, and §10 records an open, not-yet-done intention to
+  rename the `ExiledAlvaston` namespace across 46 files — introducing `[SerializeReference]` here
+  would make that future rename silently null every dialogue link. It also produces opaque
+  `rid:`-keyed YAML (worse to diff) with no built-in Inspector support for polymorphic references.
+  Per-node sub-assets and integer indices into `Nodes` were considered too, for the same
+  reasons §7 already warns about with enums: reordering silently repoints edges, and a future
+  plain-text importer wants to write `-> shop`, not `-> 7`.
+- **`PresetDialogueTools.WriteConversation`** (the only tool that writes a `DialogueData` asset to
+  disk) writes one node with `Id = DialogueData.DefaultStartId` and `StartNodeId` set to match, and
+  now refuses to overwrite an asset that already holds more than that — `HasAuthoredContent` checks
+  for more than one node, or a single node that already offers a choice, and bails with a warning
+  instead of clobbering a hand-written branch the next time the ambient-line generator runs over
+  the same preset.
+- **Corrections found while writing this section (2026-08-03):** the warning block near the top of
+  this file said neither Daniel Pauls' nor the tutorial geezer's art existed yet — both now do,
+  `Preset_DanielPauls` and `Preset_TracksuitGeezer` carry resolved `NpcSprite`/`NpcController`
+  references (see the correction inline at §13's top-of-file warning). §12's "who this changes"
+  table listed the tutorial geezer's row as "sheets not delivered" — same correction; whether that
+  art declares an `Attack` state specifically was not re-verified.
