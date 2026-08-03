@@ -86,9 +86,14 @@ namespace ExiledAlvaston.Systems
         }
 
         /// <summary>
-        /// Wipes the wanted level and restores concealment, refreshing both HUD readouts. The
-        /// reusable version of what <c>GameFlowController.ArrestRoutine</c> does inline — that
-        /// routine is deliberately left alone, since rerouting the arrest path is a separate
+        /// Wipes the wanted level, restores concealment, refreshes both HUD readouts, and
+        /// despawns the police already on the scene. That last step is not optional: SpawnPlod
+        /// instantiates officers unparented at the scene root, so they outlive a chunk
+        /// transition, and clearing the meters alone leaves Armed Response hunting a player the
+        /// HUD has just declared clean.
+        ///
+        /// The reusable version of what <c>GameFlowController.ArrestRoutine</c> does inline —
+        /// that routine is deliberately left alone, since rerouting the arrest path is a separate
         /// change needing its own play-test.
         /// </summary>
         public void ClearWanted()
@@ -97,6 +102,20 @@ namespace ExiledAlvaston.Systems
             CurrentConcealment = MaxConcealment;
             UpdateUIIndicator();
             UpdateConcealmentUI();
+            DespawnPolice();
+        }
+
+        /// <summary>
+        /// Destroys every police officer in the scene. FindObjectsOfType allocates and walks the
+        /// whole hierarchy, so this belongs to one-shot events only — never an Update path (§4).
+        /// </summary>
+        private void DespawnPolice()
+        {
+            foreach (var enemy in FindObjectsOfType<ExiledAlvaston.Combat.EnemyAI>())
+            {
+                if (enemy != null && enemy.IsPolice)
+                    Destroy(enemy.gameObject);
+            }
         }
 
         private void SpawnPlod()
