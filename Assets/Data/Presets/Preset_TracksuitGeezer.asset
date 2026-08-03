@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Tracksuit Geezer
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: 8860006882030338620, guid: 009fb06cf7b899d4baff3ea2347cb1b4, type: 3}
   Prefab: {fileID: 0}
   NpcName: Tracksuit Geezer
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: 8860006882030338620, guid: 009fb06cf7b899d4baff3ea2347cb1b4, type: 3}
+  NpcController: {fileID: 9100000, guid: ffd2da1f1667d6c4b869d8851964318b, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -44,3 +44,8 @@ MonoBehaviour:
   RoamRadius: 6
   Speaker: {fileID: 0}
   AmbientLine: 
+  Pickpocketable: 0
+  PickpocketMinGold: 5
+  PickpocketMaxGold: 25
+  PickpocketCatchChance: 0.3
+  Region: 0

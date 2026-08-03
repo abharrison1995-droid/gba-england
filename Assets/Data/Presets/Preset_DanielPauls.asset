@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Daniel Pauls
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: -7075296084550867932, guid: 469b366370d15f04a9ac0d6da7f63baf, type: 3}
   Prefab: {fileID: 0}
   NpcName: Daniel Pauls
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: -7075296084550867932, guid: 469b366370d15f04a9ac0d6da7f63baf, type: 3}
+  NpcController: {fileID: 9100000, guid: 8993b57cea026f44f89c30ca3ca67a98, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -44,4 +44,8 @@ MonoBehaviour:
   RoamRadius: 6
   Speaker: {fileID: 0}
   AmbientLine: 
+  Pickpocketable: 0
+  PickpocketMinGold: 5
+  PickpocketMaxGold: 25
+  PickpocketCatchChance: 0.3
   Region: 1
