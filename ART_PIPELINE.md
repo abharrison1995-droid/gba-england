@@ -635,8 +635,12 @@ by detail: yellow → navy → black → brown → red, getting bulkier as they 
 ⚠ **These are 3D models, not sprites. Nothing in §1–§6 of this document applies to them.** No
 magenta backdrop, no cell grid, no `worldHeight`, no sidecar JSON, and **do not deliver them to
 `art_incoming/`** — `ArtImportTool` would treat a PNG it found there as a billboard sprite and crush
-it to 48 px per world unit. The delivery format and the import route are **not decided yet**; ask
-before generating one.
+it to 48 px per world unit. The delivery format and the import route are **not decided yet**.
+
+This is an explicit exception to the normal "produce your best attempt anyway" rule (`AGENTS.md`):
+**ask, and stop this asset task.** Do not create a model, a substitute PNG, or a sidecar for one
+until a route is approved. Here a placeholder is worse than nothing — it would be imported as a
+billboard sprite and crushed.
 
 Why 3D at all, when every building in §7.6 is a sprite: `Home_London` is already dressed with 3D
 pack models — houses, trees, fences, a bus stop — and these five sit in among them. The §7.6
