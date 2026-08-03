@@ -650,8 +650,24 @@ their neighbours matters more than keeping them consistent with the sprite pipel
 | City Hall | Where Mayor Swalls and Councillor Mosley are. Grand civic building, over-sized for what it does. |
 | Quidland | Pound shop that sells weapons. Cheap plastic shopfront, garish signage, everything-a-quid stickers. |
 | F.U. Sports | Sports shop that sells armour. Retail unit, big brash fascia, sale banners. |
-| Police Station | Where Commissioner Spencer, Riggs and Murtaugh are. Blue lamp, sandbagged municipal 1970s brick. |
+| Police Station | Where Commissioner Spencer, Riggs and Murtaugh are. Blue lamp, sandbagged municipal 1970s brick. **Exterior shell only — see below.** |
 | Gang Hideout | Ralph and Sanjeet's base — **Sanjeet's mum's house**. An ordinary terraced house that is trying to look like a headquarters and failing. |
+
+**Every one of these is an exterior shell. None of them is walk-into-able as a model.** The police
+station is the worked example, because it is the first that gets an inside: the deliverable is the
+outside of the building, its signage, and a clear door/threshold anchor at ground level — nothing
+more. Do **not** model an interior, a cutaway roof, or rooms visible through windows.
+
+The inside is a **separate, compact Unity-side chunk prefab**, entered by an explicit USE
+interaction on the door and built from existing assets, not from this pipeline. It is small, has no
+`ChunkEdge` triggers, and does not fill `EKVibe.ChunkSize`. That split is the whole reason the
+exterior needs a recognisable threshold: the door anchor is where the USE prompt lives, and it has
+to read as a door from the fixed 30°/−45° camera without the player ever seeing past it.
+
+The architecture behind this — suspending the live London instance rather than destroying it,
+caching it while the interior is active, and the loot/reset rules that go with it — is designed in
+`docs/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`. **None of it is implemented**, so nothing
+about the art request depends on it landing; the exterior shell is useful set dressing either way.
 
 ### 7.10 Band 7 — item icons
 

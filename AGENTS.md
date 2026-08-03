@@ -48,6 +48,13 @@ Hard rules:
   This repo has **no Git LFS** and its history already carries hundreds of MB of art blobs — every
   file committed is permanent weight. One PNG per asset, plus its `.json`.
 
+**There is no 3D pipeline, and you cannot supply one.** Everything above is 2D: PNG + JSON into
+`art_incoming/`, keyed, trimmed and crushed to 48 px per world unit. The five named London
+buildings in `ART_PIPELINE.md` §7.9 are **3D models**, their delivery format is undecided, and a
+PNG dropped in staging for one would be imported as a billboard sprite and crushed. Do not start
+one without asking. The same applies to building interiors: those are Unity-side chunk prefabs
+assembled from existing assets, not an art deliverable at all.
+
 If a request is ambiguous, write your question into the asset's `.json` as a `"question"` field
 and produce your best attempt anyway. Do not guess at project structure to resolve it.
 
@@ -179,6 +186,14 @@ one.
   `MovementSpeed` in place.
 - **Ride state has one owner: `World/MountController`** (CLAUDE.md §11). Never
   `SetActive(false)` a vehicle root — hide `ParkedModel` instead.
+- **Never `SetActive(false)` a chunk root either** (CLAUDE.md §5). Verified 2026-08-03, and it
+  fails three separate ways at once: `EnemyAI` starts its perception coroutine only in `Start`,
+  so a deactivate/reactivate leaves every enemy permanently blind; `RuntimeNavMeshBaker` removes
+  its registered mesh only in `OnDestroy`, so an inactive chunk keeps its NavMesh live at the
+  shared world origin; and `MagicTutorial`/`TutorialSequence` clear their static `Instance` only
+  in `OnDestroy`, so both keep pointing at a disabled object. Suspending a chunk safely needs
+  explicit lifecycle hooks, designed in
+  `docs/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md` and **not implemented**.
 
 ## Working agreement
 
@@ -194,7 +209,13 @@ asking for an editor change, say whether Play must be stopped first, and give th
 
 ## Security and hygiene considerations
 
-- **No Git LFS and no `.gitattributes`.** Binary art blobs committed to git are permanent
+- **No Git LFS. A `.gitattributes` does exist** — an earlier version of this line said it did
+  not, and that was wrong (CLAUDE.md §9). It is not LFS: it pins `* text=auto` plus an explicit
+  binary list, so the repo stores LF while each working tree gets what it wants. That matters
+  because Unity rewrites a whole YAML file whenever it touches one, and without it a line-ending
+  difference and a real edit are indistinguishable in a 100,000-line diff. A file written by an
+  agent can land with the wrong endings in the working tree; it commits identically, but `rm` it
+  and `git checkout --` it back to normalise. Binary art blobs committed to git are permanent
   weight — the repo already went 672 MB → 204 MB in `Assets/` by pruning unreachable packs.
   Policy: pull individual sprites in when a system needs them rather than carrying whole
   packs. Reachability is a transitive GUID walk rooted at `c.unity`, `Resources/`, `Editor/`,

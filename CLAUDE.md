@@ -206,6 +206,36 @@ Fixed (all unverified in a running editor — see §10):
 `(-1, 0)`. All six are now unique. `Coordinates` is **not** a save key — only `ChunkName` is (§6)
 — so it was safe to edit.
 
+### ⚠️ A chunk root cannot be suspended with `SetActive(false)`
+
+Chunks are currently only ever **destroyed**, never suspended, and the code reflects that. If you
+are tempted to keep one alive in the background — for a building interior, a cached location, or
+anything else — a bare `SetActive(false)` on the root breaks four systems at once. **All of these
+were verified against the code on 2026-08-03**, so this is a description, not a caution:
+
+| System | Cleans up in | What a deactivated root does |
+|---|---|---|
+| `EnemyAI` | — | `StartCoroutine(PerceptionRoutine())` runs **only in `Start`**. Deactivating stops the coroutine; reactivating does not re-run `Start`, so every enemy is permanently blind. |
+| `RuntimeNavMeshBaker` | `OnDestroy` (and `Rebake`) | `_instance.Remove()` is never called on disable, so an inactive chunk keeps its NavMesh registered — and every chunk instantiates at the same origin, so meshes overlap. |
+| `MagicTutorial`, `TutorialSequence` | `OnDestroy` | Both set their static `Instance` in `Awake` and clear it only on destroy, so the singleton keeps pointing at a disabled object. |
+| `EnemyNameplate` | `OnDestroy` | Builds an **unparented scene-root** `GameObject("Nameplate")`, so it is not a child of the chunk and does not hide with it. |
+
+Two more things are not chunk-owned at all and would leak across any suspend: **police**, which
+`WantedManager` creates with `Instantiate(prefab, spawnPos, Quaternion.identity)` and no parent,
+and **`Assets/c/NavMesh.asset`**, which `c.unity`'s single `NavMeshSettings` block registers for
+the life of the scene regardless of which chunk is loaded. That last one is the hard structural
+obstacle: London's baked mesh and a compact interior mesh cannot both be registered at the shared
+origin, and nothing in code registers London's — the scene does it.
+
+`Interactable` is the one part that is already suspend-safe: `Active` is added on `OnEnable` and
+removed on `OnDisable`.
+
+Doing this properly needs explicit suspend/resume/evict hooks. That design — plus a location
+cache, return stack, encounter ledger and corpse-loot lifecycle — is written up in
+**`docs/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`**. ⚠️ **None of it is implemented.** The
+plan is a design record, not a description of the runtime; read it before touching chunk lifetime,
+and treat its §11 phases as architect-first work (§10).
+
 ## 6. Save system — highest-risk area in the repo
 
 `Assets/Scripts/Flow/SaveGameManager.cs`. One JSON file, written with `JsonUtility` to
@@ -214,7 +244,9 @@ Fixed (all unverified in a running editor — see §10):
 class, `TutorialComplete`, chunk name, position, health, mana, stamina, quest list, inventory.
 
 Five call sites write a save: every chunk edge crossing
-(`ChunkManager.TransitionToChunkRoutine`), portal travel (`ChunkManager.TravelToChunk`),
+(`ChunkManager.TransitionToChunkRoutine`), portal travel (`ChunkManager.TravelTo`, which runs
+`TravelRoutine` — an earlier version of this line called it `TravelToChunk`, and no such method
+exists),
 new-game start and tutorial completion (both `GameFlowController` checkpoints), and
 `PubInteractable.HaveAPint()` — pubs are the deliberate manual save point, see §9.
 
@@ -966,8 +998,10 @@ Adding an NPC is meant to cost two clicks in Unity and no code at all:
   months ago, or a preset written after its subject arrived, is only reachable this way.
 - **`NPCWander` is deliberately NavMesh-free.** `EKNavMeshBaker` bakes one mesh from whichever
   chunk is loaded, and all six instantiate at the same origin — right for one, wrong for five.
-  `RuntimeNavMeshBaker` would fix it at the cost of a runtime bake per chunk crossing on a
-  mobile-first game. It probes ahead with a `SphereCast` and gives up on the stroll instead.
+  `RuntimeNavMeshBaker` (which **does exist**, at `Assets/Scripts/World/RuntimeNavMeshBaker.cs`)
+  would fix it at the cost of a runtime bake per chunk crossing on a mobile-first game. It probes
+  ahead with a `SphereCast` and gives up on the stroll instead. Note that baker only removes its
+  registered mesh in `OnDestroy` — see §5's suspension table.
 - **`NPCWander` calls `SetFacing` every step.** Without it half of every wander is walked
   backwards, which reads as a rendering bug.
 - **Tutorial presets must not carry a `Conversation`.** Daniel Pauls and the geezer run dialogue
