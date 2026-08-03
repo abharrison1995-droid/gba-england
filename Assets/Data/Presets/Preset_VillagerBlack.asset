@@ -11,14 +11,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f611db80a0d2341448c09c7c80cd9d1f, type: 3}
   m_Name: Preset_VillagerBlack
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   Label: Villager (Black)
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: 6435055022927975572, guid: a6112ced75f259c4fb4f68422895d2a9, type: 3}
   Prefab: {fileID: 0}
   NpcName: Villager
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: 6435055022927975572, guid: a6112ced75f259c4fb4f68422895d2a9, type: 3}
+  NpcController: {fileID: 9100000, guid: 28d31d2dd5f94ed41b0348d76e630bb0, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -36,14 +36,14 @@ MonoBehaviour:
   AddDoorVisual: 1
   DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
   Vehicle: {fileID: 0}
-  SpawnPointId:
-  QuestKey:
+  SpawnPointId: 
+  QuestKey: 
   ArtSubject: villager_black
-  NpcHeight: 0
+  NpcHeight: 1.35
   Roams: 1
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine:
+  AmbientLine: 
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25
