@@ -30,6 +30,10 @@ namespace ExiledAlvaston.Dialogue
         private bool _teachSparkOnClose;          // set by a TeachSpark choice; fires when the chat ends
         private DialogueData _currentData;        // which conversation is running, to resolve NextNodeId against
 
+        // Reused by CanEscapeFrom so the freeze check costs no garbage per button press (§4).
+        private readonly HashSet<DialogueNode> _escapeVisited = new HashSet<DialogueNode>();
+        private readonly Queue<DialogueNode> _escapeFrontier = new Queue<DialogueNode>();
+
         /// <summary>True while a conversation is on screen — quest popups defer until it ends.</summary>
         public static bool IsDialogueOpen => Instance != null && Instance._dialogueActive;
 
@@ -119,31 +123,108 @@ namespace ExiledAlvaston.Dialogue
                     DialogueChoice choice = node.Choices[i];
 
                     string displayText = $"{i + 1}. {choice.ChoiceText}";
-                    bool selectable = true;
 
                     if (!string.IsNullOrEmpty(choice.RequiredStat))
                     {
-                        bool pass = _currentPlayerData != null && choice.MeetsRequirement(_currentPlayerData.BaseTraits);
-                        string color = pass ? "green" : "red";
+                        string color = MeetsStatRequirement(choice) ? "green" : "red";
                         displayText = $"<color={color}>({choice.RequiredStat} {choice.RequiredStatLevel})</color> {displayText}";
-                        selectable = selectable && pass;
                     }
 
                     if (choice.RequiredItem != null)
                     {
-                        bool pass = Flow.PlayerSession.Instance != null
-                            && Flow.PlayerSession.Instance.HasItem(choice.RequiredItem, choice.RequiredItemQuantity);
-                        string color = pass ? "green" : "red";
+                        string color = MeetsItemRequirement(choice) ? "green" : "red";
                         string label = choice.RequiredItemQuantity > 1
                             ? $"{choice.RequiredItem.ItemName} x{choice.RequiredItemQuantity}"
                             : choice.RequiredItem.ItemName;
                         displayText = $"<color={color}>({label})</color> {displayText}";
-                        selectable = selectable && pass;
                     }
 
-                    CreateChoiceButton(displayText, choice.NextNodeId, selectable, choice);
+                    CreateChoiceButton(displayText, choice.NextNodeId, IsSelectable(choice), choice);
+                }
+
+                // Safety net, not an authoring feature. A conversation can only end through a
+                // choice, so a node the player cannot leave freezes the game outright: the panel
+                // is modal and PauseManager is holding Time.timeScale at 0, EndDialogue is private
+                // with no external caller, and there is no Escape handler or close button. Two
+                // authored shapes reach that — a hub that loops back with no farewell (which this
+                // format newly permits, see CLAUDE.md §15) and a node whose every choice is
+                // gated shut, which has always been possible. Rather than change what a
+                // well-authored conversation looks like, add an exit only when there is not one.
+                if (!CanEscapeFrom(node))
+                    CreateChoiceButton("End conversation.", null, true);
+            }
+        }
+
+        // ---------- choice gating ----------
+        // Split out so the buttons and CanEscapeFrom can never disagree about what is pressable:
+        // an exit the guard counts on but the player cannot click would be worse than no guard.
+
+        private bool MeetsStatRequirement(DialogueChoice choice)
+        {
+            if (string.IsNullOrEmpty(choice.RequiredStat)) return true;
+            return _currentPlayerData != null && choice.MeetsRequirement(_currentPlayerData.BaseTraits);
+        }
+
+        private bool MeetsItemRequirement(DialogueChoice choice)
+        {
+            if (choice.RequiredItem == null) return true;
+            return Flow.PlayerSession.Instance != null
+                && Flow.PlayerSession.Instance.HasItem(choice.RequiredItem, choice.RequiredItemQuantity);
+        }
+
+        private bool IsSelectable(DialogueChoice choice)
+            => MeetsStatRequirement(choice) && MeetsItemRequirement(choice);
+
+        /// <summary>
+        /// True if some run of *currently pressable* choices from <paramref name="node"/> reaches a
+        /// point where the conversation ends — an empty NextNodeId, an id that resolves to nothing,
+        /// or a node with no choices at all (which gets the automatic "End conversation." button).
+        ///
+        /// Gating is evaluated as it stands right now rather than structurally. Within a single
+        /// conversation the player's position can only get worse — ConsumeRequiredItem takes items
+        /// away and nothing hands any back — so a route that is shut now will still be shut when
+        /// they arrive at it, and treating it as open would promise an exit that is not there.
+        ///
+        /// Runs once per DisplayNode, i.e. once per button press with the game already paused, over
+        /// a conversation of tens of nodes. The two collections are reused rather than allocated per
+        /// call, per §4.
+        /// </summary>
+        private bool CanEscapeFrom(DialogueNode node)
+        {
+            if (node == null) return true;   // nothing on screen to be trapped by
+            if (_currentData == null) return false;
+
+            _escapeVisited.Clear();
+            _escapeFrontier.Clear();
+            _escapeFrontier.Enqueue(node);
+
+            while (_escapeFrontier.Count > 0)
+            {
+                DialogueNode current = _escapeFrontier.Dequeue();
+                if (current == null) continue;
+
+                // A node with no choices is an exit: DisplayNode gives it the automatic button.
+                if (current.Choices == null || current.Choices.Count == 0) return true;
+
+                for (int i = 0; i < current.Choices.Count; i++)
+                {
+                    DialogueChoice choice = current.Choices[i];
+                    if (choice == null || !IsSelectable(choice)) continue;
+
+                    // Both of these end the chat in OnChoiceSelected — the second one loudly.
+                    if (string.IsNullOrEmpty(choice.NextNodeId)) return true;
+                    DialogueNode next = _currentData.FindNode(choice.NextNodeId);
+                    if (next == null) return true;
+
+                    // Guard against revisiting by identity rather than by Id: a duplicate Id is an
+                    // authoring error nothing validates (§15), and keying on it would let one node
+                    // stand in for another and cut the search short.
+                    if (_escapeVisited.Add(next))
+                        _escapeFrontier.Enqueue(next);
                 }
             }
+
+            return false;
         }
 
         private void CreateChoiceButton(string text, string nextNodeId, bool selectable, DialogueChoice choice = null)

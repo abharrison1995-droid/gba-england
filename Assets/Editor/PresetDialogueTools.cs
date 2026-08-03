@@ -27,23 +27,36 @@ public static class PresetDialogueTools
     ///
     /// Adopting an existing written conversation at the generated path counts as false, not true —
     /// the preset still gets linked to it, but the ambient line went unused, and a caller reporting
-    /// "generated from its ambient line" would be describing something that did not happen.
+    /// "generated from its ambient line" would be describing something that did not happen. That is
+    /// still a change to the preset though, so <paramref name="adopted"/> reports it separately
+    /// rather than leaving it to a console warning nobody reads.
     /// </summary>
-    public static bool EnsureAmbientConversation(PlacementPreset preset)
+    public static bool EnsureAmbientConversation(PlacementPreset preset, out bool adopted)
     {
+        adopted = false;
+
         if (preset == null) return false;
         if (preset.Conversation != null) return false;
         if (string.IsNullOrWhiteSpace(preset.AmbientLine)) return false;
 
         preset.Conversation = WriteConversation(preset, preset.AmbientLine.Trim(), out bool wroteLine);
         EditorUtility.SetDirty(preset);
-        return preset.Conversation != null && wroteLine;
+
+        if (preset.Conversation == null) return false;
+        if (wroteLine) return true;
+
+        adopted = true;
+        return false;
     }
 
     /// <summary>
     /// One menu item that does the obvious thing: builds the conversation from the ambient line if
-    /// there is one, and otherwise mints an empty tree to start writing in. Either way the asset
-    /// ends up linked and selected, so the next click is editing it.
+    /// there is one, and otherwise mints a one-node tree with empty text to start writing in.
+    /// Either way the asset ends up linked and selected, so the next click is editing it.
+    ///
+    /// Note it mints a node rather than nothing — one node with no choices is exactly the shape
+    /// <see cref="HasAuthoredContent"/> reads as regenerable, so anything begun this way is
+    /// unprotected until it grows a second node or a choice.
     /// </summary>
     [MenuItem("CONTEXT/PlacementPreset/Create Dialogue")]
     private static void CreateDialogue(MenuCommand command)
@@ -59,6 +72,11 @@ public static class PresetDialogueTools
         }
 
         string line = string.IsNullOrWhiteSpace(preset.AmbientLine) ? "" : preset.AmbientLine.Trim();
+
+        // An orphan at the generated path is adopted rather than overwritten, and that has to hold
+        // even when there is no ambient line to write. Passing "" through would clear a one-line
+        // conversation someone typed straight into the asset and replace it with empty text —
+        // "keep AmbientLine in sync" is no defence against a route that never reads AmbientLine.
         preset.Conversation = WriteConversation(preset, line, out _);
         EditorUtility.SetDirty(preset);
         AssetDatabase.SaveAssets();
@@ -102,6 +120,23 @@ public static class PresetDialogueTools
                 "by hand if you want it regenerated.", data);
             return data;
         }
+        else if (string.IsNullOrWhiteSpace(line) && HasAnyProse(data))
+        {
+            // The structural guard above cannot tell a hand-edited one-liner from generator output,
+            // and the Create Dialogue menu item passes "" whenever AmbientLine is blank — which is
+            // the state most NPC presets are in. Together those would let one right-click replace
+            // written prose with empty text. Nothing here has a line worth writing, so adopt.
+            Debug.LogWarning(
+                $"PresetDialogueTools: '{path}' already has dialogue text and '{preset.Label}' has no " +
+                "AmbientLine to replace it with. Linking it as-is rather than blanking it — clear the " +
+                "asset by hand if you did want to start over.", data);
+            return data;
+        }
+
+        // HasAuthoredContent and HasAnyProse both allow for a null Nodes; this used to dereference
+        // it regardless. Unity does not normally deserialize a List field as null, so only one of
+        // those positions could be right — this makes them agree without betting on which.
+        if (data.Nodes == null) data.Nodes = new System.Collections.Generic.List<DialogueNode>();
 
         data.Nodes.Clear();
         data.Nodes.Add(new DialogueNode
@@ -142,6 +177,19 @@ public static class PresetDialogueTools
         if (data.Nodes.Count > 1) return true;
         return data.Nodes.Count == 1 && data.Nodes[0] != null
             && data.Nodes[0].Choices != null && data.Nodes[0].Choices.Count > 0;
+    }
+
+    /// <summary>
+    /// True if any node already carries dialogue text. Weaker than <see cref="HasAuthoredContent"/>
+    /// on purpose: it cannot tell who wrote the line, so it only ever guards against replacing a
+    /// line with nothing, never against replacing one line with another.
+    /// </summary>
+    private static bool HasAnyProse(DialogueData data)
+    {
+        if (data?.Nodes == null) return false;
+        foreach (var node in data.Nodes)
+            if (node != null && !string.IsNullOrWhiteSpace(node.DialogueText)) return true;
+        return false;
     }
 
     /// <summary>

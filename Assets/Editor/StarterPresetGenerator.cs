@@ -339,8 +339,14 @@ public static class StarterPresetGenerator
                 AssetDatabase.GUIDToAssetPath(guid));
             if (preset == null) continue;
 
-            if (PresetDialogueTools.EnsureAmbientConversation(preset))
+            // Both outcomes change the preset, so both belong in the summary. Reporting only the
+            // generated ones left the adopt path — which still writes preset.Conversation and marks
+            // the asset dirty — showing up nowhere but a console warning, in a run that also emits
+            // one "has no Speaker" warning per preset.
+            if (PresetDialogueTools.EnsureAmbientConversation(preset, out bool adopted))
                 filled.Add($"{preset.Label}: conversation generated from its ambient line");
+            else if (adopted)
+                filled.Add($"{preset.Label}: linked to the conversation already at its generated path");
         }
     }
 

@@ -1364,6 +1364,31 @@ was deliberately dropped; nothing in the codebase relied on it.
   second `Tree(...)` started before the first one's nodes are drained, would misfile nodes between
   conversations. The dialogue prose in `BuildData()` itself is untouched by any of this; only the
   helper bodies below it changed.
+- **Two things now catch the traps above — a runtime net and an author-time check.** Neither has
+  run in the editor yet.
+  - **`DialogueManager.CanEscapeFrom`** is a BFS over *currently pressable* choices from the node
+    being displayed, looking for anything that ends the chat (empty `NextNodeId`, an id that
+    resolves to nothing, or a node with no choices). If none is reachable, `DisplayNode` appends
+    an "End conversation." button that the author did not write. It is a **safety net, not an
+    authoring feature** — a graph that needs it is still wrong, and the player gets an ending
+    nobody wrote. Gating is judged as it stands rather than structurally, because within one
+    conversation the player's position only ever gets worse (`ConsumeRequiredItem` takes items,
+    nothing gives any back), so a route shut now will still be shut on arrival. The visited set is
+    keyed on **node identity, not `Id`** — duplicate ids are legal-but-broken (above), and keying
+    on them would let one node stand in for another and cut the search short. Both collections are
+    reused fields, per §4.
+  - **`Assets/Editor/DialogueValidator.cs`** — `Tools/GBA/Content/Validate Dialogue` over every
+    asset, plus `CONTEXT/DialogueData/Validate This Conversation` for the one in front of you.
+    Errors: no nodes, a node with no `Id`, a duplicate `Id`, a dangling `NextNodeId`, and a node
+    with no route out. Warnings: an unresolvable `StartNodeId`, an unreachable node, a node whose
+    every exit is gated, and a `ConsumeRequiredItem` choice sitting on a node inside a cycle.
+    **`DialogueValidator.Validate` is public and UI-free on purpose** — the plain-text importer is
+    meant to call it and refuse a bad script rather than write the asset. Keep it that way.
+  - **`PresetDialogueTools` no longer blanks prose.** `WriteConversation` adopts an existing asset
+    when the incoming line is empty and any node already has text, which closes the
+    `CONTEXT/PlacementPreset/Create Dialogue` route described above. `EnsureAmbientConversation`
+    now reports adoption through an `out bool` so Create Starter Presets lists it rather than
+    leaving it to a console warning.
 - **No `[SerializeReference]`.** It was considered and rejected: it serializes the target's
   assembly+namespace+class name into the asset, and §10 records an open, not-yet-done intention to
   rename the `ExiledAlvaston` namespace across 46 files — introducing `[SerializeReference]` here
