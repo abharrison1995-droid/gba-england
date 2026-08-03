@@ -946,10 +946,13 @@ replicating the importer's own checks outside Unity):
 
 `sheet_char_danielpauls_idle.json` — the manifest that sat in `art_incoming/` with no PNG beside
 it — **has been deleted**. It was a delivery that never happened, and the importer reported it
-every run. Daniel Pauls is requested properly in the queue's band 2.
+every run. Daniel Pauls was then requested properly in the queue's band 2 — **and has since been
+delivered**, along with the tracksuit geezer, so band 2 is done and neither subject needs
+requesting again.
 
 **`ART_PIPELINE.md` §7 is now a banded queue for the whole world, not a request list.** Five bands
-in order: the three player redraws → the tutorial cast (Daniel Pauls, the tracksuit geezer) →
+in order: the three player redraws → ~~the tutorial cast (Daniel Pauls, the tracksuit geezer)~~
+**(band 2 delivered — both subjects have idle sheets and controllers wired to their presets)** →
 **21 world props** → the ambient cast (Mosley/pharmacist walks, villager, Nosey Parker, squirrel) →
 the police tiers. Props are band 3 because `North_Wasteland`, `South_Slums`, `East_RetailPark` and
 `West_Canal` contain a ground plane, four edge triggers and four boundary walls and **nothing
@@ -1337,6 +1340,14 @@ was deliberately dropped; nothing in the codebase relied on it.
   for more than one node, or a single node that already offers a choice, and bails with a warning
   instead of clobbering a hand-written branch the next time the ambient-line generator runs over
   the same preset.
+  ⚠️ **The guard cannot see a hand-edited *one-liner*.** A conversation a human rewrote as a single
+  node with no choices is byte-for-byte the same shape as generator output, so it reads as
+  regenerable and `data.Nodes.Clear()` takes the prose with it. Reaching that needs
+  `preset.Conversation` to be null first — nothing clears it automatically, so the route is narrow —
+  but if you improve a line by editing the asset rather than the preset's `AmbientLine`, **update
+  `AmbientLine` to match**, or add a second node so the guard can see it. `EnsureAmbientConversation`
+  returns false when it adopts an existing conversation rather than writing one, so Create Starter
+  Presets reports what actually happened instead of claiming it generated from the ambient line.
 - **Corrections found while writing this section (2026-08-03):** the warning block near the top of
   this file said neither Daniel Pauls' nor the tutorial geezer's art existed yet — both now do,
   `Preset_DanielPauls` and `Preset_TracksuitGeezer` carry resolved `NpcSprite`/`NpcController`

@@ -19,11 +19,15 @@ public static class PresetDialogueTools
 
     /// <summary>
     /// Gives <paramref name="preset"/> a conversation built from its ambient line, if it wants one
-    /// and has not got one. Returns true if it wrote something.
+    /// and has not got one. Returns true only if it actually wrote the line.
     ///
     /// Safe to call over every preset, every time: it does nothing unless a line has been typed and
     /// no conversation is linked, so it never overwrites a written conversation and never touches a
     /// preset that is not asking for this.
+    ///
+    /// Adopting an existing written conversation at the generated path counts as false, not true —
+    /// the preset still gets linked to it, but the ambient line went unused, and a caller reporting
+    /// "generated from its ambient line" would be describing something that did not happen.
     /// </summary>
     public static bool EnsureAmbientConversation(PlacementPreset preset)
     {
@@ -31,9 +35,9 @@ public static class PresetDialogueTools
         if (preset.Conversation != null) return false;
         if (string.IsNullOrWhiteSpace(preset.AmbientLine)) return false;
 
-        preset.Conversation = WriteConversation(preset, preset.AmbientLine.Trim());
+        preset.Conversation = WriteConversation(preset, preset.AmbientLine.Trim(), out bool wroteLine);
         EditorUtility.SetDirty(preset);
-        return preset.Conversation != null;
+        return preset.Conversation != null && wroteLine;
     }
 
     /// <summary>
@@ -55,7 +59,7 @@ public static class PresetDialogueTools
         }
 
         string line = string.IsNullOrWhiteSpace(preset.AmbientLine) ? "" : preset.AmbientLine.Trim();
-        preset.Conversation = WriteConversation(preset, line);
+        preset.Conversation = WriteConversation(preset, line, out _);
         EditorUtility.SetDirty(preset);
         AssetDatabase.SaveAssets();
 
@@ -67,8 +71,15 @@ public static class PresetDialogueTools
 
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    private static DialogueData WriteConversation(PlacementPreset preset, string line)
+    /// <summary>
+    /// Writes the one-line conversation for <paramref name="preset"/> and returns the asset.
+    /// <paramref name="wroteLine"/> is false when an existing written conversation was adopted
+    /// rather than regenerated, so callers can report what actually happened.
+    /// </summary>
+    private static DialogueData WriteConversation(PlacementPreset preset, string line, out bool wroteLine)
     {
+        wroteLine = false;
+
         string path = PathFor(preset);
         if (string.IsNullOrEmpty(path)) return null;
 
@@ -102,6 +113,7 @@ public static class PresetDialogueTools
             DialogueText = line,
         });
         data.StartNodeId = DialogueData.DefaultStartId;
+        wroteLine = true;
 
         // One node, no choices, on purpose. DialogueManager puts an "End conversation." button
         // under a node with none, so a one-liner closes cleanly without anything being authored
