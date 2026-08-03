@@ -1277,7 +1277,17 @@ None of these can corrupt a save. All were found reviewing the branch before mer
 
 ## 15. Dialogue graphs
 
-**Landed on `fix/dialogue-graph-ids`.** `DialogueData` used to be a tree of `DialogueNode`
+**Landed on `fix/dialogue-graph-ids`, and play-tested.** The owner ran the `spark_of_talent`
+tutorial questline in the editor on this branch — the Daniel Pauls intro, the branch that grants
+the quest, and the `TeachSpark` reward conversation — so the branch compiles, `MagicTutorial`'s
+node building is correct, and `DialogueManager`'s id resolution works on a real branching
+conversation. ⚠️ **The authoring surface is a different matter and is NOT exercised**: no
+`DialogueData` asset has ever been hand-authored, convergence and cycles have never run, and
+`PresetDialogueTools` has not been used since the flattening. The traps below were found by
+review, not by play, and every one of them lands on the first person to write a conversation in
+the Inspector.
+
+`DialogueData` used to be a tree of `DialogueNode`
 objects stored *by value* — `DialogueChoice.NextNode` was a nested `DialogueNode`, not a
 reference — which made two problems structural rather than incidental: no two choices could ever
 converge on the same node (no hub-and-spoke, the most common CRPG dialogue shape), and Unity
@@ -1299,14 +1309,42 @@ discipline applied even though this isn't a hot path). An empty or null `NextNod
 **only** way a conversation ends — the old "or the next node has empty `DialogueText`" fallback
 was deliberately dropped; nothing in the codebase relied on it.
 
-- **Convergence is the point, and cycles are legal.** Two choices can both name the same
-  `NextNodeId`, and a node can eventually loop back to an earlier `Id` (hub-and-spoke, `A -> B ->
-  A`, etc.) — `DialogueManager.DisplayNode` is driven by button clicks, never a recursive call
-  stack, so there is no cycle guard and none is needed.
+- **Convergence is the point, and cycles are legal — but a cycle with no exit freezes the game.**
+  Two choices can both name the same `NextNodeId`, and a node can eventually loop back to an
+  earlier `Id` (hub-and-spoke, `A -> B -> A`, etc.) — `DialogueManager.DisplayNode` is driven by
+  button clicks, never a recursive call stack, so there is no *call-stack* cycle guard and none is
+  needed. ⚠️ **That says nothing about the exit.** `EndDialogue()` is private with exactly two
+  call sites, both inside `OnChoiceSelected`; there is no Escape handler, no close button and no
+  external caller, and `PauseManager` holds `Time.timeScale` at 0 throughout. So a conversation
+  ends only via a choice with an empty `NextNodeId`, an unresolvable id, or the auto-generated
+  "End conversation." button on a node with **no choices at all**. Author `hub -> shop -> hub`
+  and forget a farewell on the hub, and the only way out is force-quitting the app, losing
+  everything since the last autosave. **Rule: every cycle must contain at least one ungated choice
+  that ends the conversation.** Nothing validates this. The same freeze is reachable without a
+  cycle, and always has been: a node whose only choice is `RequiredStat`- or `RequiredItem`-gated
+  renders `btn.interactable = false` with no other button.
+- ⚠️ **An unset `Id` or `NextNodeId` silently means "end the conversation".** Unity serializes an
+  unset string as `""`, not null, and `string.IsNullOrEmpty(nextNodeId)` is the *legitimate*
+  terminator — so a hand-authored node whose two short string fields were never filled in looks
+  fine, shows every choice button, and closes the chat on any of them, with every branch below it
+  unreachable and **nothing logged**. The design is asymmetric in the wrong direction: a *typo'd*
+  id warns loudly, an *unset* one says nothing at all. If `Nodes[0].Id` happens to be set to
+  `"start"` (the natural thing, since `StartNodeId` already defaults to it) even the
+  `StartNodeId`-mismatch warning disappears, leaving zero console signal.
 - **A duplicate `Id` within one `DialogueData` is an authoring error nothing validates.**
   `FindNode` returns the first match by list order; every other node sharing that `Id` is silently
   unreachable. No importer or inspector check catches this — keep ids unique by hand until
-  something does.
+  something does. ⚠️ Suspected, and worth one minute in the editor to confirm: Unity's list `+`
+  button duplicates the **last element** rather than adding a blank one, which would make a
+  duplicate `Id` the *default* outcome of adding a node — and would copy the source node's whole
+  `Choices` list with it, including any `GrantQuestId` / `CompleteQuestId` /
+  `ConsumeRequiredItem` side effects, onto a node they were never authored on.
+- ⚠️ **A choice with `ConsumeRequiredItem` must never be reachable twice.** `RemoveItem` runs
+  unconditionally whenever a selectable choice is picked, while `CompleteQuest` early-returns once
+  the quest is complete (§14). Re-opening a conversation could already do this; what cycles add is
+  that a hub can now be revisited *within a single conversation*. Hand over 5 of an item at a hub,
+  loop back, and if the player was carrying 10 the choice re-renders as satisfiable — picking it
+  again destroys 5 more, completes nothing, and reports nothing.
 - **The twelve `DialogueChoice` side-effect fields are an existing §14 save/quest contract and must
   not be renamed without the usual serialized-field treatment (§7).** `RequiredStat`,
   `RequiredStatLevel`, `RequiredItem`, `RequiredItemQuantity`, `ConsumeRequiredItem`,
@@ -1348,6 +1386,25 @@ was deliberately dropped; nothing in the codebase relied on it.
   `AmbientLine` to match**, or add a second node so the guard can see it. `EnsureAmbientConversation`
   returns false when it adopts an existing conversation rather than writing one, so Create Starter
   Presets reports what actually happened instead of claiming it generated from the ambient line.
+  ⚠️ **"Update `AmbientLine` to match" does not save you on the right-click route.**
+  `CONTEXT/PlacementPreset/Create Dialogue` passes `""` when `AmbientLine` is blank, so it can
+  overwrite hand-written prose with an **empty string** — the guard is structural and never sees
+  the line at all. Seven of the fifteen NPC presets currently have a blank `AmbientLine`, so this
+  is the live shape, not a corner. Its own doc comment claims it "mints an empty tree to start
+  writing in"; what it actually mints is a one-node tree with empty text, which is precisely the
+  shape `HasAuthoredContent` classifies as regenerable — so anything begun that way is unprotected
+  until a second node or a choice is added.
+  Also worth knowing before anyone tidies presets into subfolders: **`PathFor` keys the generated
+  asset on the preset's filename only, not its path**, so two same-named presets in different
+  folders would share one `Dialogue_<Name>.asset` and the second generation would overwrite the
+  first. Unreachable today — all 23 presets are flat in `Assets/Data/Presets/`.
+- **Adopting an existing conversation mutates the preset but is reported as nothing.**
+  `EnsureAmbientConversation` returns false on the adopt path — correct, it did not write the
+  line — but it still does `preset.Conversation = data; SetDirty(preset)`, and
+  `StarterPresetGenerator.GenerateAmbientConversations` only lists presets when the return is
+  true. So the end-of-run summary, which is the part actually read, omits that a preset was just
+  wired to a conversation. The only trace is a `Debug.LogWarning` in a console that will also be
+  carrying a "has no Speaker" warning per preset from the same run.
 - **Corrections found while writing this section (2026-08-03):** the warning block near the top of
   this file said neither Daniel Pauls' nor the tutorial geezer's art existed yet — both now do,
   `Preset_DanielPauls` and `Preset_TracksuitGeezer` carry resolved `NpcSprite`/`NpcController`
