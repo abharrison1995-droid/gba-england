@@ -381,18 +381,23 @@ is the single most load-bearing line in the whole consequence loop.
   ⚠️ **`b1de7fd` reached `main` without ever being compiled** — the pickpocket preset work was
   written after the last editor session. Everything before it has at least compiled;
   `fix/scene-root-props` was fully verified in the editor.
-- **2026-07-30: `feat/london-cast-and-region-palette` is cut off `main` and not merged** — the
-  `CityRegion` field, the palette's NPC region split, the eight London cast presets and the four new
-  art-queue bands. ⚠️ **Unverified in both senses** (§10): no compiler ran, and the palette change
-  has not been opened in the editor. Three commits, none of them touching the scene, any prefab,
-  `MapChunkData`, or anything in §5–§7 beyond appending one enum and one field.
-- **2026-08-02: `feat/quest-definitions` is cut off `feat/london-cast-and-region-palette` and not
-  merged** — `QuestDefinition`/`QuestDatabase`, `QuestConditionWatcher`, the three appended
-  `QuestProgress` fields, `QuestActor.FindAll` and `WantedManager.ClearWanted` (§14, §6, §8). Nine
-  commits, none touching the scene, any prefab, `MapChunkData`, `SaveGameManager`, `DialogueData`,
-  `DialogueManager` or any tutorial flow file. ⚠️ **Unverified in both senses** (§10): no compiler
-  ran and nothing was opened in the editor. It authors **zero** `QuestDefinition` assets, so the
-  system is inert until one exists.
+- **2026-08-03: `feat/london-cast-and-region-palette` and `feat/quest-definitions` are both merged
+  into `main` and deleted.** They were cut in sequence off each other, so the merge was a
+  **fast-forward** — `main` advanced from `68dd957` in one move and no merge commit exists.
+  Together: the `CityRegion` field, the palette's NPC region split, the eight London cast presets,
+  the four art-queue bands, then `QuestDefinition`/`QuestDatabase`, `QuestConditionWatcher`, the
+  three appended `QuestProgress` fields, `QuestActor.FindAll` and `WantedManager.ClearWanted`
+  (§14, §6, §8). Nothing in the range touches the scene, any prefab, `MapChunkData`,
+  `SaveGameManager`, `DialogueData`, `DialogueManager` or any tutorial flow file.
+  - **Reviewed before merge** by the `reviewer` agent (§10) against §14. Verdict was *merge with
+    follow-ups*. Three findings were fixed on the branch first — `ClearWanted` not despawning
+    police, a re-granted quest rewinding its own objective, and `RewardsClaimed` being set before
+    the reward was paid. **The first two were live bugs, not doc drift.** The six left unfixed are
+    written up under §14's open-issues heading; the two authoring traps there are worth reading
+    before anyone authors a real quest.
+  - ⚠️ **Still no compiler has run over any of it** (§10). The editor session that exercised the
+    quest system predates the three fixes above, so **those three commits are unverified in both
+    senses** even though the system around them is not.
 - **The next task is Stage F, written up in `docs/STAGE_RF_PLAN_REVISED.md`**: the six-commit
   inventory and loot overhaul. Stage R (the `Home_Alvaston` → `Home_London` rename) is **done**
   — renamed in the working tree with the save-key migration in `SaveGameManager.ReadSaveData`;
