@@ -70,7 +70,18 @@ namespace ExiledAlvaston.Quests
                 if (existing.IsComplete) return;
                 existing.IsActive = true;
                 existing.Title = title;
-                existing.Objective = objective;
+
+                // Do not rewind the objective of a quest already in flight. DialogueManager
+                // re-shows a conversation's starting node every time, so a GrantQuestId choice
+                // stays selectable forever — talking to the giver again would otherwise revert
+                // the journal and the HUD tracker to stage 0's text while QuestConditionWatcher
+                // is still bound to a later stage, and the player would follow an objective that
+                // can no longer complete. Stage state is only ever non-zero for a
+                // QuestDefinition-driven quest, so the tutorial's re-activation path — which
+                // relies on this refresh — is untouched.
+                if (existing.StageIndex == 0 && existing.StageProgress == 0)
+                    existing.Objective = objective;
+
                 if (!string.IsNullOrEmpty(giver)) existing.Giver = giver;
                 if (!string.IsNullOrEmpty(location)) existing.Location = location;
             }
