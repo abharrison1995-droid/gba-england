@@ -79,7 +79,18 @@ public static class PresetDialogueTools
         // near-identical assets nobody can tell apart.
         var data = AssetDatabase.LoadAssetAtPath<DialogueData>(path);
         bool isNew = data == null;
-        if (isNew) data = ScriptableObject.CreateInstance<DialogueData>();
+        if (isNew)
+        {
+            data = ScriptableObject.CreateInstance<DialogueData>();
+        }
+        else if (HasAuthoredContent(data))
+        {
+            Debug.LogWarning(
+                $"PresetDialogueTools: '{path}' already holds a written conversation ({data.Nodes.Count} nodes). " +
+                $"Linking it to '{preset.Label}' as-is and leaving the ambient line unused — delete the asset " +
+                "by hand if you want it regenerated.", data);
+            return data;
+        }
 
         data.Nodes.Clear();
         data.Nodes.Add(new DialogueNode
@@ -107,6 +118,18 @@ public static class PresetDialogueTools
         }
 
         return data;
+    }
+
+    /// <summary>
+    /// True if this looks like something a human wrote rather than a generated one-liner: more
+    /// than one node, or a single node that offers a choice.
+    /// </summary>
+    private static bool HasAuthoredContent(DialogueData data)
+    {
+        if (data == null || data.Nodes == null) return false;
+        if (data.Nodes.Count > 1) return true;
+        return data.Nodes.Count == 1 && data.Nodes[0] != null
+            && data.Nodes[0].Choices != null && data.Nodes[0].Choices.Count > 0;
     }
 
     /// <summary>
