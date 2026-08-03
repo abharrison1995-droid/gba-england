@@ -578,7 +578,10 @@ namespace ExiledAlvaston.Quests
             // than automatic.
             if (Dialogue.DialogueManager.IsDialogueOpen) return;
 
-            _rewardScanNeeded = false;
+            // Stays true if any payment had to be deferred, so the scan re-runs next frame.
+            // Clearing it unconditionally would strand a deferred reward until the next unrelated
+            // quest event — which for the last quest in a run means never.
+            bool deferred = false;
 
             // Indexed for, not foreach: Quests is an IReadOnlyList, and foreach over an interface
             // boxes the enumerator and allocates on every call (CLAUDE.md §4).
@@ -591,23 +594,54 @@ namespace ExiledAlvaston.Quests
                 QuestDefinition def = QuestDatabase.Find(q.Id);
                 if (def == null) continue;
 
-                // Claimed before applied, deliberately: if ApplyReward throws partway through, the
-                // flag already being true stops the next frame paying the whole thing again.
+                // Claimed only once the reward has actually been delivered. ApplyReward checks
+                // everything it needs up front and pays nothing if a piece is missing, so a
+                // retry can never double-pay — and a reward is never silently lost to a
+                // singleton that happened to be absent for one frame.
+                if (!ApplyReward(def, q))
+                {
+                    deferred = true;
+                    continue;
+                }
+
                 q.RewardsClaimed = true;
-                ApplyReward(def, q);
             }
+
+            _rewardScanNeeded = deferred;
         }
 
-        private void ApplyReward(QuestDefinition def, QuestProgress quest)
+        /// <summary>
+        /// Pays a quest's authored reward. Returns false if it could not be paid *yet* — a
+        /// manager it needs is missing this frame — in which case nothing at all has been
+        /// granted and the caller leaves RewardsClaimed unset so the next Update retries.
+        ///
+        /// Every precondition is checked before anything is handed over, deliberately: a partial
+        /// payment followed by a retry would grant the item twice.
+        /// </summary>
+        private bool ApplyReward(QuestDefinition def, QuestProgress quest)
         {
             QuestReward reward = def.Reward;
-            if (reward == null) return;
+            if (reward == null) return true;
 
-            if (reward.Item != null && reward.Quantity > 0 && PlayerSession.Instance != null)
+            bool paysItem = reward.Item != null && reward.Quantity > 0;
+
+            if (paysItem && PlayerSession.Instance == null) return false;
+            if (reward.ClearsWantedLevel && WantedManager.Instance == null) return false;
+
+            if (paysItem)
                 PlayerSession.Instance.AddItem(reward.Item, reward.Quantity);
 
-            if (reward.ClearsWantedLevel && WantedManager.Instance != null)
+            if (reward.ClearsWantedLevel)
                 WantedManager.Instance.ClearWanted();
+
+            // An item with no quantity is an authoring slip, not a deferral — claiming it stops
+            // the scan retrying forever over a reward that can never pay.
+            if (reward.Item != null && reward.Quantity <= 0)
+            {
+                Debug.LogWarning($"QuestConditionWatcher: '{quest.Id}' is authored to reward " +
+                                 $"'{reward.Item.name}' with Quantity {reward.Quantity} — " +
+                                 "nothing was granted. Set a Quantity of 1 or more.", def);
+            }
 
             if (reward.GoldAmount > 0)
             {
@@ -615,6 +649,8 @@ namespace ExiledAlvaston.Quests
                                  $"{reward.GoldAmount} gold, but there is no gold system yet " +
                                  "(CLAUDE.md §8) — nothing was granted.", def);
             }
+
+            return true;
         }
     }
 }
