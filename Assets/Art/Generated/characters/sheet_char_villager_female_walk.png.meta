@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 32cc4e654455a644c990e9482065b582
+guid: a9e00ac246185e44cb6e551721e4a32c
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: sheet_char_player_walk_0
+      name: sheet_char_villager_female_walk_0
       rect:
         serializedVersion: 2
         x: 0
@@ -124,14 +124,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e911eb691adaf1450800000000000000
-      internalID: 6061754532994355614
+      spriteID: db2f002d31b930660800000000000000
+      internalID: 7350889526228742845
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_walk_1
+      name: sheet_char_villager_female_walk_1
       rect:
         serializedVersion: 2
         x: 65
@@ -145,14 +145,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ead7f9ab0b0ef1820800000000000000
-      internalID: 2891276535445028270
+      spriteID: e3fc01e7af2d32410800000000000000
+      internalID: 1451235478242119486
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_walk_2
+      name: sheet_char_villager_female_walk_2
       rect:
         serializedVersion: 2
         x: 130
@@ -166,14 +166,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d303962afeb0a8f00800000000000000
-      internalID: 1119720581204881469
+      spriteID: abc1bf4fc8c6bea10800000000000000
+      internalID: 1939763417174449338
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_walk_3
+      name: sheet_char_villager_female_walk_3
       rect:
         serializedVersion: 2
         x: 195
@@ -187,50 +187,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 47a4432e9f7170c30800000000000000
-      internalID: 4325452329122024052
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: sheet_char_player_walk_4
-      rect:
-        serializedVersion: 2
-        x: 260
-        y: 0
-        width: 65
-        height: 65
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 00000000000000000800000000000000
-      internalID: 0
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: sheet_char_player_walk_5
-      rect:
-        serializedVersion: 2
-        x: 325
-        y: 0
-        width: 65
-        height: 65
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 00000000000000000800000000000000
-      internalID: 0
+      spriteID: 390af936ee81b8680800000000000000
+      internalID: -8751874038711738221
       vertices: []
       indices: 
       edges: []
@@ -246,12 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      sheet_char_player_walk_0: 6061754532994355614
-      sheet_char_player_walk_1: 2891276535445028270
-      sheet_char_player_walk_2: 1119720581204881469
-      sheet_char_player_walk_3: 4325452329122024052
-      sheet_char_player_walk_4: 0
-      sheet_char_player_walk_5: 0
+      sheet_char_villager_female_walk_0: 7350889526228742845
+      sheet_char_villager_female_walk_1: 1451235478242119486
+      sheet_char_villager_female_walk_2: 1939763417174449338
+      sheet_char_villager_female_walk_3: -8751874038711738221
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

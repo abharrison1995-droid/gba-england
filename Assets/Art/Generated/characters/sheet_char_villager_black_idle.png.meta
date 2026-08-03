@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 32cc4e654455a644c990e9482065b582
+guid: a6112ced75f259c4fb4f68422895d2a9
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: sheet_char_player_walk_0
+      name: sheet_char_villager_black_idle_0
       rect:
         serializedVersion: 2
         x: 0
@@ -124,14 +124,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e911eb691adaf1450800000000000000
-      internalID: 6061754532994355614
+      spriteID: 49417bfe278ed4950800000000000000
+      internalID: 6435055022927975572
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_walk_1
+      name: sheet_char_villager_black_idle_1
       rect:
         serializedVersion: 2
         x: 65
@@ -145,14 +145,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ead7f9ab0b0ef1820800000000000000
-      internalID: 2891276535445028270
+      spriteID: 34f14eb1c90420b40800000000000000
+      internalID: 5404953542025027395
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_walk_2
+      name: sheet_char_villager_black_idle_2
       rect:
         serializedVersion: 2
         x: 130
@@ -166,14 +166,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d303962afeb0a8f00800000000000000
-      internalID: 1119720581204881469
+      spriteID: 0ade9e2132a2d8ba0800000000000000
+      internalID: -6085161191378129504
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_walk_3
+      name: sheet_char_villager_black_idle_3
       rect:
         serializedVersion: 2
         x: 195
@@ -187,50 +187,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 47a4432e9f7170c30800000000000000
-      internalID: 4325452329122024052
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: sheet_char_player_walk_4
-      rect:
-        serializedVersion: 2
-        x: 260
-        y: 0
-        width: 65
-        height: 65
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 00000000000000000800000000000000
-      internalID: 0
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: sheet_char_player_walk_5
-      rect:
-        serializedVersion: 2
-        x: 325
-        y: 0
-        width: 65
-        height: 65
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 00000000000000000800000000000000
-      internalID: 0
+      spriteID: 8cd20cdc81053bdd0800000000000000
+      internalID: -2471543703034909240
       vertices: []
       indices: 
       edges: []
@@ -246,12 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      sheet_char_player_walk_0: 6061754532994355614
-      sheet_char_player_walk_1: 2891276535445028270
-      sheet_char_player_walk_2: 1119720581204881469
-      sheet_char_player_walk_3: 4325452329122024052
-      sheet_char_player_walk_4: 0
-      sheet_char_player_walk_5: 0
+      sheet_char_villager_black_idle_0: 6435055022927975572
+      sheet_char_villager_black_idle_1: 5404953542025027395
+      sheet_char_villager_black_idle_2: -6085161191378129504
+      sheet_char_villager_black_idle_3: -2471543703034909240
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
