@@ -48,15 +48,19 @@ Hard rules:
   This repo has **no Git LFS** and its history already carries hundreds of MB of art blobs — every
   file committed is permanent weight. One PNG per asset, plus its `.json`.
 
-**There is no 3D pipeline, and you cannot supply one.** Everything above is 2D: PNG + JSON into
-`art_incoming/`, keyed, trimmed and crushed to 48 px per world unit. The five named London
-buildings in `ART_PIPELINE.md` §7.9 are **3D models**, their delivery format is undecided, and a
-PNG dropped in staging for one would be imported as a billboard sprite and crushed. Do not start
-one without asking. The same applies to building interiors: those are Unity-side chunk prefabs
-assembled from existing assets, not an art deliverable at all.
+**There is no 3D pipeline, and you cannot supply one.** Everything above is 2D. The five named
+London buildings in `ART_PIPELINE.md` §7.9 are **3D models** whose delivery route is undecided,
+and building interiors are not an art deliverable at all — they are Unity-side chunk prefabs
+assembled from existing assets.
 
-If a request is ambiguous, write your question into the asset's `.json` as a `"question"` field
-and produce your best attempt anyway. Do not guess at project structure to resolve it.
+If a **supported 2D** request is ambiguous, write your question into the asset's `.json` as a
+`"question"` field and produce your best attempt anyway. Do not guess at project structure to
+resolve it.
+
+**Unsupported asset classes are the deliberate exception to that rule: ask and stop.** For the
+§7.9 3D buildings, do not produce a substitute PNG, a model, or a sidecar. A best-attempt
+placeholder there is worse than nothing — it would be imported as a billboard sprite and crushed
+to 48 px per world unit.
 
 ### If you are Claude Code
 

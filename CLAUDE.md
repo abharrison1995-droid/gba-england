@@ -147,16 +147,34 @@ Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is li
   the new chunk *before* destroying the old, repositions the player to the opposite edge
   (12-unit buffer), snaps the camera, and autosaves.
 
-**Four different code paths instantiate chunks.** Only the first does the full job:
+**Six code paths instantiate chunks. Two do the full job; four are direct replacements.**
+Re-verified line by line on 2026-08-03 — an earlier version of this table listed four paths, named
+a class that does not exist, and got two autosave columns wrong:
 
 | Path | Entry point | Pauses | Notifies Wanted | Autosaves | Snaps camera |
 |---|---|---|---|---|---|
 | Edge crossing | `ChunkManager.TransitionToChunkRoutine` | yes | yes | yes | yes |
-| Interior door | `ChunkTransitionDoor.OnTriggerEnter` | no | no | no | no |
-| Instance door | `GameFlowController.EnterManorCellars` | no | no | no | no |
-| Tutorial exit | `GameFlowController.LoadLondonAtWestGates` | no | no | no | no |
+| USE door / portal | `DungeonPortal` → `ChunkManager.TravelTo` → `TravelRoutine` | yes | yes | yes | yes |
+| Manor instance door | `GameFlowController.EnterManorCellars` | no | no | **yes** | no |
+| Tutorial exit | `GameFlowController.LoadLondonAtWestGates` | no | no | **yes** | no |
+| Continue / load | `SaveGameManager.LoadWorld` | no | no | no | no |
+| New-game fallback | `DeathScreenUI.OnNewGame` | no | no | no | no |
 
-If you add or change transition behaviour, you must touch all four or consolidate them.
+⚠️ **There is no `ChunkTransitionDoor` in this repository.** Earlier documentation named it as the
+"interior door" path; no such source file exists. The generic USE-driven door is `DungeonPortal`,
+which adds its own `Interactable` if one is missing and routes through `TravelRoutine` — and that
+routine does the *same* full lifecycle as an edge crossing, so it is a second canonical path, not
+a shortcut. It is the closest thing to a working model for a building door (§5's suspension
+subsection, and `docs/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`).
+
+`EnterManorCellars` and `LoadLondonAtWestGates` both call `SaveGameManager.Save()` even though
+they skip everything else — they are the two `GameFlowController` checkpoints §6 counts.
+
+If you add or change transition behaviour you must touch all six, or consolidate them first.
+
+⚠️ **`Home_London_Prefab` contains a `Portal_Home_London` whose `TargetChunk` is
+`Home_London_Data` itself** (verified: both resolve to guid `5a35b572…`). Using it reloads and
+resets Home. It is an authoring trap, not an example to copy.
 
 **If you need to *react* to a chunk change, poll — do not hook a transition.** `CurrentChunkData`
 is a public serialized field written from **seven** places across six files: both `ChunkManager`
