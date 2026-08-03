@@ -182,7 +182,15 @@ public static class DialogueValidator
             for (int c = 0; c < node.Choices.Count; c++)
             {
                 DialogueChoice choice = node.Choices[c];
-                if (choice == null || string.IsNullOrEmpty(choice.NextNodeId)) continue;
+                if (choice == null)
+                {
+                    // Worth an error rather than a skip: DisplayNode reads choice.ChoiceText with
+                    // no null check, so this is a NullReferenceException the moment the node shows.
+                    problems.Add(new Problem(Severity.Error,
+                        $"Node '{IdOf(node)}' choice {c} is null. Displaying this node throws."));
+                    continue;
+                }
+                if (string.IsNullOrEmpty(choice.NextNodeId)) continue;
                 if (data.FindNode(choice.NextNodeId) == null)
                 {
                     problems.Add(new Problem(Severity.Error,
@@ -249,16 +257,26 @@ public static class DialogueValidator
 
             if (IsInCycle(data, node))
             {
+                // Deliberately hedged. A player carrying exactly the required amount hands it over,
+                // comes back, and finds the choice greyed out by its own item check — that graph is
+                // fine, and calling it broken is how a validator teaches you to ignore it. Only
+                // surplus stock makes it a real double spend, and nothing here can know that.
                 problems.Add(new Problem(Severity.Warning,
-                    $"Node '{IdOf(node)}' takes an item with ConsumeRequiredItem and can be " +
-                    "reached again from itself, so the player can hand the same thing over twice " +
-                    "in one conversation. Move the hand-in onto a node the conversation cannot " +
-                    "return to."));
+                    $"Node '{IdOf(node)}' takes an item with ConsumeRequiredItem and can be reached " +
+                    "again from itself. That is fine for a player carrying exactly what is asked " +
+                    "for — the choice greys itself out afterwards — but one carrying spare can hand " +
+                    "over twice in a single conversation, destroying the second lot for nothing. " +
+                    "Move the hand-in onto a node the conversation cannot return to if that matters."));
             }
         }
 
-        problems.Sort((a, b) => a.Severity.CompareTo(b.Severity));   // Error = 0, so errors first
-        return problems;
+        // Errors first, but keeping the order they were found in within each band — ids, then the
+        // start node, then dangling edges, then reachability, then the freeze. List.Sort is
+        // introsort and unstable, so it would scramble that deliberate reading order.
+        var ordered = new List<Problem>(problems.Count);
+        foreach (Problem p in problems) if (p.Severity == Severity.Error) ordered.Add(p);
+        foreach (Problem p in problems) if (p.Severity != Severity.Error) ordered.Add(p);
+        return ordered;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════

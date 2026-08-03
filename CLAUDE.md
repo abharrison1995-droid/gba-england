@@ -123,8 +123,9 @@ editor code out of builds, so editor-only code **must** live there.
 - **Tuning constants belong in `EKVibe`** (`Assets/Scripts/Vibe/EKVibe.cs`) — colours,
   sizes, camera, `ChunkSize`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
-- **Editor menu path**: `Tools/GBA/<Category>/...`. 29 of the 30 menu items live under this root
-  (the odd one out is a `CONTEXT/PlacementPreset/` right-click item), in six
+- **Editor menu path**: `Tools/GBA/<Category>/...`. **30 of the 32 menu items** live under this
+  root; the two that do not are right-click items, `CONTEXT/PlacementPreset/Create Dialogue` and
+  `CONTEXT/DialogueData/Validate This Conversation`. The `Tools/GBA/` ones are in six
   categories: `Place`, `Art`, `World`, `Debug`, `Repair`, `Content`, plus **`Danger Zone`** for
   the four tools that overwrite or re-create assets — `Build Modern Britain Prefabs`,
   `Build Enemy Prefabs`, `Discover England Bootstrap` and `Generate Placeholder Art`. Each of
@@ -1384,11 +1385,15 @@ was deliberately dropped; nothing in the codebase relied on it.
     every exit is gated, and a `ConsumeRequiredItem` choice sitting on a node inside a cycle.
     **`DialogueValidator.Validate` is public and UI-free on purpose** — the plain-text importer is
     meant to call it and refuse a bad script rather than write the asset. Keep it that way.
-  - **`PresetDialogueTools` no longer blanks prose.** `WriteConversation` adopts an existing asset
-    when the incoming line is empty and any node already has text, which closes the
-    `CONTEXT/PlacementPreset/Create Dialogue` route described above. `EnsureAmbientConversation`
-    now reports adoption through an `out bool` so Create Starter Presets lists it rather than
-    leaving it to a console warning.
+  - **`PresetDialogueTools` no longer overwrites existing dialogue text at all.**
+    `WriteConversation` adopts whenever any node already carries prose, blank incoming line or not.
+    An earlier version of this line said it "no longer blanks prose", which was true only of the
+    empty-string case and left the line-replaces-line route — an orphan asset holding a
+    hand-rewritten one-liner, a preset with a filled `AmbientLine` and a null `Conversation` —
+    still clobbering it. The cost of the wider guard is that regenerating an orphan means deleting
+    it by hand; that is the right way round, since the alternative destroys writing silently.
+    `EnsureAmbientConversation` now reports adoption through an `out bool` so Create Starter
+    Presets lists it rather than leaving it to a console warning.
 - **No `[SerializeReference]`.** It was considered and rejected: it serializes the target's
   assembly+namespace+class name into the asset, and §10 records an open, not-yet-done intention to
   rename the `ExiledAlvaston` namespace across 46 files — introducing `[SerializeReference]` here

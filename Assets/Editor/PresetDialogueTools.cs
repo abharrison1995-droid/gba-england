@@ -120,16 +120,19 @@ public static class PresetDialogueTools
                 "by hand if you want it regenerated.", data);
             return data;
         }
-        else if (string.IsNullOrWhiteSpace(line) && HasAnyProse(data))
+        else if (HasAnyProse(data))
         {
-            // The structural guard above cannot tell a hand-edited one-liner from generator output,
-            // and the Create Dialogue menu item passes "" whenever AmbientLine is blank — which is
-            // the state most NPC presets are in. Together those would let one right-click replace
-            // written prose with empty text. Nothing here has a line worth writing, so adopt.
+            // HasAuthoredContent cannot tell a hand-edited one-liner from generator output — both
+            // are one node with no choices — so on its own it would let this tool replace written
+            // prose, either with an empty string (the Create Dialogue route, which passes "" when
+            // AmbientLine is blank) or with whatever AmbientLine happens to say. Existing text is
+            // therefore never overwritten at all, blank incoming line or not. Nothing reaches here
+            // unless preset.Conversation is already null, so the cost is that regenerating an
+            // orphan means deleting it by hand; the alternative is silently destroying writing.
             Debug.LogWarning(
-                $"PresetDialogueTools: '{path}' already has dialogue text and '{preset.Label}' has no " +
-                "AmbientLine to replace it with. Linking it as-is rather than blanking it — clear the " +
-                "asset by hand if you did want to start over.", data);
+                $"PresetDialogueTools: '{path}' already has dialogue text, so it is being linked to " +
+                $"'{preset.Label}' as-is rather than rewritten. Delete the asset by hand if you want " +
+                "it regenerated from the ambient line.", data);
             return data;
         }
 
@@ -181,11 +184,14 @@ public static class PresetDialogueTools
 
     /// <summary>
     /// True if any node already carries dialogue text. Weaker than <see cref="HasAuthoredContent"/>
-    /// on purpose: it cannot tell who wrote the line, so it only ever guards against replacing a
-    /// line with nothing, never against replacing one line with another.
+    /// on purpose — it cannot tell who wrote the line — which is exactly why it is the one that
+    /// decides whether to overwrite: it treats every existing line as somebody's writing.
     /// </summary>
     private static bool HasAnyProse(DialogueData data)
     {
+        // Real-null rather than Unity's == override, unlike HasAuthoredContent. Both are only ever
+        // called with a freshly loaded asset, so the difference cannot show; if either is ever
+        // called with a destroyed object, this one treats it as empty and that one as null.
         if (data?.Nodes == null) return false;
         foreach (var node in data.Nodes)
             if (node != null && !string.IsNullOrWhiteSpace(node.DialogueText)) return true;
