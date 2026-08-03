@@ -1036,11 +1036,19 @@ a claim that any of it does:
 
 ## 14. Data-authored quests
 
-⚠️ **Written without a compiler and never opened in the editor** — unverified in both senses (§10).
+**Exercised in the editor on 2026-08-03, and merged.** A throwaway `TestQuest` definition (single
+`Kill` stage, one `ItemData` reward) driven by a temporary debug menu item confirmed quest start,
+`Kill` tracking against a `QuestActor`-keyed enemy, completion, reward payment, and **persistence
+across a chunk-crossing autosave — verified by reading `savegame.json` directly rather than
+trusting the UI.** The test rig was deleted afterwards, deliberately: quests are meant to be
+granted by an NPC or a world trigger, never by a menu item.
 
-⚠️ **There are zero `QuestDefinition` assets in the project.** The system is built and completely
-inert: no quest in the game behaves differently until someone authors one. Nothing here has been
-exercised end to end, not even once.
+⚠️ **`TalkTo`, `Collect`, `Reach` and `Manual` have never been exercised, and neither has any
+multi-stage quest.** The single-stage `Kill` path is the only one with editor evidence behind it.
+
+⚠️ **There are still zero `QuestDefinition` assets in the project.** The system is inert until
+someone authors one — no quest in the game behaves differently today. `escape_manor` and
+`spark_of_talent` run on the bespoke tutorial code, not on this.
 
 Dialogue still *starts* a quest (`DialogueChoice.GrantQuestId`) and, for a hand-in, still *finishes*
 it (`CompleteQuestId`). What a `QuestDefinition` adds is the middle — ordered stages with objective
@@ -1089,6 +1097,22 @@ reusable version of what `GameFlowController.ArrestRoutine` still does inline �
 deliberately left alone). **`Reward.GoldAmount` warns and pays nothing** — there is no gold system
 (§8), and this is not the commit that adds one.
 
+**`ClearWanted()` despawns the police as well as clearing the meters**, and it has to. `SpawnPlod`
+instantiates officers **unparented at the scene root**, so they survive a chunk transition; a
+version that only zeroed the two meters dropped the HUD knife readout to zero and left Armed
+Response hunting the player. That is exactly the shape of Officer Riggs' "diplomatic immunity"
+reward (§13), which is the one authored use case for the flag. `ApplyReward` is the only caller —
+`PubInteractable` and `ArrestRoutine` both still clear inline and are unaffected.
+
+**A reward is claimed only once it has actually been paid.** `ApplyReward` returns a bool: it
+checks every manager it needs *before* handing anything over, and pays nothing at all if one is
+missing, so the caller leaves `RewardsClaimed` unset and the next `Update` retries. Checking up
+front rather than half-way is what makes the retry safe — a partial payment followed by a retry
+would grant the item twice. `ScanRewards` keeps `_rewardScanNeeded` true while any payment is
+deferred; clearing it unconditionally would strand the reward until the next unrelated quest
+event, which for the last quest in a run means never. An authored `Quantity` of 0 warns and
+*claims*, since that can never pay and must not retry forever.
+
 **Things that will catch you out:**
 
 - **All quest-state mutation happens in `Update()`.** Event callbacks only set a flag or bump a
@@ -1131,3 +1155,45 @@ deliberately left alone). **`Reward.GoldAmount` warns and pays nothing** — the
   keying by string (§13).
 - **The three new `QuestProgress` fields are appended, and `SaveGameManager` needed no change** —
   see §6.
+- **Re-granting a quest no longer rewinds its objective.** `DialogueManager` re-shows a
+  conversation's starting node every time, so a `GrantQuestId` choice stays selectable forever.
+  `StartQuest`'s existing-quest branch used to overwrite `Objective` unconditionally, so talking
+  to the giver again mid-quest reverted the journal and the HUD tracker to stage 0's text while
+  the watcher stayed bound to a later stage — the player followed an objective that could no
+  longer complete, and the surviving `StageProgress` was invisible. It now only refreshes the
+  objective while `StageIndex` and `StageProgress` are both 0. **Those are only ever non-zero for
+  a definition-driven quest**, which is what keeps the tutorial's re-activation path (§6) working
+  unchanged.
+
+### Open issues, found in review and not fixed
+
+None of these can corrupt a save. All were found reviewing the branch before merge.
+
+- ⚠️ **`Stages[0].Objective` is never displayed.** The opening objective comes only from
+  `DialogueChoice.GrantQuestObjective`, which — unlike `GrantQuestTitle` — has no empty-string
+  fallback, and nothing reads the first stage's `Objective` at all. Leave that dialogue field
+  blank and the HUD tracker shows an **empty objective line** until stage 0 happens to complete.
+  `QuestDefinition`'s tooltip claims otherwise and is wrong for the first stage of every quest.
+  **Until this is fixed, always fill in `GrantQuestObjective` on the granting dialogue choice**,
+  and keep it identical to `Stages[0].Objective`.
+- ⚠️ **A `TalkTo` final stage completes the quest on the interact, before any choice is picked.**
+  `Update` runs while paused, so the advance lands a frame after the dialogue panel opens. If that
+  same NPC also carries the `RequiredItem` + `ConsumeRequiredItem` + `CompleteQuestId` hand-in,
+  the player walks up, presses Interact, backs out — and keeps the item, gets the reward, and
+  never hands anything over. **Author hand-ins as `Collect` last + dialogue completes** (§14's
+  recommended shape), never `TalkTo` last against the hand-in NPC. Nothing warns.
+- **`QuestDefinition.Title` / `Giver` / `Location` are dead fields.** Nothing reads them; the
+  journal reads `QuestProgress.Giver`/`.Location`, which come from the dialogue speaker name and
+  `GrantQuestLocation`. Fill them in and the journal still shows "Unknown". Their tooltips lie.
+- **The second active quest is invisible as well as unwatched.** `QuestTrackerUI` uses the same
+  `GetActiveQuest()` the watcher binds, and `_quests` is insertion-ordered and never compacted —
+  so whichever quest was accepted first holds both the tracker and the watcher until it ends.
+  Take a side quest before Mosley's and Mosley's objectives silently never advance. With the
+  eight-strong London cast queued (§13) this stops being hypothetical.
+- **A kill can be dropped if a rebind lands in the same frame.** `Rebind` runs before
+  `ApplyPending`, and `BindKill` re-seeds the count from `StageProgress`, which is one frame
+  behind. Killing a target on the same frame as an edge crossing or an `OnQuestsChanged` discards
+  that kill, silently. One-frame window, so rare.
+- **`Assets/Resources/Quests/README.txt` ships in the build** as a `TextAsset` — 16 lines, so the
+  cost is nil, but it is a doc file inside a `Resources` folder in the very system whose rule is
+  that `Resources/` is not a place to put things. Move it to `docs/` when convenient.
