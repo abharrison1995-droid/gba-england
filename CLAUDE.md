@@ -121,7 +121,7 @@ editor code out of builds, so editor-only code **must** live there.
 - **Tuning constants belong in `EKVibe`** (`Assets/Scripts/Vibe/EKVibe.cs`) — colours,
   sizes, camera, `ChunkSize`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
-- **Editor menu path**: `Tools/GBA/<Category>/...`. 30 of the 31 menu items live under this root
+- **Editor menu path**: `Tools/GBA/<Category>/...`. 29 of the 30 menu items live under this root
   (the odd one out is a `CONTEXT/PlacementPreset/` right-click item), in six
   categories: `Place`, `Art`, `World`, `Debug`, `Repair`, `Content`, plus **`Danger Zone`** for
   the four tools that overwrite or re-create assets — `Build Modern Britain Prefabs`,
@@ -1055,11 +1055,21 @@ Swalls**, the **Quidland** and **F.U. Sports** clerks, **Commissioner Spencer**,
 Daniel Pauls were retagged London; the villager and the Nosey Parker stay `Assorted`, since they are
 placed everywhere.
 
-**None of them is placed, and none has any art.** Each is a plain talker: an `AmbientLine`, no
-`Prefab`, no `Icon`, no `NpcSprite`, no `NpcController`, `NpcHeight 0`. The one thing each carries
-that matters is its `ArtSubject`, which is what makes step 3 above work with no manual wiring —
-`ArtImportTool.AutoAssign` finds a preset by that string. They are queued as band 4 in
-`ART_PIPELINE.md` §7.7a.
+⚠️ **An earlier version of this section said none of them was placed and none had art. Both
+stopped being true in `4f7dc62`** and the line was never updated. As of 2026-08-03:
+
+- **Nine NPCs stand in `Home_London_Prefab`** — Mosley, the pharmacist, both clerks, Swalls,
+  Riggs, Murtaugh, Ralph and Sanjeet — plus two villagers, so eleven in all. **Commissioner
+  Spencer is the one cast member still unplaced.**
+- **All eight have idle art**, wired by the importer through `ArtSubject`. Murtaugh also has a
+  walk (he is the only one that `Roams`).
+- ⚠️ **Not one of them can talk.** No `PlacementPreset` in the project has a `Conversation`
+  assigned — checked across all 23. Every NPC in the game is currently scenery with a name.
+
+That last point is the honest state of the content layer, and it is deliberate: the v1 dialogue
+was deleted on 2026-08-03 so the quests could be written from scratch (§9). `ArtSubject` remains
+the field that matters for the art pipeline — `ArtImportTool.AutoAssign` finds a preset by that
+string, which is what makes step 3 above need no manual wiring.
 
 - **Murtaugh is the only one that `Roams`**, so he is the only one queued for a walk sheet as well as
   an idle. The villager is the worked example of why (§12): a roamer with no walk sheet slides.
@@ -1085,9 +1095,11 @@ a claim that any of it does:
   level on completion, announced as *"YOU'VE GOT DIPLOMATIC IMMUNITY! (it won't be revoked... this
   time)."* Nothing is wired to `WantedManager` from a preset.
 - **No quest gate on Mayor Swalls.** He carries `QuestKey: mayor_swalls` so quest code can find the
-  placed object, but he should not be reachable until Mosley's questline completes and nothing hides
-  him. There is no visibility-gating mechanism on presets at all; `RequireTutorialComplete` exists
-  only on the Portal recipe.
+  placed object, but the intent was that he stays unreachable until an earlier questline completes,
+  and nothing hides him. There is no visibility-gating mechanism on presets at all;
+  `RequireTutorialComplete` exists only on the Portal recipe. ⚠️ **The questline this was written
+  against no longer exists** — Councillor Mosley's dialogue was deleted on 2026-08-03 so the quests
+  could be written from scratch (§9), so this is a gate with nothing behind it yet.
 
 ---
 
@@ -1245,8 +1257,9 @@ None of these can corrupt a save. All were found reviewing the branch before mer
 - **The second active quest is invisible as well as unwatched.** `QuestTrackerUI` uses the same
   `GetActiveQuest()` the watcher binds, and `_quests` is insertion-ordered and never compacted —
   so whichever quest was accepted first holds both the tracker and the watcher until it ends.
-  Take a side quest before Mosley's and Mosley's objectives silently never advance. With the
-  eight-strong London cast queued (§13) this stops being hypothetical.
+  Accept a villager's side quest before a quest-giver's and the second one's objectives silently
+  never advance. Nothing can hit this today — no quest is grantable at all — but with the
+  eight-strong London cast queued (§13) it becomes likely the moment two of them can talk.
 - **A kill can be dropped if a rebind lands in the same frame.** `Rebind` runs before
   `ApplyPending`, and `BindKill` re-seeds the count from `StageProgress`, which is one frame
   behind. Killing a target on the same frame as an edge crossing or an `OnQuestsChanged` discards

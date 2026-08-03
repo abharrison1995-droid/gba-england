@@ -1,5 +1,13 @@
 # Band-1 art brief — the three refused player sheets (paste into Gemini Antigravity)
 
+> **STATUS (2026-08-03): COMPLETE — kept for method, not for work.** Band 1 is marked ✅ RESOLVED
+> in `ART_PIPELINE.md` §7.3; the player's attack, cast and death sheets were delivered, imported
+> and play-tested, and the `cycle` sheet was cancelled outright. Nothing here is outstanding.
+>
+> It is kept because the **approach change below is the reusable part**: single-frame generation
+> plus local tiling, which is how every sheet has been produced since. That workflow now lives in
+> `ART_PIPELINE.md` §7.3a. Read this only for the reasoning behind it.
+
 > **APPROACH CHANGE (2026-07-29, second refusal):** the second batch came back with multiple
 > figures per cell (stacked pairs, onion-skin ghosts) — this generator cannot be trusted to
 > draw grids. **Do NOT generate sheets directly.** Generate 18 single-frame PNGs (six per
