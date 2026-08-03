@@ -6,6 +6,29 @@
 > corpse looting and repeatable-location resets. It records decisions for a later implementation;
 > it does not claim that the runtime currently behaves this way.
 
+> **Baseline verified 2026-08-03.** Every factual claim in §3 and §6 that could be checked without
+> a Unity editor was checked against the code, and **all of them held** — no corrections were
+> needed. Specifically confirmed: `ChunkManager.TravelTo`/`TravelRoutine`;
+> `RuntimeNavMeshBaker` exists and removes its mesh only in `OnDestroy`; `Interactable.Active`
+> registers on `OnEnable` and unregisters on `OnDisable`; `EnemyAI` starts `PerceptionRoutine`
+> only from `Start`; `c.unity`'s single `NavMeshSettings` block auto-registers
+> `Assets/c/NavMesh.asset` for the scene's life; `EnemyNameplate` builds an unparented scene-root
+> visual cleaned only in `OnDestroy`; `MagicTutorial` and `TutorialSequence` clear their static
+> `Instance` only in `OnDestroy`; `WantedManager` instantiates police unparented at the scene
+> root; `Health.Die` schedules `Destroy(gameObject, DestroyDelay)`; and `LootOnDeath.OnDied`
+> builds a local entry list and calls `LootMenuUI.Show` immediately, leaving no corpse.
+>
+> **Not verified** (no editor, and not read this pass): that `Portal_Home_London`'s target really
+> is `Home_London_Data` itself — only its presence in the prefab was confirmed; the four
+> chunk-replacing call sites in `GameFlowController`, `SaveGameManager.LoadWorld` and the
+> death-screen fallback, which CLAUDE.md §5 corroborates independently; and `LootChest`'s state
+> being instance-local.
+>
+> One consequence worth stating plainly: because `EnemyAI` starts its coroutine only in `Start`,
+> and both tutorial singletons plus `RuntimeNavMeshBaker` clean up only in `OnDestroy`, §6's
+> claim that a bare `SetActive(false)` on a chunk root is unsafe is **confirmed, not
+> precautionary.** The lifecycle hooks are load-bearing.
+
 ## 1. Goal and first use case
 
 The first use case is an enterable London police station:
