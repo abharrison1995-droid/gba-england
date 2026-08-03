@@ -1365,8 +1365,12 @@ was deliberately dropped; nothing in the codebase relied on it.
   second `Tree(...)` started before the first one's nodes are drained, would misfile nodes between
   conversations. The dialogue prose in `BuildData()` itself is untouched by any of this; only the
   helper bodies below it changed.
-- **Two things now catch the traps above — a runtime net and an author-time check.** Neither has
-  run in the editor yet.
+- **Two things now catch the traps above — a runtime net and an author-time check.** Both compile
+  and the tutorial plays through unchanged, but ⚠️ **neither has actually done its job yet, and
+  cannot until conversations exist.** The guard has never *fired* — no authored conversation can
+  trap the player, so it is demonstrated inert rather than demonstrated correct — and the validator
+  has never run over an asset, because there are still zero `DialogueData` assets. Treat both as
+  untested the first time a real conversation goes through them.
   - **`DialogueManager.CanEscapeFrom`** is a BFS over *currently pressable* choices from the node
     being displayed, looking for anything that ends the chat (empty `NextNodeId`, an id that
     resolves to nothing, or a node with no choices). If none is reachable, `DisplayNode` appends
