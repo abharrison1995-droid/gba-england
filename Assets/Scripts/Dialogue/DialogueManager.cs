@@ -28,6 +28,7 @@ namespace ExiledAlvaston.Dialogue
         private bool _dialogueActive;
         private string _currentSpeakerName;       // whoever's talking = quest giver if they grant one
         private bool _teachSparkOnClose;          // set by a TeachSpark choice; fires when the chat ends
+        private DialogueData _currentData;        // which conversation is running, to resolve NextNodeId against
 
         /// <summary>True while a conversation is on screen — quest popups defer until it ends.</summary>
         public static bool IsDialogueOpen => Instance != null && Instance._dialogueActive;
@@ -57,8 +58,10 @@ namespace ExiledAlvaston.Dialogue
 
         public void StartDialogue(DialogueData data, CharacterData playerData)
         {
-            if (data == null || data.StartingNode == null) return;
             if (_dialogueActive) return;
+            if (data == null) return;
+            DialogueNode start = data.StartNode();
+            if (start == null) return;
 
             EnsureUI();
 
@@ -68,7 +71,8 @@ namespace ExiledAlvaston.Dialogue
             _dialogueActive = true;
             ExiledAlvaston.Systems.PauseManager.Push();
 
-            DisplayNode(data.StartingNode);
+            _currentData = data;
+            DisplayNode(start);
         }
 
         private void DisplayNode(DialogueNode node)
@@ -137,12 +141,12 @@ namespace ExiledAlvaston.Dialogue
                         selectable = selectable && pass;
                     }
 
-                    CreateChoiceButton(displayText, choice.NextNode, selectable, choice);
+                    CreateChoiceButton(displayText, choice.NextNodeId, selectable, choice);
                 }
             }
         }
 
-        private void CreateChoiceButton(string text, DialogueNode nextNode, bool selectable, DialogueChoice choice = null)
+        private void CreateChoiceButton(string text, string nextNodeId, bool selectable, DialogueChoice choice = null)
         {
             GameObject btnObj;
             if (ChoiceButtonPrefab != null)
@@ -159,10 +163,10 @@ namespace ExiledAlvaston.Dialogue
 
             Button btn = btnObj.GetComponent<Button>();
             btn.interactable = selectable;
-            btn.onClick.AddListener(() => OnChoiceSelected(nextNode, choice));
+            btn.onClick.AddListener(() => OnChoiceSelected(nextNodeId, choice));
         }
 
-        private void OnChoiceSelected(DialogueNode nextNode, DialogueChoice choice)
+        private void OnChoiceSelected(string nextNodeId, DialogueChoice choice)
         {
             // Quest grants fire on pick; the popup itself waits for the chat to close
             if (choice != null && !string.IsNullOrEmpty(choice.GrantQuestId)
@@ -193,10 +197,19 @@ namespace ExiledAlvaston.Dialogue
             if (choice != null && choice.TeachSpark)
                 _teachSparkOnClose = true;
 
-            if (nextNode == null || string.IsNullOrEmpty(nextNode.DialogueText))
+            if (string.IsNullOrEmpty(nextNodeId))
+            {
                 EndDialogue();
-            else
-                DisplayNode(nextNode);
+                return;
+            }
+            DialogueNode next = _currentData != null ? _currentData.FindNode(nextNodeId) : null;
+            if (next == null)
+            {
+                Debug.LogWarning($"DialogueManager: a choice points at node id '{nextNodeId}', which does not exist in the current conversation. Ending the chat.", _currentData);
+                EndDialogue();
+                return;
+            }
+            DisplayNode(next);
         }
 
         private void EndDialogue()
@@ -207,6 +220,7 @@ namespace ExiledAlvaston.Dialogue
                 _dialogueActive = false;
                 ExiledAlvaston.Systems.PauseManager.Pop();
             }
+            _currentData = null;
             UI.QuestPopupUI.ShowPendingIfAny();
 
             if (_teachSparkOnClose)

@@ -81,16 +81,20 @@ public static class PresetDialogueTools
         bool isNew = data == null;
         if (isNew) data = ScriptableObject.CreateInstance<DialogueData>();
 
-        data.StartingNode = new DialogueNode
+        data.Nodes.Clear();
+        data.Nodes.Add(new DialogueNode
         {
+            Id = DialogueData.DefaultStartId,
             // Without a speaker the panel keeps showing whoever talked last, so this is worth
             // setting even when it is null — DialogueManager blanks the field for us now.
             Speaker = preset.Speaker,
             DialogueText = line,
-        };
+        });
+        data.StartNodeId = DialogueData.DefaultStartId;
 
-        // No choices on purpose. DialogueManager puts an "End conversation." button under a node
-        // with none, so a one-liner closes cleanly without anything being authored for it.
+        // One node, no choices, on purpose. DialogueManager puts an "End conversation." button
+        // under a node with none, so a one-liner closes cleanly without anything being authored
+        // for it.
 
         if (isNew) AssetDatabase.CreateAsset(data, path);
         else EditorUtility.SetDirty(data);

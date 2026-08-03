@@ -7,8 +7,8 @@ namespace ExiledAlvaston.Data
     public class DialogueChoice
     {
         [TextArea] public string ChoiceText;
-        public DialogueNode NextNode;
-        
+        public string NextNodeId;
+
         [Header("Stat Checks (Optional)")]
         public string RequiredStat; // e.g., "Personality", "STR"
         public int RequiredStatLevel;
@@ -37,12 +37,12 @@ namespace ExiledAlvaston.Data
         public bool MeetsRequirement(CoreTraits playerTraits)
         {
             if (string.IsNullOrEmpty(RequiredStat)) return true;
-            
+
             // Simple mock evaluation
             if (RequiredStat == "STR" && playerTraits.Strength >= RequiredStatLevel) return true;
             if (RequiredStat == "INT" && playerTraits.Intelligence >= RequiredStatLevel) return true;
             if (RequiredStat == "Personality" && playerTraits.Awareness >= RequiredStatLevel) return true;
-            
+
             return false;
         }
     }
@@ -50,17 +50,53 @@ namespace ExiledAlvaston.Data
     [System.Serializable]
     public class DialogueNode
     {
+        public string Id;
         public CharacterData Speaker;
         [TextArea(3, 10)] public string DialogueText;
         public List<DialogueChoice> Choices = new List<DialogueChoice>();
     }
 
     /// <summary>
-    /// Represents a full conversation tree.
+    /// Represents a full conversation graph: a flat list of nodes, each with a string Id, wired
+    /// together by DialogueChoice.NextNodeId. Convergence (two choices leading to the same node)
+    /// and cycles are both legal — see CLAUDE.md §15.
     /// </summary>
     [CreateAssetMenu(fileName = "NewDialogueTree", menuName = "ExiledAlvaston/Data/Dialogue Tree")]
     public class DialogueData : ScriptableObject
     {
-        public DialogueNode StartingNode;
+        public const string DefaultStartId = "start";
+        public string StartNodeId = DefaultStartId;
+        public List<DialogueNode> Nodes = new List<DialogueNode>();
+
+        /// <summary>The opening node: by StartNodeId if set and found, else Nodes[0], else null.</summary>
+        public DialogueNode StartNode()
+        {
+            if (Nodes == null || Nodes.Count == 0) return null;
+
+            if (!string.IsNullOrEmpty(StartNodeId))
+            {
+                DialogueNode found = FindNode(StartNodeId);
+                if (found != null) return found;
+                Debug.LogWarning($"DialogueData '{name}': StartNodeId '{StartNodeId}' matches no node. " +
+                    "Falling back to the first node in the list.", this);
+            }
+
+            return Nodes[0];
+        }
+
+        /// <summary>
+        /// Linear scan over Nodes by Id. Deliberately not a Dictionary — a conversation is tens of
+        /// nodes, this runs once per button press while the game is paused, and a Dictionary would
+        /// need invalidating on every Inspector edit for no measurable benefit (CLAUDE.md §4:
+        /// mobile-first, avoid allocation on hot/input paths — this isn't hot, but the discipline
+        /// still applies and keeps the type trivially serializable).
+        /// </summary>
+        public DialogueNode FindNode(string id)
+        {
+            if (string.IsNullOrEmpty(id) || Nodes == null) return null;
+            for (int i = 0; i < Nodes.Count; i++)
+                if (Nodes[i] != null && Nodes[i].Id == id) return Nodes[i];
+            return null;
+        }
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using ExiledAlvaston.Data;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.World;
@@ -37,6 +38,9 @@ namespace ExiledAlvaston.Flow
         private CharacterData _danielData, _underHousedData;
         private DialogueData _intro, _nudge, _reward, _done, _underHousedTalk;
         private GameObject _daniel, _underHoused;
+
+        private readonly List<DialogueNode> _pendingNodes = new List<DialogueNode>();
+        private int _nextNodeId;
 
         private void Awake() { Instance = this; }
 
@@ -155,28 +159,31 @@ namespace ExiledAlvaston.Flow
                     Node(_underHousedData, "Nnnh— you shouldn't've said that. You shouldn't've—"))));
         }
 
-        private static DialogueData Tree(DialogueNode start)
+        private DialogueData Tree(DialogueNode start)
         {
             var d = ScriptableObject.CreateInstance<DialogueData>();
-            d.StartingNode = start;
+            d.Nodes.AddRange(_pendingNodes);
+            d.StartNodeId = start != null ? start.Id : null;
+            _pendingNodes.Clear();
             return d;
         }
 
-        private static DialogueNode Node(CharacterData who, string text, params DialogueChoice[] choices)
+        private DialogueNode Node(CharacterData who, string text, params DialogueChoice[] choices)
         {
-            var n = new DialogueNode { Speaker = who, DialogueText = text };
+            var n = new DialogueNode { Id = "n" + _nextNodeId++, Speaker = who, DialogueText = text };
             if (choices != null)
                 foreach (var c in choices) if (c != null) n.Choices.Add(c);
+            _pendingNodes.Add(n);
             return n;
         }
 
         private static DialogueChoice Choice(string text, DialogueNode next)
-            => new DialogueChoice { ChoiceText = text, NextNode = next };
+            => new DialogueChoice { ChoiceText = text, NextNodeId = next != null ? next.Id : null };
 
         private DialogueChoice QuestChoice(string text, DialogueNode next) => new DialogueChoice
         {
             ChoiceText = text,
-            NextNode = next,
+            NextNodeId = next != null ? next.Id : null,
             GrantQuestId = QuestId,
             GrantQuestTitle = "Spark of Talent",
             GrantQuestObjective = "Daniel Pauls reckons the sparks are real magic. Walk into the city and sound out the twitchy geezer he pointed you at.",
@@ -186,7 +193,7 @@ namespace ExiledAlvaston.Flow
         private DialogueChoice RewardChoice(string text, DialogueNode next) => new DialogueChoice
         {
             ChoiceText = text,
-            NextNode = next,
+            NextNodeId = next != null ? next.Id : null,
             TeachSpark = true,
             CompleteQuestId = QuestId
         };
