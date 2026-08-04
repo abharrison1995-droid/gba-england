@@ -191,6 +191,7 @@ namespace ExiledAlvaston.Flow
                 data.CharacterName, (PlayerClass)data.PlayerClass, data.TutorialComplete, templateData);
             QuestManager.Instance.RestoreQuests(data.Quests);
             PlayerSession.Instance.RestoreInventory(data.Inventory);
+            PlayerSession.Instance.RestorePounds(data.Pounds);
             BindPlayerToSession(existing);
 
             // Mid-tutorial saves restart the tutorial cleanly rather than resuming half-staged
@@ -386,14 +387,23 @@ namespace ExiledAlvaston.Flow
             bool tutorialDone = PlayerSession.Instance != null && PlayerSession.Instance.TutorialComplete;
             EnterManorCellars(isTutorial: !tutorialDone);
 
-            if (UIManager.Instance != null)
+            // A fine takes what is in the wallet, not what the player owes: SpendPounds is
+            // all-or-nothing, so it is clamped first rather than quietly refusing to fine a
+            // skint player. The message reports what was actually taken.
+            int fine = 0;
+            if (PlayerSession.Instance != null)
             {
-                UIManager.Instance.LogCombat("Released from custody. Fined 50 quid.");
-                UIManager.Instance.ShowToast("Released from custody. Don't let it happen again.", 3f);
+                fine = Mathf.Min(EKVibe.ArrestFine, PlayerSession.Instance.Pounds);
+                PlayerSession.Instance.SpendPounds(fine);
             }
 
-            // TODO: Deduct gold from player inventory once raw gold tracking is in
-            // PlayerSession.Instance.Inventory.RemoveGold(50);
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.LogCombat(fine > 0
+                    ? $"Released from custody. Fined {EKVibe.FormatPounds(fine)}."
+                    : "Released from custody. Nothing on you worth fining.");
+                UIManager.Instance.ShowToast("Released from custody. Don't let it happen again.", 3f);
+            }
         }
 
         private System.Collections.IEnumerator RespawnRoutine(float delay)

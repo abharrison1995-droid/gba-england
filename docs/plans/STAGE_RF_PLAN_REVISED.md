@@ -60,8 +60,8 @@ ItemDatabase. AGENTS.md's "PlayerPrefs, EA_ prefix" description is stale and sho
 corrected when R lands.
 
 GOAL
-Stage R (rename), then Stage F (inventory + loot overhaul). Stage G (gold payouts) is
-gated behind F and is NOT in scope. Do R first: it is small, isolated, and touches a
+Stage R (rename), then Stage F (inventory + loot overhaul). Stage G (shops and prices —
+the payouts themselves are already done) is gated behind F and is NOT in scope. Do R first: it is small, isolated, and touches a
 save key, so it should be reviewed on its own rather than buried in F.
 
 DECISIONS ALREADY MADE — DO NOT RE-OPEN
@@ -73,7 +73,8 @@ DECISIONS ALREADY MADE — DO NOT RE-OPEN
 - Reputation button is present but visually disabled and does nothing. No system exists.
 - Skin is EKVibe parchment, matching the existing HUD. Not grey stone.
 - The unlabelled box at the top of the reference mockup is dead space — do not build it.
-- Gold storage lands in F1; gold payouts stay in Stage G.
+- Currency is POUNDS (£), not gold. Storage and payouts are both DONE — they landed
+  together ahead of F1, so Stage G is now only about shops and prices.
 
 THE SCREEN (opened by the HUD bag button)
 Three panels side by side, plus header and footer:
@@ -196,19 +197,21 @@ STAGE F — six commits, in this order (branch `stage-f`)
         it) to reach the 11 doll slots.
         [FIX] SAVE FORMAT: extend the `SaveData` JSON — add
         `List<EquipmentSaveEntry> Equipment` (slot identifier + ItemID, mirroring
-        InventorySaveEntry) and `int Gold`. There is NO EA_ prefix and NO PlayerPrefs;
-        JsonUtility serializes the whole SaveData class, so new fields are additive and
-        old saves load with empty equipment and zero gold automatically. Store ItemID
-        per slot exactly as inventory stores ItemID + quantity, and resolve through
-        ItemDatabase on load.
+        InventorySaveEntry). `int Pounds` is DONE — it landed early with the wallet.
+        There is NO EA_ prefix and NO PlayerPrefs; JsonUtility serializes the whole
+        SaveData class, so new fields are additive and old saves load with empty
+        equipment automatically. Store ItemID per slot exactly as inventory stores
+        ItemID + quantity, and resolve through ItemDatabase on load.
         [ADD] Define load-time failure behaviour now: an ItemID that no longer resolves
         (item deleted from Resources) is SKIPPED with a Debug.LogWarning, never an
         exception — a corrupt save currently costs the player their whole inventory.
         [ADD] Define UnequipAll with a full bag: BLOCK with a HUD message ("No room in
         bag"). Do not silently drop to a loot pile in F1 — F5 does not exist yet.
-        [ADD] Add `PlayerSession.Gold` + an OnGoldChanged event in F1 alongside the
-        save field, so F3's header/summary wiring and Stage G payouts both have the
-        event to hang off. Gold UI display can wait for F3; payouts stay in Stage G.
+        DONE, ahead of F1: `PlayerSession.Pounds` + `OnPoundsChanged`, the save field,
+        and the payouts that were meant to wait for Stage G — pickpocketing, the arrest
+        fine and `QuestReward.PoundsAmount` all move real money now. The currency is
+        pounds, not gold, and the readout is bound in InventoryController. F3 inherits
+        a wired `CurrencyText` rather than having to build one.
     F2  Append Fire/Cold/Poison/Magic resist to ItemData so the armour summary is more
         than two numbers.
     F3  Build the screen in code; deactivate the legacy scene panel. Header, three
@@ -235,13 +238,13 @@ There is no test framework. Compile-and-play gates:
   (migration works); (4) `--check-dangling` clean. Compile alone proves nothing here.
 - After F1 (where a save-format mistake is cheapest to catch): compile, then start a
   new game, equip nothing, cross a chunk edge (autosave), kill app, relaunch — confirm
-  the save loads and the JSON now contains `Equipment` and `Gold` fields.
+  the save loads and the JSON now contains an `Equipment` field (`Pounds` is already there).
 - After F3: compile plus a screen walk-through on a 20:9 aspect (the height constraint
   above).
 When asking for an editor change, give the route through the UI, not just the field
 name, and say whether Play must be stopped first (§10).
 
-Existing saves will load after F1 with nothing equipped and no gold, because that data
+Existing saves will load after F1 with nothing equipped, because that data
 was never written. That is correct behaviour, not a bug — tell the user so they expect
 it. **[ADD]** The same is true after R: a migrated save shows chunk Home_London with
 everything else identical.

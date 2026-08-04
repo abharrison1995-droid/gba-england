@@ -17,7 +17,12 @@ nothing throws, nothing logs, the data is just gone.
 `persistentDataPath/savegame.json`. Not PlayerPrefs. There is no `EA_` prefix anywhere.
 
 `SaveData` holds: character name, class, `TutorialComplete`, chunk name, position, health, mana,
-stamina, quest list, inventory.
+stamina, quest list, inventory, pounds.
+
+`Pounds` was **appended** after the rest, so a save written before the wallet existed has no
+`Pounds` key at all and `JsonUtility` reads it back as `0` — the correct opening balance, which is
+why it needs no migration. It is restored by `GameFlowController.ContinueFromSave` through
+`PlayerSession.RestorePounds`, alongside `RestoreInventory`.
 
 ## Five call sites write a save
 
@@ -57,7 +62,7 @@ through `Resources/Items` by `PlayerSession.RestoreInventory`.
 ## What is and is not saved
 
 **Saved:** character name and class, `TutorialComplete`, chunk, position, health/mana/stamina,
-quest state, inventory.
+quest state, inventory, pounds.
 
 **Not saved:** wanted level, and whether you are riding anything. A load puts you on foot with
 vehicles back at their authored spots, and a vehicle you had already nicked is nickable again.
@@ -91,6 +96,19 @@ its value in every prefab, scene and `.asset` unless you add `[FormerlySerialize
 
 **Appending a serialized field is safe; inserting is not.** `MapChunkData.VehicleSpawns` was added
 after the adjacency block for this reason.
+
+The live `[FormerlySerializedAs]` cases, all from the gold→pounds rename, are the ones to copy:
+
+| Field now | Was | Authored in |
+|---|---|---|
+| `PlacementPreset.PickpocketMinPounds` / `MaxPounds` | `PickpocketMinGold` / `MaxGold` | 25 `Preset_*.asset` |
+| `PickpocketInteractable.MinPounds` / `MaxPounds` | `MinGold` / `MaxGold` | `NoseyParker.prefab` |
+| `QuestReward.PoundsAmount` | `GoldAmount` | nothing yet — no `QuestDefinition` assets exist |
+
+Those `.asset` and `.prefab` files still carry the **old** key names on disk; the attribute remaps
+them on load and Unity rewrites them on its next save of each file. That is the intended state, not
+an unfinished migration — **do not hand-edit the YAML to "finish" it**, and do not delete the
+attributes afterwards, because any copy of those assets that has not been re-saved still needs them.
 
 The live proof that appending is safe: `EnemyAI.IsPolice` was added after four of the five
 `Police_*` prefabs were written. Those four carry no `IsPolice` key at all and load the C#

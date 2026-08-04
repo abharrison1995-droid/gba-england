@@ -168,7 +168,9 @@ unplaced.**
 ### Three things these presets imply and do not build
 
 - **No vendor system.** Quidland sells weapons and F.U. Sports sells armour, and both clerks are
-  currently just people who say a line. No shop UI, no buying, no selling, and no gold.
+  currently just people who say a line. No shop UI, no buying, no selling. The player does now
+  carry money (`PlayerSession.Pounds`, spendable via `SpendPounds`) — there is simply nowhere to
+  spend it.
 - **No bounty pay-off for Riggs.** The intent is that he hands out missions and clears your wanted
   level on completion. `WantedManager.ClearWanted()` exists and `QuestReward.ClearsWantedLevel`
   calls it, but nothing is authored.

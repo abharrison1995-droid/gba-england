@@ -36,6 +36,13 @@ namespace ExiledAlvaston.Flow
         /// <summary>Fires whenever the carried inventory changes (pickup, restore from save).</summary>
         public event Action OnInventoryChanged;
 
+        [Header("Wallet")]
+        [Tooltip("Pounds carried. Whole pounds only — there are no pence anywhere in the game.")]
+        public int Pounds;
+
+        /// <summary>Fires whenever the wallet changes (payout, spend, restore from save).</summary>
+        public event Action OnPoundsChanged;
+
         [Header("Magic")]
         [Tooltip("Set once Daniel Pauls teaches the first spell.")]
         public bool KnowsSpark;
@@ -82,10 +89,14 @@ namespace ExiledAlvaston.Flow
             TutorialComplete = false;
             HasStartedNewGame = true;
 
-            // RestoreFromSave immediately repopulates this via RestoreInventory — a fresh New
-            // Game must not inherit whatever a previous playthrough carried this app session.
+            // RestoreFromSave immediately repopulates these via RestoreInventory/RestorePounds — a
+            // fresh New Game must not inherit whatever a previous playthrough carried or was
+            // holding this app session.
             Inventory.Clear();
             OnInventoryChanged?.Invoke();
+
+            Pounds = 0;
+            OnPoundsChanged?.Invoke();
 
             if (RuntimeStats == null)
                 RuntimeStats = ScriptableObject.CreateInstance<CharacterData>();
@@ -148,6 +159,34 @@ namespace ExiledAlvaston.Flow
 
             OnInventoryChanged?.Invoke();
             return true;
+        }
+
+        /// <summary>Pays the player. Non-positive amounts are ignored rather than silently reversing a payout.</summary>
+        public void AddPounds(int amount)
+        {
+            if (amount <= 0) return;
+            Pounds += amount;
+            OnPoundsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Takes money off the player. Returns false and changes nothing if they cannot afford it,
+        /// the same all-or-nothing contract as <see cref="RemoveItem"/> — a caller that wants to
+        /// take whatever is there (a fine, say) clamps to <see cref="Pounds"/> first.
+        /// </summary>
+        public bool SpendPounds(int amount)
+        {
+            if (amount <= 0 || Pounds < amount) return false;
+            Pounds -= amount;
+            OnPoundsChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>Replace the wallet with a saved snapshot (load game).</summary>
+        public void RestorePounds(int saved)
+        {
+            Pounds = Mathf.Max(0, saved);
+            OnPoundsChanged?.Invoke();
         }
 
         /// <summary>Replace the carried inventory with a saved snapshot (load game). Unresolvable item ids are skipped.</summary>

@@ -58,7 +58,10 @@ namespace ExiledAlvaston.UI
         private void OnDestroy()
         {
             if (_subscribedToInventory && PlayerSession.Instance != null)
+            {
                 PlayerSession.Instance.OnInventoryChanged -= HandleInventoryChanged;
+                PlayerSession.Instance.OnPoundsChanged -= HandlePoundsChanged;
+            }
         }
 
         /// <summary>PlayerSession may not exist yet at Awake (created on new game/continue) — retried from RefreshUI too.</summary>
@@ -66,12 +69,27 @@ namespace ExiledAlvaston.UI
         {
             if (_subscribedToInventory || PlayerSession.Instance == null) return;
             PlayerSession.Instance.OnInventoryChanged += HandleInventoryChanged;
+            PlayerSession.Instance.OnPoundsChanged += HandlePoundsChanged;
             _subscribedToInventory = true;
         }
 
         private void HandleInventoryChanged()
         {
             if (IsOpen) PopulateBackpack();
+        }
+
+        /// <summary>
+        /// Not gated on <see cref="IsOpen"/> like the backpack is: it is one string assignment on
+        /// an event that fires a handful of times a session, and gating it means opening the bag
+        /// after a payout shows the old figure until the next one.
+        /// </summary>
+        private void HandlePoundsChanged() => RefreshCurrency();
+
+        private void RefreshCurrency()
+        {
+            if (CurrencyText == null) return;
+            int pounds = PlayerSession.Instance != null ? PlayerSession.Instance.Pounds : 0;
+            CurrencyText.text = EKVibe.FormatPounds(pounds);
         }
 
         /// <summary>Adds a "SPELLS" button to the bag that opens the spellbook (bind spells to slots).</summary>
@@ -148,6 +166,7 @@ namespace ExiledAlvaston.UI
         {
             EnsureInventorySubscription();
             PopulateBackpack();
+            RefreshCurrency();
 
             if (_boundCharacter == null) return;
 

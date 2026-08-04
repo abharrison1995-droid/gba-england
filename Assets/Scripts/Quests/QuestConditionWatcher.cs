@@ -624,12 +624,16 @@ namespace ExiledAlvaston.Quests
             if (reward == null) return true;
 
             bool paysItem = reward.Item != null && reward.Quantity > 0;
+            bool paysPounds = reward.PoundsAmount > 0;
 
-            if (paysItem && PlayerSession.Instance == null) return false;
+            if ((paysItem || paysPounds) && PlayerSession.Instance == null) return false;
             if (reward.ClearsWantedLevel && WantedManager.Instance == null) return false;
 
             if (paysItem)
                 PlayerSession.Instance.AddItem(reward.Item, reward.Quantity);
+
+            if (paysPounds)
+                PlayerSession.Instance.AddPounds(reward.PoundsAmount);
 
             if (reward.ClearsWantedLevel)
                 WantedManager.Instance.ClearWanted();
@@ -641,13 +645,6 @@ namespace ExiledAlvaston.Quests
                 Debug.LogWarning($"QuestConditionWatcher: '{quest.Id}' is authored to reward " +
                                  $"'{reward.Item.name}' with Quantity {reward.Quantity} — " +
                                  "nothing was granted. Set a Quantity of 1 or more.", def);
-            }
-
-            if (reward.GoldAmount > 0)
-            {
-                Debug.LogWarning($"QuestConditionWatcher: '{quest.Id}' is authored to pay " +
-                                 $"{reward.GoldAmount} gold, but there is no gold system yet " +
-                                 "(CLAUDE.md §8) — nothing was granted.", def);
             }
 
             return true;

@@ -64,9 +64,11 @@ pickpocketing reachable on mobile, since `TryPickpocket` requires `IsCrouched`.
 - **Nosey Parkers fire on any concealment below max.** One cast drains 34 with 5/sec regen, so
   every cast opens a ~7-second window in which every parker in range starts reporting. Each parker
   also sets `this.enabled = false` after reporting, making them single-use per scene load.
-- **Two rewards are TODOs.** Pickpocketed gold and the £50 arrest fine are toasts only — neither
-  touches inventory, because **raw gold tracking does not exist**. This is also why
-  `QuestReward.GoldAmount` warns and pays nothing.
+- **Both payouts are live.** Pickpocketing pays into `PlayerSession.Pounds` via `AddPounds`, and
+  the arrest fine (`EKVibe.ArrestFine`, £50) is taken via `SpendPounds`. The fine is **clamped to
+  what the player is carrying** before it is spent, because `SpendPounds` is all-or-nothing and
+  would otherwise refuse to fine a skint player at all; the release message reports what was
+  actually taken. Neither is Unity-verified.
 - `AbilityData` has no "is magic" flag — the 34-point drain is hardcoded in `CombatController`
   rather than driven by ability data.
 - `TagManager.asset` has `tags: []` and no custom layers. Nothing currently needs them, but do not

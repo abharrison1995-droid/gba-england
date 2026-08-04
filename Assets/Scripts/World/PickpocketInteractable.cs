@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using ExiledAlvaston.Systems;
 using ExiledAlvaston.UI;
+using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.World
 {
@@ -9,8 +11,11 @@ namespace ExiledAlvaston.World
     /// </summary>
     public class PickpocketInteractable : MonoBehaviour
     {
-        public int MinGold = 5;
-        public int MaxGold = 25;
+        [FormerlySerializedAs("MinGold")]
+        public int MinPounds = 5;
+
+        [FormerlySerializedAs("MaxGold")]
+        public int MaxPounds = 25;
 
         [Tooltip("Percentage chance to get caught (0.0 to 1.0)")]
         public float CatchChance = 0.3f;
@@ -73,11 +78,9 @@ namespace ExiledAlvaston.World
             else
             {
                 // Success
-                int stolenGold = Random.Range(MinGold, MaxGold + 1);
-                UIManager.Instance?.ShowToast($"Nicked {stolenGold} quid!");
-                
-                // TODO: Add to player inventory once the inventory system supports adding raw gold dynamically
-                // Flow.PlayerSession.Instance.Inventory.AddGold(stolenGold);
+                int stolen = Random.Range(MinPounds, MaxPounds + 1);
+                Flow.PlayerSession.Instance?.AddPounds(stolen);
+                UIManager.Instance?.ShowToast($"Nicked {EKVibe.FormatPounds(stolen)}!");
             }
 
             _hasBeenRobbed = true; // Can only rob them once

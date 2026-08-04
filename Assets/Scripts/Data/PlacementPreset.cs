@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace ExiledAlvaston.Data
 {
@@ -177,11 +178,13 @@ namespace ExiledAlvaston.Data
                  "AmbientLine is set, dialogue wins and NpcFactory warns.")]
         public bool Pickpocketable = false;
 
-        [Tooltip("Least they can be carrying.")]
-        public int PickpocketMinGold = 5;
+        [Tooltip("Least they can be carrying, in pounds.")]
+        [FormerlySerializedAs("PickpocketMinGold")]
+        public int PickpocketMinPounds = 5;
 
-        [Tooltip("Most they can be carrying.")]
-        public int PickpocketMaxGold = 25;
+        [Tooltip("Most they can be carrying, in pounds.")]
+        [FormerlySerializedAs("PickpocketMaxGold")]
+        public int PickpocketMaxPounds = 25;
 
         [Tooltip("Chance of being caught, which spikes the wanted level instead of paying out.")]
         [Range(0f, 1f)]

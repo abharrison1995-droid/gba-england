@@ -78,8 +78,10 @@ Scanned by **completion state**, not by "did I just complete this". Any quest th
 dialogue is rewarded identically to one the watcher advanced.
 
 `Reward.Item` goes through `PlayerSession.AddItem`. `ClearsWantedLevel` calls
-`WantedManager.ClearWanted()`. **`Reward.GoldAmount` warns and pays nothing** — there is no gold
-system.
+`WantedManager.ClearWanted()`. `Reward.PoundsAmount` goes through `PlayerSession.AddPounds` — it
+was `GoldAmount`, which warned and paid nothing, until the wallet landed. A reward that pays
+pounds now counts as one that needs `PlayerSession`, so it defers like an item reward rather than
+being silently skipped when the session is missing for a frame.
 
 **A reward is claimed only once it has actually been paid.** `ApplyReward` returns a bool: it
 checks every manager it needs *before* handing anything over, and pays nothing at all if one is

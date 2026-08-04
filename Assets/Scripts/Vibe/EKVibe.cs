@@ -66,5 +66,28 @@ namespace ExiledAlvaston.Vibe
         public static readonly Color DungeonWall = new Color(0.62f, 0.55f, 0.42f, 1f);
         public static readonly Color PathStone = new Color(0.62f, 0.58f, 0.48f, 1f);
         public static readonly Color RoofTile = new Color(0.55f, 0.28f, 0.22f, 1f);
+
+        // --- Currency ---
+        /// <summary>
+        /// What the police take off you on release. Clamped to what the player actually has, so a
+        /// skint player is not driven negative.
+        /// </summary>
+        public const int ArrestFine = 50;
+
+        /// <summary>
+        /// Pound sign (U+00A3), written as an escape on purpose. This file is read and rewritten by
+        /// several machines, and a literal pound sign is one bad encoding guess away from becoming
+        /// mojibake in every readout that shows money.
+        /// </summary>
+        public const string PoundSign = "\u00A3";
+
+        /// <summary>
+        /// Money as the player sees it: <c>£1,250</c>. Whole pounds — the game has no pence and
+        /// nothing should introduce them without deciding what a half-pence pickpocket means.
+        /// Invariant culture, so the separator does not follow the device locale and turn
+        /// <c>£1,250</c> into <c>£1.250</c> on a European handset.
+        /// </summary>
+        public static string FormatPounds(int amount) =>
+            PoundSign + amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

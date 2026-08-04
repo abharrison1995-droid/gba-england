@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace ExiledAlvaston.Data
 {
@@ -62,9 +63,9 @@ namespace ExiledAlvaston.Data
     [Serializable]
     public class QuestReward
     {
-        [Tooltip("NOT IMPLEMENTED — there is no gold system yet (CLAUDE.md §8). A non-zero value " +
-                 "logs a warning and pays nothing.")]
-        public int GoldAmount;
+        [Tooltip("Pounds paid into the player's wallet on completion. Leave at 0 for no payout.")]
+        [FormerlySerializedAs("GoldAmount")]
+        public int PoundsAmount;
 
         public ItemData Item;
         public int Quantity = 1;

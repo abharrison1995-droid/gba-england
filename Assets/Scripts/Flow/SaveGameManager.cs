@@ -32,6 +32,11 @@ namespace ExiledAlvaston.Flow
 
         public List<QuestProgress> Quests = new List<QuestProgress>();
         public List<InventorySaveEntry> Inventory = new List<InventorySaveEntry>();
+
+        // Appended, per the rule in SAVE_AND_SERIALIZATION.md: a save written before the wallet
+        // existed has no Pounds key at all, and JsonUtility reads it back as 0 — which is the
+        // correct starting balance, so no migration is needed.
+        public int Pounds;
     }
 
     /// <summary>
@@ -57,6 +62,7 @@ namespace ExiledAlvaston.Flow
             data.CharacterName = session != null ? session.CharacterName : "Exile";
             data.PlayerClass = session != null ? (int)session.Class : 0;
             data.TutorialComplete = session != null && session.TutorialComplete;
+            data.Pounds = session != null ? session.Pounds : 0;
 
             Vector3 pos = player.transform.position;
             data.ChunkName = chunkMgr.CurrentChunkData.ChunkName;

@@ -105,8 +105,8 @@ namespace ExiledAlvaston.World
             }
 
             var pickpocket = go.AddComponent<PickpocketInteractable>();
-            pickpocket.MinGold = preset.PickpocketMinGold;
-            pickpocket.MaxGold = preset.PickpocketMaxGold;
+            pickpocket.MinPounds = preset.PickpocketMinPounds;
+            pickpocket.MaxPounds = preset.PickpocketMaxPounds;
             pickpocket.CatchChance = preset.PickpocketCatchChance;
 
             // "Talk to X" is wrong for someone who has nothing to say. The prompt is what the HUD

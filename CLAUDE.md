@@ -200,9 +200,11 @@ Everything here is on `main` and pushed. **None has been seen by a compiler or a
 these the next time Unity is open, and keep this list current — delete an item when it is
 confirmed, rather than leaving it hedged.
 
-1. ⚠️ **Three C# files have never compiled** — `EKVibe.cs`, `EnemyAI.cs`, `UIManager.cs`, all
-   changed 2026-08-04. **The first thing a Unity session does is compile them.** If it errors, it
-   is in one of those three.
+1. ⚠️ **Several C# files have never compiled** — `EKVibe.cs`, `EnemyAI.cs`, `UIManager.cs`, plus
+   everything the pounds rename touched (`PlayerSession`, `SaveGameManager`, `GameFlowController`,
+   `PlacementPreset`, `QuestDefinition`, `PickpocketInteractable`, `NpcFactory`,
+   `QuestConditionWatcher`, `InventoryController`), all changed 2026-08-04. **The first thing a
+   Unity session does is compile them.**
 2. **`UIManager.EnsureDedicatedTrack`** — wraps a bar fill in its own parent when the scene did not
    give it one, fixing the concealment readout overlapping the mana bar. *Check the readouts no
    longer overlap, and that the concealment bar snaps back to wherever it was actually authored* —
@@ -225,6 +227,19 @@ confirmed, rather than leaving it hedged.
 7. **`murtaugh_Controller` is hand-authored YAML**, verified only structurally. *Check Murtaugh
    animates while roaming instead of sliding.* If Unity rejects it, re-stage the walk pair from
    `art_incoming/processed/` and re-run the importer.
+8. ⚠️ **The pounds rename relies on `[FormerlySerializedAs]` doing its job.** 25 `Preset_*.asset`
+   files and `NoseyParker.prefab` still hold the old `…Gold` keys on disk. *Open any robbable
+   preset (e.g. `Preset_Villager`) in the Inspector and check Pickpocket Min/Max Pounds read
+   **5 and 25**, not 0.* If they read 0 the remap did not take and the values are gone — restore
+   from git rather than retyping 25 assets.
+9. **£ may not be in the TMP font atlas.** `EKVibe.FormatPounds` emits U+00A3, and TMP's default
+   static atlases are often ASCII-only, which renders it as a missing-glyph box. *Check the bag's
+   money readout and the pickpocket toast.* Fix is on the font asset (Project → the TMP font →
+   Inspector): add £ to the character set and regenerate, or switch Atlas Population Mode to
+   Dynamic.
+10. **The wallet has never run.** Pickpocket a Nosey Parker, get arrested, and reload a save.
+    *Check the bag readout tracks all three, and that a save made before today loads at £0 rather
+    than failing.*
 
 **Also outstanding — a live defect, not a verification:** no `Police_*` prefab has `IsPolice` set,
 so arrest never fires and `DespawnPolice` destroys nothing. Fix is ticking the box on all five

@@ -188,8 +188,8 @@ public static class ModernBritainSetup
 
             // Pickpocket component
             var pickpocket = root.AddComponent<PickpocketInteractable>();
-            pickpocket.MinGold = 5;
-            pickpocket.MaxGold = 25;
+            pickpocket.MinPounds = 5;
+            pickpocket.MaxPounds = 25;
             pickpocket.CatchChance = 0.3f;
 
             // Wire the Interactable.OnInteract → PickpocketInteractable.TryPickpocket
