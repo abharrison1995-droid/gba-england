@@ -20,8 +20,9 @@ namespace are unchanged. The repo folder is `gba-england`. See CLAUDE.md §10.
   with magic played straight. A GTA-like consequence layer (wanted level, police, stealth,
   pickpocketing, vehicle theft) sits on top of a classic RPG core (quests, dialogue, combat).
 - **Naming is deliberately inconsistent — do not "unify" it.** `Exiled Alvaston` is the
-  product name and C# root namespace; `Discover England` is the in-game display title;
-  `EK*` prefixes refer to *Exiled Kingdoms*, the inspiration game.
+  product name and C# root namespace; **`GBA: England` is the in-game display title**
+  (`EKVibe.DisplayTitle`); `Discover England` survives only as an editor-tool name; `EK*`
+  prefixes refer to *Exiled Kingdoms*, the inspiration game.
 
 ## Two agents work in this repo
 

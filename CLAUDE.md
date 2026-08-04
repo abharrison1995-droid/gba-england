@@ -21,16 +21,14 @@ disagree, this file records **what the code actually does**.
 > GUID, so `PlacementPresetLibrary.Get` resolves.
 >
 > **Exercised, end to end and reported working by the owner:** the `villager` subject went art →
-> importer → `Preset_Villager` auto-wired (controller, sprite, icon, `NpcHeight` inherited as
-> 1.35) → World Palette → two `NPC_Villager` instances standing in `Home_London_Prefab`. That is
+> importer → `Preset_Villager` auto-wired (controller, sprite, icon, inherited `NpcHeight`) →
+> World Palette → two `NPC_Villager` instances standing in `Home_London_Prefab`. That is
 > `PlacementPreset` → `PlacementBuilders` → `NpcFactory` in full, plus `AutoAssign`. He is
 > authored as a talker (`Pickpocketable: 0`, prompt "Talk to Villager") and `Roams: 1`.
 >
-> **Still unexercised:** the tutorial's preset-built cast (`MagicTutorial`, Daniel Pauls and the
-> geezer). ⚠️ **Correction (2026-08-03): both now have art** — `Preset_DanielPauls` and
-> `Preset_TracksuitGeezer` both carry resolved `NpcSprite`/`NpcController` references, so "neither
-> subject's art exists yet" is stale. What's still unexercised is anything keyed off
-> `EnemyAI.Animator` being set from a preset-built NPC.
+> **Still unexercised:** anything keyed off `EnemyAI.Animator` being set from a preset-built NPC.
+> Daniel Pauls and the tracksuit geezer both have art — `Preset_DanielPauls` and
+> `Preset_TracksuitGeezer` carry resolved `NpcSprite`/`NpcController` references.
 >
 > Everything before §13 **has** been exercised: `fix/chunk-edges-and-tooling` is merged, the
 > boundary walls are generated and committed, the hardened importer has done a real round trip
@@ -53,7 +51,8 @@ Unity mobile RPG. Working title **Exiled Alvaston** (`ProjectSettings` → `prod
 | Name | Where it lives | Notes |
 |---|---|---|
 | `Exiled Alvaston` | `productName`, root C# namespace, most editor menus | The canonical one |
-| `Discover England` | `EKVibe.DisplayTitle`, `DiscoverEnglandSetup.cs` | In-game title shown to player |
+| `GBA: England` | `EKVibe.DisplayTitle` | The in-game title shown to the player |
+| `Discover England` | `DiscoverEnglandSetup.cs`, its menu item | Editor-tool name only — **no longer the display title** |
 | `EK` / Exiled Kingdoms | `EKVibe`, `EKNavMeshBaker` | Refers to the *inspiration* game, not this project |
 
 Do not "unify" these without an explicit task — `DisplayTitle` is player-facing copy,
@@ -150,9 +149,9 @@ Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is li
   the new chunk *before* destroying the old, repositions the player to the opposite edge
   (12-unit buffer), snaps the camera, and autosaves.
 
-**Six code paths instantiate chunks. Two do the full job; four are direct replacements.**
-Re-verified line by line on 2026-08-03 — an earlier version of this table listed four paths, named
-a class that does not exist, and got two autosave columns wrong:
+**Seven runtime code paths instantiate chunks. Two do the full job; five are direct replacements.**
+Re-verified line by line on 2026-08-04 at `ccfa9c9` — `grep -rn "Instantiate(.*ChunkPrefab"` returns
+seven runtime sites plus two editor tools:
 
 | Path | Entry point | Pauses | Notifies Wanted | Autosaves | Snaps camera |
 |---|---|---|---|---|---|
@@ -162,6 +161,16 @@ a class that does not exist, and got two autosave columns wrong:
 | Tutorial exit | `GameFlowController.LoadLondonAtWestGates` | no | no | **yes** | no |
 | Continue / load | `SaveGameManager.LoadWorld` | no | no | no | no |
 | New-game fallback | `DeathScreenUI.OnNewGame` | no | no | no | no |
+| **Cold boot** | **`ChunkManager.Start`** | no | no | no | no |
+
+⚠️ **`ChunkManager.Start` is the seventh, and earlier versions of this table missed it.** It
+instantiates the scene's authored starting chunk when `CurrentChunkInstance` is still null and the
+flow state is `Playing`, so it is the path that runs on a cold boot into a live scene. It writes
+`CurrentChunkInstance` but **not** `CurrentChunkData` — the scene's serialized value is already
+there — which is why it does not appear in the writer count below.
+
+Two editor tools instantiate chunks as well, `DevZoneJump` and `DiscoverEnglandSetup`. They are not
+runtime paths, but they do write `CurrentChunkData`.
 
 ⚠️ **There is no `ChunkTransitionDoor` in this repository.** Earlier documentation named it as the
 "interior door" path; no such source file exists. The generic USE-driven door is `DungeonPortal`,
@@ -173,15 +182,17 @@ subsection, and `docs/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`).
 `EnterManorCellars` and `LoadLondonAtWestGates` both call `SaveGameManager.Save()` even though
 they skip everything else — they are the two `GameFlowController` checkpoints §6 counts.
 
-If you add or change transition behaviour you must touch all six, or consolidate them first.
+If you add or change transition behaviour you must touch all seven, or consolidate them first.
 
 ⚠️ **`Home_London_Prefab` contains a `Portal_Home_London` whose `TargetChunk` is
 `Home_London_Data` itself** (verified: both resolve to guid `5a35b572…`). Using it reloads and
 resets Home. It is an authoring trap, not an example to copy.
 
 **If you need to *react* to a chunk change, poll — do not hook a transition.** `CurrentChunkData`
-is a public serialized field written from **seven** places across six files: both `ChunkManager`
-routines, `GameFlowController` ×2, `SaveGameManager`, `DeathScreenUI`, and two editor tools. Any
+is a public serialized field written from **eight** places across six files: both `ChunkManager`
+routines, `GameFlowController` ×2, `SaveGameManager`, `DeathScreenUI`, and two editor tools
+(`DevZoneJump`, `DiscoverEnglandSetup`). An earlier version of this line said seven; the count is
+eight, checked with `grep -rn "CurrentChunkData = " --include="*.cs" Assets/`. Any
 one hook misses the other paths, and turning the field into a property to raise an event would
 stop Unity serialising the scene's authored starting chunk. `VehicleSpawner` and
 `VehicleController` both compare against a remembered reference instead — cheap, and it catches
@@ -320,8 +331,12 @@ Renaming these breaks Unity serialization silently (fields go null / enums shift
 - **Class names** — the `.cs` filename must match the `MonoBehaviour` class name, and script
   GUIDs in `.meta` files bind prefabs/scene to the script. Rename via Unity, not the filesystem.
 - **Enums are serialized by integer index.** Reordering or inserting values silently remaps
-  existing data. Live enums: `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`,
-  `GameFlowState`, `HUDActionButton.ActionKind`, `InstanceDoor.Destination`. Always append.
+  existing data. **Twelve live enums**, from `grep -rn "public enum" --include="*.cs"
+  Assets/Scripts` at `ccfa9c9` — an earlier version of this list named only the first seven:
+  `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`, `GameFlowState`,
+  `HUDActionButton.ActionKind`, `InstanceDoor.Destination`, plus `PlacementCategory`,
+  `CityRegion`, `QuestConditionType`, `MagicTutorial.Stage` and `TutorialSequence.Stage`.
+  Always append.
   `HUDActionButton.ActionKind` is the one with values proven live in serialized data: `c.unity`
   holds **six** authored `HUDActionButton` components covering all four original values —
   `Attack=0` on `AttackButton`, `Ability=1` on `Skill0/1/2`, `Inventory=2` on `MapBagShortcut`,
@@ -372,7 +387,7 @@ is the single most load-bearing line in the whole consequence loop.
 
 ### Known issues in these systems (verified, all open)
 
-- ~~**Stealth is keyboard-only.**~~ **Fixed** on `feat/crouch-button`. The HUD has a **CRO** button
+- **Stealth is reachable on mobile.** The HUD has a **CRO** button
   (`HUDActionButton.ActionKind.Crouch` → `UIManager.OnCrouchPressed` →
   `StealthController.ToggleStealth`), built in code beside ATK and USE, reading `ATK, USE, CRO`
   right to left along the bottom. `KeyCode.C` still works and is how it gets tested in the editor.
@@ -398,10 +413,18 @@ is the single most load-bearing line in the whole consequence loop.
   stamped through the palette, the pub is where it was, and the bike spawns. The hand-written
   nested `PrefabInstance` block was accepted by Unity — which is worth knowing, because it means
   mirroring the blocks already in a prefab file is a workable way to author one without Unity.
-- ~~**`MovementSpeed` has no single owner.**~~ **Fixed** (`a6b387e`, on `main`). Modifiers are
-  keyed by source via `CombatController.SetSpeedMultiplier` / `ClearSpeedMultiplier`, and
-  movement reads `EffectiveMovementSpeed`. `MovementSpeed` is now a read-only base — never
-  multiply it in place again. ~~`VehicleController` has no `Unmount`~~ — see §11.
+- **`MovementSpeed` has exactly one owner.** Modifiers are keyed by source via
+  `CombatController.SetSpeedMultiplier` / `ClearSpeedMultiplier`, and movement reads
+  `EffectiveMovementSpeed`. `MovementSpeed` is a read-only base — never multiply it in place.
+- ⚠️ **LIVE DEFECT: no police officer has `IsPolice` set, so arrest never fires.** All five
+  `Police_*` prefabs carry `EnemyAI`, but only `Police_PCSO.prefab` serializes `IsPolice` at all
+  and it is `0`; the other four predate the field and read the C# default, which is also false.
+  `ArrestRoutine` is keyed off `EnemyAI.IsPolice` via `Health.LastAttacker`, so dying to the
+  police kills you instead of arresting you, and `WantedManager.DespawnPolice` destroys nothing.
+  Fix is ticking the box on all five prefabs in the Inspector — **never** by re-running
+  `ModernBritainSetup`, which is Danger Zone and mints fresh GUIDs (§7).
+  *(This is also the live proof that appending a serialized field is safe: four prefabs written
+  before `IsPolice` existed load without it and take the default rather than breaking.)*
 - **Nosey Parkers fire on any concealment below max.** One cast drains 34 with 5/sec regen, so
   every cast opens a ~7-second window in which every parker in range starts reporting. Each
   parker also sets `this.enabled = false` after reporting (the comment says "run away", but it
@@ -551,7 +574,9 @@ Arm a preset, click in the Scene view, Shift to keep stamping, Esc to disarm.
 | A starting set | `Editor/StarterPresetGenerator` | `Tools → GBA → Content → Create Starter Presets`. Skips what exists; never overwrites. |
 
 - **`PlacementCategory` is serialized by index — append only** (§7). So is
-  **`PlacementPreset.CityRegion`** (`Assorted = 0`, `London = 1`, `Birmingham = 2`), added when the
+  **`PlacementPreset.Region`**, of type `CityRegion` (`Assorted = 0`, `London = 1`,
+  `Birmingham = 2`) — the field is `Region`, the type is `CityRegion`, and the YAML key is
+  `Region:`. Added when the
   London cast made a single flat NPC grid unusable.
 - **The NPC section is the only one split by region**, into one sub-heading per `CityRegion`. The
   split is drawn by iterating the enum rather than the presets, so **a region with nothing in it
@@ -772,8 +797,10 @@ contract is `AGENTS.md` (hard rules) and `ART_PIPELINE.md` (the spec and the req
   `AnimatorController`, then assigns known assets to what was waiting for them.
 
 **The art direction is a post-process, not a prompt.** Sources arrive photoreal and large; the
-importer area-averages them down to **48 px per world unit**, so a 1.35-unit character lands near
-65 px — digitised-sprite style. This is deliberate: asking a generator for low resolution produces
+importer area-averages them down to **48 px per world unit**, so a 1.55-unit character lands near
+74 px — digitised-sprite style. (Sheets imported before 2026-08-04 were sized against the old
+1.35-unit adult and landed near 65 px; the reduction is per-import, so they are not re-scaled.)
+This is deliberate: asking a generator for low resolution produces
 a different fake pixel grid every time, whereas a deterministic reduction treats every asset
 identically however far apart they were generated. Filtering is **Point**.
 
@@ -832,46 +859,38 @@ reference style.
 
 ### Where the art stands
 
-Delivered and in the game:
+⚠️ **This section is a summary, not the register.** The authoritative, re-derivable status is
+`python Tools/art_status.py`, which reads the tracked files rather than anyone's memory.
 
-- `spr_vehicle_ebike` — the hire e-bike, wired into `EBike.prefab`.
-- `sheet_char_player_idle` (4 frames), `sheet_char_player_walk` (4 frames) and
-  `sheet_char_player_hurt` (3 frames) — sliced, clipped, and driving `player_Controller`, which is
-  assigned to the player's Animator in place of `Bandit_Controller`. The player is `Height 1.6`,
-  `GroundOffset 0`, `ActorVisual` scale 1.
+Counted at `ccfa9c9`: **29 subjects, 146 files under `Assets/Art/Generated/`, 32 animator
+controllers.** Complete five-action sets (idle/walk/attack/hurt/death) exist for the player, the
+PCSO, Bobby, and five London enemies — Neek, OG, Roadman, Spicehead and Tainted. Tortured Neek
+has an idle only, and is expected to slide and to have no death pose until that is fixed.
 
-- `sheet_char_mosley_idle` and `sheet_char_pharmacist_idle` — 4 frames each, sliced, clipped, and
-  built into `mosley_Controller` and `pharmacist_Controller`. Both wired into their presets by the
-  importer, and both standing in `Home_London_Prefab` as the first NPCs authored end to end.
+Named London cast — Mosley, the pharmacist, both clerks, Swalls, Riggs, Murtaugh, Ralph, Sanjeet,
+Spencer, Daniel Pauls, Neigel Fromage — have idles; Murtaugh and Neigel Fromage also have walks.
+Five villager variants exist (base, black, child, chinese, female), four of them with walks.
+The tracksuit geezer (`underhoused`) has idle, hurt and cast. `spr_vehicle_ebike` is wired into
+`EBike.prefab`.
 
-- `sheet_char_villager_idle` (4 frames, 6 fps) and `sheet_char_villager_walk` (3 frames, 6 fps) —
-  the **first subject with a walk sheet**, which matters because `Preset_Villager` has `Roams: 1`
-  and a roaming NPC without one slides along the ground. `villager_Controller` holds Idle and Run
-  and exactly two transitions, the `Speed` pair. Two instances stand in `Home_London_Prefab`.
+⚠️ **`player_butterknife_attack` and `player_slingshot_attack` are delivered, and both built
+controllers — but nothing consumes them.** `grep -rn "butterknife\|slingshot" --include="*.cs"`
+over `Assets/Scripts` and `Assets/Editor` returns nothing, so no code swaps the player's animator
+by equipped weapon. The art is ahead of the system; do not read the sheets as evidence that
+weapon-specific attacks work.
 
-  ⚠️ **This art began life as a failed Daniel Pauls generation** — the brief asked for a stage
-  magician in a pink Las Vegas suit and the generator returned a middle-aged bloke in a patterned
-  shirt, cargo shorts and flip-flops. Rather than bin it, the frames were retiled under the
-  `villager` subject, which already had a preset waiting with `ArtSubject: villager`. Two lessons
-  worth keeping: a subject is chosen by which preset is waiting for it, not by what was asked for;
-  and the delivered *sheet* was unusable (four byte-identical cells) while the *frames* behind it
-  were fine, so check the frames before rejecting a delivery.
-
-  The walk is three frames, not four, and **frame 3 is the weak one** — fill 85% against the other
-  two at 90%, mean width 166 px against 174 and 187, and drawn more side-on, so he appears to
-  shrink and half-turn on the third step. It passes the 1.4× width tolerance, so nothing refuses
-  it. A fourth frame plus a redraw of 3 at the angle and scale of 1 and 2 is the fix.
-
-Re-delivered 2026-07-30 and **imported**: the player's `attack`, `cast` and `death` sheets.
-The earlier full-sheet generations (below) were abandoned in favour of **single-frame generation
-+ local tiling**: six 512×512 frames per action generated one at a time (AI Studio, chained by
-attaching the previous frame), converted/measured/re-aligned locally into `art_incoming/frames/`,
-tiled to 3072×512 sheets by a local script, pre-checked by `Tools/precheck_sheets.py` (which
-replicates the importer's checks, including a strict threshold-200 baseline pass — added after a
-blurred shoe edge on `cast_6` passed the lenient check yet read 23 px high to the importer's
-alpha-after-unmix feet measure). All three sheets sliced, clipped and added to
-`player_Controller`. **The `cycle` sheet was rejected and has been discarded** — cancelled, not
+**Still outstanding:** Daniel Pauls' walk and cast, the tracksuit geezer's walk/attack/death,
+Tortured Neek's four combat actions, the squirrel entirely, and the three police tiers above
+Bobby (Armed Response, Occult Agent, Occult Commander). The `cycle` sheet is **cancelled**, not
 pending (§11).
+
+⚠️ **`murtaugh_Controller` holds only an `Idle` state** and never references the committed
+`sheet_char_murtaugh_walk` clip, while `Preset_OfficerMurtaugh` has `Roams: 1` — so he slides.
+Fix needs the sheet re-staged out of `art_incoming/processed/` and the importer re-run.
+
+**London's buildings arrived by a different route** — imported 3D models (`e50bb71`, `b30c7e8`),
+not generated sprites. That does not change the rule that the 2D art agent produces sprites only
+and must never generate or deliver 3D assets.
 
 ### `BuildController` used to wire the batch, not the controller (fixed and verified 2026-07-30)
 
@@ -1022,9 +1041,10 @@ Adding an NPC is meant to cost two clicks in Unity and no code at all:
   them. Nothing in `NpcFactory` may touch `UnityEditor`.
 - **Dialogue is generated at authoring time, never at build time.** `AssetDatabase.CreateAsset`
   does not exist at runtime. `NpcFactory` only ever *reads* `preset.Conversation`.
-- **`NpcHeight` of 0 means inherit** — the importer writes the subject's `worldHeight` there. No
-  preset hardcodes a value, including the squirrel, who is 0.45 against a councillor's 1.35 and
-  will read as a man in a squirrel suit until his sheets land.
+- **`NpcHeight` of 0 means inherit** `EKVibe.CharacterHeight`, currently **1.55**. Of the 34
+  presets, 12 are 0, 13 are an explicit 1.55, and one — the child — is 1.3. The squirrel is still
+  0, so until his sheets land he builds at 1.55 and reads as a man in a squirrel suit; his
+  intended `worldHeight` is 0.45 and the importer will write it.
 - **The importer always wins on controller and sprite, never on height.** Those two are derived
   from the art, so a fresh import replaces placeholder wiring with no manual step; height is
   tunable, so a hand-set value survives. Point a preset at another subject's animations on purpose
@@ -1073,21 +1093,25 @@ Swalls**, the **Quidland** and **F.U. Sports** clerks, **Commissioner Spencer**,
 Daniel Pauls were retagged London; the villager and the Nosey Parker stay `Assorted`, since they are
 placed everywhere.
 
-⚠️ **An earlier version of this section said none of them was placed and none had art. Both
-stopped being true in `4f7dc62`** and the line was never updated. As of 2026-08-03:
+As of 2026-08-04 at `ccfa9c9`:
 
 - **Nine NPCs stand in `Home_London_Prefab`** — Mosley, the pharmacist, both clerks, Swalls,
   Riggs, Murtaugh, Ralph and Sanjeet — plus two villagers, so eleven in all. **Commissioner
   Spencer is the one cast member still unplaced.**
 - **All eight have idle art**, wired by the importer through `ArtSubject`. Murtaugh also has a
   walk (he is the only one that `Roams`).
-- ⚠️ **Not one of them can talk.** No `PlacementPreset` in the project has a `Conversation`
-  assigned — checked across all 23. Every NPC in the game is currently scenery with a name.
+- **There are 34 presets, and 15 of them carry a `Conversation`.** Every one of those 15 is a
+  **single node with zero choices** — an ambient one-liner, written by the owner in `6ceadf6`
+  ("Give the London cast their voices"), not generated filler. So the cast talks; it does not
+  yet *branch*.
 
-That last point is the honest state of the content layer, and it is deliberate: the v1 dialogue
-was deleted on 2026-08-03 so the quests could be written from scratch (§9). `ArtSubject` remains
-the field that matters for the art pipeline — `ArtImportTool.AutoAssign` finds a preset by that
-string, which is what makes step 3 above need no manual wiring.
+**No choice exists anywhere in the project, so nothing can grant or complete a quest through
+dialogue.** `grep -rn "GrantQuestId: [^ ]" Assets/Data/Dialogue/` returns nothing. That is the
+honest state of the content layer and it is deliberate: the v1 dialogue was deleted on 2026-08-03
+so the quests could be written from scratch (§9), and the words are the owner's own work.
+
+`ArtSubject` remains the field that matters for the art pipeline — `ArtImportTool.AutoAssign`
+finds a preset by that string, which is what makes step 3 above need no manual wiring.
 
 - **Murtaugh is the only one that `Roams`**, so he is the only one queued for a walk sheet as well as
   an idle. The villager is the worked example of why (§12): a roamer with no walk sheet slides.
@@ -1378,11 +1402,13 @@ was deliberately dropped; nothing in the codebase relied on it.
   conversations. The dialogue prose in `BuildData()` itself is untouched by any of this; only the
   helper bodies below it changed.
 - **Two things now catch the traps above — a runtime net and an author-time check.** Both compile
-  and the tutorial plays through unchanged, but ⚠️ **neither has actually done its job yet, and
-  cannot until conversations exist.** The guard has never *fired* — no authored conversation can
-  trap the player, so it is demonstrated inert rather than demonstrated correct — and the validator
-  has never run over an asset, because there are still zero `DialogueData` assets. Treat both as
-  untested the first time a real conversation goes through them.
+  and the tutorial plays through unchanged, but ⚠️ **neither has been shown to do its job.**
+  **15 `DialogueData` assets now exist** in `Assets/Data/Dialogue/Generated/`, so the validator
+  finally has something to run over — but every one of them is a single node with no choices, so
+  none can contain a cycle, a dangling `NextNodeId`, a duplicate `Id` or an inescapable node.
+  The guard has therefore still never *fired*, and the validator has never had a graph worth
+  validating. Treat both as untested the first time a **branching** conversation goes through
+  them.
   - **`DialogueManager.CanEscapeFrom`** is a BFS over *currently pressable* choices from the node
     being displayed, looking for anything that ends the chat (empty `NextNodeId`, an id that
     resolves to nothing, or a node with no choices). If none is reachable, `DisplayNode` appends
@@ -1443,7 +1469,7 @@ was deliberately dropped; nothing in the codebase relied on it.
   Also worth knowing before anyone tidies presets into subfolders: **`PathFor` keys the generated
   asset on the preset's filename only, not its path**, so two same-named presets in different
   folders would share one `Dialogue_<Name>.asset` and the second generation would overwrite the
-  first. Unreachable today — all 23 presets are flat in `Assets/Data/Presets/`.
+  first. Unreachable today — all 34 presets are flat in `Assets/Data/Presets/`.
 - **Adopting an existing conversation mutates the preset but is reported as nothing.**
   `EnsureAmbientConversation` returns false on the adopt path — correct, it did not write the
   line — but it still does `preset.Conversation = data; SetDirty(preset)`, and

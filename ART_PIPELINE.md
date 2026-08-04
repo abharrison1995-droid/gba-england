@@ -481,8 +481,16 @@ one and a standing one does not.
 
 ### 7.5 Band 2 — the tutorial cast
 
-The opening magic quest is the only scripted sequence in the game and both of its characters are
-untextured capsules today.
+The opening magic quest is the only scripted sequence in the game. **Band 2 is partly delivered —
+it is NOT done**, and an earlier version of this file said it was.
+
+| Subject | Delivered | Outstanding |
+|---|---|---|
+| `danielpauls` | `idle` | `walk`, `cast` |
+| `underhoused` | `idle`, `hurt`, `cast` | `walk`, `attack`, `death` |
+
+⚠️ `underhoused` was specified below as needing `attack`, not `cast`, and a `cast` sheet was
+delivered instead. Both are now wanted: `cast` exists and is kept, `attack` is still outstanding.
 
 **Daniel Pauls** — `sheet_char_danielpauls_<action>.png`, actions: `idle`, `walk`, `cast`.
 A stage magician in a **pink jazzy Las Vegas suit** — sequins, wide lapels, ruffled shirt, far too
@@ -614,10 +622,13 @@ All eight are ordinary adult humans: `worldHeight` 1.35, cells 512×512, 4 frame
 
 ### 7.8 Band 5 — the consequence layer
 
-Five police tiers escalate as the wanted level rises. All five are untextured capsules today.
-Actions for each: `idle`, `walk`, `attack`, `hurt`, `death`. **Band 5 is the first two only** —
-`police_pcso` and `police_bobby`. The rest are listed so the visual escalation can be designed as
-a set, and are requested later.
+Five police tiers escalate as the wanted level rises. Actions for each: `idle`, `walk`, `attack`,
+`hurt`, `death`.
+
+✅ **`police_pcso` and `police_bobby` are DELIVERED** — all five actions each, imported and
+committed. **Do not generate either again.** The remaining three tiers (Armed Response, Occult
+Agent, Occult Commander) are still untextured capsules and are the outstanding part of this band;
+they are listed together so the visual escalation can be designed as a set.
 
 | Subject | Tier | Look |
 |---|---|---|
