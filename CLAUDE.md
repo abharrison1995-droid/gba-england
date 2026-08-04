@@ -589,9 +589,21 @@ Three agents are defined in `.claude/agents/`. Invoke them by name.
 
 | Agent | Model | Role |
 |---|---|---|
-| `architect` | Opus | Scopes, produces the plan and mapping table, flags structural risk. **Never edits code.** |
-| `implementer` | Sonnet | Works strictly from the plan. Small single-concern commits. No scope improvisation. |
-| `reviewer` | Opus | Reviews the diff against the plan, hunting silent failure modes — not style. |
+| `architect` | `claude-opus-5` | Scopes, produces the plan and mapping table, flags structural risk. **Never edits code.** |
+| `implementer` | `claude-opus-5` | Works strictly from the plan. Small single-concern commits. No scope improvisation. |
+| `reviewer` | `claude-sonnet-5` | Reviews the diff against the plan, hunting silent failure modes — not style. |
+
+The `model:` frontmatter takes an **exact model id**, not the `opus` / `sonnet` tier alias the
+`Agent` tool's own parameter is limited to. Tested 2026-08-04: an exact id launches without error.
+⚠️ **That proves the launch path accepts it, not that the named model served the request** — there
+is no way from inside a session to confirm which model actually ran a subagent, so a silent
+fallback to the tier default is not ruled out. Do not report a pin as "working" beyond that.
+
+The 2026-08-04 arrangement is deliberate and inverts the earlier one: the implementer moves up from
+Sonnet to Opus, and the reviewer down from Opus to Sonnet. Worth watching — under the old split the
+reviewer was the role that caught the substantive faults (a false `IsPolice` safety claim, a
+silently broken preset on a failed save, a validator false positive), so if review quality drops,
+that trade is the first thing to look at.
 
 Typical use: *"use the architect subagent to plan X"* → approve the plan → *"use the implementer
 subagent to execute it"* → *"use the reviewer subagent to review the diff against the plan"*.

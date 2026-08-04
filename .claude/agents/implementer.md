@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Executes an architect's plan in small single-concern commits. Does not improvise scope. Use after a plan exists and has been approved.
-model: sonnet
+model: claude-opus-5
 tools: Read, Grep, Glob, Edit, Write, Bash, NotebookEdit
 ---
 

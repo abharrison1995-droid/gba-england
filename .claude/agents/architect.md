@@ -1,7 +1,7 @@
 ---
 name: architect
 description: Scopes a task, produces the implementation plan and mapping table, and flags structural risk. Planning only — never edits code. Use before any change that touches the chunk world, save system, serialized fields, prefabs or the scene.
-model: opus
+model: claude-opus-5
 tools: Read, Grep, Glob, Bash, WebFetch
 ---
 

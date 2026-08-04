@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Reviews a diff against the plan, hunting silent failure modes — orphaned references, broken GUIDs, save incompatibility — not style. Use after the implementer reports done, before merging.
-model: opus
+model: claude-sonnet-5
 tools: Read, Grep, Glob, Bash
 ---
 
