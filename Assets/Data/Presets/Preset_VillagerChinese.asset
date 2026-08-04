@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Villager
   NpcSprite: {fileID: -491269982782565319, guid: 9135e91b663652745b955d09de34aec4, type: 3}
   NpcController: {fileID: 9100000, guid: 2305e8204dabe8a4e8d28ae11396be73, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 0212562732733bb4ab08b646b6299df5, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -43,7 +43,7 @@ MonoBehaviour:
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: 
+  AmbientLine: Someones gotta tell that Fromage fella he's looking a bit third reichey..
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25

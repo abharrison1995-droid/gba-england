@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Roaming Pharmacist
   NpcSprite: {fileID: 6286465221450647866, guid: 29abfc1169ab70045b39de9af719cbd9, type: 3}
   NpcController: {fileID: 9100000, guid: a39001dd9fdc5eb46b04f46d420de6f0, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 910dc3b9ac5af3247b6e9d399f2f55fa, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -43,4 +43,9 @@ MonoBehaviour:
   Roams: 1
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: 
+  AmbientLine: Don't even ask if i'll do you it on tick mate.
+  Pickpocketable: 0
+  PickpocketMinGold: 5
+  PickpocketMaxGold: 25
+  PickpocketCatchChance: 0.3
+  Region: 0

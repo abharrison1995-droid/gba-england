@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Officer Rodger Riggs
   NpcSprite: {fileID: 5491085993366197703, guid: bd545897737b9c74980c5ca7824e271b, type: 3}
   NpcController: {fileID: 9100000, guid: 0308febef6a6e864f8a81a71c8374d09, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: c94bea743dab26f40b925a0baadd4f86, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

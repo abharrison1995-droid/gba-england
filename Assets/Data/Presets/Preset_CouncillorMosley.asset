@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Councillor Mosley
   NpcSprite: {fileID: -8915839385288641541, guid: 8442fe31da941dc478ee7c1ff954db49, type: 3}
   NpcController: {fileID: 9100000, guid: a8943cc710b3c3c4d9ba9a8464c879eb, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 5aa216fe5918d1c44ae41d2f96d2f6db, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -43,5 +43,9 @@ MonoBehaviour:
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: 
+  AmbientLine: Christ.. what have I done? You! no.. no.. leave me be...
+  Pickpocketable: 0
+  PickpocketMinGold: 5
+  PickpocketMaxGold: 25
+  PickpocketCatchChance: 0.3
   Region: 1

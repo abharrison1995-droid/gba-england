@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Commissioner Spencer
   NpcSprite: {fileID: 3775892888941489966, guid: aa8085d60a9906345a370354c9efbaf9, type: 3}
   NpcController: {fileID: 9100000, guid: 21d55165dfa62b14da5b2ed9f3e55d2a, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 6f3c5496dd426ce4387ca85dbb97175a, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

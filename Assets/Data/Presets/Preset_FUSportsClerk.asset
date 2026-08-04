@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: F.U. Sports Clerk
   NpcSprite: {fileID: -270752401736249008, guid: cbebf3ceda193f1439ed5ee3234b9730, type: 3}
   NpcController: {fileID: 9100000, guid: 37898249b874e0644a71e876230a21db, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 64d387431178c2b4a884cc9b4d154107, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

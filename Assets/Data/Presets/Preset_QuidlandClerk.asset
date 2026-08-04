@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Quidland Clerk
   NpcSprite: {fileID: -1643785627701444538, guid: 3bd7e6769f902cb448ea60a547b78ca4, type: 3}
   NpcController: {fileID: 9100000, guid: 5b634bbeea4fe5b47a0bb94fcd000ef9, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 2a099c53fe3d91a4996c92bb6ab6140d, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

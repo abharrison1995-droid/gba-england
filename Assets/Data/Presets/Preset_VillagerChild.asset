@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Child
   NpcSprite: {fileID: 3805318057142639579, guid: 7c3adf8960191a449b69e2b7c17230cc, type: 3}
   NpcController: {fileID: 9100000, guid: d0dc0113b1890a2448a313b454b59532, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: a621e1e690d5e174e87c4b23dd05ed28, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -43,7 +43,8 @@ MonoBehaviour:
   Roams: 1
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: 
+  AmbientLine: Mums new boyfriend lets me take his knives to school. Irresponsible
+    really.
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25

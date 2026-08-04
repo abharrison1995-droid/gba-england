@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Ralph
   NpcSprite: {fileID: -1541734953154856472, guid: 4382f5a60c81d904ea0e8b2f03ca9106, type: 3}
   NpcController: {fileID: 9100000, guid: cea8a1bbf8ce7fc4c9d445e4ad39f810, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: cbc985cb71bdc2f41a2dee84b66ee997, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

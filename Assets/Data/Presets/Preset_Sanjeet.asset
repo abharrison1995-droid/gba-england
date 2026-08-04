@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Sanjeet
   NpcSprite: {fileID: 4665928151777241071, guid: 255b5afe6fe275e479bb96b7fb424c2b, type: 3}
   NpcController: {fileID: 9100000, guid: 1a0678e8180192d4b86089d38a235dfe, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: f6fd5df483b472247b2b0713faa16e53, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

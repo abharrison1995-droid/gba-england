@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Neigel Fromage
   NpcSprite: {fileID: 5890597411444297579, guid: e2ee243329768da44ab46935cf74016c, type: 3}
   NpcController: {fileID: 9100000, guid: f40938c17bc6e5847b0c51a72a4b4cae, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 9de46ae2a7b52614bbe300c32c374fb2, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -43,7 +43,7 @@ MonoBehaviour:
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 11400000, guid: 7a3d92c05e8b41f4b6027ca9de41b385, type: 2}
-  AmbientLine: 
+  AmbientLine: Heil England!
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25

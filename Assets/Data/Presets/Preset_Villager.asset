@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Villager
   NpcSprite: {fileID: 2028809907365973842, guid: 615d26d355534ad41930c87c2c87185a, type: 3}
   NpcController: {fileID: 9100000, guid: b4d0968430b24f649a72bf364cf72bb5, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 5ee132e4c5c2f874abc5f484d79eb9b2, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -43,8 +43,9 @@ MonoBehaviour:
   Roams: 1
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: 
+  AmbientLine: '*burps*'
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25
   PickpocketCatchChance: 0.3
+  Region: 0

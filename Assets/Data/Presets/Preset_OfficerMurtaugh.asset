@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Officer Martin Murtaugh
   NpcSprite: {fileID: 4017601644764158098, guid: f3161d2b296a1c644b7e8252eeb5ec52, type: 3}
   NpcController: {fileID: 9100000, guid: b1247e6cd138ade4689ade17d47a0b20, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 9038c906054ee454cab7cff17e52233c, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

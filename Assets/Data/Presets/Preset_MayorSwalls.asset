@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Mayor Swalls
   NpcSprite: {fileID: -1749248113159070636, guid: cf887eeb21330ca46a632c87d4ce37e9, type: 3}
   NpcController: {fileID: 9100000, guid: 8f47f13379c5e7e4c8fa11b8092b62d5, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 06c04bd134281a74e840d23c2114af24, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

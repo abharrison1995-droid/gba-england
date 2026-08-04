@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Villager
   NpcSprite: {fileID: 6435055022927975572, guid: a6112ced75f259c4fb4f68422895d2a9, type: 3}
   NpcController: {fileID: 9100000, guid: 28d31d2dd5f94ed41b0348d76e630bb0, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 1be95b3d32af46c479a6d9eebfd63009, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -43,7 +43,7 @@ MonoBehaviour:
   Roams: 1
   RoamRadius: 6
   Speaker: {fileID: 0}
-  AmbientLine: 
+  AmbientLine: MOVE! I'm gonna shit.
   Pickpocketable: 0
   PickpocketMinGold: 5
   PickpocketMaxGold: 25
