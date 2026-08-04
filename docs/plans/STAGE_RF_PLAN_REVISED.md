@@ -1,11 +1,17 @@
 # Stage R + Stage F brief — REVISED (2026-07-29, code-verified)
 
-> **STATUS (2026-07-29, later): Stage R is DONE** in the working tree (pending the user's
-> Unity verification + commit): both files renamed with `git mv` (.meta preserved),
-> `ChunkName` value updated, save migration added in `SaveGameManager.ReadSaveData`, all code
-> references and docs updated, plus one find beyond the table — `GrantQuestLocation` display
-> strings in `Dialogue_Mosley_Intro.asset` (display-only, now "London"). **Paste only the
-> Stage F parts below into a new Claude Code session.**
+> **STATUS: Stage R is DONE and committed. Stage F is outstanding and is why this file is
+> still live.**
+>
+> Stage R shipped on 2026-07-29: both files renamed with `git mv` (`.meta` preserved),
+> the `ChunkName` value updated, the save migration added in `SaveGameManager.ReadSaveData`,
+> and all code and doc references updated. `Home_London` and `GBA: England` are the current
+> names everywhere.
+>
+> ⚠️ **The Stage R mapping table below is a historical record, not a to-do list.** It still
+> reads in the imperative and names `Dialogue_Mosley_Intro.asset`, which no longer exists —
+> the v1 dialogue was deleted on 2026-08-03. **Paste only the Stage F parts into a new
+> session.**
 
 Revised from `docs/archive/STAGE_F_BRIEF.md` after a verification pass against the code.
 Corrections are marked **[FIX]**, additions **[ADD]**. Everything not marked is
