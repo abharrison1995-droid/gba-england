@@ -79,8 +79,22 @@ public static class GeneratedEnemyPrefabTool
         // Update-only: Police_PCSO.prefab already exists, hand-built by ModernBritainSetup, and is
         // never (re)created here. No preset — police are spawned by WantedManager.SpawnPlod, not
         // placed from the World Palette. DisplayName/Health/Damage are unused on the update path
-        // and left blank/zero. Its EnemyAI.IsPolice must not be disturbed: that flag is what routes
-        // player death through GameFlowController.ArrestRoutine instead of killing them (CLAUDE.md §8).
+        // and left blank/zero.
+        //
+        // ⚠️ Do NOT expect EnemyAI.IsPolice to be set on this prefab. An earlier version of this
+        // comment claimed it was and had to be preserved; it is not. None of the five Police_*
+        // prefabs serializes IsPolice at all, so every officer loads with the C# default, false.
+        // ModernBritainSetup.cs:144 does set it, but that never reached disk. Two live consequences,
+        // both pre-existing and neither caused by this tool: GameFlowController's arrest path
+        // (lines 321, 381) never fires, so police-dealt death kills instead of arresting; and
+        // WantedManager.DespawnPolice (line 116) filters on the same flag and therefore destroys
+        // nothing. Fix is five Inspector ticks — NOT a re-run of ModernBritainSetup, which is a
+        // Danger Zone tool that mints fresh GUIDs and orphans placed instances (CLAUDE.md §7).
+        //
+        // Note this tool's SaveAsPrefabAsset rewrites the whole YAML, so IsPolice: 0 becomes
+        // explicit serialized data rather than an absent key. Behaviour is identical today, but it
+        // pins the value: changing the field's default to true later would fix the other four
+        // prefabs and silently not fix this one.
         new EnemySpec("police_pcso", "Assets/Prefabs/ModernBritain/Police_PCSO.prefab", null, null, 0, 0, ""),
     };
 
@@ -164,15 +178,31 @@ public static class GeneratedEnemyPrefabTool
             GameObject prefab;
             if (exists)
             {
-                UpdatePrefab(spec, controller, resting, report, problems);
-                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(spec.PrefabPath);
-                report.Add($"{spec.PrefabPath}: updated in place.");
+                int before = problems.Count;
+                prefab = UpdatePrefab(spec, controller, resting, problems);
+                // Only claim success when nothing was recorded against it. Saying "updated in
+                // place" beside a problem entry reads as though both happened.
+                report.Add(problems.Count == before
+                    ? $"{spec.PrefabPath}: updated in place."
+                    : $"{spec.PrefabPath}: updated in place, with problems (below).");
             }
             else
             {
-                CreatePrefab(spec, controller, resting);
-                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(spec.PrefabPath);
+                prefab = CreatePrefab(spec, controller, resting);
                 report.Add($"{spec.PrefabPath}: created.");
+            }
+
+            // Both branches return what the save actually produced rather than re-reading the path
+            // and hoping. A null here means the save failed, and passing it on would write a
+            // PlacementPreset with EnemyPrefab unset — which arms and ghosts in the World Palette
+            // and then places nothing, logging only PlacementBuilders' "has no EnemyPrefab". Worse,
+            // EnsurePreset never overwrites an existing preset, so a re-run would report "already
+            // existed" and never repair it. Refusing to write the preset is the recoverable failure.
+            if (prefab == null)
+            {
+                problems.Add($"{spec.PrefabPath}: the prefab save returned nothing, so no preset was " +
+                             "written for it. Nothing partial was left behind — fix the cause and re-run.");
+                continue;
             }
 
             EnsurePreset(spec, prefab, resting, presetCreated, presetSkipped);
@@ -211,7 +241,8 @@ public static class GeneratedEnemyPrefabTool
     //  CREATE
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    private static void CreatePrefab(EnemySpec spec, RuntimeAnimatorController controller, Sprite resting)
+    /// <summary>Returns the saved prefab asset, or null if the save failed.</summary>
+    private static GameObject CreatePrefab(EnemySpec spec, RuntimeAnimatorController controller, Sprite resting)
     {
         string rootName = System.IO.Path.GetFileNameWithoutExtension(spec.PrefabPath);
         var root = new GameObject(rootName);
@@ -282,7 +313,9 @@ public static class GeneratedEnemyPrefabTool
             // Root layer left at 0 — there is no Enemy layer (TagManager.asset has tags: []).
 
             // No DeleteAsset before this — a create-branch prefab does not exist yet by definition.
-            PrefabUtility.SaveAsPrefabAsset(root, spec.PrefabPath);
+            // The return value IS the saved asset; use it rather than re-reading the path, so a
+            // failed save surfaces as null instead of being silently indistinguishable from success.
+            return PrefabUtility.SaveAsPrefabAsset(root, spec.PrefabPath);
         }
         finally
         {
@@ -296,8 +329,9 @@ public static class GeneratedEnemyPrefabTool
     //  retuned by hand (this is exactly how Police_PCSO's existing IsPolice/Health survive).
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    private static void UpdatePrefab(EnemySpec spec, RuntimeAnimatorController controller, Sprite resting,
-        List<string> report, List<string> problems)
+    /// <summary>Returns the saved prefab asset, or null if the save failed.</summary>
+    private static GameObject UpdatePrefab(EnemySpec spec, RuntimeAnimatorController controller,
+        Sprite resting, List<string> problems)
     {
         GameObject contents = PrefabUtility.LoadPrefabContents(spec.PrefabPath);
         try
@@ -310,12 +344,40 @@ public static class GeneratedEnemyPrefabTool
             // Height is tunable, so a hand-set value must survive — same rule as
             // ArtImportTool.WirePresetsForSubject (line 548): only fill in the derived default when
             // nothing has been set yet.
+            //
+            // In practice this branch is unreachable on a freshly added component: WorldActorVisual
+            // declares `public float Height = EKVibe.CharacterHeight`, so AddComponent above yields
+            // 1.35 rather than 0. It fires only for a pre-existing component someone typed 0 into.
+            // Kept because that case is real, but do not read it as the tool being able to size an
+            // actor to anything other than CharacterHeight — it cannot, which is what the collider
+            // check below exists to make visible.
             if (visual.Height <= 0f)
             {
                 visual.Height = EKVibe.CharacterHeight;
                 visual.Width = EKVibe.CharacterWidth;
             }
             visual.ApplyVisual();
+
+            // A hand-built prefab may have been sized for a placeholder primitive rather than for
+            // sprite art, and this tool deliberately never resizes a collider, agent or nameplate —
+            // those are tuning, and update only touches what the art derives. Police_PCSO is the
+            // live example: capsule 2.025 tall, nameplate offset 2.375, both 1.5x the 1.35 sprite
+            // it is about to receive. Left alone that reads as a bug in the new art — a nameplate
+            // floating a metre overhead and swings connecting well above the visible body — so say
+            // so plainly rather than let it be discovered in play.
+            var capsule = contents.GetComponent<CapsuleCollider>();
+            if (capsule != null && visual.Height > 0f
+                && Mathf.Abs(capsule.height - visual.Height) > visual.Height * 0.2f)
+            {
+                var plate = contents.GetComponent<EnemyNameplate>();
+                problems.Add(
+                    $"{spec.PrefabPath}: collider is {capsule.height:0.##} units tall but the sprite " +
+                    $"is {visual.Height:0.##}. Nothing was resized — that is tuning, not art. To match " +
+                    $"it by hand, set CapsuleCollider height {visual.Height:0.##} and center Y " +
+                    $"{visual.Height * 0.5f:0.###}, NavMeshAgent height {visual.Height:0.##}" +
+                    (plate != null ? $", and EnemyNameplate HeightOffset {visual.Height + 0.35f:0.##}" : "")
+                    + ".");
+            }
 
             if (controller != null)
             {
@@ -336,7 +398,9 @@ public static class GeneratedEnemyPrefabTool
             if (placeholder != null)
                 Object.DestroyImmediate(placeholder.gameObject);
 
-            PrefabUtility.SaveAsPrefabAsset(contents, spec.PrefabPath);
+            // Preserves the .meta and the GUID, so c.unity's WantedManager.PolicePrefabs reference
+            // to Police_PCSO survives. Return value is the saved asset — see CreatePrefab.
+            return PrefabUtility.SaveAsPrefabAsset(contents, spec.PrefabPath);
         }
         finally
         {
