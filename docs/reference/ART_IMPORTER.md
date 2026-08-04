@@ -93,13 +93,11 @@ height and balloon.
 | Player | 1.8 |
 | Adult NPC (`EKVibe.CharacterHeight`, and `NpcHeight: 0` inherits it) | 1.55 |
 | Child | 1.3 |
-| Orcs | 2.36 |
-| BotWheel | 2.09 |
 
 `EnemyAI.Awake` takes `WorldActorVisual.Height` for the NavMesh agent and otherwise leaves the
-prefab's authored value alone. It used to hardcode `1.35f`, so Orcs pathed as 1.35 agents under
-2.16 colliders. Agent **radius** stays a uniform `0.28` on purpose — a wider agent gets stuck in
-doorways, and London now has buildings.
+prefab's authored value alone. It used to hardcode `1.35f`, so a taller enemy pathed as a 1.35
+agent under its real collider. Agent **radius** stays a uniform `0.28` on purpose — a wider agent
+gets stuck in doorways, and London now has buildings.
 
 ## Animator controllers
 
@@ -124,10 +122,10 @@ Now: states are resolved with `FindState` over the whole state machine; `idle` f
 `HasConditionalTransition` / `HasUnconditionalTransition`; and `RemoveDuplicateTransitions` clears
 existing duplicates on each run. Death still gets no return transition.
 
-`Editor/EnemyPrefabSetup.cs` wires its controllers just as unguardedly and is **not** affected,
-because `BuildPoseController` deletes and re-creates the controller every run — it never sees its
-own output. That is the delete-and-re-save hazard instead, and it is why the enemy controllers are
-safe to leave alone.
+`Editor/GeneratedEnemyPrefabTool.cs` builds the enemy controllers instead, and edits its prefabs in
+place rather than deleting and re-saving them — the shape `ArtImportTool` uses. (The old
+`EnemyPrefabSetup.cs` did delete and re-create its controller on every run; it was deleted with the
+Orc and Bot Wheel subjects.)
 
 ⚠️ **A controller can exist, be wired, and still ignore a clip.** `murtaugh_Controller` holds only
 an `Idle` state and never references the committed `sheet_char_murtaugh_walk` clip, so he slides
@@ -138,7 +136,7 @@ contents.
 
 `PlayMeleeSwing` returns early when `HasAttackAnimation()` — `Animator.HasState(0, "Attack")` on
 the `SwingRoot` animator. **Probe by state, not by the `MeleeAttack` parameter**: both
-`ArtImportTool` and `EnemyPrefabSetup` declare that parameter unconditionally, so it says nothing
+`ArtImportTool` and `GeneratedEnemyPrefabTool` declare that parameter unconditionally, so it says nothing
 about whether art exists. `SetFacing` still runs first — it is what points the attack clip the
 right way — and an in-flight swing is stopped and its pose cleared, since `NpcFactory` and
 `MagicTutorial` can attach an Animator after the fact.

@@ -22,7 +22,6 @@ public static class StarterPresetGenerator
     private const string VehicleDataPath = "Assets/Data/Vehicles/Limey_EBike_Data.asset";
     private const string EBikePrefabPath = "Assets/Prefabs/ModernBritain/EBike.prefab";
     private const string ChestPrefabPath = "Assets/3DModels/Animated Chest/OldChest/Chest.prefab";
-    private const string EnemyPrefabFolder = "Assets/Prefabs/Enemies";
 
     [MenuItem("Tools/GBA/Content/Create Starter Presets")]
     public static void Run()
@@ -33,12 +32,6 @@ public static class StarterPresetGenerator
         var skipped = new List<string>();
         var filled = new List<string>();
         var notes = new List<string>();
-
-        // ── Enemies ──────────────────────────────────────────────────────────────────────
-        CreateEnemyPreset("Orc 1", "Enemy_Orc1", created, skipped, notes);
-        CreateEnemyPreset("Orc 2", "Enemy_Orc2", created, skipped, notes);
-        CreateEnemyPreset("Orc 3", "Enemy_Orc3", created, skipped, notes);
-        CreateEnemyPreset("Bot Wheel", "Enemy_BotWheel", created, skipped, notes);
 
         // ── NPCs ─────────────────────────────────────────────────────────────────────────
         // Each carries the art subject its sheets are named after (ART_PIPELINE.md §7.3), so the
@@ -117,19 +110,6 @@ public static class StarterPresetGenerator
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════
-
-    private static void CreateEnemyPreset(string label, string prefabName,
-        List<string> created, List<string> skipped, List<string> notes)
-    {
-        Create(label, PlacementPreset.PlacementCategory.Enemy, created, skipped, p =>
-        {
-            string path = $"{EnemyPrefabFolder}/{prefabName}.prefab";
-            p.EnemyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (p.EnemyPrefab == null)
-                notes.Add($"{label}: {path} not found — run Tools → GBA → Danger Zone → " +
-                          "Build Enemy Prefabs first, then assign it.");
-        });
-    }
 
     /// <summary>
     /// One starter NPC, and the two things about it that cannot be derived from its label: the art

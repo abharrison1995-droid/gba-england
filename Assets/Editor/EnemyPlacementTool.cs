@@ -7,7 +7,7 @@ using ExiledAlvaston.Combat;
 using ExiledAlvaston.World;
 
 /// <summary>
-/// Drops an enemy prefab (e.g. Assets/Prefabs/Enemies/Enemy_Orc2) into the open scene or
+/// Drops an enemy prefab (e.g. Assets/Prefabs/Enemies/Enemy_Roadman) into the open scene or
 /// prefab, with optional stat overrides, a death loot list, and a quest key — an authored,
 /// saved-in-prefab placement rather than a Play-mode debug spawn. The chunk still needs its
 /// NavMesh baked (Tools > GBA > World > Bake Navigation Mesh) for the enemy to path.
@@ -38,7 +38,7 @@ public class EnemyPlacementTool : EditorWindow
             MessageType.Info);
 
         _enemyPrefab = (GameObject)EditorGUILayout.ObjectField(
-            new GUIContent("Enemy Prefab", "e.g. Assets/Prefabs/Enemies/Enemy_Orc2"),
+            new GUIContent("Enemy Prefab", "e.g. Assets/Prefabs/Enemies/Enemy_Roadman"),
             _enemyPrefab, typeof(GameObject), false);
 
         EditorGUILayout.Space();

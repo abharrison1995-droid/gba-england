@@ -65,7 +65,7 @@ docs/               # everything else — routed from docs/README.md
   `ChunkSize`, `CharacterHeight`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
 - **Editor menu path**: `Tools/GBA/<Category>/...` — `Place`, `Art`, `World`, `Debug`, `Repair`,
-  `Content`, plus **`Danger Zone`** for the four tools that overwrite or re-create assets. Each of
+  `Content`, plus **`Danger Zone`** for the five tools that overwrite or re-create assets. Each of
   those confirms first and names what it destroys. **Nothing destructive may go anywhere else.**
   `Tools/GBA/World Palette` is the one deliberate uncategorised exception.
 - **Mobile-first**: hot paths avoid allocation deliberately (preallocated `Collider[] _hitResults`,
@@ -208,9 +208,9 @@ confirmed, rather than leaving it hedged.
    longer overlap, and that the concealment bar snaps back to wherever it was actually authored* —
    it has been stretched across the whole cluster until now, so its real size and position are
    unknown and may need moving.
-3. **Every actor is 0.2 taller** — player 1.8, NPCs 1.55, child 1.3, Orcs 2.36, BotWheel 2.09.
-   Colliders, agents and nameplates were matched to each actor's sprite. *Check nobody's feet are
-   underground and no nameplate sits on a head.*
+3. **Every actor is 0.2 taller** — player 1.8, NPCs 1.55, child 1.3. Colliders, agents and
+   nameplates were matched to each actor's sprite. *Check nobody's feet are underground and no
+   nameplate sits on a head.*
 4. **`EnemyAI.Awake` no longer hardcodes `_agent.height = 1.35f`** — it takes
    `WorldActorVisual.Height`. *Check enemies path around buildings, not through them* (needs a
    NavMesh bake after collision).

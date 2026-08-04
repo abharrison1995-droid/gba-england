@@ -147,9 +147,10 @@ To change an existing prefab, edit it in place:
 PrefabUtility.LoadPrefabContents → modify → SaveAsPrefabAsset → UnloadPrefabContents
 ```
 
-`ArtImportTool` is the worked example. `EnemyPrefabSetup.BuildPoseController` is the counter-example
-— it deletes and re-creates its controller every run, which is only safe because nothing else
-binds to it.
+`ArtImportTool` and `GeneratedEnemyPrefabTool` are the worked examples — both edit in place. The
+counter-example used to be `EnemyPrefabSetup.BuildPoseController`, which deleted and re-created its
+controller every run; it was deleted along with the Orc and Bot Wheel subjects. The remaining
+rebuild-from-scratch tools all sit under `Danger Zone` and confirm before they run.
 
 ## Before any rename or refactor touching this document
 

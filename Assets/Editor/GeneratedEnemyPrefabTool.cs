@@ -22,11 +22,13 @@ using ExiledAlvaston.Vibe;
 /// SaveAsPrefabAsset, minting a fresh GUID and orphaning every placed instance. Re-running this
 /// tool is the normal way its own job finishes.
 ///
-/// EnemyPrefabSetup.cs is the source of *values* here (see the per-field comments below, each
-/// citing its line) but never of *save strategy* — that file deletes and re-creates its prefabs
-/// on every run, which is exactly what CLAUDE.md §7 documents as a trap for anything already
-/// placed. Update here always goes through LoadPrefabContents / SaveAsPrefabAsset /
-/// UnloadPrefabContents, the same shape as ArtImportTool.AssignVehicleSprite.
+/// The per-field values below were inherited from EnemyPrefabSetup.cs, the retired builder for the
+/// Orc and Bot Wheel subjects — those subjects were cut and the file deleted, so each comment now
+/// states its value outright rather than citing a line. Git holds the original if the provenance is
+/// ever wanted. Its *save strategy* was never copied: it deleted and re-created its prefabs on every
+/// run, which is exactly what CLAUDE.md §7 documents as a trap for anything already placed. Update
+/// here always goes through LoadPrefabContents / SaveAsPrefabAsset / UnloadPrefabContents, the same
+/// shape as ArtImportTool.AssignVehicleSprite.
 /// </summary>
 public static class GeneratedEnemyPrefabTool
 {
@@ -254,21 +256,21 @@ public static class GeneratedEnemyPrefabTool
         var root = new GameObject(rootName);
         try
         {
-            // CapsuleCollider height/radius/center: EnemyPrefabSetup.cs:313,307,315.
+            // CapsuleCollider height/radius/center: 1.35 / 0.28 / (0, 0.675, 0), inherited values.
             var col = root.AddComponent<CapsuleCollider>();
             col.height = 1.35f;
             col.radius = 0.28f;
             col.center = new Vector3(0f, 0.675f, 0f);
             // col.direction left at its Unity default (1 = Y-axis).
 
-            // Health.MaxHealth/CurrentHealth: EnemyPrefabSetup.cs:318-319 (45/45; 90/90 for tainted
-            // per the spec table). DestroyOnDeath/DestroyDelay left at Health.cs defaults (true/1.2).
+            // Health.MaxHealth/CurrentHealth: 45/45, and 90/90 for tainted, per the spec table.
+            // DestroyOnDeath/DestroyDelay left at Health.cs defaults (true/1.2).
             Health health = root.AddComponent<Health>();
             health.MaxHealth = spec.Health;
             health.CurrentHealth = spec.Health;
             health.DisplayName = spec.DisplayName;
 
-            // NavMeshAgent height/radius/speed/stoppingDistance: EnemyPrefabSetup.cs:323-326.
+            // NavMeshAgent height/radius/speed/stoppingDistance: 1.35 / 0.28 / 3.8 / 1.2, inherited.
             // EnemyAI.Awake overwrites most of these at runtime (speed, angularSpeed, acceleration,
             // stoppingDistance, radius, height) — authored anyway so the editor gizmo is not
             // misleading, per the plan's corrections.
@@ -279,7 +281,7 @@ public static class GeneratedEnemyPrefabTool
             agent.stoppingDistance = 1.2f;
 
             // EnemyAI.Damage: spec table (7; 14 for tainted). SightRadius/AttackRange/MoveSpeed:
-            // EnemyPrefabSetup.cs:330-332. AttackCooldown/AttackWindup/EyeHeight/TurnSpeed left at
+            // 16 / 1.6 / 3.8, inherited. AttackCooldown/AttackWindup/EyeHeight/TurnSpeed left at
             // EnemyAI.cs defaults (1.2/0.3/0.95/10). RangedCaster/IsPolice left false (EnemyAI.cs:22,27).
             EnemyAI ai = root.AddComponent<EnemyAI>();
             ai.Damage = spec.Damage;
@@ -292,16 +294,14 @@ public static class GeneratedEnemyPrefabTool
             visual.ActorSprite = resting;
             visual.Height = EKVibe.CharacterHeight;
             visual.Width = EKVibe.CharacterWidth;
-            // Awake() does not run on an editor-built object, so ApplyVisual() is called explicitly
-            // (EnemyPrefabSetup.cs:340 does the same and says why). Builds ActorVisual/SwingRoot and
-            // its SpriteRenderer.
+            // Awake() does not run on an editor-built object, so ApplyVisual() is called explicitly.
+            // Builds ActorVisual/SwingRoot and its SpriteRenderer.
             visual.ApplyVisual();
 
             if (controller != null)
             {
-                // Public method, not a hand-rolled Find + AddComponent<Animator> — EnemyPrefabSetup.cs
-                // hand-rolls it and predates AttachAnimator; that shape must not be copied. This also
-                // sets cullingMode = AlwaysAnimate and applyRootMotion = false.
+                // Public method, not a hand-rolled Find + AddComponent<Animator>. This also sets
+                // cullingMode = AlwaysAnimate and applyRootMotion = false.
                 Animator animator = visual.AttachAnimator(controller);
                 // The line the whole feature turns on (CLAUDE.md §13: "a public field nothing
                 // assigns unless asked"). Without it the sheets never play.
@@ -311,7 +311,7 @@ public static class GeneratedEnemyPrefabTool
             if (!string.IsNullOrEmpty(spec.QuestKey))
                 root.AddComponent<QuestActor>().Key = spec.QuestKey;
 
-            // EnemyNameplate.Level/HeightOffset: EnemyPrefabSetup.cs:355-356.
+            // EnemyNameplate.Level/HeightOffset: inherited values.
             var plate = root.AddComponent<EnemyNameplate>();
             plate.Level = 3;
             plate.HeightOffset = 1.70f;

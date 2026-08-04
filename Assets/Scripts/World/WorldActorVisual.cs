@@ -62,10 +62,10 @@ namespace ExiledAlvaston.World
         private Vector3 _swingFacing = Vector3.forward;
 
         /// <summary>
-        /// The name both <c>ArtImportTool</c> and <c>EnemyPrefabSetup</c> give the attack state.
-        /// Capability is probed by state and not by the <c>MeleeAttack</c> parameter, because every
-        /// controller either tool builds declares that parameter whether or not there is any attack
-        /// art behind it.
+        /// The name both <c>ArtImportTool</c> and <c>GeneratedEnemyPrefabTool</c> give the attack
+        /// state. Capability is probed by state and not by the <c>MeleeAttack</c> parameter, because
+        /// every controller either tool builds declares that parameter whether or not there is any
+        /// attack art behind it.
         /// </summary>
         private static readonly int AttackStateHash = Animator.StringToHash("Attack");
 
