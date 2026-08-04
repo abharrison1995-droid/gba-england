@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f611db80a0d2341448c09c7c80cd9d1f, type: 3}
+  m_Name: Preset_Spicehead
+  m_EditorClassIdentifier: 
+  Label: Spicehead
+  Category: 1
+  Icon: {fileID: -1023375454542562795, guid: 643d4af68db7bb84791c8f7ad3576eaa, type: 3}
+  Prefab: {fileID: 0}
+  NpcName: Villager
+  NpcSprite: {fileID: 0}
+  NpcController: {fileID: 0}
+  Conversation: {fileID: 0}
+  EnemyPrefab: {fileID: 3416182807255932610, guid: 593169b47b8c78f4caeca37bb832dc67, type: 3}
+  OverrideHealth: 0
+  Health: 45
+  OverrideDamage: 0
+  Damage: 7
+  Loot: []
+  ChestName: Chest
+  ChestVisualPrefab: {fileID: 0}
+  ChestLoot: []
+  TargetChunk: {fileID: 0}
+  PortalSpawnPosition: {x: 0, y: 0, z: -8}
+  PortalPrompt: Enter
+  RequireTutorialComplete: 0
+  AddDoorVisual: 1
+  DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
+  Vehicle: {fileID: 0}
+  SpawnPointId: 
+  QuestKey: 
+  ArtSubject: 
+  NpcHeight: 0
+  Roams: 0
+  RoamRadius: 6
+  Speaker: {fileID: 0}
+  AmbientLine: 
+  Pickpocketable: 0
+  PickpocketMinGold: 5
+  PickpocketMaxGold: 25
+  PickpocketCatchChance: 0.3
+  Region: 0
