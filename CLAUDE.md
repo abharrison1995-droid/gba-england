@@ -862,8 +862,9 @@ reference style.
 ⚠️ **This section is a summary, not the register.** The authoritative, re-derivable status is
 `python Tools/art_status.py`, which reads the tracked files rather than anyone's memory.
 
-Counted at `ccfa9c9`: **29 subjects, 146 files under `Assets/Art/Generated/`, 32 animator
-controllers.** Complete five-action sets (idle/walk/attack/hurt/death) exist for the player, the
+Counted at `ccfa9c9` by that script: **30 subjects, 71 sheets, 29 generated controllers**, and 19
+presets naming an `ArtSubject`. Complete five-action sets (idle/walk/attack/hurt/death) exist for
+the player, the
 PCSO, Bobby, and five London enemies — Neek, OG, Roadman, Spicehead and Tainted. Tortured Neek
 has an idle only, and is expected to slide and to have no death pose until that is fixed.
 
@@ -884,9 +885,17 @@ Tortured Neek's four combat actions, the squirrel entirely, and the three police
 Bobby (Armed Response, Occult Agent, Occult Commander). The `cycle` sheet is **cancelled**, not
 pending (§11).
 
-⚠️ **`murtaugh_Controller` holds only an `Idle` state** and never references the committed
-`sheet_char_murtaugh_walk` clip, while `Preset_OfficerMurtaugh` has `Roams: 1` — so he slides.
-Fix needs the sheet re-staged out of `art_incoming/processed/` and the importer re-run.
+⚠️ **Three roamers slide.** `Preset_OfficerMurtaugh`, `Preset_RoamingPharmacist` and
+`Preset_AngrySquirrel` all have `Roams: 1`, and none of them animates while walking:
+
+- **Murtaugh has the walk sheet but his controller ignores it.** `murtaugh_Controller` holds only
+  an `Idle` state and never references the committed `sheet_char_murtaugh_walk` clip. Fix needs
+  the sheet re-staged out of `art_incoming/processed/` and the importer re-run.
+- **The pharmacist has no walk sheet at all**, and the squirrel has no art at all.
+
+`art_status.py` finds the second and third but **not** the first: it reads filenames and GUIDs,
+never controller contents, so a controller that exists and silently ignores its walk clip looks
+complete to it.
 
 **London's buildings arrived by a different route** — imported 3D models (`e50bb71`, `b30c7e8`),
 not generated sprites. That does not change the rule that the 2D art agent produces sprites only
