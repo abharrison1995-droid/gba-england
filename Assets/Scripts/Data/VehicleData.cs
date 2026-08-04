@@ -32,7 +32,7 @@ namespace ExiledAlvaston.Data
                  "whatever artwork the chassis prefab already has.")]
         public Sprite VehicleSprite;
 
-        [Tooltip("Height of the parked vehicle in world units. The player is 1.35.")]
+        [Tooltip("Height of the parked vehicle in world units. The player is 1.8, an adult NPC 1.55.")]
         public float ParkedHeight = 0.9f;
     }
 }

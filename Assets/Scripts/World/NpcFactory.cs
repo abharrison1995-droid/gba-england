@@ -162,7 +162,7 @@ namespace ExiledAlvaston.World
         /// inherit: the art importer writes the subject's own <c>worldHeight</c> there when its
         /// sheets land, and the shared character height stands in until they do. Anything above 0
         /// was set deliberately and wins. An angry squirrel is 0.45 units against a councillor's
-        /// 1.35, so this is the difference between a squirrel and a man in a squirrel suit.
+        /// 1.55, so this is the difference between a squirrel and a man in a squirrel suit.
         /// </summary>
         public static float HeightFor(PlacementPreset preset) =>
             preset != null && preset.NpcHeight > 0f ? preset.NpcHeight : EKVibe.CharacterHeight;
