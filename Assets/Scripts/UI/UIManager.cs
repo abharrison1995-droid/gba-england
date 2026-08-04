@@ -131,6 +131,10 @@ namespace ExiledAlvaston.UI
         private static void SetBarFill(Image fill, float frac)
         {
             if (fill == null) return;
+
+            // Must run before the anchors below are touched — it needs the authored rect.
+            EnsureDedicatedTrack(fill);
+
             frac = Mathf.Clamp01(frac);
             fill.fillAmount = 1f;
 
@@ -142,9 +146,57 @@ namespace ExiledAlvaston.UI
         }
 
         /// <summary>
+        /// Gives a bar fill its own parent when the scene did not, and does nothing when it already
+        /// has one. Both <see cref="SetBarFill"/> and <see cref="EnsureBarLabel"/> assume the fill's
+        /// parent is a track that exists purely to hold it: the former stretches the fill across
+        /// that parent, the latter stretches the readout across it too.
+        ///
+        /// That assumption held for HPFill in HPTrack and MPFill in MPTrack, and silently did not
+        /// for ConcealmentBar, whose parent in c.unity is TopLeftPortraits — the container for the
+        /// whole top-left cluster. So the concealment bar stretched across every other HUD element,
+        /// and its "100 / 100" readout was drawn centred over the same area, landing on top of the
+        /// mana bar's own readout. It surfaced on leaving the pub only because HaveAPint is what
+        /// first calls UpdatePlayerConcealment, and the label is built on first update.
+        ///
+        /// Wrapping rather than fixing the scene keeps this correct for any bar wired later, and
+        /// costs nothing when the scene is already right. It is self-limiting: after wrapping, the
+        /// fill is an only child, so every later call returns at the first check.
+        /// </summary>
+        private static void EnsureDedicatedTrack(Image fill)
+        {
+            Transform parent = fill.transform.parent;
+            if (parent == null || parent.childCount == 1) return;   // already has a track of its own
+
+            var fillRt = fill.rectTransform;
+
+            var track = new GameObject(fill.gameObject.name + "Track", typeof(RectTransform));
+            var trackRt = (RectTransform)track.transform;
+            trackRt.SetParent(parent, false);
+            trackRt.SetSiblingIndex(fillRt.GetSiblingIndex());
+
+            // The track takes over the rect the fill was authored with, so the bar stays exactly
+            // where the scene put it.
+            trackRt.anchorMin = fillRt.anchorMin;
+            trackRt.anchorMax = fillRt.anchorMax;
+            trackRt.pivot = fillRt.pivot;
+            trackRt.anchoredPosition = fillRt.anchoredPosition;
+            trackRt.sizeDelta = fillRt.sizeDelta;
+
+            // ...and the fill now fills the track, which is what SetBarFill goes on to shrink.
+            fillRt.SetParent(trackRt, false);
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.offsetMin = Vector2.zero;
+            fillRt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>
         /// Draws a "current / max" readout centered over a bar so the fill reads as an actual
         /// amount, not just a colored strip. Built lazily over the fill's track the first time
         /// the bar updates (like the other runtime HUD bits), so no scene wiring is required.
+        ///
+        /// Relies on the fill having a parent that holds nothing else — see
+        /// <see cref="EnsureDedicatedTrack"/>, which guarantees that.
         /// </summary>
         private void EnsureBarLabel(ref TextMeshProUGUI label, Image fill, string name)
         {

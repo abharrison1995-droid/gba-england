@@ -96,6 +96,12 @@ public static class GeneratedEnemyPrefabTool
         // pins the value: changing the field's default to true later would fix the other four
         // prefabs and silently not fix this one.
         new EnemySpec("police_pcso", "Assets/Prefabs/ModernBritain/Police_PCSO.prefab", null, null, 0, 0, ""),
+
+        // Same deal as the PCSO. The remaining three tiers — ArmedResponse, OccultAgent,
+        // OccultCommander — have prefabs but no art at all, so they are deliberately absent: a spec
+        // with neither controller nor sprite is skipped and reported, which is just noise for a
+        // subject nobody has drawn yet. Add a row each when their sheets land.
+        new EnemySpec("police_bobby", "Assets/Prefabs/ModernBritain/Police_Bobby.prefab", null, null, 0, 0, ""),
     };
 
     [MenuItem("Tools/GBA/Content/Build Enemies From Generated Art")]
