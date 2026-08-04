@@ -39,7 +39,7 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: villager_child
-  NpcHeight: 1.1
+  NpcHeight: 1.3
   Roams: 1
   RoamRadius: 6
   Speaker: {fileID: 0}

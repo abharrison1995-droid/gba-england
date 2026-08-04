@@ -57,7 +57,7 @@ namespace ExiledAlvaston.Vibe
         public const float TileSize = 1f;
         /// <summary>World chunk edge length in meters (plane scale 22 → 220 units).</summary>
         public const float ChunkSize = 220f;
-        public const float CharacterHeight = 1.35f;
+        public const float CharacterHeight = 1.55f;
         public const float CharacterWidth = 0.85f;
         public const float PropBushHeight = 0.9f;
         public const float PropTreeHeight = 2.2f;

@@ -58,8 +58,14 @@ namespace ExiledAlvaston.Combat
             _agent.angularSpeed = 360f;
             _agent.acceleration = 12f;
             _agent.stoppingDistance = Mathf.Max(0.05f, AttackRange * 0.85f);
-            _agent.radius = 0.28f;
-            _agent.height = 1.35f;
+            _agent.radius = 0.28f;   // deliberately uniform: a wider agent gets stuck in doorways
+
+            // Was hardcoded to 1.35, which quietly overrode whatever the prefab said — so an Orc
+            // authored with a 2.16 agent under a 2.16 collider still walked around as a 1.35 one.
+            // Take the actor's real height when it has a visual, and fall back to whatever the
+            // prefab was authored with rather than to a constant, so a hand-tuned agent survives.
+            if (_visual != null && _visual.Height > 0f)
+                _agent.height = _visual.Height;
             _agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
             _agent.updateRotation = true;
         }

@@ -210,9 +210,9 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.448
-  m_Height: 2.16
+  m_Height: 2.36
   m_Direction: 1
-  m_Center: {x: 0, y: 1.08, z: 0}
+  m_Center: {x: 0, y: 1.18, z: 0}
 --- !u!114 &7273589075524049371
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -254,7 +254,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 2.16
+  m_Height: 2.36
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -293,7 +293,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ActorSprite: {fileID: 0}
   Tint: {r: 1, g: 1, b: 1, a: 1}
-  Height: 2.16
+  Height: 2.36
   Width: 1.36
   SpriteFacesRightByDefault: 1
   SwingAngle: 55
@@ -312,4 +312,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Level: 3
-  HeightOffset: 2.51
+  HeightOffset: 2.71

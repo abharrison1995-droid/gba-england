@@ -39,7 +39,7 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: villager_black
-  NpcHeight: 1.35
+  NpcHeight: 1.55
   Roams: 1
   RoamRadius: 6
   Speaker: {fileID: 0}
