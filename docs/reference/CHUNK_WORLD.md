@@ -1,0 +1,125 @@
+# Chunk world
+
+```
+Last verified against: ccfa9c9
+Verification scope:    code (read line by line); chunk prefabs and MapChunkData assets (tracked
+                       YAML). Edge-crossing behaviour was play-tested in an earlier editor
+                       session. The 2026-08-04 height and EnemyAI changes are UNVERIFIED.
+```
+
+Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is live at a time.
+Movement is on the X/Z plane; chunk edges are `pos.x` / `pos.z`.
+
+## The data
+
+`MapChunkData` (ScriptableObject, `Assets/Data/Chunks/`) holds `ChunkName`, `Coordinates`,
+`IsCity`, `ChunkPrefab`, `VehicleSpawns`, and **explicit `NorthChunk` / `SouthChunk` /
+`EastChunk` / `WestChunk` references**.
+
+**Adjacency is authored by reference, not computed from `Coordinates`.** `Coordinates` is only a
+dictionary key for city lockout timers. It is **not** a save key — `ChunkName` is.
+
+Six chunks: `Home_London` (0,0 — the hub, `IsCity: 1`), `North_Wasteland`, `South_Slums`,
+`East_RetailPark`, `West_Canal`, and `Manor_Cellars` (-1,-1 — the tutorial dungeon, reached by
+`InstanceDoor`, never by an edge). Outer chunks link back to Home only; their other three
+directions are null.
+
+## Seven runtime paths instantiate a chunk
+
+Two do the full job. Five are direct replacements. `grep -rn "Instantiate(.*ChunkPrefab"` is how
+this table is checked.
+
+| Path | Entry point | Pauses | Notifies Wanted | Autosaves | Snaps camera |
+|---|---|---|---|---|---|
+| Edge crossing | `ChunkManager.TransitionToChunkRoutine` | yes | yes | yes | yes |
+| USE door / portal | `DungeonPortal` → `ChunkManager.TravelTo` → `TravelRoutine` | yes | yes | yes | yes |
+| Manor instance door | `GameFlowController.EnterManorCellars` | no | no | yes | no |
+| Tutorial exit | `GameFlowController.LoadLondonAtWestGates` | no | no | yes | no |
+| Continue / load | `SaveGameManager.LoadWorld` | no | no | no | no |
+| New-game fallback | `DeathScreenUI.OnNewGame` | no | no | no | no |
+| Cold boot | `ChunkManager.Start` | no | no | no | no |
+
+**If you add or change transition behaviour you must touch all seven, or consolidate them first.**
+
+`ChunkManager.Start` instantiates the scene's authored starting chunk when `CurrentChunkInstance`
+is null and the flow state is `Playing`. It writes `CurrentChunkInstance` but **not**
+`CurrentChunkData`.
+
+Two editor tools also instantiate chunks: `DevZoneJump` and `DiscoverEnglandSetup`.
+
+⚠️ **There is no `ChunkTransitionDoor` in this repository.** The generic USE-driven door is
+`DungeonPortal`. It adds its own `Interactable` if one is missing and routes through
+`TravelRoutine`, which does the same full lifecycle as an edge crossing — so it is a second
+canonical path, not a shortcut, and the closest thing to a working model for a building door.
+
+⚠️ **`Home_London_Prefab` contains a `Portal_Home_London` whose `TargetChunk` is
+`Home_London_Data` itself** (both resolve to guid `5a35b572…`). Using it reloads and resets Home.
+It is an authoring trap, not an example to copy.
+
+## To react to a chunk change, poll — do not hook
+
+`CurrentChunkData` is a public serialized field written from **eight places across six files**:
+both `ChunkManager` routines, `GameFlowController` ×2, `SaveGameManager`, `DeathScreenUI`, and the
+two editor tools. Any one hook misses the others.
+
+Turning the field into a property to raise an event would stop Unity serialising the scene's
+authored starting chunk, so that is not the fix either.
+
+`VehicleSpawner` and `VehicleController` both compare against a remembered reference instead —
+cheap, and it catches load-game and the arrest return for free. Watch `CurrentChunkInstance` too
+if a reload of the *same* chunk matters to you (dying in Home_London and respawning into it).
+
+## Edge crossings
+
+All six chunk prefabs carry all four `ChunkEdge` triggers at ±109 (2 units deep, `IsTrigger`), and
+every outer chunk links back to Home. The historic failures were behavioural and all had one
+shape: **`OnPlayerHitEdge` declines a crossing and the trigger never fires again.**
+
+Current behaviour:
+
+- `ChunkEdge` re-offers the crossing from **`OnTriggerStay`** as well as `OnTriggerEnter`. The
+  manager's `_isTransitioning` and grace-window guards dedupe, and arrival always lands 12 units
+  clear, so it cannot ping-pong. **Never add a `Debug.Log` to that path** — it fires every
+  physics tick.
+- **Arrivals clamp the lateral axis.** Preserving the crossing's lateral coordinate used to land
+  the player inside the new chunk's *perpendicular* edge trigger when crossing near a corner.
+- Post-arrival grace is **0.25s**. A full second ate the return trip if you turned straight round.
+- Dead ends call `ShowWarning("There's nothing that way.")`, throttled, because `OnTriggerStay`
+  would otherwise re-show it every tick.
+- Every chunk prefab carries `BoundaryWall_North/South/East/West` — invisible solid walls on all
+  four sides, generated by `Tools/GBA/World/Add Chunk Boundary Walls` and committed. Where a
+  neighbour exists the teleport at 109 fires first, so they are inert; where the crossing is
+  declined you bump a wall instead of walking off the world. The tool is idempotent and edits
+  prefabs in place, so re-running is safe.
+- `ChunkManager.Update` teleports anyone below `y = -20` to the chunk's `PlayerSpawnPoint`,
+  falling back to the origin.
+
+## A chunk root cannot be suspended with `SetActive(false)`
+
+Chunks are only ever **destroyed**, never suspended, and the code reflects that. A bare
+`SetActive(false)` on a chunk root breaks four systems at once:
+
+| System | Cleans up in | What a deactivated root does |
+|---|---|---|
+| `EnemyAI` | — | `StartCoroutine(PerceptionRoutine())` runs **only in `Start`**. Deactivating stops it; reactivating does not re-run `Start`, so every enemy is permanently blind. |
+| `RuntimeNavMeshBaker` | `OnDestroy` (and `Rebake`) | `_instance.Remove()` is never called on disable, so an inactive chunk keeps its NavMesh registered — and every chunk instantiates at the origin, so meshes overlap. |
+| `MagicTutorial`, `TutorialSequence` | `OnDestroy` | Both set their static `Instance` in `Awake` and clear it only on destroy, so the singleton keeps pointing at a disabled object. |
+| `EnemyNameplate` | `OnDestroy` | Builds an **unparented scene-root** `GameObject("Nameplate")`, so it is not a child of the chunk and does not hide with it. |
+
+Two more things are not chunk-owned at all and would leak across any suspend:
+
+- **Police.** `WantedManager` creates them with `Instantiate(prefab, spawnPos, Quaternion.identity)`
+  and no parent.
+- **`Assets/c/NavMesh.asset`.** `c.unity`'s single `NavMeshSettings` block registers it for the
+  life of the scene regardless of which chunk is loaded. This is the hard structural obstacle:
+  London's baked mesh and a compact interior mesh cannot both be registered at the shared origin,
+  and nothing in code registers London's — the scene does.
+
+`Interactable` is the one part already suspend-safe: `Active` is added on `OnEnable` and removed
+on `OnDisable`.
+
+Doing this properly needs explicit suspend/resume/evict hooks. That design — plus a location
+cache, return stack, encounter ledger and corpse-loot lifecycle — is written up in
+[../plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md](../plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md).
+**None of it is implemented.** Read it before touching chunk lifetime; treat its phases as
+architect-first work.

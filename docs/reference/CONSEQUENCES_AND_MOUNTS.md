@@ -1,0 +1,146 @@
+# Consequences, police, stealth, mounts and vehicles
+
+```
+Last verified against: ccfa9c9
+Verification scope:    code; tracked prefab YAML. Mounting, dismounting, the boost, the prompt
+                       flip and the data-driven spawner were play-tested in an earlier editor
+                       session. The IsPolice defect below is read from prefab YAML and has NOT
+                       been observed in play.
+```
+
+The GTA layer. Components live inside the `Prefabs/ModernBritain/` prefabs, whose instances are
+placed in `c.unity` or nested in chunk prefabs. `Editor/ModernBritainSetup.cs` generated this
+content originally; the scene already holds its output, so **you do not need to run it** — and
+running it is destructive (see the delete-and-re-save hazard in
+[SAVE_AND_SERIALIZATION.md](SAVE_AND_SERIALIZATION.md)).
+
+## `WantedManager` is the hub
+
+Two coupled meters:
+
+- **Knives (0–5)** — the wanted level. `SpikeKnives()` raises it and calls `SpawnPlod()`, which
+  instantiates `PolicePrefabs[Knives-1]` near the player. All five tiers are assigned in the
+  scene: PCSO → Bobby → Armed Response → Occult Agent → Occult Commander.
+- **Concealment (0–100)** — regenerates at `ConcealmentRecoveryRate`/sec. `DrainConcealment(amount)`
+  lowers it; hitting zero resets it to full and spikes Knives.
+
+**Casting magic is the trigger.** `CombatController` calls `DrainConcealment(34f)` on spell cast —
+three spells busts you. This is the design's "magic stands in for GTA's guns", and it is the
+single most load-bearing line in the whole consequence loop.
+
+`WantedManager.ClearWanted()` clears both meters **and despawns the police**, and it has to:
+`SpawnPlod` instantiates officers unparented at the scene root, so they survive a chunk
+transition. A version that only zeroed the meters dropped the HUD knife readout to zero and left
+Armed Response hunting the player. `PubInteractable` and `GameFlowController.ArrestRoutine` both
+still clear inline and are unaffected.
+
+## The five systems
+
+| System | Script | Behaviour |
+|---|---|---|
+| Nosey Parkers | `AI/NoseyParkerAI` | Civilians. Within `DetectionRadius`, if concealment is below max, they spend `ReportTime` dialling 999, then `SpikeKnives()`. |
+| Stealth | `World/StealthController` | Crouch toggle: halves move speed, halves parker detection radius. |
+| Pickpocketing | `World/PickpocketInteractable` | Requires crouch. Rolls `CatchChance`; failure spikes Knives. Authored by ticking `Pickpocketable` on a `PlacementPreset`. |
+| Grand Theft E-Bike | `World/VehicleController` + `World/MountController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. |
+| Pub safehouses | `World/PubInteractable` | A pint clears Knives + concealment, heals, and saves. |
+| Arrest | `Flow/GameFlowController.ArrestRoutine` | Death dealt by an `EnemyAI.IsPolice` attacker (via `Health.LastAttacker`) arrests instead of killing: clears wanted level, despawns police, returns you to the cellars. |
+
+Crouch is reachable on mobile: the HUD has a **CRO** button
+(`HUDActionButton.ActionKind.Crouch` → `UIManager.OnCrouchPressed` →
+`StealthController.ToggleStealth`), built in code beside ATK and USE. It shows its state —
+`EKVibe.ButtonBrownActive` and the label **STAND** while crouched — repainted by
+`UIManager.RefreshCrouchButton`, which `ToggleStealth` calls, so the key and the button can never
+disagree. `KeyCode.C` still works and is how it gets tested in the editor. This is also what makes
+pickpocketing reachable on mobile, since `TryPickpocket` requires `IsCrouched`.
+
+## Open defects
+
+- ⚠️ **No police officer has `IsPolice` set, so arrest never fires.** All five `Police_*` prefabs
+  carry `EnemyAI`, but only `Police_PCSO.prefab` serializes `IsPolice` at all and it is `0`; the
+  other four predate the field and take the C# default, also false. `ArrestRoutine` is keyed off
+  it, so dying to the police kills you instead of arresting you, and `WantedManager.DespawnPolice`
+  destroys nothing. **Fix is ticking the box on all five prefabs in the Inspector** — never by
+  re-running `ModernBritainSetup`.
+- **Nosey Parkers fire on any concealment below max.** One cast drains 34 with 5/sec regen, so
+  every cast opens a ~7-second window in which every parker in range starts reporting. Each parker
+  also sets `this.enabled = false` after reporting, making them single-use per scene load.
+- **Two rewards are TODOs.** Pickpocketed gold and the £50 arrest fine are toasts only — neither
+  touches inventory, because **raw gold tracking does not exist**. This is also why
+  `QuestReward.GoldAmount` warns and pays nothing.
+- `AbilityData` has no "is magic" flag — the 34-point drain is hardcoded in `CombatController`
+  rather than driven by ability data.
+- `TagManager.asset` has `tags: []` and no custom layers. Nothing currently needs them, but do not
+  assume a layer exists.
+
+## Movement speed has exactly one owner
+
+Modifiers are keyed by source via `CombatController.SetSpeedMultiplier` / `ClearSpeedMultiplier`,
+and movement reads `EffectiveMovementSpeed`. **`MovementSpeed` is a read-only base — never
+multiply it in place.**
+
+---
+
+# Mounts and vehicles
+
+The stealable vehicle is a hire e-bike ("Limey E-Bike"). It was a Deliveroo moped until
+`EBike.prefab` was renamed; "moped" in a comment is describing history.
+
+**Ride state has one owner: `World/MountController`.** It holds `CurrentVehicle`;
+`VehicleController` describes a vehicle and applies its own effects when told to. Nothing places
+the component — `MountController.Get()` attaches it to the `CombatController` GameObject on first
+use. Use `MountController.Current` (non-creating) inside `OnDisable`/`OnDestroy`; `AddComponent`
+during teardown is illegal.
+
+| Piece | Script | What it does |
+|---|---|---|
+| Ride state | `World/MountController` | `Mount` / `Dismount` / `ForgetVehicle`. `IsPlayerRiding` is the cheap static read. |
+| The vehicle | `World/VehicleController` | `Toggle` (the interact entry point), effects, prompt, homing. |
+| Spawning | `World/VehicleSpawner` | Reads `MapChunkData.VehicleSpawns`, parents instances to the live chunk. Self-bootstraps via `RuntimeInitializeOnLoadMethod`. |
+| Definition | `Data/VehicleData` | Name, speed multiplier, nickable, prompt, sprite, parked height. |
+
+**Two ownership models, deliberately separate.** A vehicle spawned by `VehicleSpawner` is
+*chunk-owned*: it dies with its chunk and respawns at its authored spot next visit, so it needs no
+homing. It unparents on mount (so riding across an edge cannot destroy it under you) and rejoins
+whichever chunk you abandon it in. A vehicle hand-placed in the scene is *not* chunk-owned and
+uses `ReturnsHomeOnChunkChange` + `ReturnHome` instead. **Do not merge these.**
+
+`Home_London_Data.VehicleSpawns` carries the only e-bike entry, at `(0.31, 0, 22.07)`. There is no
+hand-placed instance to fall back on: if no bike appears in Home_London, debug the spawner.
+
+## Things that will catch you out
+
+- **Never `SetActive(false)` a vehicle root** to hide it. `OnDisable` clears the speed multiplier,
+  so the vehicle would cancel its own boost the instant it was mounted. Hide `ParkedModel`.
+- **A mounted vehicle rides at distance zero**, so it wins `PlayerInteractor.FindClosest` every
+  time. `Interactable.LowPriority` is what stops it masking pubs, doors and NPCs; the mounted
+  vehicle sets it.
+- **`PlayerInteractor` compares the prompt string, not just the target.** An interactable that
+  rewrites its own `Prompt` without the closest one changing — exactly what mounting does — would
+  otherwise leave the HUD stale.
+- **`VehicleSpawner` tracks what each spawn entry produced.** Without that, riding a chunk's
+  vehicle out and back mints a second one from the same entry, once per round trip.
+- **The player must not gain a stray `SpriteRenderer` lookup.** `WorldActorVisual.ActorRenderer`
+  exists because `GetComponentInChildren<SpriteRenderer>()` starts returning the layered vehicle
+  sprite once one exists.
+- **Riding is drawn by layering, and that is the decision, not a fallback.** The `cycle` sheet is
+  cancelled. `WorldActorVisual.SetMounted` draws the vehicle sprite over the actor's feet whenever
+  `MountedSprite` is null, which it is on every character. **Leave `MountedSprite` unassigned** —
+  it writes `_sr.sprite`, which an Animator overwrites every frame, so using it would mean
+  suspending the animator, and nothing does.
+- **Riding plays the idle animation, by design.** `CombatController.ApplyLocomotionAnimation` holds
+  `Speed` at 0 and sets `Cycling` only when the controller declares the parameter. With no `cycle`
+  sheet there is no `Cycle` state and no `Cycling` parameter, so the rider idles under the bike
+  sprite rather than running on the spot.
+- **Nicking does not persist**, by decision. `IsOwnedByNPC` is cleared on the instance, and the
+  instance is replaced when the chunk reloads — so you re-nick and re-spike on every visit.
+
+## ⚠️ Known issue: death-respawn keeps you mounted
+
+A mounted vehicle unparents from its chunk, so `LoadWorld`'s destroy-and-rebuild never touches it,
+and nothing in the death path (`DeathScreenUI` → `ContinueFromSave`) calls `Dismount()` — you wake
+at your last save still on the bike. "A load puts you on foot" is only true for an app-restart
+load.
+
+Fixing it properly is a design call plus real work: a bare `Dismount()` strands a scene-root bike
+at the death spot, and returning it to its authored spot means coordinating with
+`VehicleSpawner`'s instance tracking. Deferred to Stage F.
