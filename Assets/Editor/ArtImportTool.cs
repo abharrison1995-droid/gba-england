@@ -568,8 +568,11 @@ public static class ArtImportTool
     ///
     /// Found by matching the tail of the filename rather than building it, because subject →
     /// filename is not reversible: "characters" becomes the "char" of sheet_char_mosley_idle.
+    ///
+    /// internal, not private: GeneratedEnemyPrefabTool also calls this, so the two tools cannot
+    /// disagree about which frame is a subject's resting pose.
     /// </summary>
-    private static Sprite FindIdleFrameZero(string subject)
+    internal static Sprite FindIdleFrameZero(string subject)
     {
         if (!AssetDatabase.IsValidFolder(ArtRoot)) return null;
 
