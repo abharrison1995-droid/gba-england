@@ -1,12 +1,16 @@
 # Daniel Pauls — frame-by-frame prompts (Band 2)
 
-Workflow (per ART_PIPELINE.md §7.3a): generate **one 512×512 frame at a time**,
+> **STILL ACTIVE, partly done.** `idle` is delivered, imported and wired to
+> `Preset_DanielPauls`. **`walk` and `cast` are outstanding** — skip the idle section and
+> generate those two. Match the delivered idle sheet for build, clothes and cell fill.
+
+Workflow (per `docs/art/SHEET_WORKFLOW.md`): generate **one 512×512 frame at a time**,
 attaching the previous frame to each prompt after the first. Deliver frames to
 `art_incoming/frames/idle_1.png`, `walk_1.png`, `cast_1.png`, etc. Claude Code
 tiles them into sheets locally — never ask Gemini for a full sheet.
 
-Sheets: `idle` (4 frames, loop), `walk` (4 frames, loop), `cast` (6 frames, no loop).
-14 generations total.
+Sheets: ~~`idle` (4 frames, loop)~~ **done**, `walk` (4 frames, loop), `cast` (6 frames,
+no loop). **10 generations outstanding.**
 
 ---
 

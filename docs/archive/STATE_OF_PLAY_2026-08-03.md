@@ -1,3 +1,8 @@
+> ⚠️ **ARCHIVED SNAPSHOT, 2026-08-03. Do not read this as current.** It predates the
+> height change, the six London enemy prefabs, the fifteen dialogue assets and the docs
+> restructure. Kept so the reasoning of the day can be traced. Current state lives in
+> `CLAUDE.md` and `docs/reference/`.
+
 # State of play — 2026-08-03
 
 > **What this is.** An honest snapshot of where the game actually is, written to be argued with.
@@ -65,8 +70,8 @@ plane you can walk across and nothing else.
 
 | Plan | Status |
 |---|---|
-| `docs/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md` | Approved design. Enterable buildings, location caching, corpse loot. **Nothing implemented.** Baseline verified against code |
-| `docs/STAGE_RF_PLAN_REVISED.md` | Stage R done; **Stage F** — the six-commit inventory and loot overhaul — outstanding. `CLAUDE.md` §9 still calls this "the next task" |
+| `docs/plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md` | Approved design. Enterable buildings, location caching, corpse loot. **Nothing implemented.** Baseline verified against code |
+| `docs/plans/STAGE_RF_PLAN_REVISED.md` | Stage R done; **Stage F** — the six-commit inventory and loot overhaul — outstanding. `CLAUDE.md` §9 still calls this "the next task" |
 | `ART_PIPELINE.md` §7 bands 3–8 | 21 world props, ambient cast, police tiers, 5 3D buildings (no delivery route), item icons, weapon sheets |
 | Generated enemy prefabs | Fully planned in an earlier session, plan never written to disk. Art landed today, so this is unblocked |
 

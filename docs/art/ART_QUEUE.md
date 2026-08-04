@@ -297,7 +297,7 @@ to read as a door from the fixed 30°/−45° camera without the player ever see
 
 The architecture behind this — suspending the live London instance rather than destroying it,
 caching it while the interior is active, and the loot/reset rules that go with it — is designed in
-`docs/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`. **None of it is implemented**, so nothing
+`docs/plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`. **None of it is implemented**, so nothing
 about the art request depends on it landing; the exterior shell is useful set dressing either way.
 
 ### Band 7 — item icons

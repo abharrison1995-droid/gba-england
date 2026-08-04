@@ -7,7 +7,7 @@
 > strings in `Dialogue_Mosley_Intro.asset` (display-only, now "London"). **Paste only the
 > Stage F parts below into a new Claude Code session.**
 
-Revised from `docs/STAGE_F_BRIEF.md` after a verification pass against the code.
+Revised from `docs/archive/STAGE_F_BRIEF.md` after a verification pass against the code.
 Corrections are marked **[FIX]**, additions **[ADD]**. Everything not marked is
 unchanged from the original brief and was verified correct.
 
@@ -157,7 +157,7 @@ table (every row grep-verified 2026-07-29):
   (GUID references survive the file rename); rename only if already in the scene file.
 - Docs sweep, same commit or a follow-up: CLAUDE.md (~15 mentions, including §6's
   save-key warning which should name the NEW key), AGENTS.md, ART_PIPELINE.md,
-  docs/STAGE_F_BRIEF.md. Do not leave the next agent grepping a dead name.
+  docs/archive/STAGE_F_BRIEF.md. Do not leave the next agent grepping a dead name.
   Also fix the stale "PlayerPrefs / EA_ prefix" save description in AGENTS.md (see
   SAVE SYSTEM FACTS above).
 

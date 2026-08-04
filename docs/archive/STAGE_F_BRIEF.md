@@ -1,6 +1,8 @@
 # Stage R + Stage F brief
 
-> **STATUS (2026-07-29): SUPERSEDED — use `docs/STAGE_RF_PLAN_REVISED.md`.** Stage R has
+> ⚠️ **ARCHIVED.**
+>
+> **STATUS (2026-07-29): SUPERSEDED — use `docs/plans/STAGE_RF_PLAN_REVISED.md`.** Stage R has
 > already been executed (rename + save-key migration, in the working tree pending commit), so
 > the Stage R section below no longer applies. This file is kept for history only.
 
@@ -130,7 +132,7 @@ STAGE F — six commits, in this order
         rebuild it — add equipment (slot + ItemID per slot) and gold as new fields on the
         `SaveData` JSON, exactly as inventory stores ItemID + quantity. (Saves are JSON via
         `JsonUtility`, not PlayerPrefs; there is no EA_ prefix — see
-        docs/STAGE_RF_PLAN_REVISED.md, which supersedes this file.) Include gold storage here
+        docs/plans/STAGE_RF_PLAN_REVISED.md, which supersedes this file.) Include gold storage here
         so the save format is extended once rather than twice.
     F2  Append Fire/Cold/Poison/Magic resist to ItemData so the armour summary is more
         than two numbers.
