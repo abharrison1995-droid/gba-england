@@ -14,6 +14,10 @@ place that can be out of date, and it is the only place to fix.
 
 **Check this before drawing anything.** A subject marked delivered must not be regenerated.
 
+**How to read this file:** the matrix and the band order, then **only the band you are working
+on**. The bands are self-contained work specs and the later ones are long; reading all eight costs
+more than the whole contract does and tells you nothing about your own band.
+
 ## The matrix
 
 Regenerate it rather than editing it:
