@@ -45,8 +45,8 @@ public static class CharacterCreatorSetup
     /// missing-glyph box. Keep them straight unless the font asset is switched to Dynamic.
     /// </summary>
     private const string IntroCopy =
-        "It's time for GBH: England, are you ready? Magic? Police? Fascists? It's all here!\n\n" +
-        "Dive in! Pick from one to 5 classes and discover the Albion!";
+        "It's time for GBH: England. Are you ready? Magic? Police? Fascists? It's all here!\n\n" +
+        "Dive in! Pick one of five classes and discover the Albion!";
 
     // The slab the character stands against: the parchment's darker cousin, so it reads as the
     // same material without competing with the details panel for attention.

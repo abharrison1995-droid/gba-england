@@ -397,9 +397,24 @@ the complete Young Driller visual until all six actions for that class exist.
 | `player_mrhood` | Mr Hood | ~~idle~~ delivered; walk, attack, hurt, death, cast | |
 | `player_bundabasher` | Bunda Basher | idle, walk, attack, hurt, death, cast | |
 
-⚠️ **Dynamo is blocked on the owner, not on drawing time.** His visual description has not been
-written. The tagline in `PlayerClass.cs` — *"Good with magic. Street-level spark and pressure."* —
-is a starting point, not a brief. **Ask before drawing him.**
+**Dynamo** — `sheet_char_player_dynamo_<action>.png`, actions: `idle`, `walk`, `attack`, `hurt`,
+`death`, `cast`. Do `idle` first. The owner's line, 2026-08-05:
+
+> Pulled one too many rabbits out of one too many hats.
+
+So: a conjuror whose tricks went too far. His tagline in `PlayerClass.cs` puts him at street level
+— *"Good with magic. Street-level spark and pressure."* — which is the register to draw him in.
+
+⚠️ **Do not draw a stage magician.** Band 2's **Daniel Pauls** already is one: a middle-aged
+showman in a pink Las Vegas suit, sequins and wide lapels, who teaches the player their first
+spell. Two theatrical conjurors in a game with five classes and one tutorial would read as the
+same character. Daniel Pauls is the trick as performance; Dynamo is the trick after it stopped
+being funny.
+
+⚠️ **Still needed from the owner before anyone draws him:** build and rough age, what he wears, and
+how the magic reads on screen — hands, a held object, or something worn. The line above is
+characterisation, not a visual description, and per the rule at the top of this band the visual is
+the owner's to write.
 
 ⚠️ **En Garde no longer exists.** The fencer class was replaced by **Stabmeister** on 2026-08-04 —
 same enum index (1), so no save is affected and the creator still shows five classes. **Do not
