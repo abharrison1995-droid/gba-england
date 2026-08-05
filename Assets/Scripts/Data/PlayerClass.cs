@@ -40,8 +40,7 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.Stabmeister: return "Stab by name, stab by nature.";
                 case PlayerClass.MrHood: return "Good with ranged. Keep your distance, stay hooded.";
                 case PlayerClass.Dynamo: return "Good with magic. Street-level spark and pressure.";
-                // Owner-editable placeholder until the class design is supplied.
-                case PlayerClass.BundaBasher: return "Class details pending.";
+                case PlayerClass.BundaBasher: return "If there's a bunda about, it's getting bashed.";
                 default: return "";
             }
         }

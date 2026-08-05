@@ -36,6 +36,18 @@ public static class CharacterCreatorSetup
     private static readonly Color IntroBody = new Color(0.224f, 0.184f, 0.141f, 0.97f);
     private static readonly Color IntroTrim = new Color(0.62f, 0.50f, 0.34f, 1f);
 
+    /// <summary>
+    /// The owner's intro copy, supplied 2026-08-05. Hoisted to a constant so it can be edited
+    /// without reading the layout code around it.
+    ///
+    /// ⚠️ Straight apostrophes, deliberately. TMP's default static atlas is often ASCII-only —
+    /// the same reason £ is flagged in CLAUDE.md §5 — and a curly U+2019 would render as a
+    /// missing-glyph box. Keep them straight unless the font asset is switched to Dynamic.
+    /// </summary>
+    private const string IntroCopy =
+        "It's time for GBH: England, are you ready? Magic? Police? Fascists? It's all here!\n\n" +
+        "Dive in! Pick from one to 5 classes and discover the Albion!";
+
     // The slab the character stands against: the parchment's darker cousin, so it reads as the
     // same material without competing with the details panel for attention.
     private static readonly Color SpriteBackdropFill = new Color(0.70f, 0.63f, 0.48f, 0.96f);
@@ -318,11 +330,7 @@ public static class CharacterCreatorSetup
         TextMeshProUGUI stats = CreateText("StatsPreview", parchment, StatsText(PlayerClass.YoungDriller), 24f, FontStyles.Normal, 150f, ParchmentInk);
 
         // The intro slab, sharing the details slab's vertical extent so the two read as a pair.
-        //
-        // ⚠️ IntroText is deliberately empty. The intro prose is the owner's own work (CLAUDE.md
-        // §3) and has not been supplied, so this builds the panel and leaves the words. Running
-        // the tool before the copy exists produces an empty brown box — that is expected, not a
-        // fault. Put the text in the string below when it arrives.
+        // Its copy is the owner's own (CLAUDE.md §3) and lives in IntroCopy above.
         RectTransform intro = CreatePanel("IntroPanel", safe, IntroTrim);
         SetAnchors(intro, new Vector2(0.50f, 0.215f), new Vector2(0.695f, 0.645f));
 
@@ -338,7 +346,7 @@ public static class CharacterCreatorSetup
         // No colour argument on purpose: CreateText's default is the light tan used elsewhere on
         // the scenery, with a dark outline. Passing an explicit colour would switch the outline
         // to the pale one meant for dark ink on parchment, which vanishes on a brown panel.
-        TextMeshProUGUI introText = CreateText("IntroText", introBody, "", 25f, FontStyles.Normal);
+        TextMeshProUGUI introText = CreateText("IntroText", introBody, IntroCopy, 25f, FontStyles.Normal);
         Stretch(introText.rectTransform);
         introText.rectTransform.offsetMin = new Vector2(22f, 22f);
         introText.rectTransform.offsetMax = new Vector2(-22f, -22f);
