@@ -19,7 +19,7 @@ public class NPCPlacementTool : EditorWindow
     private Sprite _sprite;
     private DialogueData _conversation;
 
-    [MenuItem("Tools/GBA/Place/NPC Placement")]
+    [MenuItem("Tools/GBH/Place/NPC Placement")]
     public static void Open()
     {
         GetWindow<NPCPlacementTool>("NPC Placement");

@@ -4,7 +4,7 @@ namespace ExiledAlvaston.World
 {
     /// <summary>
     /// Marks where the player arrives in a chunk. Drop one into a chunk prefab (via
-    /// Tools/GBA/Place/Spawn Point Placement, or add this component to an empty object)
+    /// Tools/GBH/Place/Spawn Point Placement, or add this component to an empty object)
     /// and every teleport into that chunk — world load, instance door, or DungeonPortal — puts
     /// the player here instead of at a hard-coded position.
     ///

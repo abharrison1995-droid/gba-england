@@ -13,7 +13,7 @@ using ExiledAlvaston.Flow;
 /// </summary>
 public static class DevZoneJump
 {
-    [MenuItem("Tools/GBA/Debug/Jump To Manor Cellars")]
+    [MenuItem("Tools/GBH/Debug/Jump To Manor Cellars")]
     public static void JumpToManorCellars()
     {
         Vector3 spawn = GameFlowController.Instance != null
@@ -22,7 +22,7 @@ public static class DevZoneJump
         Jump("Manor Cellars", spawn);
     }
 
-    [MenuItem("Tools/GBA/Debug/Jump To Home London")]
+    [MenuItem("Tools/GBH/Debug/Jump To Home London")]
     public static void JumpToHomeLondon()
     {
         Jump("Home_London", Vector3.up);

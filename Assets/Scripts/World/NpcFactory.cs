@@ -133,7 +133,7 @@ namespace ExiledAlvaston.World
                 string message =
                     $"NpcFactory: preset '{preset.Label}' has no NpcSprite, so '{go.name}' has " +
                     "nothing to draw. Import the subject's idle sheet, or run " +
-                    "Tools > GBA > Content > Wire Presets From Imported Art.";
+                    "Tools > GBH > Content > Wire Presets From Imported Art.";
 
                 // Severity depends on when this happens, because the two cases are not the same
                 // problem. Authoring a character before their art exists is a normal step — the

@@ -9,18 +9,18 @@ Verification scope:    code; tracked preset/prefab YAML (34 presets read). The v
 
 ## The World Palette
 
-`Tools → GBA → World Palette` (`Editor/WorldPaletteWindow.cs`). Arm a preset, click in the Scene
+`Tools → GBH → World Palette` (`Editor/WorldPaletteWindow.cs`). Arm a preset, click in the Scene
 view, Shift to keep stamping, Esc to disarm.
 
-It sits directly at `Tools/GBA/World Palette`, uncategorised — the one deliberate exception to the
-`Tools/GBA/<Category>/` rule, because it is the entry point rather than one tool among many.
+It sits directly at `Tools/GBH/World Palette`, uncategorised — the one deliberate exception to the
+`Tools/GBH/<Category>/` rule, because it is the entry point rather than one tool among many.
 
 | Piece | File | What it does |
 |---|---|---|
 | The thing to place | `Data/PlacementPreset` | Label, category, region, icon, and either a `Prefab` or the recipe fields. |
 | How to build it | `Editor/PlacementBuilders` | Each old window's `Create…()` body, taking a position and a parent. |
 | Where to build it | `Editor/WorldPaletteWindow` | Grid, arming, SceneView raycast, ghost, parenting. |
-| A starting set | `Editor/StarterPresetGenerator` | `Tools → GBA → Content → Create Starter Presets`. Skips what exists; never overwrites. |
+| A starting set | `Editor/StarterPresetGenerator` | `Tools → GBH → Content → Create Starter Presets`. Skips what exists; never overwrites. |
 
 ### Things that will catch you out
 
@@ -62,9 +62,9 @@ Two clicks in Unity and no code:
 2. Create a `PlacementPreset`: `Label`, `Category: NPC`, `Region`, `ArtSubject`, `AmbientLine` or
    a `Conversation`, `Roams` if it should wander, `Pickpocketable` if they should be robbable
    instead of talkable.
-3. `Tools → GBA → Art → Import Generated Art`. Sheets slice, clips build, a controller builds, and
+3. `Tools → GBH → Art → Import Generated Art`. Sheets slice, clips build, a controller builds, and
    **the preset wires itself** — controller, resting sprite, palette icon, height.
-4. `Tools → GBA → World Palette`: arm it, click it into a chunk prefab.
+4. `Tools → GBH → World Palette`: arm it, click it into a chunk prefab.
 
 | Piece | File | What it owns |
 |---|---|---|
@@ -91,7 +91,7 @@ Two clicks in Unity and no code:
 - **The importer always wins on controller and sprite, never on height.** Those two are derived
   from the art, so a fresh import replaces placeholder wiring with no manual step; height is
   tunable, so a hand-set value survives.
-- **`Wire Presets From Imported Art`** (`Tools/GBA/Content/`) exists because an import only knows
+- **`Wire Presets From Imported Art`** (`Tools/GBH/Content/`) exists because an import only knows
   the batch in front of it, and a clean batch is archived out of staging immediately. Art imported
   months ago, or a preset written after its subject arrived, is only reachable this way.
 - **`NPCWander` is deliberately NavMesh-free.** `EKNavMeshBaker` bakes one mesh from whichever
@@ -137,7 +137,7 @@ wired to `<subject>_Controller`, `EnemyAI.Animator` set, `Health`, Rigidbody/Col
 Enemy-category preset pointing at it.
 
 Six exist — Neek, OG, Roadman, Spicehead, Tainted, Tortured Neek — built by
-`Tools > GBA > Content > Build Enemies From Generated Art`. **None has been seen in play.**
+`Tools > GBH > Content > Build Enemies From Generated Art`. **None has been seen in play.**
 
 Build prefabs **in place** (`LoadPrefabContents` → `SaveAsPrefabAsset`), never delete-and-recreate.
 

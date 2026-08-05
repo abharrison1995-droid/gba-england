@@ -102,11 +102,11 @@ Three names are live and **must not be "unified" without an explicit task**:
 | Name | Where | Status |
 |---|---|---|
 | `Exiled Alvaston` | `productName`, root C# namespace, most editor menus | The canonical internal one |
-| `GBA: England` | `EKVibe.DisplayTitle` | The player-facing title |
+| `GBH: England` | `EKVibe.DisplayTitle` | The player-facing title |
 | `Discover England` | `DiscoverEnglandSetup.cs` and its menu item | Editor-tool name only — **no longer the display title** |
 | `EK` / Exiled Kingdoms | `EKVibe`, `EKNavMeshBaker` | The *inspiration* game, a deliberate reference |
 
-A rename to **GBA: England** (Great British Annals) has begun. `EKVibe.DisplayTitle` is done, and
+A rename to **GBH: England** (Great British Annals) has begun. `EKVibe.DisplayTitle` is done, and
 the hub chunk rename `Home_Alvaston` → `Home_London` shipped with a save-key migration.
 
 Still open: the `ExiledAlvaston` namespace appears in **46 `.cs` files and zero serialized assets**,
@@ -114,7 +114,7 @@ so a namespace rename is safe — Unity binds scripts by `.meta` GUID, not type 
 done. `productName` is also still "Exiled Alvaston".
 
 A colon is illegal in Windows paths and git repo names, so any repo or folder stays `gba-england`
-with `GBA: England` only as a display string.
+with `GBH: England` only as a display string.
 
 ## Structure facts worth knowing
 

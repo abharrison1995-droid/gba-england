@@ -64,7 +64,7 @@ namespace ExiledAlvaston.Data
         // read it as an empty list, which is the correct default.
         [Header("Vehicles")]
         [Tooltip("Rideable vehicles spawned into this chunk each time it loads. Author them with " +
-                 "Tools > GBA > Place > Vehicle Placement rather than by hand.")]
+                 "Tools > GBH > Place > Vehicle Placement rather than by hand.")]
         public List<VehicleSpawn> VehicleSpawns = new List<VehicleSpawn>();
     }
 }

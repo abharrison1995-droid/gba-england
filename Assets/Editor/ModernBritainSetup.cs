@@ -19,7 +19,7 @@ using ExiledAlvaston.Vibe;
 ///   6. Adds StealthController to the player in the active scene
 ///   7. Places a Nosey Parker, an EBike, and a Pub into the active scene near the player
 ///
-/// Run via: Tools → GBA → Danger Zone → Build Modern Britain Prefabs + Wire Scene
+/// Run via: Tools → GBH → Danger Zone → Build Modern Britain Prefabs + Wire Scene
 /// </summary>
 public static class ModernBritainSetup
 {
@@ -39,7 +39,7 @@ public static class ModernBritainSetup
     //  MENU ENTRY — the one button to rule them all
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    [MenuItem("Tools/GBA/Danger Zone/Build Modern Britain Prefabs + Wire Scene")]
+    [MenuItem("Tools/GBH/Danger Zone/Build Modern Britain Prefabs + Wire Scene")]
     public static void Run()
     {
         // Every prefab below is deleted and re-saved rather than edited in place, which takes the

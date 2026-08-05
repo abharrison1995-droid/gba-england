@@ -61,7 +61,7 @@ namespace ExiledAlvaston.Data
             {
                 Debug.LogError(
                     $"PlacementPresetLibrary: no Assets/Resources/{ResourcePath}.asset, so '{key}' " +
-                    "cannot be resolved. Run Tools > GBA > Content > Create Starter Presets.");
+                    "cannot be resolved. Run Tools > GBH > Content > Create Starter Presets.");
                 return null;
             }
 
@@ -81,7 +81,7 @@ namespace ExiledAlvaston.Data
             }
 
             Debug.LogError($"PlacementPresetLibrary: nothing keyed '{key}'. Add an entry for it, or " +
-                           "run Tools > GBA > Content > Create Starter Presets to restore the " +
+                           "run Tools > GBH > Content > Create Starter Presets to restore the " +
                            "standard ones.", library);
             return null;
         }

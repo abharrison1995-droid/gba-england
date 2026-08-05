@@ -8,7 +8,7 @@ using ExiledAlvaston.Flow;
 /// Fills the World Palette with a usable starting set, so it is not an empty grid the first time
 /// it is opened.
 ///
-/// Run via: Tools → GBA → Content → Create Starter Presets
+/// Run via: Tools → GBH → Content → Create Starter Presets
 ///
 /// Idempotent by design: an asset that already exists is left completely alone, never overwritten.
 /// Presets are meant to be tuned by hand once created, and a generator that reset them on every
@@ -23,7 +23,7 @@ public static class StarterPresetGenerator
     private const string EBikePrefabPath = "Assets/Prefabs/ModernBritain/EBike.prefab";
     private const string ChestPrefabPath = "Assets/3DModels/Animated Chest/OldChest/Chest.prefab";
 
-    [MenuItem("Tools/GBA/Content/Create Starter Presets")]
+    [MenuItem("Tools/GBH/Content/Create Starter Presets")]
     public static void Run()
     {
         EnsureFolder(PresetFolder);
@@ -106,7 +106,7 @@ public static class StarterPresetGenerator
         EditorUtility.DisplayDialog("Create Starter Presets",
             $"{created.Count} created, {filled.Count} back-filled, {skipped.Count} already existed, " +
             $"{notes.Count} note(s).\n\n" +
-            "Open Tools → GBA → World Palette to use them. Detail in the Console.", "OK");
+            "Open Tools → GBH → World Palette to use them. Detail in the Console.", "OK");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════

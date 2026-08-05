@@ -1,7 +1,7 @@
 # art_incoming
 
 Staging for generated art. The art agent writes PNG + JSON pairs here; nothing is in the game
-until `Tools → GBA → Art → Import Generated Art` is run in Unity.
+until `Tools → GBH → Art → Import Generated Art` is run in Unity.
 
 Deliberately **outside `Assets/`** so Unity does not import half-written files.
 
