@@ -407,16 +407,18 @@ So: a conjuror whose tricks went too far. That line **replaced** his previous ta
 while drawing him: no copy now states that Dynamo does magic — the creator says so only through
 his specialism label — and nothing states the register the old line gave him.
 
-⚠️ **Do not draw a stage magician.** Band 2's **Daniel Pauls** already is one: a middle-aged
-showman in a pink Las Vegas suit, sequins and wide lapels, who teaches the player their first
-spell. Two theatrical conjurors in a game with five classes and one tutorial would read as the
-same character. Daniel Pauls is the trick as performance; Dynamo is the trick after it stopped
-being funny.
+The owner's visual, 2026-08-05: **wiry black fellow, quite flamboyant, with a skullet haircut** —
+short or bald on top, long at the back.
 
-⚠️ **Still needed from the owner before anyone draws him:** build and rough age, what he wears, and
-how the magic reads on screen — hands, a held object, or something worn. The line above is
-characterisation, not a visual description, and per the rule at the top of this band the visual is
-the owner's to write.
+⚠️ **Band 2's Daniel Pauls is also a conjuror** — a middle-aged showman in a pink Las Vegas suit,
+sequins and wide lapels, who teaches the player their first spell. The two descriptions do
+separate them: Daniel Pauls is heavy-set theatre, Dynamo is wiry and younger. **Keep it that way.**
+Daniel Pauls is the trick as performance; Dynamo is the trick after it stopped being funny.
+
+Open, and the artist's call unless the owner says otherwise: exact age, what "flamboyant" is
+wearing, and how the magic reads on screen — hands, a held object, or something worn. Enough is
+specified to attempt the `idle`; confirm the clothing before committing to the other five sheets,
+because all six have to agree.
 
 ⚠️ **En Garde no longer exists.** The fencer class was replaced by **Stabmeister** on 2026-08-04 —
 same enum index (1), so no save is affected and the creator still shows five classes. **Do not
@@ -432,11 +434,24 @@ parts of the backdrop read as subject. Normalising them to a uniform 1024x1024 c
 a shared baseline is what made them importable. **Ask for flat magenta and a bottom margin** on the
 remaining five actions and none of that is needed again.
 
+**Bunda Basher** — `sheet_char_player_bundabasher_<action>.png`, actions: `idle`, `walk`,
+`attack`, `hurt`, `death`, `cast`. Do `idle` first, after Dynamo. Her tagline:
+
+> If there's a bunda about, it's getting bashed.
+
+The owner's visual, 2026-08-05: **a very pasty white lady, sweet-looking, in a cat jumper.**
+
+⚠️ **The gap between how she looks and what she does is the joke — do not close it.** She is the
+roster's tank: Endurance 10, the only double figure in the game and three clear of the next
+highest, with 160 HP against Stabmeister's 120. **None of that should show in the drawing.** No
+scowl, no bulk, no fighting stance. Sweet, pasty, cat jumper. The `attack`, `hurt` and `death`
+sheets are where the contrast pays off, so keep her mild in `idle` and `walk`.
+
 ⚠️ **The visual description of each class is the owner's to write and is not in this file. Ask
-before drawing any of them.** All five now have a one-line tagline in `PlayerClass.cs` — a
-starting point, not a brief. As of 2026-08-05 all five also have real traits, HP, resource and a
-specialism label; Bunda Basher's were proposed rather than authored, and are marked as such in
-the source. **None of that describes what any of them look like.**
+before drawing any of them.** All five now have a tagline in `PlayerClass.cs`, real traits, HP,
+resource and a specialism label as of 2026-08-05, and Dynamo and Bunda Basher have the visuals
+above. **Stabmeister and Mr Hood have delivered idles but no written visual** — match their
+existing sheets rather than inventing.
 
 **Match the existing `player` (Young Driller) sheets** for build, cell fill and baseline. Five
 classes that disagree with each other are worse than five that agree.

@@ -84,14 +84,15 @@ namespace ExiledAlvaston.Data
                     return new CoreTraits { Strength = 4, Endurance = 5, Agility = 7, Intelligence = 4, Awareness = 6, Perception = 8 };
                 case PlayerClass.Dynamo:
                     return new CoreTraits { Strength = 3, Endurance = 5, Agility = 5, Intelligence = 8, Awareness = 6, Perception = 5 };
-                // Proposed 2026-08-05, owner-editable. 32 points, matching Young Driller,
-                // Stabmeister and Dynamo (Mr Hood is the outlier at 34). Spent on the one shape
-                // no other class occupies: the slow bruiser. Top Strength and Endurance in the
-                // roster, and the lowest Agility and Intelligence — he is meant to be telegraphed
-                // and to not care. Stabmeister is the nearest neighbour at STR 8 / END 7; the
-                // AGI 5→3 and INT 4→2 gap is what keeps them from being the same character.
+                // Owner-directed 2026-08-05: lean harder on Endurance and HP, ease off Strength.
+                // Still 32 points, matching Young Driller, Stabmeister and Dynamo (Mr Hood is the
+                // outlier at 34). Endurance 10 is the roster's only double figure and sits three
+                // clear of the next highest, so she reads as *the* endurance class rather than
+                // just a strong one — Strength 8 now merely ties Stabmeister instead of beating
+                // her. Agility 2 and Intelligence 2 are the roster floors: slow, telegraphed, and
+                // not interested in either.
                 case PlayerClass.BundaBasher:
-                    return new CoreTraits { Strength = 9, Endurance = 8, Agility = 3, Intelligence = 2, Awareness = 5, Perception = 5 };
+                    return new CoreTraits { Strength = 8, Endurance = 10, Agility = 2, Intelligence = 2, Awareness = 5, Perception = 5 };
                 default:
                     return new CoreTraits { Strength = 5, Endurance = 5, Agility = 5, Intelligence = 5, Awareness = 5, Perception = 5 };
             }
@@ -105,7 +106,7 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.YoungDriller: return 100;
                 case PlayerClass.MrHood: return 90;
                 case PlayerClass.Dynamo: return 85;
-                case PlayerClass.BundaBasher: return 140; // proposed 2026-08-05; the roster's tank
+                case PlayerClass.BundaBasher: return 160; // owner-directed 2026-08-05; the roster's tank
                 default: return 100;
             }
         }

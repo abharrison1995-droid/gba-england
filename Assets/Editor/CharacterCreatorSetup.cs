@@ -46,7 +46,7 @@ public static class CharacterCreatorSetup
     /// </summary>
     private const string IntroCopy =
         "It's time for GBH: England. Are you ready? Magic? Police? Fascists? It's all here!\n\n" +
-        "Dive in! Pick one of five classes and discover the Albion!";
+        "Dive in! Pick one of five classes and discover the real England!";
 
     // The slab the character stands against: the parchment's darker cousin, so it reads as the
     // same material without competing with the details panel for attention.
@@ -275,14 +275,32 @@ public static class CharacterCreatorSetup
         Stretch(safe);
         safe.gameObject.AddComponent<SafeAreaFitter>();
 
+        // The heading sits above the brown box painted into the backdrop, whose top edge is at
+        // y 0.854, so it lands on pale sky where tan text has little to hold on to. It does not
+        // get moved onto the box: the strip between the box top and the details panels is 226
+        // units and already carries the name field (81) and the tabs (92), so a third row would
+        // mean shrinking all three. It gets its own plate instead — same treatment as the intro
+        // panel, so it reads as deliberate rather than as a label that missed its backing.
+        //
+        // Created before the heading: Unity UI draws in hierarchy order.
+        RectTransform headingPlate = CreatePanel("HeadingPlate", safe, IntroTrim);
+        SetAnchors(headingPlate, new Vector2(0.33f, 0.873f), new Vector2(0.67f, 0.977f));
+        RectTransform headingPlateBody = CreatePanel("HeadingPlateBody", headingPlate, IntroBody);
+        Stretch(headingPlateBody);
+        headingPlateBody.offsetMin = new Vector2(5f, 5f);
+        headingPlateBody.offsetMax = new Vector2(-5f, -5f);
+
         TextMeshProUGUI heading = CreateText("Heading", safe, "Pick your Brit", 58f, FontStyles.Bold);
         SetAnchors(heading.rectTransform, new Vector2(0.14f, 0.88f), new Vector2(0.86f, 0.97f));
 
         TMP_InputField nameInput = CreateNameInput(safe, frame);
         SetAnchors(nameInput.GetComponent<RectTransform>(), new Vector2(0.34f, 0.79f), new Vector2(0.66f, 0.865f));
 
+        // Narrowed from 0.04-0.96 to sit inside the backdrop's brown box (0.167-0.848), which the
+        // outer two tabs used to overhang onto the countryside. Each tab drops from ~344 units
+        // wide to ~246; the labels auto-size, and "Bunda Basher" is the longest at 12 characters.
         RectTransform tabs = CreateRect("ClassTabs", safe);
-        SetAnchors(tabs, new Vector2(0.04f, 0.68f), new Vector2(0.96f, 0.765f));
+        SetAnchors(tabs, new Vector2(0.175f, 0.68f), new Vector2(0.84f, 0.765f));
         HorizontalLayoutGroup tabLayout = tabs.gameObject.AddComponent<HorizontalLayoutGroup>();
         tabLayout.spacing = 12f;
         tabLayout.childControlWidth = true;

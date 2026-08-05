@@ -342,8 +342,14 @@ public static class DiscoverEnglandSetup
         nameTmp.fontSize = 24;
         nameTmp.color = EKVibe.TextDark;
         input.textComponent = nameTmp;
-        input.text = "Exile";
+        // Empty, matching the current creator: a blank name resolves to Vince in
+        // PlayerSession.BeginNewGame. This used to prefill "Exile".
+        input.text = "";
 
+        // ⚠️ This builder is superseded by CharacterCreatorSetup and is out of date: four class
+        // names, no Bunda Basher, who was appended as PlayerClass index 4. Running it would build
+        // a creator that cannot select the fifth class. Fix the list before using it, or delete
+        // the tool — do not assume it still matches PlayerClass.
         string[] classNames = { "Young Driller", "Stabmeister", "Mr Hood", "Dynamo" };
         Button[] classBtns = new Button[4];
         for (int i = 0; i < 4; i++)
