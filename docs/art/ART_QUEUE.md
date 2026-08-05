@@ -47,9 +47,13 @@ the bands win.
 | `neigelfromage` | hostile | Y | Y |  |  | Y |  | Y | Neigel Fromage | attack, death |
 | `og` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `pharmacist` | talker | Y |  |  |  |  |  | Y | Roaming Pharmacist | walk |
-| `player` | hostile | Y | Y | Y | Y | Y | Y | Y | - | - |
+| `player` | player | Y | Y | Y | Y | Y | Y | Y | - | - |
+| `player_bundabasher` | player |  |  |  |  |  |  |  | - | idle, walk, attack, cast, hurt, death |
 | `player_butterknife` | hostile |  |  | Y |  |  |  | Y | - | idle, walk, hurt, death |
+| `player_dynamo` | player |  |  |  |  |  |  |  | - | idle, walk, attack, cast, hurt, death |
+| `player_mrhood` | player |  |  |  |  |  |  |  | - | idle, walk, attack, cast, hurt, death |
 | `player_slingshot` | hostile |  |  | Y |  |  |  | Y | - | idle, walk, hurt, death |
+| `player_stabmeister` | player |  |  |  |  |  |  |  | Stabmeister | idle, walk, attack, cast, hurt, death |
 | `police_bobby` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `police_pcso` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `quidlandclerk` | talker | Y |  |  |  |  |  | Y | Quidland Clerk | - |
@@ -91,6 +95,7 @@ not when they have been delivered.
 | Band | What | Assets | Why this order |
 |---|---|---|---|
 | ~~1~~ | ~~The three refused player sheets~~ **DONE** | 3 sheets | Nothing else is drawn until the player is right — every other character is matched against them. |
+| **1b** | **The four remaining player classes** | 24 sheets (4 subjects x 6) | **The character creator is built and previews the chosen class's idle live**, so four of the five classes show the wrong character today. Highest-value art in the queue. See *Player class visual sets*. |
 | **2** | The tutorial cast | 8 sheets | The opening quest is the only scripted content that exists; it currently runs with placeholder capsules. |
 | **3** | World props | 21 singles | Four of the six chunks are **completely empty** — ground, edges and nothing else. This is the band that unblocks world-building. |
 | **4** | The ambient cast | 20 sheets | Civilians, roamers and the named London cast. Needed before the consequence layer means anything, since Nosey Parkers are civilians. |
@@ -378,6 +383,59 @@ Animator.
 >   `player_butterknife_Controller` and friends as a by-product of seeing a new subject; those are
 >   unused and harmless, but check that is actually what happens rather than assuming it.
 
+### Player class visual sets — requested
+
+The existing `player` subject is Young Driller and is complete. Four additional selectable-class
+subjects are now requested. Each needs the full six-sheet gameplay set: `idle`, `walk`, `attack`,
+`hurt`, `death`, and `cast`. An imported idle can appear in the creator preview, but gameplay keeps
+the complete Young Driller visual until all six actions for that class exist.
+
+| Subject | Class | Required actions |
+|---|---|---|
+| `player_stabmeister` | Stabmeister | ~~idle~~ **delivered**; walk, attack, hurt, death, cast |
+
+⚠️ **En Garde no longer exists.** The fencer class was replaced by **Stabmeister** on 2026-08-04 —
+same enum index (1), so no save is affected and the creator still shows five classes. **Do not
+generate a swordsman.** Her `idle` is delivered and staged in `art_incoming/`; the other five
+actions are outstanding.
+
+**Her idle is a placeholder standing in for a full set**, not a finished asset. It came back from a
+generation asked for as a fencer and was kept because the owner liked the character, so it is worth
+knowing what the frames actually needed before they were usable: they arrived 571/572 px wide
+(non-uniform), with the figure filling 96-100% of cell height and feet on the literal bottom row,
+over a **gradient** backdrop drifting to distance 70 from `#FF00FF` — past the 60 tolerance, so
+parts of the backdrop read as subject. Normalising them to a uniform 1024x1024 cell at 88% fill on
+a shared baseline is what made them importable. **Ask for flat magenta and a bottom margin** on the
+remaining five actions and none of that is needed again.
+
+| `player_mrhood` | Mr Hood | idle, walk, attack, hurt, death, cast |
+| `player_dynamo` | Dynamo | idle, walk, attack, hurt, death, cast |
+| `player_bundabasher` | Bunda Basher | idle, walk, attack, hurt, death, cast |
+
+⚠️ **The visual description of each class is the owner's to write and is not in this file. Ask
+before drawing any of them.** Three classes have a weapon and a one-line tagline in
+`PlayerClass.cs` — a starting point, not a brief. **`BundaBasher` has neither**: its traits,
+weapon and tagline are explicit owner-editable placeholders awaiting the class design.
+
+**Match the existing `player` (Young Driller) sheets** for build, cell fill and baseline. Five
+classes that disagree with each other are worse than five that agree.
+
+**Do the four `idle` sheets first.** They are what the creator preview needs and they are cheap;
+the remaining 20 follow. Gameplay keeps the Young Driller visual for a class until all six of its
+actions exist, so a lone idle changes the creator and nothing else.
+
+#### What this needs on the Unity side
+
+- `ArtImportTool.AutoAssign` special-cases the subject `player`. **These four are not that**, so
+  they will need either an extended `AutoAssign` or the preset-driven route every NPC uses.
+  Confirm before assuming a class idle wires itself up.
+- `player_butterknife` and `player_slingshot` already use this `player_<variant>` naming shape for
+  a **different axis** — weapon, not class — and nothing in code consumes either. Do not let the
+  two axes collide in one name.
+- `PlayerClass` is serialized by index and `BundaBasher` was correctly **appended** as 4. Any
+  further class must also be appended — see
+  [../reference/SAVE_AND_SERIALIZATION.md](../reference/SAVE_AND_SERIALIZATION.md).
+
 ### Cancelled and not requested
 
 - **`cycle` — cancelled.** The rider is drawn by layering the e-bike sprite over the ordinary
@@ -386,5 +444,3 @@ Animator.
   `sheet_char_player_cycle` has been discarded rather than sent back.
 - **`spr_char_player_ebike` — not requested.** An old version of this document asked for a single
   sprite of the player on the bike. Nothing consumes it.
-- **Per-class player variants — not requested.** One character serves all four classes; the classes
-  differ in stats only.

@@ -7,10 +7,14 @@ namespace ExiledAlvaston.Data
     /// </summary>
     public enum PlayerClass
     {
-        YoungDriller = 0, // ZK / zombie knife
-        EnGarde = 1,      // Long swords
+        YoungDriller = 0, // Blade
+        Stabmeister = 1,  // Stab. Replaced EnGarde in place: the identifier changed, the
+                          // index did not, and PlayerClass is saved as an int
+                          // (SaveGameManager.PlayerClass), so existing saves carrying 1 load
+                          // straight into Stabmeister. Never renumber this enum.
         MrHood = 2,       // Ranged
-        Dynamo = 3        // Magic
+        Dynamo = 3,       // Magic
+        BundaBasher = 4   // Owner-defined class details pending
     }
 
     public static class PlayerClassInfo
@@ -20,9 +24,10 @@ namespace ExiledAlvaston.Data
             switch (c)
             {
                 case PlayerClass.YoungDriller: return "Young Driller";
-                case PlayerClass.EnGarde: return "En Garde";
+                case PlayerClass.Stabmeister: return "Stabmeister";
                 case PlayerClass.MrHood: return "Mr Hood";
                 case PlayerClass.Dynamo: return "Dynamo";
+                case PlayerClass.BundaBasher: return "Bunda Basher";
                 default: return c.ToString();
             }
         }
@@ -32,22 +37,36 @@ namespace ExiledAlvaston.Data
             switch (c)
             {
                 case PlayerClass.YoungDriller: return "Good with a ZK. Close-range chaos from the ends.";
-                case PlayerClass.EnGarde: return "Good with long swords. Proper blade work.";
+                case PlayerClass.Stabmeister: return "Stab by name, stab by nature.";
                 case PlayerClass.MrHood: return "Good with ranged. Keep your distance, stay hooded.";
                 case PlayerClass.Dynamo: return "Good with magic. Street-level spark and pressure.";
+                // Owner-editable placeholder until the class design is supplied.
+                case PlayerClass.BundaBasher: return "Class details pending.";
                 default: return "";
             }
         }
 
-        public static string StartingWeaponLabel(PlayerClass c)
+        /// <summary>
+        /// What the class is good at. Replaced <c>StartingWeaponLabel</c>: no class starts
+        /// with a weapon, so advertising one in the creator promised something the game does
+        /// not deliver. These are damage specialisms, not equipment.
+        /// </summary>
+        /// <remarks>
+        /// ⚠️ Owner-editable copy. Ranged, Magic and Stab all come straight from their class's
+        /// own tagline. Blade is the one still inferred rather than stated — it is read off
+        /// Young Driller's "good with a ZK" — and Bunda Basher has no design yet.
+        /// </remarks>
+        public static string SpecialismLabel(PlayerClass c)
         {
             switch (c)
             {
-                case PlayerClass.YoungDriller: return "ZK (Zombie Knife)";
-                case PlayerClass.EnGarde: return "Long Sword";
-                case PlayerClass.MrHood: return "Hood Bow";
-                case PlayerClass.Dynamo: return "Dynamo Charm";
-                default: return "Fists";
+                case PlayerClass.YoungDriller: return "Blade";
+                case PlayerClass.Stabmeister: return "Stab";
+                case PlayerClass.MrHood: return "Ranged";
+                case PlayerClass.Dynamo: return "Magic";
+                // Owner-editable placeholder until the class design is supplied.
+                case PlayerClass.BundaBasher: return "Not set";
+                default: return "Unarmed";
             }
         }
 
@@ -58,12 +77,15 @@ namespace ExiledAlvaston.Data
             {
                 case PlayerClass.YoungDriller:
                     return new CoreTraits { Strength = 7, Endurance = 6, Agility = 7, Intelligence = 3, Awareness = 5, Perception = 4 };
-                case PlayerClass.EnGarde:
+                case PlayerClass.Stabmeister:
                     return new CoreTraits { Strength = 8, Endurance = 7, Agility = 5, Intelligence = 4, Awareness = 4, Perception = 4 };
                 case PlayerClass.MrHood:
                     return new CoreTraits { Strength = 4, Endurance = 5, Agility = 7, Intelligence = 4, Awareness = 6, Perception = 8 };
                 case PlayerClass.Dynamo:
                     return new CoreTraits { Strength = 3, Endurance = 5, Agility = 5, Intelligence = 8, Awareness = 6, Perception = 5 };
+                // Neutral owner-editable placeholder until the class design is supplied.
+                case PlayerClass.BundaBasher:
+                    return new CoreTraits { Strength = 5, Endurance = 5, Agility = 5, Intelligence = 5, Awareness = 5, Perception = 5 };
                 default:
                     return new CoreTraits { Strength = 5, Endurance = 5, Agility = 5, Intelligence = 5, Awareness = 5, Perception = 5 };
             }
@@ -73,10 +95,11 @@ namespace ExiledAlvaston.Data
         {
             switch (c)
             {
-                case PlayerClass.EnGarde: return 120;
+                case PlayerClass.Stabmeister: return 120;
                 case PlayerClass.YoungDriller: return 100;
                 case PlayerClass.MrHood: return 90;
                 case PlayerClass.Dynamo: return 85;
+                case PlayerClass.BundaBasher: return 100; // neutral owner-editable placeholder
                 default: return 100;
             }
         }
@@ -89,7 +112,8 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.Dynamo: return 80;
                 case PlayerClass.MrHood: return 60;
                 case PlayerClass.YoungDriller: return 55;
-                case PlayerClass.EnGarde: return 50;
+                case PlayerClass.Stabmeister: return 50;
+                case PlayerClass.BundaBasher: return 50; // neutral owner-editable placeholder
                 default: return 50;
             }
         }

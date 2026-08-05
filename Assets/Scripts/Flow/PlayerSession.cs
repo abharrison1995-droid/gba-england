@@ -22,7 +22,7 @@ namespace ExiledAlvaston.Flow
         public static PlayerSession Instance { get; private set; }
 
         [Header("Created Character")]
-        public string CharacterName = "Exile";
+        public string CharacterName = "Vince";
         public PlayerClass Class = PlayerClass.YoungDriller;
         public CharacterData RuntimeStats;
 
@@ -84,7 +84,9 @@ namespace ExiledAlvaston.Flow
 
         public void BeginNewGame(string characterName, PlayerClass playerClass, CharacterData template)
         {
-            CharacterName = string.IsNullOrWhiteSpace(characterName) ? "Exile" : characterName.Trim();
+            // The creator's name box starts empty behind a placeholder, so a blank arriving here
+            // is the ordinary "player did not type one" case, not an error.
+            CharacterName = string.IsNullOrWhiteSpace(characterName) ? "Vince" : characterName.Trim();
             Class = playerClass;
             TutorialComplete = false;
             HasStartedNewGame = true;

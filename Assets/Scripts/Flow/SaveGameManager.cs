@@ -59,7 +59,7 @@ namespace ExiledAlvaston.Flow
             var data = new SaveData();
 
             PlayerSession session = PlayerSession.Instance;
-            data.CharacterName = session != null ? session.CharacterName : "Exile";
+            data.CharacterName = session != null ? session.CharacterName : "Vince";
             data.PlayerClass = session != null ? (int)session.Class : 0;
             data.TutorialComplete = session != null && session.TutorialComplete;
             data.Pounds = session != null ? session.Pounds : 0;

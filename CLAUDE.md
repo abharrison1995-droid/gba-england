@@ -1,4 +1,4 @@
-# CLAUDE.md — GBA: England
+# CLAUDE.md — GBH: England
 
 **This file is a bootloader, not a manual.** It holds project identity, the rules that must never
 be missed, and a routing table. Detail lives in `docs/`, loaded on demand.
@@ -10,13 +10,13 @@ be missed, and a routing table. Detail lives in `docs/`, loaded on demand.
 ## 1. What this project is
 
 A Unity **mobile RPG**, working title **Exiled Alvaston** (`ProjectSettings` → `productName`),
-displayed to the player as **GBA: England** (`EKVibe.DisplayTitle`).
+displayed to the player as **GBH: England** (`EKVibe.DisplayTitle`).
 
 Set in a hostile modern Britain, with magic played straight. A GTA-like consequence layer — wanted
 level, police, stealth, pickpocketing, vehicle theft — sits on top of a classic RPG core.
 
 Three names are live and **deliberately not unified**: `Exiled Alvaston` (product name and C#
-namespace), `GBA: England` (display title), and `EK*` prefixes referring to *Exiled Kingdoms*, the
+namespace), `GBH: England` (display title), and `EK*` prefixes referring to *Exiled Kingdoms*, the
 inspiration game. `Discover England` survives only as the name of one editor tool.
 
 ### Presentation model — read this before touching movement or combat
@@ -64,10 +64,10 @@ docs/               # everything else — routed from docs/README.md
 - **Tuning constants belong in `EKVibe`** (`Scripts/Vibe/EKVibe.cs`) — colours, sizes, camera,
   `ChunkSize`, `CharacterHeight`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
-- **Editor menu path**: `Tools/GBA/<Category>/...` — `Place`, `Art`, `World`, `Debug`, `Repair`,
+- **Editor menu path**: `Tools/GBH/<Category>/...` — `Place`, `Art`, `World`, `Debug`, `Repair`,
   `Content`, plus **`Danger Zone`** for the five tools that overwrite or re-create assets. Each of
   those confirms first and names what it destroys. **Nothing destructive may go anywhere else.**
-  `Tools/GBA/World Palette` is the one deliberate uncategorised exception.
+  `Tools/GBH/World Palette` is the one deliberate uncategorised exception.
 - **Mobile-first**: hot paths avoid allocation deliberately (preallocated `Collider[] _hitResults`,
   parallel key lists to avoid dictionary-iteration garbage). Respect this in `Update()` paths.
 - **`Assets/Editor/` is stripped from builds** and there are **no `.asmdef` files**, so it is the
@@ -138,7 +138,7 @@ vehicle cancels its own boost the instant it is mounted. Hide `ParkedModel` inst
 Wiring, presets, quest definitions, conditions and tools are all fair game; the lines an NPC says
 are not. If a task seems to need dialogue, ask for it rather than drafting it.
 
-Note that `Tools > GBA > Content > Create Starter Presets` will generate a `DialogueData` from any
+Note that `Tools > GBH > Content > Create Starter Presets` will generate a `DialogueData` from any
 preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLine` blank.
 
 ---
@@ -175,8 +175,15 @@ python Tools/art_status.py                            # what art exists and what
 
 On Linux that is `python3` — Mint has no bare `python`.
 
-`--check-dangling` knows the build scene's built-in baseline (**17 unresolved GUIDs**) and fails
-only above it. Run it before and after anything that deletes, moves or renames assets.
+`--check-dangling` resolves GUIDs from `Assets/`, `Packages/` **and `Library/PackageCache/`** —
+every script Unity ships lives in a package, so without that last root `LayoutElement` and friends
+read as missing and the check fails the moment the scene uses a UI component it had not used
+before. Unity's two sentinel GUIDs are filtered. Everything still unresolved is real breakage and
+is listed by name in `KNOWN_DANGLING`, not absorbed into a tolerated count; **anything not on that
+list fails the run**, naming the GameObject and field that points at nothing. Exit codes are `0`
+clean, `1` dangling, `2` couldn't verify — `Library/` is gitignored, so on a fresh clone it reports
+that it checked nothing rather than passing. Run it before and after anything that deletes, moves
+or renames assets.
 
 **Everything else needs the Unity editor and therefore needs a human.** Say so plainly rather than
 implying otherwise:
@@ -200,11 +207,14 @@ Everything here is on `main` and pushed. **None has been seen by a compiler or a
 these the next time Unity is open, and keep this list current — delete an item when it is
 confirmed, rather than leaving it hedged.
 
-1. ⚠️ **Several C# files have never compiled** — `EKVibe.cs`, `EnemyAI.cs`, `UIManager.cs`, plus
-   everything the pounds rename touched (`PlayerSession`, `SaveGameManager`, `GameFlowController`,
-   `PlacementPreset`, `QuestDefinition`, `PickpocketInteractable`, `NpcFactory`,
-   `QuestConditionWatcher`, `InventoryController`), all changed 2026-08-04. **The first thing a
-   Unity session does is compile them.**
+1. **The project compiled on 2026-08-05.** Both Danger Zone screen tools were run successfully
+   that day, and `CharacterCreatorSetup` references `CharacterCreatorUI`, `PlayerClass` and
+   `GameFlowController`, so the editor assembly could not have loaded unless `Assembly-CSharp`
+   built too. That clears the whole backlog of never-compiled files — `EKVibe`, `EnemyAI`,
+   `UIManager` and everything the pounds rename touched. **It proves they compile, nothing more:
+   none of their behaviour has been exercised.** The creator tool was run again later the same
+   day, after `CharacterCreatorUI`, `PlayerSession`, `SaveGameManager` and `CharacterCreatorSetup`
+   changed, so those compile too.
 2. **`UIManager.EnsureDedicatedTrack`** — wraps a bar fill in its own parent when the scene did not
    give it one, fixing the concealment readout overlapping the mana bar. *Check the readouts no
    longer overlap, and that the concealment bar snaps back to wherever it was actually authored* —
@@ -240,10 +250,29 @@ confirmed, rather than leaving it hedged.
 10. **The wallet has never run.** Pickpocket a Nosey Parker, get arrested, and reload a save.
     *Check the bag readout tracks all three, and that a save made before today loads at £0 rather
     than failing.*
+11. **The blank-name fallback has never run.** The creator's name box starts empty behind a
+    "Player name here!" placeholder, and `PlayerSession.BeginNewGame` turns a blank into
+    **Vince**. The screen itself is confirmed; what is not is what happens on confirming without
+    typing. *Start a new game leaving the box untouched and check the nameplate reads Vince, not
+    blank.*
 
 **Also outstanding — a live defect, not a verification:** no `Police_*` prefab has `IsPolice` set,
 so arrest never fires and `DespawnPolice` destroys nothing. Fix is ticking the box on all five
 prefabs in the Inspector, **never** by re-running `ModernBritainSetup`.
+
+**Also outstanding — four sprites in `c.unity` point at files that do not exist.** Three `Visual`
+SpriteRenderers on one missing texture, three on another, one more on a third, and the **PCSO**
+actor's `WorldActorVisual.ActorSprite` on a fourth. They are as old as commit `fc1d035` at least,
+and were hidden until now inside a `--check-dangling` baseline that called them built-in Unity
+GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix is reassigning
+each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
+`sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
+
+**Also outstanding — `Assets/Textures/` is untracked.** Not ignored; never `git add`ed. So
+`Title_Background.png`, `Creator_Background.png`, `Title_Button_Frame.png`, `Title_Logo.png` and
+their `.meta` files exist on one machine only, and on a fresh clone both Danger Zone screen tools
+refuse at their missing-asset guard. Committing them is the fix — with the `.meta` files, or the
+GUIDs the scene stores for them are reminted. → [docs/reference/REPO_HYGIENE.md](docs/reference/REPO_HYGIENE.md)
 
 ---
 

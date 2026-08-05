@@ -41,7 +41,7 @@ Usage:
 
 Frames are read from art_incoming/frames/, named <subject>_<action>_<n>.png or just
 <action>_<n>.png, numbered from 1 and contiguous. Run Tools/precheck_sheets.py after
-this, then import with Tools → GBA → Art → Import Generated Art.
+this, then import with Tools → GBH → Art → Import Generated Art.
 """
 import argparse
 import json
@@ -189,8 +189,9 @@ def main():
     ap.add_argument("--loop", dest="loop", action="store_true", default=None,
                     help="force loop on (default: on for idle/walk/cycle only)")
     ap.add_argument("--no-loop", dest="loop", action="store_false", help="force loop off")
-    ap.add_argument("--world-height", type=float, default=1.35,
-                    help="subject height in world units (default 1.35; the squirrel is 0.45)")
+    ap.add_argument("--world-height", type=float, default=1.55,
+                    help="subject height in world units (default 1.55, the adult height "
+                         "since 2026-08-04; a child is 1.3 and the squirrel is 0.45)")
     ap.add_argument("--category", default="characters", help="art_incoming category (default characters)")
     ap.add_argument("--key-tolerance", type=float, default=60.0,
                     help="how far from the sampled backdrop still counts as backdrop (default 60)")

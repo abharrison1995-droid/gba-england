@@ -11,7 +11,7 @@ using UnityEditor.Animations;
 /// slicing, animation clips and an AnimatorController wired to the parameter names the game
 /// already calls.
 ///
-/// Run via: Tools → GBA → Art → Import Generated Art
+/// Run via: Tools → GBH → Art → Import Generated Art
 ///
 /// The contract with the generating agent is `ART_PIPELINE.md`. Staging lives at `art_incoming/`
 /// beside `Assets/`, deliberately outside the project so Unity never imports a half-written file.
@@ -119,7 +119,7 @@ public static class ArtImportTool
         public string question;
     }
 
-    [MenuItem("Tools/GBA/Art/Import Generated Art")]
+    [MenuItem("Tools/GBH/Art/Import Generated Art")]
     public static void Run()
     {
         string staging = Path.Combine(Directory.GetParent(Application.dataPath).FullName, StagingFolder);
@@ -308,12 +308,15 @@ public static class ArtImportTool
         AssignVehicleSprite("spr_vehicle_ebike", report, problems);
         AssignPlayerController(PlayerSubject, report, problems);
 
+        bool classArtInBatch = clipsBySubject.Keys.Any(IsPlayerClassSubject);
+        RefreshPlayerClassVisualLibrary(report, problems, classArtInBatch);
+
         // Every other subject in a run is an NPC, and NPCs are authored as PlacementPresets rather
         // than as scene objects. The player is excluded because they are a scene object with their
         // own wiring above — nothing the palette ever stamps.
         foreach (string subject in clipsBySubject.Keys)
         {
-            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
+            if (IsPlayerClassSubject(subject)) continue;
 
             heightBySubject.TryGetValue(subject, out float worldHeight);
             WirePresetsForSubject(subject, worldHeight, report);
@@ -488,6 +491,20 @@ public static class ArtImportTool
 
     private const string PlayerSubject   = "player";
     private const string ControllerSuffix = "_Controller";
+    private static readonly string[] PlayerClassSubjects =
+    {
+        "player",
+        "player_stabmeister",
+        "player_mrhood",
+        "player_dynamo",
+        "player_bundabasher"
+    };
+
+    private static bool IsPlayerClassSubject(string subject)
+    {
+        return PlayerClassSubjects.Any(candidate =>
+            string.Equals(candidate, subject, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// Wires every <c>PlacementPreset</c> whose <c>ArtSubject</c> matches, and reports what it
@@ -590,6 +607,116 @@ public static class ArtImportTool
         return null;
     }
 
+    internal static void PopulatePlayerClassVisualLibrary(
+        ExiledAlvaston.Flow.PlayerClassVisualLibrary library, List<string> report)
+    {
+        if (library == null) return;
+
+        var classes = new[]
+        {
+            ExiledAlvaston.Data.PlayerClass.YoungDriller,
+            ExiledAlvaston.Data.PlayerClass.Stabmeister,
+            ExiledAlvaston.Data.PlayerClass.MrHood,
+            ExiledAlvaston.Data.PlayerClass.Dynamo,
+            ExiledAlvaston.Data.PlayerClass.BundaBasher
+        };
+        string[] requiredActions = { "idle", "walk", "attack", "hurt", "death", "cast" };
+        var profiles = new ExiledAlvaston.Flow.PlayerClassVisualProfile[classes.Length];
+
+        for (int i = 0; i < classes.Length; i++)
+        {
+            string subject = PlayerClassSubjects[i];
+            Sprite[] idleFrames = FindIdleFrames(subject);
+            var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                $"{AnimRoot}/{subject}{ControllerSuffix}.controller");
+
+            bool complete = controller != null;
+            for (int actionIndex = 0; actionIndex < requiredActions.Length; actionIndex++)
+                complete &= FindClassClip(subject, requiredActions[actionIndex]) != null;
+
+            profiles[i] = new ExiledAlvaston.Flow.PlayerClassVisualProfile
+            {
+                Class = classes[i],
+                Controller = controller,
+                RestingSprite = idleFrames.FirstOrDefault(),
+                IdlePreviewFrames = idleFrames,
+                PreviewFps = 6f,
+                GameplayReady = complete
+            };
+        }
+
+        Undo.RecordObject(library, "Refresh player class visual library");
+        library.Profiles = profiles;
+        EditorUtility.SetDirty(library);
+        report?.Add("    refreshed five player-class visual profiles from imported art");
+    }
+
+    private static void RefreshPlayerClassVisualLibrary(
+        List<string> report, List<string> problems, bool requiredForBatch)
+    {
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().path != "Assets/c.unity")
+        {
+            if (requiredForBatch)
+                problems.Add("player class art imported, but Assets/c.unity is not open; " +
+                             "open it and re-run the importer to refresh the class visual library.");
+            return;
+        }
+
+        var flows = UnityEngine.Object.FindObjectsOfType<ExiledAlvaston.Flow.GameFlowController>(true);
+        if (flows.Length != 1)
+        {
+            if (requiredForBatch)
+                problems.Add("player class art imported, but the open scene does not contain exactly one GameFlowController.");
+            return;
+        }
+
+        var library = flows[0].ClassVisuals != null
+            ? flows[0].ClassVisuals
+            : flows[0].GetComponent<ExiledAlvaston.Flow.PlayerClassVisualLibrary>();
+        if (library == null)
+        {
+            if (requiredForBatch)
+                problems.Add("player class art imported, but the Character Creator builder has not added " +
+                             "PlayerClassVisualLibrary to GameFlow yet.");
+            return;
+        }
+
+        PopulatePlayerClassVisualLibrary(library, report);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(flows[0].gameObject.scene);
+    }
+
+    private static Sprite[] FindIdleFrames(string subject)
+    {
+        if (!AssetDatabase.IsValidFolder(ArtRoot)) return Array.Empty<Sprite>();
+
+        foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = Path.GetFileNameWithoutExtension(path);
+            if (file != $"{subject}_idle" &&
+                !file.EndsWith($"_{subject}_idle", StringComparison.OrdinalIgnoreCase)) continue;
+
+            return AssetDatabase.LoadAllAssetRepresentationsAtPath(path)
+                .OfType<Sprite>()
+                .OrderBy(sprite => sprite.name, StringComparer.Ordinal)
+                .ToArray();
+        }
+        return Array.Empty<Sprite>();
+    }
+
+    private static AnimationClip FindClassClip(string subject, string action)
+    {
+        foreach (string guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { AnimRoot }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = Path.GetFileNameWithoutExtension(path);
+            if (file == $"{subject}_{action}" ||
+                file.EndsWith($"_{subject}_{action}", StringComparison.OrdinalIgnoreCase))
+                return AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+        }
+        return null;
+    }
+
     /// <summary>
     /// Wires presets against art that is already in the project, rather than against a run that has
     /// just happened.
@@ -599,7 +726,7 @@ public static class ArtImportTool
     /// subject arrived, would never be connected by an import alone. This closes that gap and is
     /// safe to run at any time: it is the same wiring, driven off what is on disk.
     /// </summary>
-    [MenuItem("Tools/GBA/Content/Wire Presets From Imported Art")]
+    [MenuItem("Tools/GBH/Content/Wire Presets From Imported Art")]
     public static void WirePresetsFromImportedArt()
     {
         if (!AssetDatabase.IsValidFolder(AnimRoot))
@@ -618,7 +745,7 @@ public static class ArtImportTool
             if (!file.EndsWith(ControllerSuffix, StringComparison.Ordinal)) continue;
 
             string subject = file.Substring(0, file.Length - ControllerSuffix.Length);
-            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
+            if (IsPlayerClassSubject(subject)) continue;
 
             if (WirePresetsForSubject(subject, 0f, report) > 0) subjects++;
         }
@@ -858,7 +985,7 @@ public static class ArtImportTool
         // agrees with the image and the check is worthless.
         if (isSheet) ValidateSheetDimensions(src, m, baseName, problems);
 
-        float worldHeight = m.worldHeight > 0f ? m.worldHeight : 1.35f;
+        float worldHeight = m.worldHeight > 0f ? m.worldHeight : ExiledAlvaston.Vibe.EKVibe.CharacterHeight;
 
         // Generators are poor at producing a real alpha channel and good at putting a subject on a
         // plain backdrop, so the contract asks for flat magenta and the backdrop is removed here.
@@ -1273,7 +1400,7 @@ public static class ArtImportTool
         else return;
 
         int spread = metrics.BaselineSpread;
-        float atFinalSize = spread * (m.worldHeight > 0f ? m.worldHeight : 1.35f)
+        float atFinalSize = spread * (m.worldHeight > 0f ? m.worldHeight : ExiledAlvaston.Vibe.EKVibe.CharacterHeight)
                             * PixelsPerWorldUnit / m.frameHeight;
 
         if (atFinalSize >= 2f && ShapeChanges(action))

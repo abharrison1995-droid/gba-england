@@ -244,7 +244,7 @@ same filename** — do not create `_v2`.
 
 ## 6. Importing (Claude Code's side)
 
-`Tools → GBA → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
+`Tools → GBH → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
 
 1. Keys out the backdrop, trims (singles only), and area-averages the image down to 48 px per
    world unit, writing the result to `Assets/Art/Generated/<category>/`.
@@ -291,9 +291,16 @@ The round trip works. These are in the game and are what every new asset is matc
 | `sheet_char_mosley_idle.png` | 4 frames. Councillor Mosley, standing in the world. |
 | `sheet_char_pharmacist_idle.png` | 4 frames. The pharmacist, standing in the world. |
 
-**Open `sheet_char_player_idle.png` before drawing any player sheet** and work from the image. It
-defines the face, build, clothes, and — the part that keeps failing — how much of the cell the
-figure fills. See §3.
+The accepted `player` subject is the Young Driller visual. The other selectable classes use these
+exact subject ids: `player_stabmeister`, `player_mrhood`, `player_dynamo`, and
+`player_bundabasher`. Each class subject needs `idle`, `walk`, `attack`, `hurt`, `death`, and
+`cast`; do not substitute display-name spellings. A class with only some actions remains a preview
+at most and does not replace the gameplay visual until all six sheets are present.
+
+For Young Driller, **open `sheet_char_player_idle.png` before drawing any additional sheet**; it
+defines that character's face, build, clothes, and framing. For each new class, its own accepted
+idle becomes its identity reference for the other five actions. Until then, use the Young Driller
+idle only for style, fill, and baseline measurements, not as the new class's identity. See §3.
 
 Its measurements, which are the numbers every other sheet is scored against:
 

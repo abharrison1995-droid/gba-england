@@ -16,6 +16,7 @@ namespace ExiledAlvaston.UI
         public Button[] ClassButtons; // order matches PlayerClass enum
         public Button ConfirmButton;
         public Button BackButton;
+        public PlayerClassPreviewUI Preview;
 
         private PlayerClass _selected = PlayerClass.YoungDriller;
 
@@ -48,9 +49,11 @@ namespace ExiledAlvaston.UI
 
         private void OnEnable()
         {
+            // Deliberately does not seed NameInput. Writing a value into an empty field here
+            // would suppress the "Player name here!" placeholder every time the screen opened,
+            // and leave the player deleting text before they can type. A blank name is handled
+            // where it belongs, in PlayerSession.BeginNewGame.
             SelectClass(_selected);
-            if (NameInput != null && string.IsNullOrEmpty(NameInput.text))
-                NameInput.text = "Exile";
         }
 
         public void SelectClass(PlayerClass c)
@@ -61,7 +64,7 @@ namespace ExiledAlvaston.UI
             if (ClassBlurb != null)
                 ClassBlurb.text = PlayerClassInfo.Tagline(c);
             if (WeaponPreview != null)
-                WeaponPreview.text = "Starts with: " + PlayerClassInfo.StartingWeaponLabel(c);
+                WeaponPreview.text = "Specialises in: " + PlayerClassInfo.SpecialismLabel(c);
             if (StatsPreview != null)
             {
                 var t = PlayerClassInfo.StartingTraits(c);
@@ -70,11 +73,37 @@ namespace ExiledAlvaston.UI
                     $"INT {t.Intelligence}   AWA {t.Awareness}   PER {t.Perception}\n" +
                     $"HP {PlayerClassInfo.StartingMaxHealth(c)}   Resource {PlayerClassInfo.StartingMaxResource(c)}";
             }
+
+            if (Preview != null)
+                Preview.ShowClass(c);
+
+            RefreshSelectedTab();
+        }
+
+        private void RefreshSelectedTab()
+        {
+            if (ClassButtons == null) return;
+
+            for (int i = 0; i < ClassButtons.Length; i++)
+            {
+                Button button = ClassButtons[i];
+                if (button == null) continue;
+
+                ColorBlock colors = button.colors;
+                bool selected = i == (int)_selected;
+                colors.normalColor = selected
+                    ? new Color(0.82f, 0.69f, 0.45f, 1f)
+                    : Color.white;
+                colors.selectedColor = selected
+                    ? new Color(0.9f, 0.78f, 0.52f, 1f)
+                    : colors.highlightedColor;
+                button.colors = colors;
+            }
         }
 
         private void OnConfirm()
         {
-            string name = NameInput != null ? NameInput.text : "Exile";
+            string name = NameInput != null ? NameInput.text : "Vince";
             if (GameFlowController.Instance != null)
                 GameFlowController.Instance.StartNewGame(name, _selected);
             else

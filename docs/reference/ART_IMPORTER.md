@@ -1,8 +1,9 @@
 # The art importer and actor visuals
 
 ```
-Last verified against: ccfa9c9
-Verification scope:    code. The importer has done real round trips (Mosley, the pharmacist, the
+Last verified against: working tree, 2026-08-04
+Verification scope:    code. Player-class profile refresh and creator preview wiring are
+                       UNVERIFIED in Unity. The importer has done real round trips (Mosley, the pharmacist, the
                        player's five sheets, the London enemies) and the BuildController fix was
                        play-tested. Sprite sizing at the NEW 1.55/1.8 heights is UNVERIFIED —
                        nothing has been seen rendered since that change.
@@ -15,11 +16,11 @@ delivered and what is outstanding is [`../art/ART_QUEUE.md`](../art/ART_QUEUE.md
 
 ## Where the entry points are
 
-`Tools → GBA → Art → Import Generated Art` (`Editor/ArtImportTool.cs`) keys out the backdrop,
+`Tools → GBH → Art → Import Generated Art` (`Editor/ArtImportTool.cs`) keys out the backdrop,
 trims, reduces, sets import settings, slices sheets, builds clips and an `AnimatorController`,
 then assigns known assets to what was waiting for them.
 
-`Tools → GBA → Content → Wire Presets From Imported Art` re-runs only the assignment step, for art
+`Tools → GBH → Content → Wire Presets From Imported Art` re-runs only the assignment step, for art
 that landed in an earlier batch.
 
 ## The art direction is a post-process, not a prompt
@@ -156,8 +157,13 @@ The player's attack window and its clip line up exactly: `MeleeHitDelay 0.15` + 
 
 ## What gets auto-assigned
 
-Only the player, the e-bike, and NPC subjects named by a preset's `ArtSubject`
-(`ArtImportTool.AutoAssign`). The police tiers, the Nosey Parker and the pub are hand-built prefabs
+The five player-class subjects are reserved and never wired into NPC presets: `player` maps to
+Young Driller, followed by `player_stabmeister`, `player_mrhood`, `player_dynamo`, and
+`player_bundabasher`. Import refreshes `PlayerClassVisualLibrary` in the open `Assets/c.unity`.
+An idle sheet enables the creator preview; gameplay uses a class only when idle, walk, attack,
+hurt, death, and cast all exist, otherwise the entire Young Driller profile is used.
+
+The importer also assigns the e-bike and NPC subjects named by a preset's `ArtSubject`. The police tiers, the Nosey Parker and the pub are hand-built prefabs
 with `PlaceholderBody` primitives and no `SpriteRenderer`, so their art will import and land
 nowhere until someone gives them presets or wires the prefabs by hand.
 
