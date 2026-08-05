@@ -14,7 +14,7 @@ namespace ExiledAlvaston.Data
                           // straight into Stabmeister. Never renumber this enum.
         MrHood = 2,       // Ranged
         Dynamo = 3,       // Magic
-        BundaBasher = 4   // Owner-defined class details pending
+        BundaBasher = 4   // Bash
     }
 
     public static class PlayerClassInfo
@@ -39,7 +39,7 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.YoungDriller: return "Good with a ZK. Close-range chaos from the ends.";
                 case PlayerClass.Stabmeister: return "Stab by name, stab by nature.";
                 case PlayerClass.MrHood: return "Good with ranged. Keep your distance, stay hooded.";
-                case PlayerClass.Dynamo: return "Good with magic. Street-level spark and pressure.";
+                case PlayerClass.Dynamo: return "Pulled one too many rabbits out of one too many hats.";
                 case PlayerClass.BundaBasher: return "If there's a bunda about, it's getting bashed.";
                 default: return "";
             }
@@ -51,9 +51,10 @@ namespace ExiledAlvaston.Data
         /// not deliver. These are damage specialisms, not equipment.
         /// </summary>
         /// <remarks>
-        /// ⚠️ Owner-editable copy. Ranged, Magic and Stab all come straight from their class's
-        /// own tagline. Blade is the one still inferred rather than stated — it is read off
-        /// Young Driller's "good with a ZK" — and Bunda Basher has no design yet.
+        /// ⚠️ Owner-editable copy. Ranged and Stab come straight from their class's own tagline,
+        /// and Bash from Bunda Basher's. Two are inferred rather than stated: Blade, read off
+        /// Young Driller's "good with a ZK", and Magic, which was stated by Dynamo's previous
+        /// tagline before it was replaced on 2026-08-05 — his current line names no discipline.
         /// </remarks>
         public static string SpecialismLabel(PlayerClass c)
         {
@@ -63,8 +64,9 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.Stabmeister: return "Stab";
                 case PlayerClass.MrHood: return "Ranged";
                 case PlayerClass.Dynamo: return "Magic";
-                // Owner-editable placeholder until the class design is supplied.
-                case PlayerClass.BundaBasher: return "Not set";
+                // "Bash" rather than "Blunt" to follow Stabmeister's precedent, where the label is
+                // the class's own verb. Proposed 2026-08-05, owner-editable like the rest.
+                case PlayerClass.BundaBasher: return "Bash";
                 default: return "Unarmed";
             }
         }
@@ -82,9 +84,14 @@ namespace ExiledAlvaston.Data
                     return new CoreTraits { Strength = 4, Endurance = 5, Agility = 7, Intelligence = 4, Awareness = 6, Perception = 8 };
                 case PlayerClass.Dynamo:
                     return new CoreTraits { Strength = 3, Endurance = 5, Agility = 5, Intelligence = 8, Awareness = 6, Perception = 5 };
-                // Neutral owner-editable placeholder until the class design is supplied.
+                // Proposed 2026-08-05, owner-editable. 32 points, matching Young Driller,
+                // Stabmeister and Dynamo (Mr Hood is the outlier at 34). Spent on the one shape
+                // no other class occupies: the slow bruiser. Top Strength and Endurance in the
+                // roster, and the lowest Agility and Intelligence — he is meant to be telegraphed
+                // and to not care. Stabmeister is the nearest neighbour at STR 8 / END 7; the
+                // AGI 5→3 and INT 4→2 gap is what keeps them from being the same character.
                 case PlayerClass.BundaBasher:
-                    return new CoreTraits { Strength = 5, Endurance = 5, Agility = 5, Intelligence = 5, Awareness = 5, Perception = 5 };
+                    return new CoreTraits { Strength = 9, Endurance = 8, Agility = 3, Intelligence = 2, Awareness = 5, Perception = 5 };
                 default:
                     return new CoreTraits { Strength = 5, Endurance = 5, Agility = 5, Intelligence = 5, Awareness = 5, Perception = 5 };
             }
@@ -98,7 +105,7 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.YoungDriller: return 100;
                 case PlayerClass.MrHood: return 90;
                 case PlayerClass.Dynamo: return 85;
-                case PlayerClass.BundaBasher: return 100; // neutral owner-editable placeholder
+                case PlayerClass.BundaBasher: return 140; // proposed 2026-08-05; the roster's tank
                 default: return 100;
             }
         }
@@ -112,7 +119,7 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.MrHood: return 60;
                 case PlayerClass.YoungDriller: return 55;
                 case PlayerClass.Stabmeister: return 50;
-                case PlayerClass.BundaBasher: return 50; // neutral owner-editable placeholder
+                case PlayerClass.BundaBasher: return 40; // proposed 2026-08-05; least finesse, least resource
                 default: return 50;
             }
         }

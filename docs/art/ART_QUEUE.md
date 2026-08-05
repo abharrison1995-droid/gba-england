@@ -402,8 +402,10 @@ the complete Young Driller visual until all six actions for that class exist.
 
 > Pulled one too many rabbits out of one too many hats.
 
-So: a conjuror whose tricks went too far. His tagline in `PlayerClass.cs` puts him at street level
-— *"Good with magic. Street-level spark and pressure."* — which is the register to draw him in.
+So: a conjuror whose tricks went too far. That line **replaced** his previous tagline on
+2026-08-05, which had read *"Good with magic. Street-level spark and pressure."* Worth knowing
+while drawing him: no copy now states that Dynamo does magic — the creator says so only through
+his specialism label — and nothing states the register the old line gave him.
 
 ⚠️ **Do not draw a stage magician.** Band 2's **Daniel Pauls** already is one: a middle-aged
 showman in a pink Las Vegas suit, sequins and wide lapels, who teaches the player their first
@@ -432,9 +434,9 @@ remaining five actions and none of that is needed again.
 
 ⚠️ **The visual description of each class is the owner's to write and is not in this file. Ask
 before drawing any of them.** All five now have a one-line tagline in `PlayerClass.cs` — a
-starting point, not a brief. `BundaBasher`'s tagline arrived 2026-08-05 (*"If there's a bunda
-about, it's getting bashed."*); his **traits, HP, resource and specialism label are still explicit
-owner-editable placeholders** awaiting the rest of the class design.
+starting point, not a brief. As of 2026-08-05 all five also have real traits, HP, resource and a
+specialism label; Bunda Basher's were proposed rather than authored, and are marked as such in
+the source. **None of that describes what any of them look like.**
 
 **Match the existing `player` (Young Driller) sheets** for build, cell fill and baseline. Five
 classes that disagree with each other are worse than five that agree.
