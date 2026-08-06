@@ -257,6 +257,14 @@ confirmed, rather than leaving it hedged.
     typing. *Start a new game leaving the box untouched and check the nameplate reads Vince, not
     blank.*
 
+12. **Eleven sheets were mirrored to face camera-right** by `Tools/flip_sheets.py`, in place, so no
+    `.meta`, GUID, clip or controller changed: `murtaugh_walk`, `neek_hurt`, `og_hurt`,
+    `police_pcso_walk`, `roadman_death`, `spicehead_hurt`, `spicehead_walk`, and all four villager
+    walks. The facing call was made from the art by eye, not measured — *check each one plays
+    facing right and that the walk cycles still run forwards, not backwards.* A wrong call is
+    undone with `python Tools/flip_sheets.py --force <name>`. `player_stabmeister_walk` was flipped
+    too but is still in `art_incoming/` and has never been imported.
+
 **Also outstanding — a live defect, not a verification:** no `Police_*` prefab has `IsPolice` set,
 so arrest never fires and `DespawnPolice` destroys nothing. Fix is ticking the box on all five
 prefabs in the Inspector, **never** by re-running `ModernBritainSetup`.
