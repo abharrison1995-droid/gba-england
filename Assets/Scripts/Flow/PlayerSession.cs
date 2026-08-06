@@ -125,39 +125,109 @@ namespace ExiledAlvaston.Flow
             TutorialComplete = true;
         }
 
-        /// <summary>Adds a quantity of an item, stacking onto an existing entry if present.</summary>
+        /// <summary>
+        /// Adds a quantity of an item, honouring <see cref="ItemData.Stackable"/> and
+        /// <see cref="ItemData.MaxStack"/>.
+        ///
+        /// One item can therefore occupy several entries in <see cref="Inventory"/>, which is why
+        /// every read below sums across entries rather than finding the first one. A non-stackable
+        /// item takes one entry per unit — that is what a sword or a piece of armour wants, since
+        /// the paper doll equips a single object.
+        ///
+        /// Fires <see cref="OnInventoryChanged"/> exactly once, however many entries it touched:
+        /// the HUD rebuilds the whole backpack on each event, and firing per stack would rebuild it
+        /// several times for one pickup.
+        /// </summary>
         public void AddItem(ItemData item, int quantity = 1)
         {
             if (item == null || quantity <= 0) return;
 
-            InventoryStack stack = Inventory.Find(s => s.Item == item);
-            if (stack != null)
-                stack.Quantity += quantity;
-            else
-                Inventory.Add(new InventoryStack { Item = item, Quantity = quantity });
+            if (!item.Stackable)
+            {
+                for (int i = 0; i < quantity; i++)
+                    Inventory.Add(new InventoryStack { Item = item, Quantity = 1 });
+
+                OnInventoryChanged?.Invoke();
+                return;
+            }
+
+            // 0 or less means unlimited, so the whole lot goes on one stack.
+            int cap = item.MaxStack > 0 ? item.MaxStack : int.MaxValue;
+            int remaining = quantity;
+
+            // Top up existing stacks in list order first, so the backpack fills from the left
+            // rather than sprouting a new half-empty stack next to a half-empty one.
+            for (int i = 0; i < Inventory.Count && remaining > 0; i++)
+            {
+                var existing = Inventory[i];
+                if (existing == null || existing.Item != item) continue;
+
+                int room = cap - existing.Quantity;
+                if (room <= 0) continue;
+
+                int moved = Mathf.Min(room, remaining);
+                existing.Quantity += moved;
+                remaining -= moved;
+            }
+
+            while (remaining > 0)
+            {
+                int moved = Mathf.Min(cap, remaining);
+                Inventory.Add(new InventoryStack { Item = item, Quantity = moved });
+                remaining -= moved;
+            }
 
             OnInventoryChanged?.Invoke();
         }
 
-        /// <summary>True if the player carries at least the given quantity of an item.</summary>
+        /// <summary>
+        /// True if the player carries at least the given quantity of an item, counted across every
+        /// stack of it. Quest conditions read this, so a requirement for three of something must
+        /// still be met when those three are split over two stacks.
+        /// </summary>
         public bool HasItem(ItemData item, int quantity = 1)
         {
             if (item == null || quantity <= 0) return false;
-            InventoryStack stack = Inventory.Find(s => s.Item == item);
-            return stack != null && stack.Quantity >= quantity;
+            return CountItem(item) >= quantity;
         }
 
-        /// <summary>Removes a quantity of an item; the stack is dropped once it hits zero. Returns false if there wasn't enough.</summary>
+        /// <summary>Total carried, summed across every stack of the item.</summary>
+        public int CountItem(ItemData item)
+        {
+            if (item == null) return 0;
+
+            int total = 0;
+            for (int i = 0; i < Inventory.Count; i++)
+            {
+                var stack = Inventory[i];
+                if (stack != null && stack.Item == item) total += stack.Quantity;
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// Removes a quantity of an item, draining stacks from the end of the list backwards and
+        /// dropping each as it empties. Returns false and changes nothing if the player does not
+        /// carry enough — the all-or-nothing contract callers already rely on, which is why the
+        /// total is checked before anything is taken.
+        /// </summary>
         public bool RemoveItem(ItemData item, int quantity = 1)
         {
             if (item == null || quantity <= 0) return false;
+            if (CountItem(item) < quantity) return false;
 
-            InventoryStack stack = Inventory.Find(s => s.Item == item);
-            if (stack == null || stack.Quantity < quantity) return false;
+            int remaining = quantity;
+            for (int i = Inventory.Count - 1; i >= 0 && remaining > 0; i--)
+            {
+                var stack = Inventory[i];
+                if (stack == null || stack.Item != item) continue;
 
-            stack.Quantity -= quantity;
-            if (stack.Quantity <= 0)
-                Inventory.Remove(stack);
+                int taken = Mathf.Min(stack.Quantity, remaining);
+                stack.Quantity -= taken;
+                remaining -= taken;
+
+                if (stack.Quantity <= 0) Inventory.RemoveAt(i);
+            }
 
             OnInventoryChanged?.Invoke();
             return true;
