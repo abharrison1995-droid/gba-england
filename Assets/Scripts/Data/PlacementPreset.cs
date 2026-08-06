@@ -200,5 +200,15 @@ namespace ExiledAlvaston.Data
                  "Palette organisation only — it changes nothing about the NPC that gets built. " +
                  "Leave on Assorted for a character who belongs in any chunk.")]
         public CityRegion Region = CityRegion.Assorted;
+
+        // ── NPC — pickpocket contents ────────────────────────────────────────────────────────
+        // Appended at the very end, per §7, for the same reason as every block above it: no preset
+        // already authored carries a value for it, so they all read null and keep the pounds-only
+        // pickpocket they have always had.
+        [Header("NPC — pickpocket contents")]
+        [Tooltip("What is in this mark's pockets, on top of the pounds roll. Set one and " +
+                 "pickpocketing them opens the tap-to-lift minigame; leave it empty and it stays " +
+                 "the single instant pounds roll. Only read when Pickpocketable is on.")]
+        public LootBand PickpocketBand;
     }
 }

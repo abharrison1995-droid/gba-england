@@ -6,7 +6,9 @@ Verification scope:    code; tracked prefab YAML. Mounting, dismounting, the boo
                        flip and the data-driven spawner were play-tested in an earlier editor
                        session. The IsPolice defect below is read from prefab YAML and has NOT
                        been observed in play. The snitch removal is verified by GUID search and
-                       `--check-dangling` only — no compiler and no editor have seen it.
+                       `--check-dangling` only. The pickpocket minigame is code-review only —
+                       no compiler and no editor have seen either, and no LootBand asset exists
+                       yet, so the band path has never been taken.
 ```
 
 The GTA layer. Components live inside the `Prefabs/ModernBritain/` prefabs, whose instances are
@@ -40,10 +42,38 @@ still clear inline and are unaffected.
 | System | Script | Behaviour |
 |---|---|---|
 | Stealth | `World/StealthController` | Crouch toggle: halves move speed. |
-| Pickpocketing | `World/PickpocketInteractable` | Requires crouch. Rolls `CatchChance`; failure spikes Knives. Authored by ticking `Pickpocketable` on a `PlacementPreset`. |
+| Pickpocketing | `World/PickpocketInteractable` + `UI/PickpocketMenuUI` | Requires crouch. Rolls `CatchChance` first; failure spikes Knives before anything opens. Authored by ticking `Pickpocketable` on a `PlacementPreset`. |
 | Grand Theft E-Bike | `World/VehicleController` + `World/MountController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. |
 | Pub safehouses | `World/PubInteractable` | A pint clears Knives + concealment, heals, and saves. |
 | Arrest | `Flow/GameFlowController.ArrestRoutine` | Death dealt by an `EnemyAI.IsPolice` attacker (via `Health.LastAttacker`) arrests instead of killing: clears wanted level, despawns police, returns you to the cellars. |
+
+### Pickpocketing has two shapes, chosen by one field
+
+`PickpocketInteractable.PickpocketBand` (copied from `PlacementPreset.PickpocketBand` by
+`NpcFactory`) decides which:
+
+- **No band** — the original behaviour, and what every mark authored so far does. One roll between
+  `MinPounds` and `MaxPounds`, straight into the wallet, one toast, done.
+- **A band** — `UI/PickpocketMenuUI` opens: one pounds pocket plus up to `EKVibe.PickpocketSlots`
+  rolls of the band, each needing its entry's `TapsToFree` taps to work loose, against
+  `EKVibe.PickpocketSeconds` on the clock.
+
+Things to know before touching it:
+
+- **The catch roll happens first**, before anything opens. Failing it spikes Knives and there is no
+  minigame; the minigame is what a *successful* approach gets you.
+- **A mark is marked robbed when the menu opens**, not when it closes. Leaving early is the
+  player's choice and does not buy a retry.
+- **Each pocket banks the moment it comes free.** Time running out costs only what was still stuck.
+- **Running the clock out is being caught** — it spikes Knives. Every other exit (banking the lot,
+  CLOSE, the dimmer, walking beyond `EKVibe.PickpocketRange`, the mark being destroyed) is a clean
+  getaway with what was banked.
+- ⚠️ **The menu does not push a pause**, unlike `LootMenuUI`, and that is deliberate: a paused world
+  with a running clock is a contradiction and a paused world with a stopped clock is a free win. The
+  timer uses `Time.deltaTime`, so if something *else* pauses the world the attempt waits with it.
+  **Do not copy `PauseManager.Push`/`Pop` in from the loot menu.**
+- Every exit funnels through one private `Close()`, guarded on `IsOpen`, so two exits in the same
+  frame cannot fire the callback twice.
 
 ### The snitch mechanic is gone
 

@@ -20,6 +20,12 @@ namespace ExiledAlvaston.World
         [Tooltip("Percentage chance to get caught (0.0 to 1.0)")]
         public float CatchChance = 0.3f;
 
+        // Appended, per CLAUDE.md §3. A mark authored before this existed carries no value for it,
+        // reads null, and falls back to the pounds-only roll below — exactly what it did before.
+        [Tooltip("What is in their pockets. Left empty, the attempt is a straight pounds roll " +
+                 "between Min and Max Pounds, with no minigame.")]
+        public Data.LootBand PickpocketBand;
+
         private bool _hasBeenRobbed = false;
 
         /// <summary>
@@ -77,16 +83,86 @@ namespace ExiledAlvaston.World
                 {
                     WantedManager.Instance.SpikeKnives();
                 }
+
+                _hasBeenRobbed = true;
+                return;
             }
-            else
+
+            // Marked robbed before the menu opens, not after it closes. The attempt is the theft;
+            // walking away halfway through is the player's own choice and does not buy a retry.
+            _hasBeenRobbed = true;
+
+            if (PickpocketBand == null)
             {
-                // Success
+                // The pre-minigame behaviour, kept for every mark authored without a band: one
+                // roll, straight into the wallet.
                 int stolen = Random.Range(MinPounds, MaxPounds + 1);
                 Flow.PlayerSession.Instance?.AddPounds(stolen);
                 UIManager.Instance?.ShowToast($"Nicked {EKVibe.FormatPounds(stolen)}!");
+                return;
             }
 
-            _hasBeenRobbed = true; // Can only rob them once
+            PickpocketMenuUI.Show(BuildTitle(), BuildSlots(), transform, OnMenuClosed);
+        }
+
+        private string BuildTitle()
+        {
+            var interactable = GetComponent<Interactable>();
+            var health = GetComponent<Combat.Health>();
+            if (health != null && !string.IsNullOrEmpty(health.DisplayName)) return health.DisplayName;
+            return interactable != null ? interactable.Prompt : name;
+        }
+
+        /// <summary>
+        /// The pockets. <see cref="EKVibe.PickpocketSlots"/> rolls of the band, plus exactly one
+        /// pounds slot — the wallet is a single thing to lift, not something found four times over.
+        /// An empty roll simply produces fewer pockets, which reads as a mark who had nothing on
+        /// them rather than an error.
+        /// </summary>
+        private System.Collections.Generic.List<PickpocketSlot> BuildSlots()
+        {
+            var slots = new System.Collections.Generic.List<PickpocketSlot>();
+
+            int pounds = Random.Range(MinPounds, MaxPounds + 1);
+            if (pounds > 0)
+            {
+                slots.Add(new PickpocketSlot
+                {
+                    Name = EKVibe.FormatPounds(pounds),
+                    Pounds = pounds,
+                    TapsRemaining = 1,
+                });
+            }
+
+            foreach (Data.LootBandResult result in PickpocketBand.Roll(EKVibe.PickpocketSlots))
+            {
+                if (result == null || result.Item == null || result.Quantity <= 0) continue;
+
+                slots.Add(new PickpocketSlot
+                {
+                    Name = result.Quantity > 1
+                        ? $"{result.Item.ItemName} x{result.Quantity}"
+                        : result.Item.ItemName,
+                    Item = result.Item,
+                    Quantity = result.Quantity,
+                    TapsRemaining = Mathf.Max(1, result.TapsToFree),
+                });
+            }
+
+            return slots;
+        }
+
+        /// <summary>
+        /// Running the clock down is being caught: the mark notices the hand still in their pocket.
+        /// Every other way out — banking the lot, closing, walking off — is a clean getaway with
+        /// whatever was banked.
+        /// </summary>
+        private void OnMenuClosed(bool expired)
+        {
+            if (!expired) return;
+
+            UIManager.Instance?.ShowToast("Oi! Get your hands off me! (Busted!)", 2f);
+            WantedManager.Instance?.SpikeKnives();
         }
     }
 }

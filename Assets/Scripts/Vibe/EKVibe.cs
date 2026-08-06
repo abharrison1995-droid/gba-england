@@ -87,6 +87,22 @@ namespace ExiledAlvaston.Vibe
         /// Invariant culture, so the separator does not follow the device locale and turn
         /// <c>£1,250</c> into <c>£1.250</c> on a European handset.
         /// </summary>
+        // --- Pickpocketing ---
+        /// <summary>
+        /// How long the player has, in seconds, once the pickpocket menu opens. Running out spikes
+        /// the wanted level, so this is the difficulty dial for the whole mechanic.
+        /// </summary>
+        public const float PickpocketSeconds = 10f;
+
+        /// <summary>How many pockets the minigame offers. Also how many times the band is rolled.</summary>
+        public const int PickpocketSlots = 4;
+
+        /// <summary>
+        /// How far the player may drift from the victim before the attempt closes itself. Slightly
+        /// beyond the Interactable range that opened it, so simply standing still cannot cancel it.
+        /// </summary>
+        public const float PickpocketRange = 3.5f;
+
         public static string FormatPounds(int amount) =>
             PoundSign + amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
     }

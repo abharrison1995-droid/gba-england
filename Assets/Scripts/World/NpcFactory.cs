@@ -103,6 +103,9 @@ namespace ExiledAlvaston.World
             pickpocket.MinPounds = preset.PickpocketMinPounds;
             pickpocket.MaxPounds = preset.PickpocketMaxPounds;
             pickpocket.CatchChance = preset.PickpocketCatchChance;
+            // Null is meaningful here: it is what selects the instant pounds roll over the
+            // minigame, so copying it across unconditionally is correct.
+            pickpocket.PickpocketBand = preset.PickpocketBand;
 
             // "Talk to X" is wrong for someone who has nothing to say. The prompt is what the HUD
             // shows while they are the closest interactable, so it is the only clue the player gets
