@@ -11,7 +11,7 @@ using ExiledAlvaston.World;
 /// </summary>
 public static class CameraZoomSync
 {
-    [MenuItem("Tools/GBA/Repair/Sync Camera Zoom")]
+    [MenuItem("Tools/GBH/Repair/Sync Camera Zoom")]
     public static void Run()
     {
         var follow = Object.FindObjectOfType<IsometricCameraFollow>();

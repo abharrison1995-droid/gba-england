@@ -8,9 +8,9 @@ namespace ExiledAlvaston.Vibe
     /// </summary>
     public static class EKVibe
     {
-        // NOTE: currently nothing reads this — the title screen and HUD welcome line are baked
-        // strings in c.unity (edited to match in Stage R). Kept as the canonical title going forward.
-        public const string DisplayTitle = "GBA: England";
+        // Canonical display title. The title-screen builder consumes it directly; older scene
+        // content may still contain the same string as authored TMP text.
+        public const string DisplayTitle = "GBH: England";
         public const string CapitalCity = "London";
         public const string TutorialDungeon = "Manor Cellars";
 

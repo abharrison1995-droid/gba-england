@@ -5,7 +5,7 @@
 >
 > Stage R shipped on 2026-07-29: both files renamed with `git mv` (`.meta` preserved),
 > the `ChunkName` value updated, the save migration added in `SaveGameManager.ReadSaveData`,
-> and all code and doc references updated. `Home_London` and `GBA: England` are the current
+> and all code and doc references updated. `Home_London` and `GBH: England` are the current
 > names everywhere.
 >
 > ⚠️ **The Stage R mapping table below is a historical record, not a to-do list.** It still
@@ -79,7 +79,7 @@ DECISIONS ALREADY MADE — DO NOT RE-OPEN
 THE SCREEN (opened by the HUD bag button)
 Three panels side by side, plus header and footer:
 
-    Header  — "GBA: England", and a back-to-game close button
+    Header  — "GBH: England", and a back-to-game close button
     Left    — character sheet: name, six core stats (STR/END/AGI/INT/AWA/PER), and
               resistances bottom-left (Armor/Fire/Cold/Poison/Magic)
     Middle  — 24-slot bag grid, scrollable, small items stack
@@ -138,7 +138,7 @@ FINDINGS THAT SHAPE THE WORK (all verified in code, do not re-derive)
 
 STAGE R — rename, its own branch (`stage-r`), its own commit
 `Home_Alvaston` is a relic; it should be `Home_London`. The game's real name is
-GBA: England. `Home_Alvaston` is a `ChunkName` and therefore a SAVE KEY (§6). Mapping
+GBH: England. `Home_Alvaston` is a `ChunkName` and therefore a SAVE KEY (§6). Mapping
 table (every row grep-verified 2026-07-29):
 
     MapChunkData.ChunkName value    Home_Alvaston -> Home_London    ** SAVE KEY **
@@ -148,7 +148,7 @@ table (every row grep-verified 2026-07-29):
     DeathScreenUI.cs:102   FindChunkByName("Home_Alvaston") -> "Home_London"
     DevZoneJump.cs:28      Jump("Home_Alvaston", ...)       -> "Home_London"
     ChunkArtMerge.cs:14, DiscoverEnglandSetup.cs:67 and :407 — path constants
-    EKVibe.cs:11 DisplayTitle    "Discover England" -> "GBA: England"
+    EKVibe.cs:11 DisplayTitle    "Discover England" -> "GBH: England"
 
 **[ADD] Rows the original table missed:**
 - `DiscoverEnglandSetup.cs:75` — a comment saying "Keep ChunkName as Home_Alvaston —
@@ -233,7 +233,7 @@ STAGE F — six commits, in this order (branch `stage-f`)
 VERIFICATION
 There is no test framework. Compile-and-play gates:
 - **[ADD] After R (mandatory play test, not just a compile):** (1) die in Home and
-  confirm respawn lands in Home_London; (2) Tools/GBA dev jump still teleports;
+  confirm respawn lands in Home_London; (2) Tools/GBH dev jump still teleports;
   (3) keep a pre-rename save file, launch, and confirm it loads INTO Home_London
   (migration works); (4) `--check-dangling` clean. Compile alone proves nothing here.
 - After F1 (where a save-format mistake is cheapest to catch): compile, then start a
@@ -251,7 +251,7 @@ everything else identical.
 
 FOUR OPEN QUESTIONS TO PUT TO THE USER EARLY
 - Should `ProjectSettings` `productName` change from "Exiled Alvaston" to
-  "GBA: England"?
+  "GBH: England"?
 - Should `Preset_Villager` get `Pickpocketable` ticked once band-4 art lands, so there
   is actually something in the world to rob? Nothing is robbable today except the
   Nosey Parker prefab.

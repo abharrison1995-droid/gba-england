@@ -8,6 +8,7 @@ namespace ExiledAlvaston.UI
     {
         public Button NewGameButton;
         public Button QuitButton;
+        public Button ContinueButton;
 
         private Button _continueButton;
 
@@ -23,6 +24,11 @@ namespace ExiledAlvaston.UI
                 QuitButton.onClick.RemoveAllListeners();
                 QuitButton.onClick.AddListener(OnQuit);
             }
+            if (ContinueButton != null)
+            {
+                _continueButton = ContinueButton;
+                WireContinueButton();
+            }
         }
 
         private void OnEnable()
@@ -31,8 +37,8 @@ namespace ExiledAlvaston.UI
         }
 
         /// <summary>
-        /// Builds a Continue button (clone of New Game, one row up) whenever a save exists.
-        /// Created in code so existing scenes don't need re-wiring.
+        /// Shows the authored Continue button whenever a save exists. Older scenes with no
+        /// authored reference retain the original clone-of-New-Game fallback.
         /// </summary>
         private void RefreshContinueButton()
         {
@@ -52,12 +58,19 @@ namespace ExiledAlvaston.UI
                 if (label != null) label.text = "Continue";
 
                 _continueButton = go.GetComponent<Button>();
-                _continueButton.onClick.RemoveAllListeners();
-                _continueButton.onClick.AddListener(OnContinue);
+                WireContinueButton();
             }
 
             if (_continueButton != null)
                 _continueButton.gameObject.SetActive(hasSave);
+        }
+
+        private void WireContinueButton()
+        {
+            if (_continueButton == null) return;
+
+            _continueButton.onClick.RemoveAllListeners();
+            _continueButton.onClick.AddListener(OnContinue);
         }
 
         private void OnContinue()

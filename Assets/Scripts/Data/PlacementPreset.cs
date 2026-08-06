@@ -14,7 +14,7 @@ namespace ExiledAlvaston.Data
     /// tools did.
     ///
     /// Create via Assets &gt; Create &gt; ExiledAlvaston &gt; Data &gt; Placement Preset, or generate
-    /// a starter library with Tools &gt; GBA &gt; Content &gt; Create Starter Presets.
+    /// a starter library with Tools &gt; GBH &gt; Content &gt; Create Starter Presets.
     /// </summary>
     [CreateAssetMenu(fileName = "NewPlacementPreset", menuName = "ExiledAlvaston/Data/Placement Preset")]
     public class PlacementPreset : ScriptableObject

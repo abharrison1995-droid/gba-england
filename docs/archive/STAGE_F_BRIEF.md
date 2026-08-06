@@ -61,7 +61,7 @@ DECISIONS ALREADY MADE — DO NOT RE-OPEN
 THE SCREEN (opened by the HUD bag button)
 Three panels side by side, plus header and footer:
 
-    Header  — "GBA: England", and a back-to-game close button
+    Header  — "GBH: England", and a back-to-game close button
     Left    — character sheet: name, six core stats (STR/END/AGI/INT/AWA/PER), and
               resistances bottom-left (Armor/Fire/Cold/Poison/Magic)
     Middle  — 24-slot bag grid, scrollable, small items stack
@@ -105,7 +105,7 @@ FINDINGS THAT SHAPE THE WORK (all verified in code, do not re-derive)
 
 STAGE R — rename, its own branch, its own commit
 `Home_Alvaston` is a relic; it should be `Home_London`. The game's real name is
-GBA: England. `Home_Alvaston` is a `ChunkName` and therefore a SAVE KEY (§6). Mapping
+GBH: England. `Home_Alvaston` is a `ChunkName` and therefore a SAVE KEY (§6). Mapping
 table:
 
     MapChunkData.ChunkName value    Home_Alvaston -> Home_London    ** SAVE KEY **
@@ -114,7 +114,7 @@ table:
     DeathScreenUI.cs:102   FindChunkByName("Home_Alvaston") -> "Home_London"
     DevZoneJump.cs:28      Jump("Home_Alvaston", ...)       -> "Home_London"
     ChunkArtMerge.cs:14, DiscoverEnglandSetup.cs:67 and :407 — path constants
-    EKVibe.DisplayTitle    "Discover England" -> "GBA: England"
+    EKVibe.DisplayTitle    "Discover England" -> "GBH: England"
 
 Add a migration in `SaveGameManager.Load()` mapping the legacy string `"Home_Alvaston"` to
 `"Home_London"` before lookup, so existing saves survive.
@@ -156,7 +156,7 @@ Existing saves will load after F1 with nothing equipped and no gold, because tha
 never written. That is correct behaviour, not a bug — tell the user so they expect it.
 
 TWO OPEN QUESTIONS TO PUT TO THE USER EARLY
-- Should `ProjectSettings` `productName` change from "Exiled Alvaston" to "GBA: England"?
+- Should `ProjectSettings` `productName` change from "Exiled Alvaston" to "GBH: England"?
 - Should `Preset_Villager` get `Pickpocketable` ticked once band-4 art lands, so there is
   actually something in the world to rob? Nothing is robbable today except the Nosey
   Parker prefab.

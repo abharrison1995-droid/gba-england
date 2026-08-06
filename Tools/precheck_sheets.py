@@ -174,8 +174,17 @@ def check_sheet(png: Path, idle_mean_width: float | None):
         return False
     if fc > cols * rows:
         problems.append(f"frameCount {fc} > grid capacity {cols*rows}")
-    if meta.get("worldHeight") != 1.35:
-        problems.append(f"worldHeight {meta.get('worldHeight')} != 1.35")
+    # Heights are per-subject, not one constant: an adult is 1.55 (since 2026-08-04, was
+    # 1.35), a child 1.3, the squirrel 0.45, a tree 2.2. Pinning this to a single value
+    # refused correct sheets, which is worse than not checking -- a validator that cries
+    # wolf gets ignored. Refuse only a missing or nonsensical height; flag unusual ones.
+    KNOWN_HEIGHTS = (0.45, 0.9, 1.3, 1.35, 1.55, 2.2, 6.0, 9.0)
+    wh = meta.get("worldHeight")
+    if not isinstance(wh, (int, float)) or wh <= 0:
+        problems.append(f"worldHeight {wh!r} is missing or not a positive number")
+    elif wh not in KNOWN_HEIGHTS:
+        print(f"  note: worldHeight {wh} is not one of the usual values {KNOWN_HEIGHTS} "
+              f"- fine if deliberate")
 
     mask = key_mask(img)
     stats = []

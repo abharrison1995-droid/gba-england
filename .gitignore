@@ -79,6 +79,15 @@ Desktop.ini
 /art_incoming/*
 !/art_incoming/README.md
 
+# One exception: the untouched backdrop. Tools/trim_backdrop_slabs.py rewrote
+# Creator_Background.png in place, and cannot be usefully re-run on its own output — it would
+# read the merged box as a single slab and trim that instead. This is the only copy of the
+# pre-merge art, so leaving it ignored means it exists on exactly one machine.
+# Git must be let into the directory before a file inside it can be un-ignored.
+!/art_incoming/processed/
+/art_incoming/processed/*
+!/art_incoming/processed/Creator_Background_ORIGINAL.png
+
 # Scratch used while reviewing generated frames — the frames themselves live in
 # art_incoming/frames/, which is already ignored above.
 /review_tmp/

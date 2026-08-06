@@ -1,4 +1,4 @@
-# AGENTS.md — GBA: England
+# AGENTS.md — GBH: England
 
 Cross-agent bootloader. **Identity, hard rules, and where to go next.** Detail lives in `docs/`,
 routed from [docs/README.md](docs/README.md) — read the one or two documents your task needs,
@@ -7,7 +7,7 @@ never the whole folder.
 ## The project
 
 A Unity **mobile RPG**, working title **Exiled Alvaston** (`productName`), shown to the player as
-**GBA: England** (`EKVibe.DisplayTitle`). Modern Britain, magic played straight, a GTA-like
+**GBH: England** (`EKVibe.DisplayTitle`). Modern Britain, magic played straight, a GTA-like
 consequence layer (wanted level, police, stealth, pickpocketing, vehicle theft) over a classic RPG
 core.
 
@@ -17,7 +17,7 @@ using `Rigidbody`/`Collider`. Never introduce `Physics2D`, `Rigidbody2D` or `Vec
 nothing throws, things simply pass through each other.
 
 **Naming is deliberately inconsistent — do not "unify" it.** `Exiled Alvaston` is the product name
-and C# root namespace; `GBA: England` is the display title; `Discover England` survives only as an
+and C# root namespace; `GBH: England` is the display title; `Discover England` survives only as an
 editor-tool name; `EK*` prefixes refer to *Exiled Kingdoms*, the inspiration game.
 
 Unity 2022.3 · one gameplay scene, `Assets/c.unity` · no `.asmdef`, so `Assets/Editor/` is the only
@@ -68,7 +68,7 @@ If a **supported 2D** request is ambiguous, write your question into the asset's
 
 [CLAUDE.md](CLAUDE.md) is your bootloader. This file only tells you where the art handoff lives:
 the art agent drops PNG+JSON pairs into `art_incoming/` (gitignored staging), and
-`Tools → GBA → Art → Import Generated Art` keys out the magenta backdrop, trims, reduces to 48 px
+`Tools → GBH → Art → Import Generated Art` keys out the magenta backdrop, trims, reduces to 48 px
 per world unit, slices sheets, builds clips and animator controllers, and archives clean pairs to
 `art_incoming/processed/`. See [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md).
 

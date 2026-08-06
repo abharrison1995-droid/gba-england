@@ -19,7 +19,7 @@ public class ChestPlacementTool : EditorWindow
     private readonly List<LootDrop> _loot = new List<LootDrop>();
     private string _questKey = "";
 
-    [MenuItem("Tools/GBA/Place/Chest Placement")]
+    [MenuItem("Tools/GBH/Place/Chest Placement")]
     public static void Open()
     {
         var window = GetWindow<ChestPlacementTool>("Chest Placement");

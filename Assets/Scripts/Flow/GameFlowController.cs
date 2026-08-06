@@ -42,6 +42,7 @@ namespace ExiledAlvaston.Flow
         public Sprite TutorialBanditSprite;
         [Tooltip("Prefab for the tutorial supply chest. Assign here in the Inspector; falls back to a plain box if empty.")]
         public GameObject TutorialChestPrefab;
+        public PlayerClassVisualLibrary ClassVisuals;
 
         /// <summary>Blocks InstanceDoor briefly after exiting so spawn doesn't re-enter.</summary>
         public float InstanceDoorReadyAt { get; private set; }
@@ -166,6 +167,14 @@ namespace ExiledAlvaston.Flow
 
                 // Clears _isDead — the player may be arriving here via the death screen
                 existing.ReviveFull();
+            }
+
+            if (existing != null)
+            {
+                if (ClassVisuals == null)
+                    ClassVisuals = GetComponent<PlayerClassVisualLibrary>();
+                if (ClassVisuals != null)
+                    ClassVisuals.ApplyToPlayer(existing, PlayerSession.Instance.Class);
             }
 
             var inventory = FindObjectOfType<UI.InventoryController>(true);

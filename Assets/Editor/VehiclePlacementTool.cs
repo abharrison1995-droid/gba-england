@@ -8,7 +8,7 @@ using ExiledAlvaston.Data;
 /// listed in one place — but that means there is nothing to drag in the scene, which is what
 /// this window is for: line the scene view up where you want the vehicle and press the button.
 ///
-/// Run via: Tools → GBA → Place → Vehicle Placement
+/// Run via: Tools → GBH → Place → Vehicle Placement
 /// </summary>
 public class VehiclePlacementTool : EditorWindow
 {
@@ -18,7 +18,7 @@ public class VehiclePlacementTool : EditorWindow
     private float _yRotation;
     private Vector2 _scroll;
 
-    [MenuItem("Tools/GBA/Place/Vehicle Placement")]
+    [MenuItem("Tools/GBH/Place/Vehicle Placement")]
     public static void Open()
     {
         GetWindow<VehiclePlacementTool>("Vehicle Placement");

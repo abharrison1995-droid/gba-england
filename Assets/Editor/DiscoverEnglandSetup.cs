@@ -18,7 +18,7 @@ public static class DiscoverEnglandSetup
     const string DataFolder = "Assets/Data/Chunks";
     const string PrefabFolder = "Assets/Prefabs/Chunks";
 
-    [MenuItem("Tools/GBA/Danger Zone/Discover England Bootstrap (rebuilds scene + prefabs!)")]
+    [MenuItem("Tools/GBH/Danger Zone/Discover England Bootstrap (rebuilds scene + prefabs!)")]
     public static void SetupAll()
     {
         string manorPrefabPath = PrefabFolder + "/Manor_Cellars_Prefab.prefab";
@@ -342,9 +342,15 @@ public static class DiscoverEnglandSetup
         nameTmp.fontSize = 24;
         nameTmp.color = EKVibe.TextDark;
         input.textComponent = nameTmp;
-        input.text = "Exile";
+        // Empty, matching the current creator: a blank name resolves to Vince in
+        // PlayerSession.BeginNewGame. This used to prefill "Exile".
+        input.text = "";
 
-        string[] classNames = { "Young Driller", "En Garde", "Mr Hood", "Dynamo" };
+        // ⚠️ This builder is superseded by CharacterCreatorSetup and is out of date: four class
+        // names, no Bunda Basher, who was appended as PlayerClass index 4. Running it would build
+        // a creator that cannot select the fifth class. Fix the list before using it, or delete
+        // the tool — do not assume it still matches PlayerClass.
+        string[] classNames = { "Young Driller", "Stabmeister", "Mr Hood", "Dynamo" };
         Button[] classBtns = new Button[4];
         for (int i = 0; i < 4; i++)
         {
@@ -354,7 +360,7 @@ public static class DiscoverEnglandSetup
 
         var classTitle = CreateLabel(creator.transform, "Young Driller", 32, new Vector2(0.5f, 0.58f), EKVibe.TextDark);
         var classBlurb = CreateLabel(creator.transform, PlayerClassInfo.Tagline(PlayerClass.YoungDriller), 20, new Vector2(0.5f, 0.5f), EKVibe.TextDark);
-        var weapon = CreateLabel(creator.transform, "Starts with: ZK", 20, new Vector2(0.5f, 0.42f), EKVibe.TextDark);
+        var weapon = CreateLabel(creator.transform, "Specialises in: Blade", 20, new Vector2(0.5f, 0.42f), EKVibe.TextDark);
         var stats = CreateLabel(creator.transform, "Stats", 20, new Vector2(0.5f, 0.32f), EKVibe.TextDark);
 
         var confirm = CreateButton(creator.transform, "ConfirmButton", "Enter Manor Cellars", new Vector2(0.5f, 0.16f));

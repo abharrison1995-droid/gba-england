@@ -11,7 +11,7 @@ using ExiledAlvaston.Data;
 /// of preconfigured <see cref="PlacementPreset"/> assets you arm once and then click into place,
 /// as many times as you like.
 ///
-/// Run via: Tools → GBA → World Palette
+/// Run via: Tools → GBH → World Palette
 ///
 /// Works in a scene or in Prefab Mode; in Prefab Mode placements go into the prefab's own scene,
 /// which is how content gets authored into a chunk prefab (chunks are instantiated from their
@@ -43,7 +43,7 @@ public class WorldPaletteWindow : EditorWindow
     private readonly HashSet<int> _placed = new HashSet<int>();
     private Transform _lastParent;
 
-    [MenuItem("Tools/GBA/World Palette")]
+    [MenuItem("Tools/GBH/World Palette")]
     public static void Open()
     {
         GetWindow<WorldPaletteWindow>("World Palette");
@@ -115,7 +115,7 @@ public class WorldPaletteWindow : EditorWindow
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
                 "No PlacementPreset assets found.\n\n" +
-                "Generate a starter set with Tools → GBA → Content → Create Starter Presets, or " +
+                "Generate a starter set with Tools → GBH → Content → Create Starter Presets, or " +
                 "make one via Assets → Create → ExiledAlvaston → Data → Placement Preset.",
                 MessageType.Warning);
             if (GUILayout.Button("Create Starter Presets"))

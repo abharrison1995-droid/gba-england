@@ -10,7 +10,7 @@ using ExiledAlvaston.World;
 /// Drops an enemy prefab (e.g. Assets/Prefabs/Enemies/Enemy_Roadman) into the open scene or
 /// prefab, with optional stat overrides, a death loot list, and a quest key — an authored,
 /// saved-in-prefab placement rather than a Play-mode debug spawn. The chunk still needs its
-/// NavMesh baked (Tools > GBA > World > Bake Navigation Mesh) for the enemy to path.
+/// NavMesh baked (Tools > GBH > World > Bake Navigation Mesh) for the enemy to path.
 /// </summary>
 public class EnemyPlacementTool : EditorWindow
 {
@@ -24,7 +24,7 @@ public class EnemyPlacementTool : EditorWindow
     private readonly List<LootDrop> _loot = new List<LootDrop>();
     private string _questKey = "";
 
-    [MenuItem("Tools/GBA/Place/Enemy Placement")]
+    [MenuItem("Tools/GBH/Place/Enemy Placement")]
     public static void Open()
     {
         GetWindow<EnemyPlacementTool>("Enemy Placement");

@@ -1,8 +1,9 @@
 # Save format and Unity serialization
 
 ```
-Last verified against: ccfa9c9
-Verification scope:    code (read line by line); tracked prefab/asset YAML. Quest persistence
+Last verified against: working tree, 2026-08-04
+Verification scope:    code (read line by line); tracked prefab/asset YAML. The appended
+                       BundaBasher=4 class mapping is code-reviewed but not Unity-tested. Quest persistence
                        across an autosave was confirmed in an editor session by reading
                        savegame.json directly. The three quest fixes on main POSTDATE that
                        session and are UNVERIFIED.
@@ -63,6 +64,10 @@ through `Resources/Items` by `PlayerSession.RestoreInventory`.
 
 **Saved:** character name and class, `TutorialComplete`, chunk, position, health/mana/stamina,
 quest state, inventory, pounds.
+
+`PlayerClass` is stored as its integer enum value. The original mappings remain
+`YoungDriller=0`, `EnGarde=1`, `MrHood=2`, `Dynamo=3`; `BundaBasher=4` was appended so existing
+saves keep their class identity.
 
 **Not saved:** wanted level, and whether you are riding anything. A load puts you on foot with
 vehicles back at their authored spots, and a vehicle you had already nicked is nickable again.
@@ -146,6 +151,9 @@ Twelve live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`
 holds six authored `HUDActionButton` components covering `Attack=0`, `Ability=1`, `Inventory=2`
 and `Interact=3`. They belong to the legacy cluster that `BuildActionButtons` deactivates, but
 they are still serialized, so a reorder would repoint them. `Crouch` was appended as 4.
+
+`PlayerClass` is also live in the JSON save as an integer. `BundaBasher` is appended at index 4;
+never insert a future class before it or reorder the five existing values.
 
 ## Asset cross-references
 

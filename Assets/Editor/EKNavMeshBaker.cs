@@ -8,7 +8,7 @@ using ExiledAlvaston.World;
 /// </summary>
 public static class EKNavMeshBaker
 {
-    [MenuItem("Tools/GBA/World/Bake Navigation Mesh")]
+    [MenuItem("Tools/GBH/World/Bake Navigation Mesh")]
     public static void Bake()
     {
         MarkChunkNavigationStatic();

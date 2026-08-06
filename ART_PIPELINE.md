@@ -192,12 +192,12 @@ Sheet:
   "worldHeight": 1.55,
   "frameWidth": 512,
   "frameHeight": 512,
-  "columns": 4,
+  "columns": 6,
   "rows": 1,
-  "frameCount": 4,
+  "frameCount": 6,
   "fps": 8,
   "loop": true,
-  "description": "Four-frame walk cycle: contact, down, pass, up."
+  "description": "Six-frame walk cycle: contact, down, pass, up, contact, pass."
 }
 ```
 
@@ -244,7 +244,7 @@ same filename** — do not create `_v2`.
 
 ## 6. Importing (Claude Code's side)
 
-`Tools → GBA → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
+`Tools → GBH → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
 
 1. Keys out the backdrop, trims (singles only), and area-averages the image down to 48 px per
    world unit, writing the result to `Assets/Art/Generated/<category>/`.
@@ -267,6 +267,22 @@ Two subfolders of `art_incoming/` are ignored by the importer, which only reads 
 
 - `processed/` — written automatically by step 7 above.
 - `rejected/` — moved by hand, for sheets that failed a check and are waiting to be redrawn.
+
+### Fixing a sheet that came back facing left
+
+`python Tools/flip_sheets.py <name>` mirrors a sheet **one cell at a time**, in both the
+`art_incoming/` source and the imported PNG under `Assets/Art/Generated/`.
+
+Per cell, never the whole image: a sheet is a strip of frames left to right, so mirroring the strip
+reverses the frame order and plays the walk backwards.
+
+Flipping the imported PNG in place leaves its `.meta` untouched, so the texture GUID, every sprite
+sub-asset fileID, and therefore every clip and controller pointing at them all survive. **No
+re-import and no animation rebuild is needed** — Unity reloads the pixels and nothing else changes.
+
+A flip is its own inverse, so running twice undoes the work. `Tools/flipped_sheets.json` records
+what has been flipped and the tool refuses a repeat without `--force`. `--dry-run` reports the cell
+count it would flip; check that against the sheet's `frameCount` before committing to it.
 
 Nothing is imported automatically. `art_incoming/` is staging — files sit there until the tool runs.
 Re-running is safe and idempotent: an asset of the same name overwrites in place, keeping its GUID
@@ -291,9 +307,16 @@ The round trip works. These are in the game and are what every new asset is matc
 | `sheet_char_mosley_idle.png` | 4 frames. Councillor Mosley, standing in the world. |
 | `sheet_char_pharmacist_idle.png` | 4 frames. The pharmacist, standing in the world. |
 
-**Open `sheet_char_player_idle.png` before drawing any player sheet** and work from the image. It
-defines the face, build, clothes, and — the part that keeps failing — how much of the cell the
-figure fills. See §3.
+The accepted `player` subject is the Young Driller visual. The other selectable classes use these
+exact subject ids: `player_stabmeister`, `player_mrhood`, `player_dynamo`, and
+`player_bundabasher`. Each class subject needs `idle`, `walk`, `attack`, `hurt`, `death`, and
+`cast`; do not substitute display-name spellings. A class with only some actions remains a preview
+at most and does not replace the gameplay visual until all six sheets are present.
+
+For Young Driller, **open `sheet_char_player_idle.png` before drawing any additional sheet**; it
+defines that character's face, build, clothes, and framing. For each new class, its own accepted
+idle becomes its identity reference for the other five actions. Until then, use the Young Driller
+idle only for style, fill, and baseline measurements, not as the new class's identity. See §3.
 
 Its measurements, which are the numbers every other sheet is scored against:
 
@@ -312,7 +335,7 @@ height, feet near the bottom, facing camera-right. `worldHeight` **1.55** for ad
 | Action | Frames | Columns | Rows | fps | Loop |
 |---|---|---|---|---|---|
 | `idle` | 4 | 4 | 1 | 6 | yes |
-| `walk` | 4 | 4 | 1 | 8 | yes |
+| `walk` | 6 | 6 | 1 | 8 | yes |
 | `attack` | 6 | 6 | 1 | 12 | no |
 | `cast` | 6 | 6 | 1 | 12 | no |
 | `hurt` | 3 | 3 | 1 | 12 | no |

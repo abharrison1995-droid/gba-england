@@ -46,6 +46,17 @@ KNOWN_ACTIONS = ["idle", "walk", "attack", "cast", "hurt", "death"]
 COMBAT_SET = ["idle", "walk", "attack", "hurt", "death"]
 COMBAT_MARKERS = ("attack", "hurt", "death")
 
+# Player-class requirements differ from inferred NPC roles, and four requested subjects exist
+# before their first sheet does. Keep this small declarative exception in the derived report: the
+# queue owns the request, while the rest of each row is still measured from disk.
+PLAYER_CLASS_SETS = {
+    "player": ["idle", "walk", "attack", "cast", "hurt", "death"],
+    "player_stabmeister": ["idle", "walk", "attack", "cast", "hurt", "death"],
+    "player_mrhood": ["idle", "walk", "attack", "cast", "hurt", "death"],
+    "player_dynamo": ["idle", "walk", "attack", "cast", "hurt", "death"],
+    "player_bundabasher": ["idle", "walk", "attack", "cast", "hurt", "death"],
+}
+
 SHEET_RE = re.compile(r"^sheet_char_(.+)_([a-z]+)\.png$")
 ART_SUBJECT_RE = re.compile(r"^\s*ArtSubject:\s*(\S+)\s*$", re.M)
 LABEL_RE = re.compile(r"^\s*Label:\s*(.+?)\s*$", re.M)
@@ -149,7 +160,10 @@ def collect_hostile_subjects():
 
 def owed(actions, preset_list, hostile_subjects, subject):
     """Which actions this subject is still missing, judged against its role."""
-    if subject in hostile_subjects or any(a in actions for a in COMBAT_MARKERS):
+    if subject in PLAYER_CLASS_SETS:
+        role = "player"
+        wanted = PLAYER_CLASS_SETS[subject]
+    elif subject in hostile_subjects or any(a in actions for a in COMBAT_MARKERS):
         role = "hostile"
         wanted = list(COMBAT_SET)
     else:
@@ -161,7 +175,7 @@ def owed(actions, preset_list, hostile_subjects, subject):
 
 
 def build_rows(sheets, controllers, presets, hostile_subjects):
-    subjects = sorted(set(sheets) | set(controllers) | set(presets))
+    subjects = sorted(set(sheets) | set(controllers) | set(presets) | set(PLAYER_CLASS_SETS))
     rows = []
     for subject in subjects:
         actions = sheets.get(subject, set())
@@ -262,7 +276,7 @@ def print_problems(rows, sheets, controllers, presets):
                 if not preset["sprite"]:
                     unset.append("NpcSprite")
                 problems.append(
-                    "%s: art exists but %s is unset on %s - run Tools > GBA > Content > "
+                    "%s: art exists but %s is unset on %s - run Tools > GBH > Content > "
                     "Wire Presets From Imported Art" % (subject, " and ".join(unset), preset["file"])
                 )
             if preset["roams"] and "walk" not in row["actions"]:
@@ -289,33 +303,36 @@ def print_queue(rows):
     print("Outstanding, judged against each subject's inferred role:")
     any_outstanding = False
     for row in rows:
-        if row["actions"] and row["missing"]:
+        if row["missing"] and (row["actions"] or row["subject"] in PLAYER_CLASS_SETS):
             any_outstanding = True
+            delivered = ", ".join(row["actions"]) if row["actions"] else "no art"
             print(
                 "  %-18s %-8s has %-24s owes %s"
                 % (
                     row["subject"],
                     row["role"],
-                    ", ".join(row["actions"]),
+                    delivered,
                     ", ".join(row["missing"]),
                 )
             )
     if not any_outstanding:
         print("  (none)")
 
-    print("\nNo art at all - presets waiting on a subject:")
+    print("\nNo art at all - requested player sets or presets waiting on a subject:")
     any_waiting = False
     for row in rows:
-        if not row["actions"] and row["presets"]:
+        if not row["actions"] and (row["presets"] or row["subject"] in PLAYER_CLASS_SETS):
             any_waiting = True
-            print("  %-18s %s" % (row["subject"], ", ".join(p["label"] for p in row["presets"])))
+            labels = ", ".join(p["label"] for p in row["presets"])
+            print("  %-18s %s" % (row["subject"], labels or "requested player class"))
     if not any_waiting:
         print("  (none)")
 
     print(
         "\nRole: hostile if an enemy or police prefab references the subject's controller, or if\n"
         "any attack/hurt/death sheet already exists. Everything else is a talker, which owes an\n"
-        "idle plus a walk only if one of its presets roams.\n"
+        "idle plus a walk only if one of its presets roams. Reserved player-class subjects owe\n"
+        "all six actions even before their first sheet exists.\n"
         "\nThis reads filenames and GUIDs, not controller contents - a controller that exists but\n"
         "never references its walk clip looks complete here and still slides in game."
     )
