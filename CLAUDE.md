@@ -265,6 +265,23 @@ confirmed, rather than leaving it hedged.
     undone with `python Tools/flip_sheets.py --force <name>`. `player_stabmeister_walk` was flipped
     too but is still in `art_incoming/` and has never been imported.
 
+**Also outstanding — two sprites are staged at the wrong density until the next import.** Every
+character sidecar now declares `worldHeight: 1.35`, which imports at 65 px cells and is what 71 of
+the 75 sheets already use. The four Mr Hood and Stabmeister sheets used to declare **1.55** and
+imported at 74. `WorldActorVisual.FitScaleToHeight` scales every sprite to its actor's `Height`, so
+this was never a size bug — those two characters were simply drawn from finer pixels than the rest
+of the cast, against a style meant to be uniformly coarse.
+
+`sheet_char_player_mrhood_idle` and `sheet_char_player_stabmeister_idle` are **still on disk at 74
+px**, because the sidecar only takes effect on import. Both have been moved back to the top level
+of `art_incoming/` — the importer does not read `processed/` — so the next
+`Tools → GBH → Art → Import Generated Art` re-does them at 65 in place, keeping their GUIDs. Until
+that runs, Mr Hood's and Stabmeister's idles are finer than their own other sheets.
+
+⚠️ **`ART_PIPELINE.md` still tells the art agent adults are `1.55`**, so the next delivered batch
+will arrive at the wrong density again and need the same correction. Deciding whether the contract
+or the cast is the thing to change is the owner's call, and nothing here has made it.
+
 **Also outstanding — a live defect, not a verification:** no `Police_*` prefab has `IsPolice` set,
 so arrest never fires and `DespawnPolice` destroys nothing. Fix is ticking the box on all five
 prefabs in the Inspector, **never** by re-running `ModernBritainSetup`.
