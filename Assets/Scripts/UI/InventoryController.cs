@@ -198,6 +198,7 @@ namespace ExiledAlvaston.UI
             if (TooltipPanel == null || item == null) return;
 
             TooltipPanel.SetActive(true);
+            RefreshUseButton(item);
             if (TooltipIcon != null)
             {
                 TooltipIcon.sprite = item.Icon;
@@ -218,6 +219,136 @@ namespace ExiledAlvaston.UI
         {
             if (TooltipPanel != null)
                 TooltipPanel.SetActive(false);
+        }
+
+        // ── USE ─────────────────────────────────────────────────────────────────────────────
+        // The tooltip's second button, built lazily the way BuildSpellsButton builds its own: the
+        // bag panel is authored in the scene and does not carry one, and a code-built button is
+        // reachable by touch, which a KeyCode would not be (CLAUDE.md §2).
+
+        private Button _useButton;
+        private ItemData _tooltipItem;
+
+        /// <summary>
+        /// Shows USE for a Consumable and hides it for everything else. Hiding rather than
+        /// disabling: a greyed button on every sword invites the player to keep pressing it.
+        /// </summary>
+        private void RefreshUseButton(ItemData item)
+        {
+            _tooltipItem = item;
+
+            bool usable = item != null && item.Type == ItemType.Consumable;
+            if (_useButton == null)
+            {
+                if (!usable) return;      // nothing to show and nothing built yet
+                _useButton = BuildUseButton();
+                if (_useButton == null) return;
+            }
+
+            _useButton.gameObject.SetActive(usable);
+        }
+
+        private Button BuildUseButton()
+        {
+            if (TooltipPanel == null) return null;
+
+            Transform existing = TooltipPanel.transform.Find("UseButton");
+            if (existing != null) return existing.GetComponent<Button>();
+
+            var go = new GameObject("UseButton", typeof(RectTransform));
+            go.transform.SetParent(TooltipPanel.transform, false);
+            var rt = (RectTransform)go.transform;
+            // Bottom-left of the tooltip, clear of UnequipButton, which the scene anchors right.
+            rt.anchorMin = new Vector2(0.04f, 0.04f);
+            rt.anchorMax = new Vector2(0.46f, 0.20f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            go.AddComponent<Image>().color = EKVibe.ButtonBrown;
+
+            var button = go.AddComponent<Button>();
+            button.onClick.AddListener(UseTooltipItem);
+
+            var labelGo = new GameObject("Label", typeof(RectTransform));
+            labelGo.transform.SetParent(go.transform, false);
+            var lrt = (RectTransform)labelGo.transform;
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = Vector2.zero;
+            lrt.offsetMax = Vector2.zero;
+            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = "USE";
+            tmp.color = EKVibe.TextLight;
+            tmp.fontSize = 22;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.raycastTarget = false;
+
+            return button;
+        }
+
+        /// <summary>
+        /// Consumes one of the tooltip's item: heal, then spend, then animate, then close the bag.
+        ///
+        /// The removal is what decides whether it worked. RemoveItem is all-or-nothing, so if the
+        /// player somehow has none left nothing is healed and nothing is played — healing first and
+        /// removing afterwards would pay out on a stack that was not there.
+        /// </summary>
+        private void UseTooltipItem()
+        {
+            ItemData item = _tooltipItem;
+            if (item == null || item.Type != ItemType.Consumable) return;
+
+            var session = PlayerSession.Instance;
+            if (session == null || !session.RemoveItem(item, 1)) return;
+
+            var player = ExiledAlvaston.Combat.CombatController.Instance;
+            if (player != null)
+            {
+                if (item.HealHP > 0)
+                {
+                    // Health owns the clamp to MaxHealth and refuses to heal the dead;
+                    // CombatController.PushHud copies its value back each frame.
+                    var health = player.GetComponent<ExiledAlvaston.Combat.Health>();
+                    if (health != null) health.Heal(item.HealHP);
+                    else player.CurrentHealth += item.HealHP;
+                }
+
+                if (item.HealMana > 0)
+                {
+                    int max = player.PlayerData != null ? player.PlayerData.MaxManaStamina : 50;
+                    player.CurrentMana = Mathf.Min(max, player.CurrentMana + item.HealMana);
+                }
+
+                PlayUseAnimation(player, item.UseAnimationTrigger);
+            }
+
+            HideTooltip();
+            ToggleInventory();
+        }
+
+        /// <summary>
+        /// Fires the item's trigger only if the player's controller actually declares it.
+        ///
+        /// Same guard CombatController.ApplyLocomotionAnimation uses for Speed and Cycling, and for
+        /// the same reason: setting a trigger a controller does not have logs an error every time.
+        /// An item naming a trigger no character has is a content gap, not a crash — most sheets do
+        /// not include a drinking animation and are not going to.
+        /// </summary>
+        private static void PlayUseAnimation(ExiledAlvaston.Combat.CombatController player, string trigger)
+        {
+            if (string.IsNullOrEmpty(trigger)) return;
+
+            Animator animator = player.PlayerAnimator;
+            if (animator == null || animator.runtimeAnimatorController == null) return;
+
+            foreach (AnimatorControllerParameter p in animator.parameters)
+            {
+                if (p.type == AnimatorControllerParameterType.Trigger && p.name == trigger)
+                {
+                    animator.SetTrigger(trigger);
+                    return;
+                }
+            }
         }
 
         public void EquipItem(ItemData item)
@@ -247,6 +378,17 @@ namespace ExiledAlvaston.UI
                 : null;
 
             int slotCount = BackpackGridContainer.childCount;
+
+            // Stacks past the last slot are carried and invisible. Now that a non-stackable item
+            // takes one entry per unit, overflowing the bag is much easier than it used to be, and
+            // an item that is simply not drawn reads as a lost item.
+            if (stacks != null && stacks.Count > slotCount)
+            {
+                Debug.LogWarning(
+                    $"InventoryController: {stacks.Count} inventory stacks but only {slotCount} bag " +
+                    "slots, so the overflow is carried but not drawn.", this);
+            }
+
             for (int i = 0; i < slotCount; i++)
             {
                 InventoryStack stack = stacks != null && i < stacks.Count ? stacks[i] : null;
