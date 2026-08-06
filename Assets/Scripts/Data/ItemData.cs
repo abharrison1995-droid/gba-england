@@ -37,6 +37,31 @@ namespace ExiledAlvaston.Data
         public int Damage; // For weapons
         public int Armor;  // For wearables
 
+        // ── Stacking and use ────────────────────────────────────────────────────────────────
+        // Appended, per CLAUDE.md §3: every existing ItemData .asset carries no value for these,
+        // so Unity applies the field initializers below and nothing already authored changes.
+        // Stackable defaults to false, which is exactly how the inventory behaved before.
+        [Header("Stacking")]
+        [Tooltip("Several of these share one inventory slot. Off means every one taken takes its " +
+                 "own slot, which is what every item authored so far does.")]
+        public bool Stackable = false;
+
+        [Tooltip("Most that fit in one stack. 0 means unlimited. Only consulted when Stackable " +
+                 "is on — a non-stackable item is always one per slot whatever this says.")]
+        public int MaxStack = 0;
+
+        [Header("Consumable")]
+        [Tooltip("Health restored when used. Clamped to the player's maximum.")]
+        public int HealHP;
+
+        [Tooltip("Mana restored when used. Clamped to the player's maximum.")]
+        public int HealMana;
+
+        [Tooltip("Animator trigger fired on the player when this is used. Leave empty for none; " +
+                 "a name the player's controller does not declare is ignored rather than warned " +
+                 "about, the way locomotion parameters are.")]
+        public string UseAnimationTrigger = "";
+
         public bool CanBeUsedBy(PlayerClass playerClass)
         {
             if (AllowedClasses == null || AllowedClasses.Length == 0) return true;
