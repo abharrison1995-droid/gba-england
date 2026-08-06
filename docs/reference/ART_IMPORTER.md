@@ -35,6 +35,21 @@ they were generated.
 ⚠️ Sheets imported before 2026-08-04 were sized against the old 1.35-unit adult and landed near
 65 px. The reduction is per-import, so **they are not re-scaled** — the project holds both.
 
+### `pixelSize` — the escape hatch for UI art
+
+A UI single does not stand in the world, so `worldHeight` means nothing for it. A manifest with
+`category: "ui"` may instead declare **`pixelSize`**, and the image is reduced to that many pixels
+**tall**, with the width following from the *trimmed* aspect ratio.
+
+**It is a height, not a box — nothing is forced square.** Trimming happens first, so the aspect at
+that point is the subject's own; squaring it would either stretch a tall icon or pad it with
+transparent margin the atlas then carries. Deliver square art if you want a square icon.
+
+`pixelSize` is appended to the manifest and optional. Absent or `0` reads back as `0`, which means
+"size from `worldHeight`" — exactly what every sheet delivered so far was imported with. It is
+ignored for sheets and for every category other than `ui`. `ART_PIPELINE.md` does not yet describe
+it to the art agent.
+
 ## Things learned the hard way, encoded in the tool
 
 Do not undo these to simplify the code. Each cost a wasted generation cycle.

@@ -108,6 +108,10 @@ public static class ArtImportTool
         public string action;        // idle | walk | attack | hurt | death | cast | cycle
         public string rendererPath;  // optional animation binding path; empty = same GameObject
         public float worldHeight;
+        // Appended. A manifest written before this existed has no pixelSize key, JsonUtility reads
+        // it back as 0, and 0 means "size from worldHeight" — the behaviour every sheet already
+        // delivered was imported with.
+        public int pixelSize;
         public int frameWidth;
         public int frameHeight;
         public int columns;
@@ -962,6 +966,14 @@ public static class ArtImportTool
         return name;
     }
 
+    /// <summary>
+    /// True for a manifest declaring the "ui" category, matched the same case-insensitive way the
+    /// destination folder is chosen (an empty category means "props", never "ui").
+    /// </summary>
+    private static bool IsUiCategory(ArtManifest m) =>
+        m != null && !string.IsNullOrEmpty(m.category) &&
+        m.category.Trim().ToLowerInvariant() == "ui";
+
     // ═══════════════════════════════════════════════════════════════════════════════════════
     //  REDUCTION
     //  Sources arrive photoreal and large. The look comes from crushing them down here, not
@@ -1041,6 +1053,17 @@ public static class ArtImportTool
             m.frameHeight = cellH;
             m.columns = columns;
             m.rows = rows;
+        }
+        else if (IsUiCategory(m) && m.pixelSize > 0)
+        {
+            // A UI single is not standing in the world, so worldHeight means nothing for it — an
+            // icon wants a pixel size. pixelSize is read as a HEIGHT and the width follows from the
+            // trimmed aspect ratio; it deliberately does NOT force a square. Trimming has already
+            // happened above, so the aspect here is the subject's own, and squaring it would either
+            // stretch a tall icon or pad it with transparent margin that the atlas then has to
+            // carry. A caller wanting a square icon should deliver square art.
+            outH = m.pixelSize;
+            outW = Mathf.Max(1, Mathf.RoundToInt(src.width * ((float)outH / src.height)));
         }
         else
         {
