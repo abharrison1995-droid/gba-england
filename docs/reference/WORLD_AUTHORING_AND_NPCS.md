@@ -50,8 +50,10 @@ It sits directly at `Tools/GBH/World Palette`, uncategorised — the one deliber
   link and any persisted UnityEvents survive the stamp. The worked example used to be
   `Preset_NoseyParker` — `Prop`, pointing at a hand-built prefab — which has been deleted along
   with the rest of the snitch mechanic (see
-  [CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md)). There is no longer a preset in the
-  project with `Prefab` assigned, so this path is currently unexercised.
+  [CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md)). No preset **currently on disk** has
+  `Prefab` assigned, so this path is unexercised until someone runs
+  `Tools → GBH → Content → Build Container Prefabs`, whose `Preset_Container_*` presets are
+  `Prop` pointing at a container prefab.
 
 The five `Place/…` windows still exist and still work. They have not been removed because none has
 been checked for anything the palette cannot yet do.
