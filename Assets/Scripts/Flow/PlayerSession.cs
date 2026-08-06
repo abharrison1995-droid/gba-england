@@ -36,6 +36,22 @@ namespace ExiledAlvaston.Flow
         /// <summary>Fires whenever the carried inventory changes (pickup, restore from save).</summary>
         public event Action OnInventoryChanged;
 
+        /// <summary>
+        /// Ids of every Fixed <see cref="World.SpriteContainer"/> already emptied, as
+        /// "&lt;ChunkName&gt;/&lt;GameObjectName&gt;".
+        ///
+        /// Deliberately not a serialized field: it is runtime state that reaches the save through
+        /// <see cref="SaveData.LootedContainers"/>, and a public List here would show up in the
+        /// Inspector as something an author could edit into a save key.
+        ///
+        /// A HashSet because the only questions asked of it are "is this one in?" and "put this one
+        /// in", and a chunk full of bins asks the first on every Awake.
+        /// </summary>
+        private readonly HashSet<string> _lootedContainers = new HashSet<string>();
+
+        /// <summary>Read-only view for the saver. Enumeration order is not meaningful.</summary>
+        public IEnumerable<string> LootedContainers => _lootedContainers;
+
         [Header("Wallet")]
         [Tooltip("Pounds carried. Whole pounds only — there are no pence anywhere in the game.")]
         public int Pounds;
@@ -96,6 +112,10 @@ namespace ExiledAlvaston.Flow
             // holding this app session.
             Inventory.Clear();
             OnInventoryChanged?.Invoke();
+
+            // Same reason: without this a New Game started in the same app session would find
+            // every bin the previous playthrough emptied still empty.
+            _lootedContainers.Clear();
 
             Pounds = 0;
             OnPoundsChanged?.Invoke();
@@ -259,6 +279,39 @@ namespace ExiledAlvaston.Flow
         {
             Pounds = Mathf.Max(0, saved);
             OnPoundsChanged?.Invoke();
+        }
+
+        /// <summary>Records that a Fixed container has been emptied. Ids are compared verbatim.</summary>
+        public void MarkContainerLooted(string containerId)
+        {
+            if (string.IsNullOrEmpty(containerId)) return;
+            _lootedContainers.Add(containerId);
+        }
+
+        /// <summary>True if this container was emptied earlier in the run, or in a loaded save.</summary>
+        public bool IsContainerLooted(string containerId)
+        {
+            if (string.IsNullOrEmpty(containerId)) return false;
+            return _lootedContainers.Contains(containerId);
+        }
+
+        /// <summary>
+        /// Replace the looted-container set with a saved snapshot (load game).
+        ///
+        /// ⚠ Must run before the world is built. Every SpriteContainer reads this in its own Awake,
+        /// and a chunk instantiated first would populate its bins from an empty set and refill
+        /// everything the player had already cleared. GameFlowController.ContinueFromSave calls
+        /// this immediately after RestorePounds, before LoadWorld.
+        /// </summary>
+        public void RestoreLootedContainers(List<string> saved)
+        {
+            _lootedContainers.Clear();
+            if (saved == null) return;
+
+            foreach (string id in saved)
+            {
+                if (!string.IsNullOrEmpty(id)) _lootedContainers.Add(id);
+            }
         }
 
         /// <summary>Replace the carried inventory with a saved snapshot (load game). Unresolvable item ids are skipped.</summary>

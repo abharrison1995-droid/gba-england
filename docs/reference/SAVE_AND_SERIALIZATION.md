@@ -18,7 +18,7 @@ nothing throws, nothing logs, the data is just gone.
 `persistentDataPath/savegame.json`. Not PlayerPrefs. There is no `EA_` prefix anywhere.
 
 `SaveData` holds: character name, class, `TutorialComplete`, chunk name, position, health, mana,
-stamina, quest list, inventory, pounds.
+stamina, quest list, inventory, pounds, looted containers.
 
 `Pounds` was **appended** after the rest, so a save written before the wallet existed has no
 `Pounds` key at all and `JsonUtility` reads it back as `0` — the correct opening balance, which is
@@ -60,10 +60,37 @@ through `Resources/Items` by `PlayerSession.RestoreInventory`.
   the entry is read, the lookup fails, the item is dropped and nothing is reported.
 - An item must stay reachable from `Resources/Items`, since that is how the load resolves it.
 
+### Container ids — `"<ChunkName>/<GameObjectName>"`
+
+`SpriteContainer` in `Fixed` mode remembers being emptied. The key it uses is built in its `Awake`
+as `CurrentChunkData.ChunkName + "/" + gameObject.name`, cached, and written into
+`SaveData.LootedContainers` as a plain list of strings.
+
+**This is a save key with no asset behind it**, which makes it easier to break than the other two:
+
+- It is compared **verbatim**. Never trim, lower-case, slugify or otherwise normalise it —
+  `Manor_Cellars_Data` has `ChunkName: "Manor Cellars"`, with a space, and normalising would orphan
+  every container looted there.
+- **Renaming a container GameObject in the Hierarchy refills it** for every existing save, silently.
+  So does renaming its chunk.
+- **Two containers with the same name in the same chunk share one id**, and looting either empties
+  both. `SpriteContainer.Awake` warns when it sees a duplicate, naming both the chunk and the name.
+- A container with no resolvable chunk cannot build an id at all. It warns and behaves as
+  `Respawning` for that session rather than throwing in `Awake`.
+
+Restore ordering matters and is load-bearing: `GameFlowController.ContinueFromSave` calls
+`PlayerSession.RestoreLootedContainers` immediately after `RestorePounds`, **before** either
+`EnterManorCellars` or `LoadWorld`. Every container reads the set in its own `Awake`, so a world
+built first would refill everything the player had cleared.
+
+`PlayerSession` holds the set as a private `HashSet<string>`, not a serialized field — it reaches
+the file through `SaveData` only. `BeginNewGame` clears it beside `Inventory.Clear()`, so a New Game
+in the same app session does not inherit the last playthrough's emptied bins.
+
 ## What is and is not saved
 
 **Saved:** character name and class, `TutorialComplete`, chunk, position, health/mana/stamina,
-quest state, inventory, pounds.
+quest state, inventory, pounds, the ids of emptied `Fixed` containers.
 
 `PlayerClass` is stored as its integer enum value. The original mappings remain
 `YoungDriller=0`, `EnGarde=1`, `MrHood=2`, `Dynamo=3`; `BundaBasher=4` was appended so existing
@@ -141,11 +168,12 @@ git ls-files 'Assets/**/*.cs' | while read f; do [ -f "$f.meta" ] || echo "NO ME
 
 Reordering or inserting values silently remaps existing data. **Always append.**
 
-Twelve live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
+Thirteen live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
 
 `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`, `GameFlowState`,
 `HUDActionButton.ActionKind`, `InstanceDoor.Destination`, `PlacementCategory`, `CityRegion`,
-`QuestConditionType`, `MagicTutorial.Stage`, `TutorialSequence.Stage`.
+`QuestConditionType`, `MagicTutorial.Stage`, `TutorialSequence.Stage`,
+`SpriteContainer.ContainerMode` (`Fixed = 0`, `Respawning = 1`).
 
 `HUDActionButton.ActionKind` is the one with values proven live in serialized data: `c.unity`
 holds six authored `HUDActionButton` components covering `Attack=0`, `Ability=1`, `Inventory=2`

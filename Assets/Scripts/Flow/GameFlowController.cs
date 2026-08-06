@@ -201,6 +201,10 @@ namespace ExiledAlvaston.Flow
             QuestManager.Instance.RestoreQuests(data.Quests);
             PlayerSession.Instance.RestoreInventory(data.Inventory);
             PlayerSession.Instance.RestorePounds(data.Pounds);
+            // Before either route that builds the world — the EnterManorCellars branch just below
+            // and the LoadWorld call further down. Every SpriteContainer reads this set in its own
+            // Awake, so a chunk built first would refill every bin the player had already cleared.
+            PlayerSession.Instance.RestoreLootedContainers(data.LootedContainers);
             BindPlayerToSession(existing);
 
             // Mid-tutorial saves restart the tutorial cleanly rather than resuming half-staged

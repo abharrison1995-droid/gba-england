@@ -37,6 +37,15 @@ namespace ExiledAlvaston.Flow
         // existed has no Pounds key at all, and JsonUtility reads it back as 0 — which is the
         // correct starting balance, so no migration is needed.
         public int Pounds;
+
+        // Appended for the same reason and read back the same way: an older save has no
+        // LootedContainers key and JsonUtility hands back an empty list, which correctly means
+        // "nothing has been looted yet". Ids are "<ChunkName>/<GameObjectName>" and are compared
+        // as plain strings — see SAVE_AND_SERIALIZATION.md before touching how they are built.
+        //
+        // A public FIELD, not a property: JsonUtility only serializes fields, and a property here
+        // would silently never persist.
+        public List<string> LootedContainers = new List<string>();
     }
 
     /// <summary>
@@ -83,6 +92,8 @@ namespace ExiledAlvaston.Flow
                     if (stack?.Item == null || stack.Quantity <= 0) continue;
                     data.Inventory.Add(new InventorySaveEntry { ItemID = stack.Item.ItemID, Quantity = stack.Quantity });
                 }
+
+                data.LootedContainers.AddRange(session.LootedContainers);
             }
 
             try
