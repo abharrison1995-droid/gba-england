@@ -1,10 +1,12 @@
 # World authoring — the palette, presets and NPCs
 
 ```
-Last verified against: ccfa9c9
-Verification scope:    code; tracked preset/prefab YAML (34 presets read). The villager path was
+Last verified against: working tree, 2026-08-06
+Verification scope:    code; tracked preset/prefab YAML (30 presets read). The villager path was
                        exercised end to end in the editor and reported working by the owner.
-                       The six London enemy prefabs have NEVER been seen in play.
+                       The six London enemy prefabs have NEVER been seen in play. The preset
+                       count and the "no preset has Prefab assigned" claim are from grep over
+                       tracked YAML; nothing here has been reopened in the editor.
 ```
 
 ## The World Palette
@@ -44,9 +46,12 @@ It sits directly at `Tools/GBH/World Palette`, uncategorised — the one deliber
   again. There is deliberately no resync tool.
 - **A preset with a `Prefab` assigned short-circuits the whole recipe.** `PlacementBuilders.Build`
   checks `preset.Prefab != null` *before* the category switch, so `Category` is only a palette
-  heading for those. `Preset_NoseyParker` is the worked example: `Prop`, pointing at
-  `Prefabs/ModernBritain/NoseyParker.prefab`, placed with `PrefabUtility.InstantiatePrefab` so the
-  prefab link and its persisted UnityEvents survive the stamp.
+  heading for those. Such a preset is placed with `PrefabUtility.InstantiatePrefab`, so the prefab
+  link and any persisted UnityEvents survive the stamp. The worked example used to be
+  `Preset_NoseyParker` — `Prop`, pointing at a hand-built prefab — which has been deleted along
+  with the rest of the snitch mechanic (see
+  [CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md)). There is no longer a preset in the
+  project with `Prefab` assigned, so this path is currently unexercised.
 
 The five `Place/…` windows still exist and still work. They have not been removed because none has
 been checked for anything the palette cannot yet do.
@@ -84,7 +89,7 @@ Two clicks in Unity and no code:
   Nothing in `NpcFactory` may touch `UnityEditor`.
 - **Dialogue is generated at authoring time, never at build time.** `AssetDatabase.CreateAsset`
   does not exist at runtime. `NpcFactory` only ever *reads* `preset.Conversation`.
-- **`NpcHeight` of 0 means inherit `EKVibe.CharacterHeight`, currently 1.55.** Of the 34 presets,
+- **`NpcHeight` of 0 means inherit `EKVibe.CharacterHeight`, currently 1.55.** Of the 30 presets,
   12 are 0, 13 are an explicit 1.55, and one — the child — is 1.3. The squirrel is 0, so until his
   sheets land he builds at 1.55 and reads as a man in a squirrel suit; his intended `worldHeight`
   is 0.45 and the importer will write it.
@@ -114,10 +119,11 @@ Two clicks in Unity and no code:
   *non-persistent* listener; only calls written through `UnityEditor.Events.UnityEventTools` are
   serialized. An authoring tool that wires `OnInteract` with `AddListener` looks correct in the
   Scene view and produces a prefab with the component present and nothing connected.
-  This is why `PickpocketInteractable` **subscribes itself in `Awake`**, and why that `Awake` first
-  walks `OnInteract.GetPersistentEventCount()` looking for a persistent call already pointing at
-  itself: `NoseyParker.prefab` carries exactly such a call and would otherwise rob the player twice
-  per press.
+  This is why `PickpocketInteractable` **subscribes itself in `Awake`**. That `Awake` also walks
+  `OnInteract.GetPersistentEventCount()` looking for a persistent call already pointing at itself,
+  which would otherwise rob the player twice per press. Nothing on disk carries such a call any
+  more — `NoseyParker.prefab` was the only one and has been deleted — so that scan is now purely
+  defensive, kept for any future tool that writes one through `UnityEventTools`.
 - **A preset is either a talker or a mark, never both.** `Pickpocketable` plus a `Conversation` is
   two listeners answering one button press. `NpcFactory.ApplyPickpocket` warns and **dialogue
   wins**, because the failure that leaves is a civilian you cannot rob rather than a quest giver
@@ -149,10 +155,10 @@ untested for these subjects.
 
 ## The London cast
 
-`Assets/Data/Presets/` holds 34 presets. The London cast is `Region: London`: Mayor Swalls, the
+`Assets/Data/Presets/` holds 30 presets. The London cast is `Region: London`: Mayor Swalls, the
 Quidland and F.U. Sports clerks, Commissioner Spencer, Officer Riggs, Officer Murtaugh, Ralph and
-Sanjeet, plus Councillor Mosley and Daniel Pauls. The villagers and the Nosey Parker stay
-`Assorted`, since they are placed everywhere.
+Sanjeet, plus Councillor Mosley and Daniel Pauls. The villagers stay `Assorted`, since they are
+placed everywhere.
 
 Eleven NPCs stand in `Home_London_Prefab`. **Commissioner Spencer is the one cast member still
 unplaced.**

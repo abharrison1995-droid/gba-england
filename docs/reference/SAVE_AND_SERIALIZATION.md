@@ -1,7 +1,7 @@
 # Save format and Unity serialization
 
 ```
-Last verified against: working tree, 2026-08-04
+Last verified against: working tree, 2026-08-06
 Verification scope:    code (read line by line); tracked prefab/asset YAML. The appended
                        BundaBasher=4 class mapping is code-reviewed but not Unity-tested. Quest persistence
                        across an autosave was confirmed in an editor session by reading
@@ -107,10 +107,10 @@ The live `[FormerlySerializedAs]` cases, all from the gold→pounds rename, are 
 | Field now | Was | Authored in |
 |---|---|---|
 | `PlacementPreset.PickpocketMinPounds` / `MaxPounds` | `PickpocketMinGold` / `MaxGold` | 25 `Preset_*.asset` |
-| `PickpocketInteractable.MinPounds` / `MaxPounds` | `MinGold` / `MaxGold` | `NoseyParker.prefab` |
+| `PickpocketInteractable.MinPounds` / `MaxPounds` | `MinGold` / `MaxGold` | nothing on disk — `NoseyParker.prefab` was the only holder and has been deleted |
 | `QuestReward.PoundsAmount` | `GoldAmount` | nothing yet — no `QuestDefinition` assets exist |
 
-Those `.asset` and `.prefab` files still carry the **old** key names on disk; the attribute remaps
+Those `.asset` files still carry the **old** key names on disk; the attribute remaps
 them on load and Unity rewrites them on its next save of each file. That is the intended state, not
 an unfinished migration — **do not hand-edit the YAML to "finish" it**, and do not delete the
 attributes afterwards, because any copy of those assets that has not been re-saved still needs them.
@@ -164,7 +164,7 @@ regenerating a `.meta` breaks the adjacency graph.
 
 `ModernBritainSetup.BuildEBikePrefab` does `AssetDatabase.DeleteAsset(path)` then
 `SaveAsPrefabAsset`. That takes the `.meta` with it and mints a fresh GUID, so **re-running that
-tool orphans every EBike, Nosey Parker and Pub instance already placed** — they detach silently
+tool orphans every EBike and Pub instance already placed** — they detach silently
 and the scene keeps empty prefab stubs.
 
 To change an existing prefab, edit it in place:

@@ -68,21 +68,16 @@ namespace ExiledAlvaston.World
         /// <summary>
         /// Makes a civilian robbable.
         ///
-        /// Until this existed, the only pickpocketable object in the game was NoseyParker.prefab,
-        /// whose Interactable.OnInteract → TryPickpocket wiring is a *persisted* UnityEvent written
-        /// by ModernBritainSetup — a Danger Zone tool that mints a fresh GUID when re-run and
-        /// orphans every instance already placed (CLAUDE.md §7). So the only way to author a new
-        /// mark was to copy that prefab, and a civilian built from a preset could never be one.
-        /// Adding the component here means the palette can author marks directly, and nothing has
-        /// to touch that tool.
+        /// This is the only way a mark is authored. Marks used to be hand-built prefabs carrying a
+        /// persisted OnInteract → TryPickpocket call, which meant the only way to make a new one
+        /// was to copy that prefab, and a civilian built from a preset could never be one. Adding
+        /// the component here means the palette authors marks directly, from a preset.
         ///
         /// Note what this does *not* do: wire the listener. UnityEvent.AddListener produces a
         /// non-persistent listener that is never serialized, so wiring one while authoring a chunk
         /// prefab would look correct in the editor and be silently absent from the saved asset.
-        /// PickpocketInteractable subscribes itself in Awake instead, skipping it when the object
-        /// already carries a persistent call — which is how NoseyParker.prefab avoids being wired
-        /// twice. Everything set here (the component, its tuning, the prompt) is serialized state
-        /// that survives the save.
+        /// PickpocketInteractable subscribes itself in Awake instead. Everything set here (the
+        /// component, its tuning, the prompt) is serialized state that survives the save.
         ///
         /// Dialogue and pickpocketing are mutually exclusive, for the same reason the caller only
         /// adds NPCDialogueInteractable when there is something to say: two listeners answering one

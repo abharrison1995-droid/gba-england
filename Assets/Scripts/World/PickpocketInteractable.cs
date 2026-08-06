@@ -26,14 +26,17 @@ namespace ExiledAlvaston.World
         /// Wires itself to the Interactable, the way NPCDialogueInteractable does — *unless* the
         /// object already carries a persistent call pointing back here.
         ///
-        /// Both routes have to work and they arrive differently. NoseyParker.prefab was built by
-        /// ModernBritainSetup, which wrote OnInteract → TryPickpocket as a serialized persistent
-        /// call; self-subscribing unconditionally would give that prefab two listeners and rob the
-        /// player twice per press. A civilian stamped by the World Palette has no such call, because
-        /// UnityEvent.AddListener produces a *non-persistent* listener that is never serialized —
-        /// so wiring one at authoring time would look right in the editor and be silently gone from
-        /// the saved prefab. Deciding at Awake, from what the object actually carries, covers both
-        /// without either tool knowing about the other.
+        /// Self-subscribing is the only route that works for an authored asset: UnityEvent
+        /// .AddListener produces a *non-persistent* listener that is never serialized, so wiring
+        /// one at authoring time would look right in the editor and be silently gone from the
+        /// saved prefab. Every mark in the project is therefore wired here, at Awake.
+        ///
+        /// The persistent-call scan is kept as a guard, not because anything currently needs it.
+        /// Nothing on disk carries such a call any more — the one asset that did, NoseyParker
+        /// .prefab, has been deleted — but an editor tool writing OnInteract → TryPickpocket
+        /// through UnityEventTools would otherwise give that object two listeners and rob the
+        /// player twice per press. Deciding from what the object actually carries costs one loop
+        /// at Awake and keeps both routes safe.
         /// </summary>
         private void Awake()
         {

@@ -1,7 +1,7 @@
 # The art importer and actor visuals
 
 ```
-Last verified against: working tree, 2026-08-04
+Last verified against: working tree, 2026-08-06
 Verification scope:    code. Player-class profile refresh and creator preview wiring are
                        UNVERIFIED in Unity. The importer has done real round trips (Mosley, the pharmacist, the
                        player's five sheets, the London enemies) and the BuildController fix was
@@ -163,7 +163,7 @@ Young Driller, followed by `player_stabmeister`, `player_mrhood`, `player_dynamo
 An idle sheet enables the creator preview; gameplay uses a class only when idle, walk, attack,
 hurt, death, and cast all exist, otherwise the entire Young Driller profile is used.
 
-The importer also assigns the e-bike and NPC subjects named by a preset's `ArtSubject`. The police tiers, the Nosey Parker and the pub are hand-built prefabs
+The importer also assigns the e-bike and NPC subjects named by a preset's `ArtSubject`. The police tiers and the pub are hand-built prefabs
 with `PlaceholderBody` primitives and no `SpriteRenderer`, so their art will import and land
 nowhere until someone gives them presets or wires the prefabs by hand.
 

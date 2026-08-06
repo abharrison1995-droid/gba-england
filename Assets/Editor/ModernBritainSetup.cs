@@ -6,18 +6,16 @@ using UnityEngine.Events;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.World;
 using ExiledAlvaston.Systems;
-using ExiledAlvaston.AI;
 using ExiledAlvaston.Vibe;
 
 /// <summary>
 /// One-click setup for Phase 1–4 modern British mechanics:
 ///   1. Builds 5 Police tier prefabs (PCSO, Bobby, Armed, Occult Agent, Occult Commander)
-///   2. Builds a Nosey Parker civilian prefab
-///   3. Builds a stealable hire e-bike vehicle prefab
-///   4. Builds a Pub (safehouse) prefab
-///   5. Wires WantedManager.PolicePrefabs in the active scene
-///   6. Adds StealthController to the player in the active scene
-///   7. Places a Nosey Parker, an EBike, and a Pub into the active scene near the player
+///   2. Builds a stealable hire e-bike vehicle prefab
+///   3. Builds a Pub (safehouse) prefab
+///   4. Wires WantedManager.PolicePrefabs in the active scene
+///   5. Adds StealthController to the player in the active scene
+///   6. Places an EBike and a Pub into the active scene near the player
 ///
 /// Run via: Tools → GBH → Danger Zone → Build Modern Britain Prefabs + Wire Scene
 /// </summary>
@@ -31,7 +29,6 @@ public static class ModernBritainSetup
     private static readonly Color ColArmed         = new Color(0.1f, 0.1f, 0.1f);     // tactical black
     private static readonly Color ColOccultAgent   = new Color(0.25f, 0.2f, 0.15f);   // trench-coat brown
     private static readonly Color ColOccultCmd     = new Color(0.4f, 0.05f, 0.05f);   // Ministry red
-    private static readonly Color ColCivilian      = new Color(0.5f, 0.55f, 0.45f);   // casual grey-green
     private static readonly Color ColEBike         = new Color(0.65f, 0.85f, 0.15f);    // hire-bike lime
     private static readonly Color ColPub           = new Color(0.35f, 0.15f, 0.05f);  // wooden brown
 
@@ -52,8 +49,8 @@ public static class ModernBritainSetup
                 "Rebuild Modern Britain prefabs?",
                 $"{PrefabFolder} already exists.\n\n" +
                 "This rebuilds every prefab in it by DELETING and re-creating it, which gives each " +
-                "one a new GUID. The NoseyParker, EBike and Pub instances already placed in " +
-                "c.unity will silently detach from their prefabs and be left as empty stubs.\n\n" +
+                "one a new GUID. The EBike and Pub instances already placed in c.unity will " +
+                "silently detach from their prefabs and be left as empty stubs.\n\n" +
                 "Only run this on a project where those have not been placed yet. To change an " +
                 "existing prefab, edit it in place instead.\n\nContinue?",
                 "Yes, rebuild and orphan the instances",
@@ -70,22 +67,19 @@ public static class ModernBritainSetup
         GameObject occult = BuildPolicePrefab("Police_OccultAgent",   "Occult Agent",    ColOccultAgent, 120, 20, 1.8f, 4.8f);
         GameObject occCmd = BuildPolicePrefab("Police_OccultCommander","Occult Commander",ColOccultCmd,  200, 30, 2.0f, 5.5f);
 
-        // ─── 2. Build Nosey Parker civilian ───
-        GameObject noseyParker = BuildNoseyParkerPrefab();
-
-        // ─── 3. Build e-bike vehicle ───
+        // ─── 2. Build e-bike vehicle ───
         GameObject ebike = BuildEBikePrefab();
 
-        // ─── 4. Build Pub safehouse ───
+        // ─── 3. Build Pub safehouse ───
         GameObject pub = BuildPubPrefab();
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
-        // ─── 5. Wire scene objects ───
+        // ─── 4. Wire scene objects ───
         WireWantedManager(pcso, bobby, armed, occult, occCmd);
         WireStealthToPlayer();
-        PlaceWorldObjects(noseyParker, ebike, pub);
+        PlaceWorldObjects(ebike, pub);
 
         var scene = EditorSceneManager.GetActiveScene();
         EditorSceneManager.MarkSceneDirty(scene);
@@ -94,7 +88,7 @@ public static class ModernBritainSetup
             "═══════════════════════════════════════════════════════════════\n" +
             "  Modern Britain setup complete!\n" +
             "  • 5 Police prefabs saved to Assets/Prefabs/ModernBritain\n" +
-            "  • Nosey Parker, EBike, and Pub prefabs built\n" +
+            "  • EBike and Pub prefabs built\n" +
             "  • WantedManager.PolicePrefabs wired\n" +
             "  • StealthController added to player\n" +
             "  • Instances placed in the active scene near the player\n" +
@@ -164,58 +158,12 @@ public static class ModernBritainSetup
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════
-    //  NOSEY PARKER PREFAB
-    // ═══════════════════════════════════════════════════════════════════════════════════════
-
-    private static GameObject BuildNoseyParkerPrefab()
-    {
-        string path = $"{PrefabFolder}/NoseyParker.prefab";
-        float height = EKVibe.CharacterHeight;
-
-        var root = new GameObject("NoseyParker");
-        try
-        {
-            // Interactable for pickpocketing
-            var interactable = root.AddComponent<Interactable>();
-            interactable.Prompt = "Pickpocket";
-            interactable.InteractRange = 2.0f;
-            interactable.Reusable = false;
-
-            // Nosey Parker AI — detects magic
-            var parker = root.AddComponent<NoseyParkerAI>();
-            parker.DetectionRadius = 8f;
-            parker.ReportTime = 4f;
-
-            // Pickpocket component
-            var pickpocket = root.AddComponent<PickpocketInteractable>();
-            pickpocket.MinPounds = 5;
-            pickpocket.MaxPounds = 25;
-            pickpocket.CatchChance = 0.3f;
-
-            // Wire the Interactable.OnInteract → PickpocketInteractable.TryPickpocket
-            UnityAction pickpocketAction = pickpocket.TryPickpocket;
-            UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(interactable.OnInteract, pickpocketAction);
-
-            // Placeholder body
-            BuildPlaceholderBody(root.transform, height, ColCivilian, "NoseyParkerMat");
-
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
-                AssetDatabase.DeleteAsset(path);
-            return PrefabUtility.SaveAsPrefabAsset(root, path);
-        }
-        finally
-        {
-            Object.DestroyImmediate(root);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════════════════
     //  E-BIKE PREFAB
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
     // ⚠ This deletes and recreates the asset, which takes the .meta with it and mints a fresh
-    // GUID — re-running it orphans the EBike, Nosey Parker and Pub instances already placed in
-    // c.unity. To change an existing prefab, edit it in place instead: LoadPrefabContents →
+    // GUID — re-running it orphans the EBike and Pub instances already placed in c.unity.
+    // To change an existing prefab, edit it in place instead: LoadPrefabContents →
     // modify → SaveAsPrefabAsset → UnloadPrefabContents, as ArtImportTool does.
     private static GameObject BuildEBikePrefab()
     {
@@ -360,16 +308,15 @@ public static class ModernBritainSetup
     }
 
     /// <summary>Drops one of each prefab into the scene near the player.</summary>
-    private static void PlaceWorldObjects(GameObject noseyParkerPrefab, GameObject ebikePrefab, GameObject pubPrefab)
+    private static void PlaceWorldObjects(GameObject ebikePrefab, GameObject pubPrefab)
     {
         Vector3 playerPos = Vector3.zero;
         var player = Object.FindObjectOfType<CombatController>();
         if (player != null)
             playerPos = player.transform.position;
 
-        SpawnInstance(noseyParkerPrefab, playerPos + new Vector3(5f, 0f, 3f),  "NoseyParker");
-        SpawnInstance(ebikePrefab,       playerPos + new Vector3(-4f, 0f, 5f), "EBike");
-        SpawnInstance(pubPrefab,         playerPos + new Vector3(8f, 0f, -4f), "Pub");
+        SpawnInstance(ebikePrefab, playerPos + new Vector3(-4f, 0f, 5f), "EBike");
+        SpawnInstance(pubPrefab,   playerPos + new Vector3(8f, 0f, -4f), "Pub");
     }
 
     private static void SpawnInstance(GameObject prefab, Vector3 pos, string label)

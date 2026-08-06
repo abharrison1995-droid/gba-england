@@ -5,7 +5,9 @@ using ExiledAlvaston.UI;
 namespace ExiledAlvaston.World
 {
     /// <summary>
-    /// Handles the ASBO/Hoodie Stealth state. When crouching, movement is slowed but detection radius drops.
+    /// Handles the ASBO/Hoodie Stealth state. Crouching halves movement speed and is the gate on
+    /// pickpocketing. Nothing else currently reads IsCrouched — the snitch mechanic that used to
+    /// have its detection radius halved by crouching has been removed.
     /// </summary>
     public class StealthController : MonoBehaviour
     {

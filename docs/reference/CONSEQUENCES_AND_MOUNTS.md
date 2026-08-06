@@ -1,11 +1,12 @@
 # Consequences, police, stealth, mounts and vehicles
 
 ```
-Last verified against: ccfa9c9
+Last verified against: working tree, 2026-08-06
 Verification scope:    code; tracked prefab YAML. Mounting, dismounting, the boost, the prompt
                        flip and the data-driven spawner were play-tested in an earlier editor
                        session. The IsPolice defect below is read from prefab YAML and has NOT
-                       been observed in play.
+                       been observed in play. The snitch removal is verified by GUID search and
+                       `--check-dangling` only — no compiler and no editor have seen it.
 ```
 
 The GTA layer. Components live inside the `Prefabs/ModernBritain/` prefabs, whose instances are
@@ -34,16 +35,28 @@ transition. A version that only zeroed the meters dropped the HUD knife readout 
 Armed Response hunting the player. `PubInteractable` and `GameFlowController.ArrestRoutine` both
 still clear inline and are unaffected.
 
-## The five systems
+## The systems
 
 | System | Script | Behaviour |
 |---|---|---|
-| Nosey Parkers | `AI/NoseyParkerAI` | Civilians. Within `DetectionRadius`, if concealment is below max, they spend `ReportTime` dialling 999, then `SpikeKnives()`. |
-| Stealth | `World/StealthController` | Crouch toggle: halves move speed, halves parker detection radius. |
+| Stealth | `World/StealthController` | Crouch toggle: halves move speed. |
 | Pickpocketing | `World/PickpocketInteractable` | Requires crouch. Rolls `CatchChance`; failure spikes Knives. Authored by ticking `Pickpocketable` on a `PlacementPreset`. |
 | Grand Theft E-Bike | `World/VehicleController` + `World/MountController` | Mounting an `IsOwnedByNPC` vehicle spikes Knives and grants `SpeedMultiplier`. |
 | Pub safehouses | `World/PubInteractable` | A pint clears Knives + concealment, heals, and saves. |
 | Arrest | `Flow/GameFlowController.ArrestRoutine` | Death dealt by an `EnemyAI.IsPolice` attacker (via `Health.LastAttacker`) arrests instead of killing: clears wanted level, despawns police, returns you to the cellars. |
+
+### The snitch mechanic is gone
+
+There used to be a sixth system: a "Nosey Parker" civilian (`AI/NoseyParkerAI` on
+`Prefabs/ModernBritain/NoseyParker.prefab`) who noticed a below-max concealment meter within
+`DetectionRadius`, spent `ReportTime` dialling 999 and then called `SpikeKnives()`. **The script,
+the prefab, its material and `Preset_NoseyParker` have all been deleted.** Nothing observes the
+player and reports them any more — concealment still drains on a cast and still spikes Knives when
+it hits zero, but no NPC is part of that loop.
+
+This is a deliberate regression. A redesigned **NPC witness system** — which civilians notice
+what, at what range, and what they do about it — is planned as separate work and is not in the
+codebase in any form. Do not read the remaining concealment plumbing as a half-built version of it.
 
 Crouch is reachable on mobile: the HUD has a **CRO** button
 (`HUDActionButton.ActionKind.Crouch` → `UIManager.OnCrouchPressed` →
@@ -61,9 +74,6 @@ pickpocketing reachable on mobile, since `TryPickpocket` requires `IsCrouched`.
   it, so dying to the police kills you instead of arresting you, and `WantedManager.DespawnPolice`
   destroys nothing. **Fix is ticking the box on all five prefabs in the Inspector** — never by
   re-running `ModernBritainSetup`.
-- **Nosey Parkers fire on any concealment below max.** One cast drains 34 with 5/sec regen, so
-  every cast opens a ~7-second window in which every parker in range starts reporting. Each parker
-  also sets `this.enabled = false` after reporting, making them single-use per scene load.
 - **Both payouts are live.** Pickpocketing pays into `PlayerSession.Pounds` via `AddPounds`, and
   the arrest fine (`EKVibe.ArrestFine`, £50) is taken via `SpendPounds`. The fine is **clamped to
   what the player is carrying** before it is spent, because `SpendPounds` is all-or-nothing and

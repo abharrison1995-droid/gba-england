@@ -44,7 +44,7 @@ Assets/
     AI/ Camera/ Combat/ Data/ Dialogue/ Flow/ Quests/ Systems/ UI/ Vibe/ World/
   Editor/           # editor-only tools (no asmdef — see below)
   Data/Chunks/      # 6 MapChunkData .asset files
-  Data/Presets/     # 34 PlacementPreset assets
+  Data/Presets/     # 30 PlacementPreset assets
   Data/Dialogue/    # DialogueData assets
   Prefabs/          # Chunks/, ModernBritain/, Enemies/
   Resources/        # loaded by name at runtime — Items/, Quests/, PlacementPresetLibrary
@@ -239,7 +239,7 @@ confirmed, rather than leaving it hedged.
    animates while roaming instead of sliding.* If Unity rejects it, re-stage the walk pair from
    `art_incoming/processed/` and re-run the importer.
 8. ⚠️ **The pounds rename relies on `[FormerlySerializedAs]` doing its job.** 25 `Preset_*.asset`
-   files and `NoseyParker.prefab` still hold the old `…Gold` keys on disk. *Open any robbable
+   files still hold the old `…Gold` keys on disk. *Open any robbable
    preset (e.g. `Preset_Villager`) in the Inspector and check Pickpocket Min/Max Pounds read
    **5 and 25**, not 0.* If they read 0 the remap did not take and the values are gone — restore
    from git rather than retyping 25 assets.
@@ -248,7 +248,8 @@ confirmed, rather than leaving it hedged.
    money readout and the pickpocket toast.* Fix is on the font asset (Project → the TMP font →
    Inspector): add £ to the character set and regenerate, or switch Atlas Population Mode to
    Dynamic.
-10. **The wallet has never run.** Pickpocket a Nosey Parker, get arrested, and reload a save.
+10. **The wallet has never run.** Pickpocket a civilian authored `Pickpocketable`, get arrested,
+    and reload a save.
     *Check the bag readout tracks all three, and that a save made before today loads at £0 rather
     than failing.*
 11. **The blank-name fallback has never run.** The creator's name box starts empty behind a
