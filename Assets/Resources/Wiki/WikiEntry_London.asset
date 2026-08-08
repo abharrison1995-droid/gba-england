@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afaaf2718e4349ff87dc6a5fef05622f, type: 3}
+  m_Name: WikiEntry_London
+  m_EditorClassIdentifier: 
+  EntryID: loc_home_london
+  Title: London
+  Category: 0
+  Body: Entry not yet written.
+  Image: {fileID: 0}
+  LinkedChunk: {fileID: 11400000, guid: 5a35b5720ddb68e4ca6ae25fd3467332, type: 2}

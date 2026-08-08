@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afaaf2718e4349ff87dc6a5fef05622f, type: 3}
+  m_Name: WikiEntry_EastRetailPark
+  m_EditorClassIdentifier: 
+  EntryID: loc_east_retailpark
+  Title: East Retail Park
+  Category: 0
+  Body: Entry not yet written.
+  Image: {fileID: 0}
+  LinkedChunk: {fileID: 11400000, guid: 93880a9f5caac2f4889b9e26122ac8f4, type: 2}

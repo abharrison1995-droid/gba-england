@@ -86,6 +86,9 @@ namespace ExiledAlvaston.World
             {
                 CurrentChunkInstance = Instantiate(CurrentChunkData.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 CurrentChunkInstance.name = CurrentChunkData.ChunkPrefab.name;
+                ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(CurrentChunkData.ChunkName);
+                // Silent: the scene-autoload debug path is not a discovery.
+                ExiledAlvaston.UI.WikiUnlock.GrantForChunk(CurrentChunkData.ChunkName, silent: true);
             }
         }
 
@@ -236,6 +239,9 @@ namespace ExiledAlvaston.World
 
                 GameObject previousInstance = CurrentChunkInstance;
                 CurrentChunkData = targetChunk;
+                ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
+                // Toast: portal travel is a live arrival — a first visit is a discovery.
+                ExiledAlvaston.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
                 CurrentChunkInstance = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 CurrentChunkInstance.name = targetChunk.ChunkPrefab.name;
 
@@ -352,6 +358,9 @@ namespace ExiledAlvaston.World
                 // frame where the player has no floor under them.
                 GameObject previousInstance = CurrentChunkInstance;
                 CurrentChunkData = targetChunk;
+                ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
+                // Toast: walking across an edge is a live arrival — a first visit is a discovery.
+                ExiledAlvaston.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
                 CurrentChunkInstance = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 CurrentChunkInstance.name = targetChunk.ChunkPrefab.name;
 

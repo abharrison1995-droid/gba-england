@@ -33,6 +33,11 @@ namespace ExiledAlvaston.World
         public DialogueData Conversation;
         public QuestStateDialogue[] StateOverrides;
 
+        // Appended field: existing NPCs read it as null, which means "grants nothing" — no
+        // scene or prefab updates needed.
+        [Tooltip("Optional: the first conversation with this NPC unlocks this WIKIBRITAIN entry (toast pops).")]
+        public WikiEntryData GrantsEntry;
+
         private void Awake()
         {
             var interactable = GetComponent<Interactable>();
@@ -53,6 +58,9 @@ namespace ExiledAlvaston.World
                 return;
             }
             CharacterData playerData = CombatController.Instance != null ? CombatController.Instance.PlayerData : null;
+            // First conversation unlocks the NPC's entry — the toast pops right as the chat opens.
+            if (GrantsEntry != null)
+                UI.WikiUnlock.Grant(GrantsEntry);
             DialogueManager.Ensure().StartDialogue(conversation, playerData);
         }
 

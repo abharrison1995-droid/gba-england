@@ -106,6 +106,9 @@ namespace ExiledAlvaston.UI
                         Destroy(chunkMgr.CurrentChunkInstance);
 
                     chunkMgr.CurrentChunkData = home;
+                    PlayerSession.Instance?.MarkChunkVisited(home.ChunkName);
+                    // Silent: a death-screen respawn is not a discovery.
+                    WikiUnlock.GrantForChunk(home.ChunkName, silent: true);
                     GameObject instance = Instantiate(home.ChunkPrefab, Vector3.zero, Quaternion.identity);
                     instance.name = home.ChunkPrefab.name;
                     chunkMgr.CurrentChunkInstance = instance;
