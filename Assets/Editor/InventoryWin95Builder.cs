@@ -53,7 +53,7 @@ namespace ExiledAlvaston.EditorTools
 
             StyleRoot(root);
             BuildTitleBar(root);
-            StyleLeftStats(leftStats);
+            StyleLeftStats(leftStats, controller);
             StyleCenter(center);
             BindPaperDollContainer(controller, center);
             StyleTooltip(tooltip);
@@ -130,7 +130,7 @@ namespace ExiledAlvaston.EditorTools
 
         // ── Left column ─────────────────────────────────────────────────────────────────
 
-        private static void StyleLeftStats(RectTransform leftStats)
+        private static void StyleLeftStats(RectTransform leftStats, InventoryController controller)
         {
             SetAnchors(leftStats, 0.006f, 0.006f, 0.28f, 0.948f);
             Image panel = leftStats.GetComponent<Image>();
@@ -174,7 +174,7 @@ namespace ExiledAlvaston.EditorTools
             // The mechanism that makes the readout work is InventoryController's runtime lookup by
             // name in Awake, which does not depend on anyone running this tool. Do not drop that in
             // favour of this line.
-            if (controller.LevelText != level)
+            if (controller != null && controller.LevelText != level)
             {
                 Undo.RecordObject(controller, "Assign LevelText");
                 controller.LevelText = level;
