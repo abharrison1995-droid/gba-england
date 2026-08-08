@@ -89,6 +89,17 @@ namespace ExiledAlvaston.UI
             }
 
             BuildSpellsButton();
+
+            // The scene stores LevelText as fileID: 0 and no builder tool assigns it, so without
+            // this fallback the readout the bag already reserves stays dead forever — and it would
+            // look wired, because the field exists. Resolved by the name the rebuild tool creates.
+            if (LevelText == null)
+            {
+                Transform levelXp = FindChildByName(InventoryUIPanel.transform, "LevelXpText");
+                if (levelXp != null)
+                    LevelText = levelXp.GetComponent<TextMeshProUGUI>();
+            }
+
             EnsureInventorySubscription();
         }
 
@@ -99,6 +110,7 @@ namespace ExiledAlvaston.UI
                 PlayerSession.Instance.OnInventoryChanged -= HandleInventoryChanged;
                 PlayerSession.Instance.OnPoundsChanged -= HandlePoundsChanged;
                 PlayerSession.Instance.OnEquipmentChanged -= HandleEquipmentChanged;
+                PlayerSession.Instance.OnXPChanged -= HandleXPChanged;
             }
         }
 
@@ -109,6 +121,7 @@ namespace ExiledAlvaston.UI
             PlayerSession.Instance.OnInventoryChanged += HandleInventoryChanged;
             PlayerSession.Instance.OnPoundsChanged += HandlePoundsChanged;
             PlayerSession.Instance.OnEquipmentChanged += HandleEquipmentChanged;
+            PlayerSession.Instance.OnXPChanged += HandleXPChanged;
             _subscribedToInventory = true;
         }
 
@@ -130,6 +143,30 @@ namespace ExiledAlvaston.UI
         /// after a payout shows the old figure until the next one.
         /// </summary>
         private void HandlePoundsChanged() => RefreshCurrency();
+
+        /// <summary>
+        /// Follows <see cref="HandlePoundsChanged"/>, not the backpack handler: refreshed whether
+        /// or not the bag is open, so opening it after a kill cannot show a stale figure.
+        /// </summary>
+        private void HandleXPChanged() => RefreshLevel();
+
+        /// <summary>
+        /// Writes the three-line shape the rebuild tool authors into LevelXpText. A
+        /// <see cref="PlayerSession.XPForNextLevel"/> of 0 means the level cap, not "nothing
+        /// needed", and prints as MAX.
+        /// </summary>
+        private void RefreshLevel()
+        {
+            if (LevelText == null) return;
+
+            var session = PlayerSession.Instance;
+            int level = session != null ? session.Level : 1;
+            int into = session != null ? session.XPIntoLevel : 0;
+            int next = session != null ? session.XPForNextLevel : 0;
+
+            string toNext = next > 0 ? next.ToString() : "MAX";
+            LevelText.text = $"Player level: {level}\n\nCurrent XP: {into}\n\nXP to next level: {toNext}";
+        }
 
         private void RefreshCurrency()
         {
@@ -392,6 +429,7 @@ namespace ExiledAlvaston.UI
             PopulateBackpack();
             RefreshEquipmentSlots();
             RefreshCurrency();
+            RefreshLevel();
 
             if (_boundCharacter == null) return;
 

@@ -96,9 +96,27 @@ namespace ExiledAlvaston.UI
             if (label != null) Win95Skin.StyleLabel(label);
         }
 
+        /// <summary>
+        /// The level currently painted into the HUD badge; -1 until the first paint.
+        ///
+        /// Polled rather than subscribed, like RefreshSpellSlots below: PlayerSession is a
+        /// DontDestroyOnLoad singleton that need not exist when this Start runs. ⚠ The int compare
+        /// is the point — SetLevel calls level.ToString(), which allocates, and calling it every
+        /// frame would put a per-frame allocation on a mobile hot path.
+        /// </summary>
+        private int _shownLevel = -1;
+
         private void Update()
         {
             RefreshSpellSlots();
+
+            var session = Flow.PlayerSession.Instance;
+            if (session != null && session.Level != _shownLevel)
+            {
+                _shownLevel = session.Level;
+                SetLevel(_shownLevel);
+            }
+
 #if UNITY_STANDALONE || UNITY_EDITOR || UNITY_WEBGL
             if (Input.GetKeyDown(KeyCode.J))
             {
