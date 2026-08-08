@@ -58,10 +58,15 @@ curve maths as a static helper in `EKVibe`.
 shipped one. Add to CLAUDE.md §3 alongside the others when this lands.
 
 **Feed points:**
-- **Kills:** `Health.OnDeath` + `LastAttacker` (already exists on `Health`, and armour handling
-  already proves the player is identified by `GetComponent<CombatController>() != null`) — grant
-  only when the last attacker was the player. That keeps police-kills-civilian and
-  enemy-kills-enemy from paying out.
+- **Kills:** `Health.OnDeath` + `LastAttacker`, granting only when the last attacker was the player
+  (identified by `GetComponent<CombatController>() != null`, as the armour code already does). That
+  keeps police-kills-civilian and enemy-kills-enemy from paying out.
+
+  ⚠️ **`LastAttacker` is never set to the player today.** Both player damage sites —
+  `CombatController` melee and the spell path — call the three-argument `TakeDamage` overload,
+  which forwards `attacker: null`. Only `EnemyAI` passes a GameObject. Attribution therefore grants
+  **nothing, forever, with no log** until those two call sites pass `gameObject`. That fix is a
+  prerequisite commit, not part of the XP work.
 - **Quests:** append `public int XP;` to `QuestReward`; the payout site calls the grant. Safe
   append — `QuestDefinition` ships in every build, but an int adds no dependency graph.
 
