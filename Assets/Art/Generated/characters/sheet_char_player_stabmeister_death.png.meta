@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2a97068cd72af6d49a53b90fb490646b
+guid: 33ada9280446b3349bb04f60ce9d4db6
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_0
+      name: sheet_char_player_stabmeister_death_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 107438f2c16a9bf30800000000000000
-      internalID: 4591883935067358977
+      spriteID: 05c17ce148d78beb0800000000000000
+      internalID: -4703871804382962608
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_1
+      name: sheet_char_player_stabmeister_death_1
       rect:
         serializedVersion: 2
-        x: 65
+        x: 74
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,20 +145,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 44ff82aa7d41d87c0800000000000000
-      internalID: -4067571971940352188
+      spriteID: 3e3e37216e7e2e2a0800000000000000
+      internalID: -6709545519490538525
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_2
+      name: sheet_char_player_stabmeister_death_2
       rect:
         serializedVersion: 2
-        x: 130
+        x: 148
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -166,20 +166,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f02f8980ad1ba8970800000000000000
-      internalID: 8758007975380578831
+      spriteID: 6e371e5bb9713f970800000000000000
+      internalID: 8787393255468790758
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_3
+      name: sheet_char_player_stabmeister_death_3
       rect:
         serializedVersion: 2
-        x: 195
+        x: 222
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -187,8 +187,50 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d8041d9f649127f80800000000000000
-      internalID: -8110392186311196531
+      spriteID: 31ed38f9b226395e0800000000000000
+      internalID: -1904070277948252653
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sheet_char_player_stabmeister_death_4
+      rect:
+        serializedVersion: 2
+        x: 296
+        y: 0
+        width: 74
+        height: 74
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6c0a57d09211cf780800000000000000
+      internalID: -8648018316441050938
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sheet_char_player_stabmeister_death_5
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 0
+        width: 74
+        height: 74
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 89c9e0bcc28861cd0800000000000000
+      internalID: -2587731209911100264
       vertices: []
       indices: 
       edges: []
@@ -204,10 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      sheet_char_player_stabmeister_idle_0: 4591883935067358977
-      sheet_char_player_stabmeister_idle_1: -4067571971940352188
-      sheet_char_player_stabmeister_idle_2: 8758007975380578831
-      sheet_char_player_stabmeister_idle_3: -8110392186311196531
+      sheet_char_player_stabmeister_death_0: -4703871804382962608
+      sheet_char_player_stabmeister_death_1: -6709545519490538525
+      sheet_char_player_stabmeister_death_2: 8787393255468790758
+      sheet_char_player_stabmeister_death_3: -1904070277948252653
+      sheet_char_player_stabmeister_death_4: -8648018316441050938
+      sheet_char_player_stabmeister_death_5: -2587731209911100264
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

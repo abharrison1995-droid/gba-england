@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2a97068cd72af6d49a53b90fb490646b
+guid: 75f5a7290faf847469e9e4388c387449
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_0
+      name: sheet_char_player_stabmeister_walk_0
       rect:
         serializedVersion: 2
         x: 0
@@ -124,14 +124,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 107438f2c16a9bf30800000000000000
-      internalID: 4591883935067358977
+      spriteID: 28773b05bb05feed0800000000000000
+      internalID: -2382596912412657790
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_1
+      name: sheet_char_player_stabmeister_walk_1
       rect:
         serializedVersion: 2
         x: 65
@@ -145,14 +145,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 44ff82aa7d41d87c0800000000000000
-      internalID: -4067571971940352188
+      spriteID: 486c4fe646b63f1a0800000000000000
+      internalID: -6776954935160027516
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_2
+      name: sheet_char_player_stabmeister_walk_2
       rect:
         serializedVersion: 2
         x: 130
@@ -166,14 +166,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f02f8980ad1ba8970800000000000000
-      internalID: 8758007975380578831
+      spriteID: e6af2d9b6a65b5ad0800000000000000
+      internalID: -2712479076478420370
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_3
+      name: sheet_char_player_stabmeister_walk_3
       rect:
         serializedVersion: 2
         x: 195
@@ -187,8 +187,50 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d8041d9f649127f80800000000000000
-      internalID: -8110392186311196531
+      spriteID: 6909124ef502f4cb0800000000000000
+      internalID: -4877644275197570922
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sheet_char_player_stabmeister_walk_4
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 0
+        width: 65
+        height: 65
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: abded9c53ae91fe50800000000000000
+      internalID: 6841423733423205818
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sheet_char_player_stabmeister_walk_5
+      rect:
+        serializedVersion: 2
+        x: 325
+        y: 0
+        width: 65
+        height: 65
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ed19f2f7122e55e80800000000000000
+      internalID: -8190391713807756834
       vertices: []
       indices: 
       edges: []
@@ -204,10 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      sheet_char_player_stabmeister_idle_0: 4591883935067358977
-      sheet_char_player_stabmeister_idle_1: -4067571971940352188
-      sheet_char_player_stabmeister_idle_2: 8758007975380578831
-      sheet_char_player_stabmeister_idle_3: -8110392186311196531
+      sheet_char_player_stabmeister_walk_0: -2382596912412657790
+      sheet_char_player_stabmeister_walk_1: -6776954935160027516
+      sheet_char_player_stabmeister_walk_2: -2712479076478420370
+      sheet_char_player_stabmeister_walk_3: -4877644275197570922
+      sheet_char_player_stabmeister_walk_4: 6841423733423205818
+      sheet_char_player_stabmeister_walk_5: -8190391713807756834
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2a97068cd72af6d49a53b90fb490646b
+guid: 598745833b66ed04f9fa3fb08730c3ca
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_0
+      name: sheet_char_player_dynamo_idle_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 107438f2c16a9bf30800000000000000
-      internalID: 4591883935067358977
+      spriteID: d4dfbe4aa2a939730800000000000000
+      internalID: 4004714001608736077
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_1
+      name: sheet_char_player_dynamo_idle_1
       rect:
         serializedVersion: 2
-        x: 65
+        x: 74
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,20 +145,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 44ff82aa7d41d87c0800000000000000
-      internalID: -4067571971940352188
+      spriteID: ed10ef9bf653d7950800000000000000
+      internalID: 6448368995442491870
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_2
+      name: sheet_char_player_dynamo_idle_2
       rect:
         serializedVersion: 2
-        x: 130
+        x: 148
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -166,20 +166,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f02f8980ad1ba8970800000000000000
-      internalID: 8758007975380578831
+      spriteID: 8f03f4b3624294d40800000000000000
+      internalID: 5569022160842731768
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_idle_3
+      name: sheet_char_player_dynamo_idle_3
       rect:
         serializedVersion: 2
-        x: 195
+        x: 222
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -187,8 +187,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d8041d9f649127f80800000000000000
-      internalID: -8110392186311196531
+      spriteID: 3f79b26934fe4a710800000000000000
+      internalID: 1703749632614176755
       vertices: []
       indices: 
       edges: []
@@ -204,10 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      sheet_char_player_stabmeister_idle_0: 4591883935067358977
-      sheet_char_player_stabmeister_idle_1: -4067571971940352188
-      sheet_char_player_stabmeister_idle_2: 8758007975380578831
-      sheet_char_player_stabmeister_idle_3: -8110392186311196531
+      sheet_char_player_dynamo_idle_0: 4004714001608736077
+      sheet_char_player_dynamo_idle_1: 6448368995442491870
+      sheet_char_player_dynamo_idle_2: 5569022160842731768
+      sheet_char_player_dynamo_idle_3: 1703749632614176755
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
