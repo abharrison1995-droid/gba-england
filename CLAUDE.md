@@ -287,6 +287,26 @@ GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix
 each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
 `sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
 
+**Also outstanding — XP and levels, phases 1–2, none of it exercised.** Merged 2026-08-08,
+code-reviewed against its plan, never compiled:
+
+- **Kill XP depends on a one-line fix landing.** Both player damage sites now pass `gameObject`
+  into `TakeDamage` so `Health.LastAttacker` is set; before, it was always null for player hits.
+  *Kill an enemy and check XP moves off zero.* If it does not, that fix did not take, and nothing
+  will say so.
+- **`EnemyLevel` scales from the prefab's level-1 baseline**, applied inside `Health.Awake` before
+  `CurrentHealth = MaxHealth`. *Add one to an enemy, set Level 5, and check it spawns at full
+  health, not partial.* An enemy without the component is untouched and stays level 1.
+- ⚠️ **Every existing enemy still wears a "3" badge** while actually being level 1 — eleven
+  prefabs store `Level: 3` on disk from when the nameplate's level was cosmetic. Cosmetic only,
+  but it will look wrong until levels are authored.
+- **`SaveData.TotalXP` is appended.** *Load a save made before today and check it arrives at
+  level 1 rather than failing.*
+- **The bag readout binds only after** `Tools → GBH → UI → Rebuild Inventory Panel (Win95)` is
+  run — the scene's `LevelText` is unassigned until then. The HUD badge is already wired.
+
+→ [docs/plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md](docs/plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md) §9.3 for the full routes.
+
 **Also outstanding — the equipment, map and encyclopedia work, none of it exercised.** Committed
 2026-08-08, never in an editor:
 
