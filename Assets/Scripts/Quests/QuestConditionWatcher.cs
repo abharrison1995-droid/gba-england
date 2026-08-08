@@ -625,8 +625,12 @@ namespace ExiledAlvaston.Quests
 
             bool paysItem = reward.Item != null && reward.Quantity > 0;
             bool paysPounds = reward.PoundsAmount > 0;
+            bool paysXP = reward.XP > 0;
 
-            if ((paysItem || paysPounds) && PlayerSession.Instance == null) return false;
+            // XP belongs in this guard for the same reason the other two do: without it an
+            // XP-only reward would return true, the caller would set RewardsClaimed, and the XP
+            // would be lost for good with nothing logged.
+            if ((paysItem || paysPounds || paysXP) && PlayerSession.Instance == null) return false;
             if (reward.ClearsWantedLevel && WantedManager.Instance == null) return false;
 
             if (paysItem)
@@ -634,6 +638,9 @@ namespace ExiledAlvaston.Quests
 
             if (paysPounds)
                 PlayerSession.Instance.AddPounds(reward.PoundsAmount);
+
+            if (paysXP)
+                PlayerSession.Instance.GrantXP(reward.XP, quest.Id);
 
             if (reward.ClearsWantedLevel)
                 WantedManager.Instance.ClearWanted();
