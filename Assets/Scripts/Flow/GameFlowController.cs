@@ -209,6 +209,10 @@ namespace ExiledAlvaston.Flow
             // Any time before the map is opened is fine — it is only read on open.
             PlayerSession.Instance.RestoreVisitedChunks(data.VisitedChunks);
             PlayerSession.Instance.RestoreWikiEntries(data.UnlockedWikiEntries);
+            // Must be after RestoreFromSave above, which calls BeginNewGame and zeroes TotalXP.
+            // No Awake-ordering dependency of the kind RestoreLootedContainers has: XP is read on
+            // demand, not consumed by anything the world builds.
+            PlayerSession.Instance.RestoreTotalXP(data.TotalXP);
             // Backfill for pre-wiki saves: chunks already visited grant their location entries
             // silently, so a veteran save opens a populated encyclopedia without a toast storm.
             foreach (string chunkName in PlayerSession.Instance.VisitedChunks)

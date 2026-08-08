@@ -53,7 +53,7 @@ namespace ExiledAlvaston.EditorTools
 
             StyleRoot(root);
             BuildTitleBar(root);
-            StyleLeftStats(leftStats);
+            StyleLeftStats(leftStats, controller);
             StyleCenter(center);
             BindPaperDollContainer(controller, center);
             StyleTooltip(tooltip);
@@ -130,7 +130,7 @@ namespace ExiledAlvaston.EditorTools
 
         // ── Left column ─────────────────────────────────────────────────────────────────
 
-        private static void StyleLeftStats(RectTransform leftStats)
+        private static void StyleLeftStats(RectTransform leftStats, InventoryController controller)
         {
             SetAnchors(leftStats, 0.006f, 0.006f, 0.28f, 0.948f);
             Image panel = leftStats.GetComponent<Image>();
@@ -161,13 +161,25 @@ namespace ExiledAlvaston.EditorTools
                 }
             }
 
-            // Level / XP readout — static labels for now; no XP system feeds them yet.
+            // Level / XP readout. The labels below are only what shows before the game runs —
+            // InventoryController.RefreshLevel overwrites the whole string with real figures.
             TextMeshProUGUI level = FindOrCreateTmp(leftStats, "LevelXpText");
             level.text = "Player level:\n\nCurrent XP:\n\nXP to next level:";
             Win95Skin.StyleLabel(level);
             level.fontSize = 18;
             level.alignment = TextAlignmentOptions.TopLeft;
             SetAnchors((RectTransform)level.transform, 0.08f, 0.66f, 0.92f, 0.88f);
+
+            // Convenience only: it saves the scene holding a real reference instead of fileID: 0.
+            // The mechanism that makes the readout work is InventoryController's runtime lookup by
+            // name in Awake, which does not depend on anyone running this tool. Do not drop that in
+            // favour of this line.
+            if (controller != null && controller.LevelText != level)
+            {
+                Undo.RecordObject(controller, "Assign LevelText");
+                controller.LevelText = level;
+                EditorUtility.SetDirty(controller);
+            }
 
             RestyleText(leftStats, "Traits", 0.08f, 0.40f, 0.92f, 0.64f);
             RestyleText(leftStats, "Resistances", 0.08f, 0.16f, 0.92f, 0.38f);

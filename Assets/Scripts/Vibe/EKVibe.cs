@@ -105,5 +105,95 @@ namespace ExiledAlvaston.Vibe
 
         public static string FormatPounds(int amount) =>
             PoundSign + amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+
+        // --- Progression ---
+        // Balance numbers, not save data. The player's level is *derived* from TotalXP every time
+        // it is read and is never stored, so any of these may be retuned later without a save
+        // migration — an existing save simply resolves to a different level under the new curve.
+        // Treat them as tunable, not frozen.
+
+        /// <summary>Hard cap on the player's level. The curve stops paying out above this.</summary>
+        public const int MaxPlayerLevel = 25;
+
+        /// <summary>
+        /// Cumulative XP to reach level n is <c>XPCurveFactor * (n-1)^2</c>.
+        /// L2 = 100, L5 = 1,600, L10 = 8,100, L25 = 57,600.
+        /// </summary>
+        public const int XPCurveFactor = 100;
+
+        /// <summary>XP paid for killing a level-1 enemy.</summary>
+        public const int KillXPBase = 25;
+
+        /// <summary>Enemy MaxHealth multiplier per level above 1.</summary>
+        public const float EnemyHealthPerLevel = 0.35f;
+
+        /// <summary>Enemy damage multiplier per level above 1.</summary>
+        public const float EnemyDamagePerLevel = 0.25f;
+
+        /// <summary>Kill-XP multiplier per enemy level above 1.</summary>
+        public const float EnemyXPPerLevel = 0.5f;
+
+        /// <summary>Cumulative XP needed to have reached the given level. Level 1 and below cost 0.</summary>
+        public static int TotalXPForLevel(int level)
+        {
+            if (level <= 1) return 0;
+            int steps = level - 1;
+            return XPCurveFactor * steps * steps;
+        }
+
+        /// <summary>
+        /// The level a cumulative XP total resolves to, clamped to [1, MaxPlayerLevel].
+        ///
+        /// Closed form rather than a loop, because the HUD polls this every frame. The two
+        /// single-step corrections exist because <see cref="Mathf.Sqrt"/> is float: at an exact
+        /// threshold it can land a hair under (sqrt(1) as 0.99999994) and floor to the level below,
+        /// which would silently swallow a level-up at exactly 100 XP. They are ifs, not whiles —
+        /// the error can never exceed one step.
+        /// </summary>
+        public static int LevelForXP(int totalXp)
+        {
+            if (totalXp <= 0) return 1;
+
+            int level = 1 + Mathf.FloorToInt(Mathf.Sqrt((float)totalXp / XPCurveFactor));
+
+            if (level < MaxPlayerLevel && TotalXPForLevel(level + 1) <= totalXp) level++;
+            if (level > 1 && TotalXPForLevel(level) > totalXp) level--;
+
+            return Mathf.Clamp(level, 1, MaxPlayerLevel);
+        }
+
+        /// <summary>How much of the current level's XP band has been earned.</summary>
+        public static int XPIntoLevel(int totalXp)
+        {
+            if (totalXp <= 0) return 0;
+            return totalXp - TotalXPForLevel(LevelForXP(totalXp));
+        }
+
+        /// <summary>
+        /// XP still needed to reach the next level. Returns <c>0</c> at
+        /// <see cref="MaxPlayerLevel"/> — UI must read a 0 here as "MAX", never as "0 XP needed".
+        /// </summary>
+        public static int XPForNextLevel(int totalXp)
+        {
+            int level = LevelForXP(totalXp);
+            if (level >= MaxPlayerLevel) return 0;
+            return TotalXPForLevel(level + 1) - Mathf.Max(0, totalXp);
+        }
+
+        /// <summary>
+        /// The one shared scaling shape: <c>baseValue * (1 + K * (level - 1))</c>. The prefab's
+        /// authored value is always the level-1 baseline.
+        /// </summary>
+        private static int Scaled(int baseValue, int level, float perLevel)
+        {
+            int clamped = Mathf.Max(1, level);
+            return Mathf.RoundToInt(baseValue * (1f + perLevel * (clamped - 1)));
+        }
+
+        public static int ScaledHealth(int baseHealth, int level) => Scaled(baseHealth, level, EnemyHealthPerLevel);
+
+        public static int ScaledDamage(int baseDamage, int level) => Scaled(baseDamage, level, EnemyDamagePerLevel);
+
+        public static int ScaledKillXP(int baseXp, int level) => Scaled(baseXp, level, EnemyXPPerLevel);
     }
 }

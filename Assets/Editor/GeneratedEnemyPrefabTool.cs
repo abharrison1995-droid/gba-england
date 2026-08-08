@@ -311,9 +311,14 @@ public static class GeneratedEnemyPrefabTool
             if (!string.IsNullOrEmpty(spec.QuestKey))
                 root.AddComponent<QuestActor>().Key = spec.QuestKey;
 
-            // EnemyNameplate.Level/HeightOffset: inherited values.
+            // The nameplate's Level is a display fallback only, used when the actor has no
+            // EnemyLevel component — which is every generated enemy, since this tool deliberately
+            // does not decide anyone's level. 1 is the honest badge for an unscaled enemy.
+            //
+            // Only newly created prefabs are affected: the update path below never touches the
+            // nameplate, so the eleven prefabs already storing a 3 keep it until someone edits them.
             var plate = root.AddComponent<EnemyNameplate>();
-            plate.Level = 3;
+            plate.Level = 1;
             plate.HeightOffset = 1.70f;
 
             // Root layer left at 0 — there is no Enemy layer (TagManager.asset has tags: []).

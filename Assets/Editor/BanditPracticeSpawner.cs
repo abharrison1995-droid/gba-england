@@ -71,8 +71,10 @@ public static class BanditPracticeSpawner
         if (banditSprite == null)
             Debug.LogWarning("Missing Assets/Art/Placeholders/spr_bandit.png — run Tools/GBH/Danger Zone/Generate Placeholder Art.");
 
+        // Display fallback only, and this bandit carries no EnemyLevel — so 1 is what it actually
+        // is. See EnemyNameplate.Level.
         var plate = bandit.AddComponent<EnemyNameplate>();
-        plate.Level = 3;
+        plate.Level = 1;
 
         int enemyLayer = LayerMask.NameToLayer("Enemy");
         if (enemyLayer >= 0)

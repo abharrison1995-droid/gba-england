@@ -73,6 +73,11 @@ namespace ExiledAlvaston.Data
         [Tooltip("Wipes the Knives level and restores concealment — the Officer Riggs 'diplomatic " +
                  "immunity' pay-off.")]
         public bool ClearsWantedLevel;
+
+        // Appended after every existing field, so nothing above it shifts and quest assets
+        // authored before XP existed simply read back 0 — no XP, the correct default.
+        [Tooltip("XP granted on completion. Leave at 0 for none.")]
+        public int XP;
     }
 
     /// <summary>

@@ -11,6 +11,8 @@ namespace ExiledAlvaston.World
     [RequireComponent(typeof(Health))]
     public class EnemyNameplate : MonoBehaviour
     {
+        [Tooltip("Display-only fallback, used when the actor has no EnemyLevel component. This is " +
+                 "not a real level and nothing scales off it — see EnemyLevel.")]
         public int Level = 3;
         public float HeightOffset = 1.7f;
 
@@ -69,7 +71,13 @@ namespace ExiledAlvaston.World
             levelGo.transform.localScale = new Vector3(0.28f, 0.28f, 1f);
             SetUnlit(levelGo, EKVibe.LevelBadge);
 
-            CreateTmp("Level", levelGo.transform, Level.ToString(), Vector3.zero, 1.6f, EKVibe.TextDark);
+            // The real level when the actor has one; this component's own field only as a display
+            // fallback. Built once and never refreshed in LateUpdate, which is fine: an enemy's
+            // level does not change at runtime.
+            var enemyLevel = GetComponent<EnemyLevel>();
+            int shownLevel = enemyLevel != null ? Mathf.Max(1, enemyLevel.Level) : Level;
+
+            CreateTmp("Level", levelGo.transform, shownLevel.ToString(), Vector3.zero, 1.6f, EKVibe.TextDark);
 
             GameObject track = GameObject.CreatePrimitive(PrimitiveType.Quad);
             track.name = "HPTrack";

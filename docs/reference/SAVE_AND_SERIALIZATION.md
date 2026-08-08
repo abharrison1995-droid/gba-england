@@ -1,12 +1,14 @@
 # Save format and Unity serialization
 
 ```
-Last verified against: working tree, 2026-08-06
+Last verified against: working tree on branch progression-levelling, 2026-08-08
 Verification scope:    code (read line by line); tracked prefab/asset YAML. The appended
                        BundaBasher=4 class mapping is code-reviewed but not Unity-tested. Quest persistence
                        across an autosave was confirmed in an editor session by reading
                        savegame.json directly. The three quest fixes on main POSTDATE that
-                       session and are UNVERIFIED.
+                       session and are UNVERIFIED. The appended TotalXP field is code-read only —
+                       no compiler and no Unity have seen it, and no save has been round-tripped
+                       with it present.
 ```
 
 **This is the highest-risk area in the repo.** A mistake here corrupts player saves silently —
@@ -17,13 +19,22 @@ nothing throws, nothing logs, the data is just gone.
 `Assets/Scripts/Flow/SaveGameManager.cs`. **One JSON file**, written with `JsonUtility` to
 `persistentDataPath/savegame.json`. Not PlayerPrefs. There is no `EA_` prefix anywhere.
 
-`SaveData` holds: character name, class, `TutorialComplete`, chunk name, position, health, mana,
-stamina, quest list, inventory, pounds, looted containers.
+`SaveData` holds, in declaration order: character name, class, `TutorialComplete`, chunk name,
+position, health, mana, stamina, quest list, inventory, `Equipment`, `Pounds`, `LootedContainers`,
+`VisitedChunks`, `UnlockedWikiEntries`, `TotalXP`.
 
-`Pounds` was **appended** after the rest, so a save written before the wallet existed has no
-`Pounds` key at all and `JsonUtility` reads it back as `0` — the correct opening balance, which is
-why it needs no migration. It is restored by `GameFlowController.ContinueFromSave` through
-`PlayerSession.RestorePounds`, alongside `RestoreInventory`.
+Everything from `Equipment` onwards was **appended**, so a save written before that feature existed
+has no such key at all and `JsonUtility` reads back the type's default — `0` for `Pounds` and
+`TotalXP`, an empty list for the rest. Each of those defaults is the correct starting state, which
+is why none of them needed a migration. All are restored by
+`GameFlowController.ContinueFromSave` through the matching `PlayerSession.RestoreX` method,
+alongside `RestoreInventory`.
+
+⚠️ **`TotalXP` is the player's cumulative XP, and the level is derived from it, never stored.**
+`EKVibe.LevelForXP` resolves the total on every read, so the curve constants in `EKVibe` may be
+retuned freely without touching a save file. The field name **is** the JSON key —
+`JsonUtility` ignores `[FormerlySerializedAs]` — so renaming it would silently revert every
+existing player to level 1.
 
 ## Five call sites write a save
 

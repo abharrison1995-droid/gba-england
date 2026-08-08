@@ -58,10 +58,15 @@ curve maths as a static helper in `EKVibe`.
 shipped one. Add to CLAUDE.md §3 alongside the others when this lands.
 
 **Feed points:**
-- **Kills:** `Health.OnDeath` + `LastAttacker` (already exists on `Health`, and armour handling
-  already proves the player is identified by `GetComponent<CombatController>() != null`) — grant
-  only when the last attacker was the player. That keeps police-kills-civilian and
-  enemy-kills-enemy from paying out.
+- **Kills:** `Health.OnDeath` + `LastAttacker`, granting only when the last attacker was the player
+  (identified by `GetComponent<CombatController>() != null`, as the armour code already does). That
+  keeps police-kills-civilian and enemy-kills-enemy from paying out.
+
+  `LastAttacker` **is** set to the player, as of the "Attribute player hits to the player" commit
+  on `progression-levelling`. Before it, both player damage sites — `CombatController` melee and
+  the spell path — called the three-argument `TakeDamage`, which forwards `attacker: null`, so
+  attribution matched nothing and would have granted no XP at all with no log. Both now pass
+  `gameObject` to the four-argument overload.
 - **Quests:** append `public int XP;` to `QuestReward`; the payout site calls the grant. Safe
   append — `QuestDefinition` ships in every build, but an int adds no dependency graph.
 
@@ -77,14 +82,14 @@ reads it. This is the single biggest silent-failure risk in the plan: **promote 
 real level and every enemy in the game is instantly level 3 and gets scaled up by the formula**,
 with no error and no log.
 
-Two ways, pick deliberately:
+**Decided 2026-08-08: option A.** A new `EnemyLevel` component with authored default `Level = 1`.
+The nameplate reads `EnemyLevel` when present and falls back to its own field for display, so
+existing prefabs stay unscaled until an owner deliberately sets a level and nothing changes behind
+anyone's back. `GeneratedEnemyPrefabTool` stops hardcoding `plate.Level = 3`; the nameplate's own
+field becomes display-only fallback.
 
-- **A (recommended): new `EnemyLevel` component, authored default `Level = 1`.** The nameplate
-  reads `EnemyLevel` when present and falls back to its own field for display. Existing prefabs are
-  unscaled until an owner sets a level, so nothing changes behind anyone's back. Cost: two fields
-  named Level for a while, and `GeneratedEnemyPrefabTool` should stop hardcoding 3.
-- **B: reuse `EnemyNameplate.Level` as the real level.** Fewer components — but requires editing
-  every enemy prefab down to 1 *first*, and an enemy with no nameplate then has no level.
+(Rejected: reusing `EnemyNameplate.Level` as the real level. Fewer components, but it needs every
+enemy prefab edited down to 1 *first*, and an enemy without a nameplate would then have no level.)
 
 Scaling, whichever wins:
 
