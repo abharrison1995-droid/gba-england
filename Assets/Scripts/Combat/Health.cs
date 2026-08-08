@@ -90,6 +90,10 @@ namespace ExiledAlvaston.Combat
 
             OnDeath?.Invoke();
 
+            // After the event so LootOnDeath still opens its menu first, and before the early
+            // return below so an enemy authored not to be destroyed still pays out.
+            KillXP.AwardFor(this);
+
             if (!DestroyOnDeath)
                 return;
 
