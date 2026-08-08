@@ -46,6 +46,7 @@ python Tools/art_status.py
 | [plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md](plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md) | XP, player level and enemy levels. **Landed on `main`**; unseen by a compiler or the editor. Its §9.3 is the owner's check list. |
 | [plans/PROGRESSION_PHASE3_IMPLEMENTATION.md](plans/PROGRESSION_PHASE3_IMPLEMENTATION.md) | Player gains: level growth, proportional armour, perks and the perk window. Written on `progression-perks`; unseen by a compiler or the editor. Its §10.3 is the owner's check list, and §10.3 check 7 is how the first perk asset gets authored. |
 | [plans/PROGRESSION_SYSTEM.md](plans/PROGRESSION_SYSTEM.md) | Parent design for the whole levelling system. Phase 4 (loot tiers) not implemented. |
+| [plans/LEVELS_IN_WORLD_AND_HUD.md](plans/LEVELS_IN_WORLD_AND_HUD.md) | Authorable enemy levels at placement time, combat-gated nameplates, a bigger HUD cluster. Implemented on `levels-in-world-and-hud`; unseen by a compiler or the editor. Its §10.3 is the owner's check list. |
 
 ## Archive — history only
 
