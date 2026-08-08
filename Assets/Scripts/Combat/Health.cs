@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using ExiledAlvaston.UI;
+using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.Combat
 {
@@ -52,13 +53,19 @@ namespace ExiledAlvaston.Combat
             if (IsDead) return;
 
             // Armour only exists on the player (equipment lives on PlayerSession), so the
-            // reduction is gated on this Health belonging to the player — enemies keep
-            // taking raw damage. Floored at 0: a fully plated hit can whiff to nothing.
-            if (GetComponent<CombatController>() != null)
+            // reduction is gated on this Health belonging to the player — enemies keep taking
+            // raw damage.
+            //
+            // Proportional, not a flat subtraction: armour scales the hit down by a curve and
+            // Mathf.Max(1, ...) keeps a hit always landing for something. The damage > 0 gate is
+            // load-bearing — TakeDamage(int) is public, and without it a 0-damage call would be
+            // floored *upward* to 1 and start hurting the player.
+            if (GetComponent<CombatController>() != null && damage > 0)
             {
                 var session = Flow.PlayerSession.Instance;
                 if (session != null)
-                    damage = Mathf.Max(0, damage - session.TotalArmor());
+                    damage = Mathf.Max(1, Mathf.RoundToInt(
+                        damage * (1f - EKVibe.ArmourReduction(session.EffectiveArmour()))));
             }
 
             LastAttacker = attacker;

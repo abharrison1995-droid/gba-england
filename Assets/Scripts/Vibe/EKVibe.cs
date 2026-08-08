@@ -133,6 +133,37 @@ namespace ExiledAlvaston.Vibe
         /// <summary>Kill-XP multiplier per enemy level above 1.</summary>
         public const float EnemyXPPerLevel = 0.5f;
 
+        /// <summary>
+        /// Effective armour equal to this halves incoming damage. A *balance* constant: raising or
+        /// lowering it retunes every piece of gear in the game at once, because every
+        /// <see cref="Data.ItemData.Armor"/> value is an input to the curve rather than a number of
+        /// points removed.
+        ///
+        /// 20 was chosen so the only armour value authored today (TestShield's 4) still reads as a
+        /// meaningful 16.7% reduction and no existing asset needs re-authoring. Authoring guidance
+        /// at this cap: a light piece ~3-5, a heavy piece ~8-12, a full endgame doll around 40-60
+        /// effective, i.e. 67-75%.
+        /// </summary>
+        public const int ArmourSoftCap = 20;
+
+        /// <summary>Ceiling on armour mitigation — never more than three-quarters off a hit.</summary>
+        public const float ArmourMaxReduction = 0.75f;
+
+        /// <summary>
+        /// Fraction of incoming damage armour removes, as <c>armour / (armour + ArmourSoftCap)</c>
+        /// capped at <see cref="ArmourMaxReduction"/>.
+        ///
+        /// Proportional on purpose. Armour used to be subtracted flat and floored at zero, which
+        /// meant a couple of pieces made weak enemies literally unable to connect — and Phase 2's
+        /// per-level damage scaling sharpened that cliff instead of smoothing it. A hit now always
+        /// lands for something.
+        /// </summary>
+        public static float ArmourReduction(int armour)
+        {
+            if (armour <= 0) return 0f;
+            return Mathf.Min(ArmourMaxReduction, (float)armour / (armour + ArmourSoftCap));
+        }
+
         /// <summary>Cumulative XP needed to have reached the given level. Level 1 and below cost 0.</summary>
         public static int TotalXPForLevel(int level)
         {

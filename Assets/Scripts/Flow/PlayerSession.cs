@@ -490,7 +490,7 @@ namespace ExiledAlvaston.Flow
 
         public ItemData EquippedWeapon() => EquippedIn(ItemType.Weapon);
 
-        /// <summary>Sum of Armor across every worn piece — subtracted from incoming player damage.</summary>
+        /// <summary>Sum of Armor across every worn piece.</summary>
         public int TotalArmor()
         {
             int total = 0;
@@ -498,6 +498,19 @@ namespace ExiledAlvaston.Flow
                 if (pair.Value != null) total += pair.Value.Armor;
             return total;
         }
+
+        /// <summary>
+        /// Worn armour plus derived Physical resistance — the single number the mitigation curve
+        /// reads (<see cref="EKVibe.ArmourReduction"/>).
+        ///
+        /// Physical is included deliberately: the character sheet has always printed
+        /// <c>BaseResistances.Physical + TotalArmor()</c> as one "Armor" figure while only
+        /// TotalArmor() actually reduced damage. Feeding Physical into the curve is what makes that
+        /// readout honest, and it is also where perk armour lands, so a perk moves the readout and
+        /// the mitigation together rather than only the readout.
+        /// </summary>
+        public int EffectiveArmour() =>
+            TotalArmor() + (RuntimeStats != null ? RuntimeStats.BaseResistances.Physical : 0);
 
         /// <summary>
         /// Moves one of the item from the bag into its paper-doll slot; the piece already
