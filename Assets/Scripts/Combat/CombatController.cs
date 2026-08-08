@@ -586,19 +586,24 @@ namespace ExiledAlvaston.Combat
         }
 
         /// <summary>Legacy entry point — routes through Health so death/feedback stay unified.</summary>
-        public void TakeDamage(int damage)
+        /// <returns>
+        /// True if the hit landed, passed straight through from Health so this path can answer the
+        /// same question the four-argument one does. The healthless fallback always lands: there is
+        /// no Health to refuse it.
+        /// </returns>
+        public bool TakeDamage(int damage)
         {
             if (_health != null)
             {
-                _health.TakeDamage(damage, "Enemy", "you");
+                bool landed = _health.TakeDamage(damage, "Enemy", "you");
                 CurrentHealth = _health.CurrentHealth;
+                return landed;
             }
-            else
-            {
-                CurrentHealth -= damage;
-                if (UIManager.Instance != null)
-                    UIManager.Instance.LogCombat($"Something hits you, {damage}");
-            }
+
+            CurrentHealth -= damage;
+            if (UIManager.Instance != null)
+                UIManager.Instance.LogCombat($"Something hits you, {damage}");
+            return true;
         }
 
         private void OnHealthDamaged(int damage)
