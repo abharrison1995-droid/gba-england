@@ -19,11 +19,23 @@ namespace ExiledAlvaston.UI
 
         public static void Spawn(Vector3 worldPos, int amount, Color? color = null)
         {
+            Spawn(worldPos, amount.ToString(), color);
+        }
+
+        /// <summary>
+        /// The same popup carrying a word rather than a number — "Dodged!", a miss, a resist.
+        ///
+        /// ⚠ Exists because the int overload renders through ToString: asking it for a non-number
+        /// by passing 0 puts a literal red "0" over the actor, which reads as a bug rather than as
+        /// feedback. Callers wanting anything but a damage figure belong here.
+        /// </summary>
+        public static void Spawn(Vector3 worldPos, string text, Color? color = null)
+        {
             GameObject go = new GameObject("FloatingDamage");
             go.transform.position = worldPos + Vector3.up * 1.6f;
 
             TextMeshPro tmp = go.AddComponent<TextMeshPro>();
-            tmp.text = amount.ToString();
+            tmp.text = text;
             tmp.fontSize = 4f;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = color ?? EKVibe.DamageFloat;
