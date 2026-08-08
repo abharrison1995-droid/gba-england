@@ -104,7 +104,7 @@ PlayerPrefs. Five call sites write it.
 
 - **Renaming a public serialized field drops its value everywhere** unless you add
   `[FormerlySerializedAs]`. Appending a field is safe; inserting is not.
-- **Enums are serialized by integer index. Always append.** Twelve are live.
+- **Enums are serialized by integer index. Always append.** Fifteen are live.
 - **Commit a script's `.meta` with the script.** The GUID inside it is what binds prefabs and the
   scene to the class. This has gone wrong twice, and it fails silently on a fresh clone.
 - ⚠️ **Never rebuild an existing prefab by deleting and re-saving it.** That takes the `.meta` with
