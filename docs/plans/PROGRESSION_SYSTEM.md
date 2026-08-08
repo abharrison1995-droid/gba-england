@@ -124,11 +124,29 @@ read live at the two use sites (`CombatController` for weapon damage, `Health` f
 duplicating it into derived stats would double-count. **Order of operations to fix once and
 document:** base traits → level growth → perk flat adds → perk percent multipliers → equipment.
 
+**Perk cadence — decided 2026-08-08: a point every 2 levels**, at 2, 4, 6 … 24. Twelve picks
+across the cap of 25. One constant, derived from level, never stored.
+
+⚠️ **Armour becomes proportional — decided 2026-08-08.** `Health.TakeDamage` currently subtracts
+`TotalArmor()` flat and floors at zero, so a filled paper doll makes weak enemies do literally
+nothing, and Phase 2's damage scaling sharpens that cliff rather than smoothing it. Armour becomes
+a percentage reduction so a hit always lands for something and armour perks scale sanely. This
+**changes the balance of gear already authored** — `ItemData.Armor` values were written against
+subtraction and will read differently. Mapping the old numbers onto the new curve is part of the
+work, not an afterthought.
+
 **Perks:**
 - `PerkData : ScriptableObject` in `Resources/Perks/`, modelled on `WikiEntryData`:
   `PerkId` (⚠️ save key), name, description, class restriction, min level, prereq perk, and a list
-  of passive effects. Effects as an **append-only enum** + magnitude — v1 set: MaxHealth,
-  MaxResource, melee/ranged/spell damage, move speed, concealment, pickpocket odds.
+  of passive effects. Effects as an **append-only enum** + magnitude.
+- **v1 effect set — decided 2026-08-08**, three families:
+  - *Combat:* melee, ranged and spell damage, read at hit time so they compose with `weapon.Damage`.
+  - *Survivability:* max health, armour, and the `Resistances` block that already exists on
+    `CharacterData` and is barely used.
+  - *Utility:* move speed, max mana/stamina and its regen, loot rolls.
+- ⚠️ **The crime layer is deliberately excluded from v1** — no concealment, pickpocket-odds or
+  wanted-decay perks. Owner's call; they can append later, and the effect enum is append-only
+  precisely so they can.
 - `PerkDatabase` mirroring `ItemDatabase`/`WikiDatabase` (Resources lookup by id).
 - Combat-facing effects are read at hit time via query helpers
   (`float DamageMultiplier(DamageKind)`), applied in `CombatController` after `weapon.Damage`.
@@ -180,8 +198,9 @@ Phases 1–2 alone give the whole visible loop.
 
 ## Open items (owner)
 
-- Perk list and flavour per class — owner-editable copy, like the taglines.
-- Perk cadence: every 2 or every 3 levels (one constant).
-- Enemy `Level` field: option A or B above.
-- Flat vs proportional armour, given enemy damage scaling.
-- Whether police/civilian kills grant XP (proposed: no).
+- Perk list and flavour per class — owner-editable copy, like the taglines. **This is the only
+  thing still blocking Phase 3 content**; the machinery does not need it.
+
+Settled: enemy `Level` field (option A), perk cadence (every 2 levels), the v1 effect set
+(combat, survivability, utility — no crime layer), armour model (proportional). Police and
+civilian kills grant no XP, as implemented.
