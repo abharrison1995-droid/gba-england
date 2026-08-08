@@ -71,6 +71,15 @@ namespace ExiledAlvaston.Flow
         /// <summary>Fires once per level crossed, with the level just reached.</summary>
         public event Action<int> OnLevelUp;
 
+        /// <summary>
+        /// Fires at the end of every <see cref="RecalculateDerivedStats"/>, i.e. whenever the
+        /// derived figures in <see cref="RuntimeStats"/> or the cached multipliers below may have
+        /// moved. <see cref="Combat.CombatController"/> listens so a mid-run level-up reaches the
+        /// running player — <c>GameFlowController.BindPlayerToSession</c> only runs on new-game and
+        /// load, so without this the health bar would keep the old maximum until the next reload.
+        /// </summary>
+        public event Action OnStatsChanged;
+
         /// <summary>The player's level, derived from <see cref="TotalXP"/>. Never stored.</summary>
         public int Level => EKVibe.LevelForXP(TotalXP);
 
@@ -160,15 +169,112 @@ namespace ExiledAlvaston.Flow
             if (RuntimeStats == null)
                 RuntimeStats = ScriptableObject.CreateInstance<CharacterData>();
 
-            if (template != null)
+            // ⚠ template may BE RuntimeStats. Both callers pass the scene player's
+            // CombatController.PlayerData, and BindPlayerToSession assigns RuntimeStats to that
+            // field — so from the second new-game or load in an app session onwards, the "template"
+            // is this session's own derived stats. Re-capturing the baseline from it would bake
+            // every level's growth and every perk into the baseline, and the next recompute would
+            // add them again. When that happens the baseline we already hold is the right one.
+            if (template != null && template != RuntimeStats)
             {
                 RuntimeStats.Portrait = template.Portrait;
-                RuntimeStats.BaseResistances = template.BaseResistances;
+                _baselineResistances = CopyOf(template.BaseResistances);
             }
 
             RuntimeStats.CharacterName = CharacterName;
-            RuntimeStats.ApplyClassDefaults(Class);
+            RecalculateDerivedStats();
         }
+
+        // ── Derived stats ───────────────────────────────────────────────────────────────
+        // One deterministic recompute, and the only place derived figures are written. Every step
+        // OVERWRITES; nothing accumulates. Running it twice in a row must produce identical
+        // results — that property is what makes it safe to call from every place below.
+
+        /// <summary>
+        /// The class template's resistances, held apart from <see cref="RuntimeStats"/> so the
+        /// recompute has something to reset to.
+        ///
+        /// ⚠ <c>CharacterData.ApplyClassDefaults</c> does NOT reset <c>BaseResistances</c>. Without
+        /// this snapshot, anything that ADDS to a resistance would add again on every recompute:
+        /// five level-ups later the player quietly has five times the armour they earned, and
+        /// nothing logs it.
+        /// </summary>
+        private Resistances _baselineResistances = new Resistances();
+
+        /// <summary>Value copy — assigning the reference would let the derivation write back into the template asset.</summary>
+        private static Resistances CopyOf(Resistances source)
+        {
+            if (source == null) return new Resistances();
+            return new Resistances
+            {
+                Physical = source.Physical,
+                Magic = source.Magic,
+                Fire = source.Fire,
+                Cold = source.Cold,
+                Poison = source.Poison,
+            };
+        }
+
+        /// <summary>
+        /// Recomputes everything derived from level and perks: <see cref="RuntimeStats"/>'s maxima
+        /// and resistances, plus the cached query multipliers read at hit time.
+        ///
+        /// Order is fixed: class defaults, baseline resistances, level growth, perk flat adds, perk
+        /// percentages, cached query values, event. Equipment is deliberately NOT folded in — it is
+        /// read live at its two use sites (<c>CombatController</c> for weapon damage,
+        /// <c>Health</c> for armour), and duplicating it here would double-count every weapon and
+        /// every shield with nothing to show for it but wrong numbers.
+        /// </summary>
+        public void RecalculateDerivedStats()
+        {
+            if (RuntimeStats == null) return;
+
+            // 1. Class baseline: resets BaseTraits, MaxHealth, MaxManaStamina.
+            RuntimeStats.ApplyClassDefaults(Class);
+
+            // 2. ApplyClassDefaults leaves BaseResistances alone, so reset it here or every
+            //    later addition compounds. See _baselineResistances.
+            RuntimeStats.BaseResistances = CopyOf(_baselineResistances);
+
+            // 3. Automatic per-class growth. Traits deliberately do not grow — see GrowthPerLevel.
+            var growth = PlayerClassInfo.GrowthPerLevel(Class);
+            int levelsGained = Mathf.Max(0, Level - 1);
+            RuntimeStats.MaxHealth += growth.MaxHealth * levelsGained;
+            RuntimeStats.MaxManaStamina += growth.MaxManaStamina * levelsGained;
+
+            // 4/5. Perk flat adds then perk percentages — nothing spends perks yet.
+
+            // 6. Cached query values, reset every run so they never accumulate either.
+            MeleeDamageMultiplier = 1f;
+            SpellDamageMultiplier = 1f;
+            MoveSpeedMultiplier = 1f;
+            ResourceRegenMultiplier = 1f;
+            ExtraLootRolls = 0;
+
+            RuntimeStats.MaxHealth = Mathf.Max(1, RuntimeStats.MaxHealth);
+            RuntimeStats.MaxManaStamina = Mathf.Max(0, RuntimeStats.MaxManaStamina);
+
+            OnStatsChanged?.Invoke();
+        }
+
+        // Cached query values, recomputed only in RecalculateDerivedStats and read raw at hit time.
+        // Plain fields on purpose: this project keeps hot paths allocation-free (CLAUDE.md §2), and
+        // walking a perk list on every swing would allocate an enumerator per hit.
+
+        /// <summary>Multiplies the whole melee swing, weapon included. 1 = unmodified.</summary>
+        public float MeleeDamageMultiplier { get; private set; } = 1f;
+
+        /// <summary>Multiplies a cast ability's BaseDamage. 1 = unmodified.</summary>
+        public float SpellDamageMultiplier { get; private set; } = 1f;
+
+        /// <summary>Registered with CombatController.SetSpeedMultiplier, never written to MovementSpeed.</summary>
+        public float MoveSpeedMultiplier { get; private set; } = 1f;
+
+        /// <summary>Scales the authored mana/stamina regen rates. 1 = unmodified.</summary>
+        public float ResourceRegenMultiplier { get; private set; } = 1f;
+
+        /// <summary>Extra rolls a loot container makes on top of its band's own count.</summary>
+        public int ExtraLootRolls { get; private set; }
 
         /// <summary>Rebuild the session from a save file (same stat derivation as a new game).</summary>
         public void RestoreFromSave(string characterName, PlayerClass playerClass, bool tutorialComplete, CharacterData template)
@@ -337,15 +443,28 @@ namespace ExiledAlvaston.Flow
             OnXPChanged?.Invoke();
 
             int after = Level;
+
+            // Once, after the loop rather than per level crossed: the derivation reads Level, not
+            // a delta, so recomputing inside the loop would do identical work several times.
+            if (after != before) RecalculateDerivedStats();
+
             for (int level = before + 1; level <= after; level++)
                 OnLevelUp?.Invoke(level);
         }
 
-        /// <summary>Replace the XP total with a saved snapshot (load game).</summary>
+        /// <summary>
+        /// Replace the XP total with a saved snapshot (load game).
+        ///
+        /// The recompute is not optional: loading calls RestoreFromSave -> BeginNewGame ->
+        /// ApplyClassDefaults, which rebuilds RuntimeStats from the level-1 class baseline. Without
+        /// this the level is restored but every level's growth is silently stripped, and the player
+        /// looks fine — just weaker than when they saved.
+        /// </summary>
         public void RestoreTotalXP(int saved)
         {
             TotalXP = Mathf.Max(0, saved);
             OnXPChanged?.Invoke();
+            RecalculateDerivedStats();
         }
 
         /// <summary>Records that a Fixed container has been emptied. Ids are compared verbatim.</summary>

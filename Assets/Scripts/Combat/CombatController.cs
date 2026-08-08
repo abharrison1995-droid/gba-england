@@ -61,6 +61,10 @@ namespace ExiledAlvaston.Combat
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
         private float _manaRegenCarry;
         private float _staminaRegenCarry;
+        // Authored regen rates, remembered at Awake. The perk multiplier is applied to THESE, never
+        // to the current values — multiplying the live field would compound on every recompute.
+        private float _baseManaRegen;
+        private float _baseStaminaRegen;
         /// <summary>Last non-zero move direction — melee aims this way while idle.</summary>
         private Vector3 _facingDir = Vector3.forward;
 
@@ -74,6 +78,9 @@ namespace ExiledAlvaston.Combat
             _health = GetComponent<Health>();
             _actorVisual = GetComponent<WorldActorVisual>();
             _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+            _baseManaRegen = ManaRegenPerSecond;
+            _baseStaminaRegen = StaminaRegenPerSecond;
 
             if (PlayerData != null)
             {
@@ -100,10 +107,21 @@ namespace ExiledAlvaston.Combat
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+
+            var session = Flow.PlayerSession.Instance;
+            if (session != null) session.OnStatsChanged -= OnSessionStatsChanged;
         }
 
         private void Start()
         {
+            // Start, not Awake: PlayerSession is created by GameFlowController.EnsureSession and
+            // may not exist yet when this Awake runs. Paired with the unsubscribe in OnDestroy, so
+            // a reloaded player does not leave a dead listener on a session that outlives it.
+            var session = Flow.PlayerSession.Instance;
+            // No eager push here: BindPlayerToSession already does the new-game and load pushes,
+            // and at Start the session may exist with no character created yet.
+            if (session != null) session.OnStatsChanged += OnSessionStatsChanged;
+
             if (Joystick == null && UIManager.Instance != null)
                 Joystick = UIManager.Instance.Joystick;
 
@@ -170,6 +188,52 @@ namespace ExiledAlvaston.Combat
                 _staminaRegenCarry -= whole;
                 CurrentStamina = Mathf.Min(max, CurrentStamina + whole);
             }
+        }
+
+        /// <summary>
+        /// Pushes the session's freshly derived stats onto the running player. Fires on every
+        /// <see cref="Flow.PlayerSession.OnStatsChanged"/> — new game, load, level-up, perk spend.
+        /// </summary>
+        private void OnSessionStatsChanged()
+        {
+            var session = Flow.PlayerSession.Instance;
+            if (session == null) return;
+
+            var stats = session.RuntimeStats;
+            if (stats != null)
+            {
+                if (_health != null)
+                {
+                    int newMax = stats.MaxHealth;
+                    int delta = newMax - _health.MaxHealth;
+                    _health.MaxHealth = newMax;
+
+                    // Levelling GRANTS the new hit points rather than being a free full heal. That
+                    // is a design choice, not an oversight — do not "fix" it into a full heal.
+                    // Skipped while dead so a kill landing on the same frame as death cannot put a
+                    // corpse back above zero behind the death screen's back.
+                    if (delta > 0 && _health.CurrentHealth > 0)
+                        _health.CurrentHealth = Mathf.Min(newMax, _health.CurrentHealth + delta);
+                    else if (_health.CurrentHealth > newMax)
+                        _health.CurrentHealth = newMax;
+
+                    CurrentHealth = _health.CurrentHealth;
+                }
+
+                // Both are clamped against MaxManaStamina wherever they are spent or regenerated,
+                // so a lowered maximum must not leave them reading over it.
+                CurrentMana = Mathf.Min(CurrentMana, stats.MaxManaStamina);
+                CurrentStamina = Mathf.Min(CurrentStamina, stats.MaxManaStamina);
+            }
+
+            ManaRegenPerSecond = _baseManaRegen * session.ResourceRegenMultiplier;
+            StaminaRegenPerSecond = _baseStaminaRegen * session.ResourceRegenMultiplier;
+
+            // ⚠ Through the modifier system, never by writing MovementSpeed — that field is the
+            // authored baseline crouching and vehicles compose against, and overwriting it is
+            // exactly the bug _speedModifiers exists to prevent. Keyed by the session, so this
+            // replaces its own previous entry instead of stacking a new one each level.
+            SetSpeedMultiplier(session, session.MoveSpeedMultiplier);
         }
 
         private void PushHud()
