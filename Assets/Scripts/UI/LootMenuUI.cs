@@ -3,23 +3,25 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using System.Collections.Generic;
-using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.UI
 {
-    /// <summary>One row in the loot menu.</summary>
+    /// <summary>One slot in the loot window.</summary>
     public class LootEntry
     {
         public string Name;
         public string Description;
-        /// <summary>Runs once when the player presses TAKE on this entry.</summary>
+        /// <summary>Optional item icon shown in the slot; slots without one show the name.</summary>
+        public Sprite Icon;
+        /// <summary>Runs once when the player takes this entry.</summary>
         public Action OnTaken;
         public bool Taken;
     }
 
     /// <summary>
-    /// Parchment-style loot window for chests/corpses. Entirely code-built at runtime on
-    /// its own overlay canvas (no scene wiring needed). Pauses the game while open.
+    /// Win95 loot window for chests/corpses: navy title bar, sunken item slots in a small
+    /// grid (same look as the bag, fewer slots). Entirely code-built at runtime on its own
+    /// overlay canvas (no scene wiring needed). Pauses the game while open.
     /// Usage: LootMenuUI.Show("Supply Chest", entries, onClosed).
     /// </summary>
     public class LootMenuUI : MonoBehaviour
@@ -31,6 +33,9 @@ namespace ExiledAlvaston.UI
         private Transform _rowContainer;
         private Action _onClosed;
         private List<LootEntry> _entries;
+
+        /// <summary>4 columns × 3 rows — the inventory look, smaller.</summary>
+        private const int MaxSlots = 12;
 
         public static bool IsOpen => _instance != null && _instance._panelRoot != null
                                      && _instance._panelRoot.activeSelf;
@@ -55,10 +60,14 @@ namespace ExiledAlvaston.UI
             _onClosed = onClosed;
             _titleText.text = title;
 
+            if (_entries.Count > MaxSlots)
+                Debug.LogWarning($"LootMenuUI: {_entries.Count} entries but only {MaxSlots} " +
+                    "slots; the grid will overflow its window.", this);
+
             foreach (Transform child in _rowContainer)
                 Destroy(child.gameObject);
             foreach (LootEntry entry in _entries)
-                BuildRow(entry);
+                BuildSlot(entry);
 
             _panelRoot.SetActive(true);
             Systems.PauseManager.Push();
@@ -104,10 +113,8 @@ namespace ExiledAlvaston.UI
             if (btn != null && btn.interactable)
             {
                 btn.interactable = false;
-                var label = btn.GetComponentInChildren<TextMeshProUGUI>();
-                if (label != null) label.text = "TAKEN";
-                var img = btn.GetComponent<Image>();
-                if (img != null) img.color = EKVibe.SlotEmpty;
+                var img = row.GetComponent<Image>();
+                if (img != null) img.color = Win95Skin.Shadow;
             }
         }
 
@@ -133,37 +140,44 @@ namespace ExiledAlvaston.UI
 
             _panelRoot = dim;
 
-            GameObject panel = CreateImage("LootPanel", dim.transform, EKVibe.ParchmentPanel);
+            GameObject panel = CreateImage("LootPanel", dim.transform, Win95Skin.Face);
+            Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
             prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
             prt.sizeDelta = new Vector2(640, 480);
             // Swallow clicks so tapping the panel itself doesn't hit the dimmer's close button.
             panel.GetComponent<Image>().raycastTarget = true;
 
-            GameObject header = CreateImage("Header", panel.transform, EKVibe.ParchmentDark);
+            GameObject header = CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             Stretch(header, new Vector2(0, 1), Vector2.one);
             var hrt = header.GetComponent<RectTransform>();
             hrt.pivot = new Vector2(0.5f, 1f);
             hrt.anchoredPosition = Vector2.zero;
-            hrt.sizeDelta = new Vector2(0, 64);
+            hrt.sizeDelta = new Vector2(0, 52);
 
-            _titleText = CreateTMP("Title", header.transform, "Loot", EKVibe.TextLight, 30,
-                TextAlignmentOptions.Center);
+            _titleText = CreateTMP("Title", header.transform, "Loot", Win95Skin.TitleText, 24,
+                TextAlignmentOptions.Left);
             Stretch(_titleText.gameObject, Vector2.zero, Vector2.one);
+            _titleText.GetComponent<RectTransform>().offsetMin = new Vector2(16, 0);
+            _titleText.fontStyle = FontStyles.Bold;
 
-            var containerGO = new GameObject("Rows", typeof(RectTransform));
+            QuestUIBuilder.CreateCloseX(header.transform, Close);
+
+            // Sunken slot grid, 4 columns — the bag's look at chest size.
+            var containerGO = new GameObject("Slots", typeof(RectTransform));
             containerGO.transform.SetParent(panel.transform, false);
             var crt = containerGO.GetComponent<RectTransform>();
             crt.anchorMin = new Vector2(0, 0);
             crt.anchorMax = new Vector2(1, 1);
             crt.offsetMin = new Vector2(20, 90);
-            crt.offsetMax = new Vector2(-20, -74);
-            var layout = containerGO.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 10;
-            layout.childControlHeight = false;
-            layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
-            layout.childAlignment = TextAnchor.UpperCenter;
+            crt.offsetMax = new Vector2(-20, -64);
+            var grid = containerGO.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(140, 96);
+            grid.spacing = new Vector2(10, 10);
+            grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 4;
+            grid.childAlignment = TextAnchor.UpperCenter;
             _rowContainer = containerGO.transform;
 
             GameObject takeAllBtn = CreateButton("TakeAllButton", panel.transform, "TAKE ALL", TakeAll);
@@ -183,38 +197,44 @@ namespace ExiledAlvaston.UI
             _panelRoot.SetActive(false);
         }
 
-        private void BuildRow(LootEntry entry)
+        /// <summary>
+        /// One lootable entry as a sunken slot: item icon when the entry carries one, the
+        /// item name otherwise. Clicking the slot takes it — same Take()/OnTaken contract
+        /// the row layout had, so chest/quest wiring is unchanged.
+        /// </summary>
+        private void BuildSlot(LootEntry entry)
         {
-            GameObject row = CreateImage("LootRow", _rowContainer, EKVibe.SlotFrame);
-            var rrt = row.GetComponent<RectTransform>();
-            rrt.sizeDelta = new Vector2(0, 84);
+            GameObject slot = CreateImage("LootSlot", _rowContainer, Win95Skin.SlotFill);
+            Win95Skin.AddBevel((RectTransform)slot.transform, sunken: true);
 
-            var name = CreateTMP("Name", row.transform, entry.Name, EKVibe.TextLight, 24,
-                TextAlignmentOptions.TopLeft);
-            Stretch(name.gameObject, Vector2.zero, Vector2.one);
-            var nrt = name.GetComponent<RectTransform>();
-            nrt.offsetMin = new Vector2(16, 8);
-            nrt.offsetMax = new Vector2(-160, -10);
+            var btn = slot.AddComponent<Button>();
+            btn.onClick.AddListener(() => Take(entry, slot));
 
-            var desc = CreateTMP("Desc", row.transform, entry.Description,
-                new Color(EKVibe.TextLight.r, EKVibe.TextLight.g, EKVibe.TextLight.b, 0.75f), 17,
-                TextAlignmentOptions.BottomLeft);
-            Stretch(desc.gameObject, Vector2.zero, Vector2.one);
-            var drt = desc.GetComponent<RectTransform>();
-            drt.offsetMin = new Vector2(16, 8);
-            drt.offsetMax = new Vector2(-160, -38);
+            if (entry.Icon != null)
+            {
+                GameObject icon = CreateImage("Icon", slot.transform, Color.clear);
+                Stretch(icon, new Vector2(0.08f, 0.30f), new Vector2(0.92f, 0.94f));
+                var iconImg = icon.GetComponent<Image>();
+                iconImg.sprite = entry.Icon;
+                iconImg.preserveAspect = true;
+                iconImg.raycastTarget = false;
 
-            GameObject take = CreateButton("TakeButton", row.transform, "TAKE",
-                () => Take(entry, row));
-            var trt = take.GetComponent<RectTransform>();
-            trt.anchorMin = new Vector2(1, 0.5f);
-            trt.anchorMax = new Vector2(1, 0.5f);
-            trt.pivot = new Vector2(1, 0.5f);
-            trt.anchoredPosition = new Vector2(-12, 0);
-            trt.sizeDelta = new Vector2(130, 56);
+                var name = CreateTMP("Name", slot.transform, entry.Name, Win95Skin.FieldText, 14,
+                    TextAlignmentOptions.Center);
+                Stretch(name.gameObject, Vector2.zero, new Vector2(1, 0.28f));
+            }
+            else
+            {
+                var name = CreateTMP("Name", slot.transform, entry.Name, Win95Skin.FieldText, 16,
+                    TextAlignmentOptions.Center);
+                Stretch(name.gameObject, Vector2.zero, Vector2.one);
+                var nrt = name.GetComponent<RectTransform>();
+                nrt.offsetMin = new Vector2(6, 4);
+                nrt.offsetMax = new Vector2(-6, -4);
+            }
 
             if (entry.Taken)
-                MarkRowTaken(row);
+                MarkRowTaken(slot);
         }
 
         // ---------- tiny builders ----------
@@ -230,10 +250,11 @@ namespace ExiledAlvaston.UI
 
         private static GameObject CreateButton(string name, Transform parent, string label, UnityEngine.Events.UnityAction onClick)
         {
-            GameObject go = CreateImage(name, parent, EKVibe.ButtonBrown);
+            GameObject go = CreateImage(name, parent, Win95Skin.Face);
             var btn = go.AddComponent<Button>();
+            Win95Skin.StyleButton(btn);
             btn.onClick.AddListener(onClick);
-            var tmp = CreateTMP("Label", go.transform, label, EKVibe.TextLight, 22,
+            var tmp = CreateTMP("Label", go.transform, label, Win95Skin.FieldText, 22,
                 TextAlignmentOptions.Center);
             Stretch(tmp.gameObject, Vector2.zero, Vector2.one);
             return go;

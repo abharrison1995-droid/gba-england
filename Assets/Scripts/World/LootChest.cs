@@ -79,6 +79,7 @@ namespace ExiledAlvaston.World
                 {
                     Name = label,
                     Description = item.Description,
+                    Icon = item.Icon,
                     OnTaken = () =>
                     {
                         if (PlayerSession.Instance != null)

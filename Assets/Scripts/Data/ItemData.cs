@@ -62,6 +62,9 @@ namespace ExiledAlvaston.Data
                  "about, the way locomotion parameters are.")]
         public string UseAnimationTrigger = "";
 
+        /// <summary>Can go in a paper-doll slot. Consumables are used, quests are carried.</summary>
+        public bool IsEquippable => Type != ItemType.Consumable && Type != ItemType.Quest;
+
         public bool CanBeUsedBy(PlayerClass playerClass)
         {
             if (AllowedClasses == null || AllowedClasses.Length == 0) return true;

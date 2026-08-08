@@ -51,6 +51,43 @@ namespace ExiledAlvaston.UI
                     btn.onClick.AddListener(ToggleInventory);
             }
 
+            // Win95 title bar close (X) — same as Back. Created by the editor rebuild tool.
+            Transform close = InventoryUIPanel.transform.Find("TitleBar/CloseButton");
+            if (close != null)
+            {
+                Button closeBtn = close.GetComponent<Button>();
+                if (closeBtn != null)
+                    closeBtn.onClick.AddListener(ToggleInventory);
+            }
+
+            // MAP OF BRITAIN (left stats, built by the rebuild tool) — a placeholder in the
+            // scene, so nothing persistent to preserve: just add the runtime call.
+            Transform mapBtn = FindChildByName(InventoryUIPanel.transform, "MapOfBritainButton");
+            if (mapBtn != null)
+            {
+                Button map = mapBtn.GetComponent<Button>();
+                if (map != null)
+                    map.onClick.AddListener(OnMapOfBritainPressed);
+            }
+
+            // WIKIBRITAIN (right rail) — same placeholder-to-runtime wiring as the map button.
+            Transform wikiBtn = FindChildByName(InventoryUIPanel.transform, "WikiBritainButton");
+            if (wikiBtn != null)
+            {
+                Button wiki = wikiBtn.GetComponent<Button>();
+                if (wiki != null)
+                    wiki.onClick.AddListener(OnWikiBritainPressed);
+            }
+
+            CachePlaceholderButtons();
+            BuildEquipmentSlots();
+
+            if (UnequipButton != null)
+            {
+                UnequipButton.onClick.AddListener(UnequipTooltipItem);
+                UnequipButton.gameObject.SetActive(false); // shown only for paper-doll tooltips
+            }
+
             BuildSpellsButton();
             EnsureInventorySubscription();
         }
@@ -61,6 +98,7 @@ namespace ExiledAlvaston.UI
             {
                 PlayerSession.Instance.OnInventoryChanged -= HandleInventoryChanged;
                 PlayerSession.Instance.OnPoundsChanged -= HandlePoundsChanged;
+                PlayerSession.Instance.OnEquipmentChanged -= HandleEquipmentChanged;
             }
         }
 
@@ -70,12 +108,20 @@ namespace ExiledAlvaston.UI
             if (_subscribedToInventory || PlayerSession.Instance == null) return;
             PlayerSession.Instance.OnInventoryChanged += HandleInventoryChanged;
             PlayerSession.Instance.OnPoundsChanged += HandlePoundsChanged;
+            PlayerSession.Instance.OnEquipmentChanged += HandleEquipmentChanged;
             _subscribedToInventory = true;
         }
 
         private void HandleInventoryChanged()
         {
             if (IsOpen) PopulateBackpack();
+        }
+
+        private void HandleEquipmentChanged()
+        {
+            if (!IsOpen) return;
+            RefreshEquipmentSlots();
+            RefreshUI(); // the Armour line reflects the new total
         }
 
         /// <summary>
@@ -100,12 +146,15 @@ namespace ExiledAlvaston.UI
             var go = new GameObject("SpellsButton", typeof(RectTransform));
             go.transform.SetParent(InventoryUIPanel.transform, false);
             var rt = (RectTransform)go.transform;
-            rt.anchorMin = new Vector2(0.56f, 0.02f);
-            rt.anchorMax = new Vector2(0.75f, 0.08f);
+            // Right rail, between QUEST JOURNAL (above) and WIKIBRITAIN (below).
+            rt.anchorMin = new Vector2(0.70f, 0.175f);
+            rt.anchorMax = new Vector2(0.97f, 0.235f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
-            go.AddComponent<Image>().color = EKVibe.ButtonBrown;
-            go.AddComponent<Button>().onClick.AddListener(SpellbookUI.Open);
+            go.AddComponent<Image>();
+            var spellsButton = go.AddComponent<Button>();
+            Win95Skin.StyleButton(spellsButton);
+            spellsButton.onClick.AddListener(SpellbookUI.Open);
 
             var labelGo = new GameObject("Label", typeof(RectTransform));
             labelGo.transform.SetParent(go.transform, false);
@@ -116,11 +165,10 @@ namespace ExiledAlvaston.UI
             lrt.offsetMax = Vector2.zero;
             var tmp = labelGo.AddComponent<TextMeshProUGUI>();
             tmp.text = "SPELLS";
-            tmp.color = EKVibe.TextLight;
-            tmp.fontSize = 22;
+            tmp.fontSize = 18;
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.raycastTarget = false;
+            Win95Skin.StyleLabel(tmp);
         }
 
         private void Update()
@@ -132,6 +180,23 @@ namespace ExiledAlvaston.UI
                 if (flow == null || flow.State == ExiledAlvaston.Flow.GameFlowState.Playing)
                     ToggleInventory();
             }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (Input.GetKeyDown(KeyCode.F8))
+                GrantTestGear();
+#endif
+        }
+
+        /// <summary>Debug: drops the two equipment test items into the bag. Editor/dev builds only.</summary>
+        private static void GrantTestGear()
+        {
+            var session = PlayerSession.Instance;
+            if (session == null) return;
+
+            ItemData sword = ItemDatabase.Find("test_sword");
+            ItemData shield = ItemDatabase.Find("test_shield");
+            if (sword != null) session.AddItem(sword, 1);
+            if (shield != null) session.AddItem(shield, 1);
         }
 
         public bool IsOpen => InventoryUIPanel != null && InventoryUIPanel.activeSelf;
@@ -140,6 +205,165 @@ namespace ExiledAlvaston.UI
         public void CloseIfOpen()
         {
             if (IsOpen) ToggleInventory();
+        }
+
+        /// <summary>
+        /// QUEST JOURNAL rail button: close the bag first so the journal's pause push doesn't
+        /// stack on top of the bag's own. Wired as a persistent call by the rebuild tool.
+        /// </summary>
+        public void OnQuestJournalPressed()
+        {
+            if (IsOpen) ToggleInventory();
+            QuestJournalUI.Open();
+        }
+
+        /// <summary>MAP OF BRITAIN button: same pause-balance contract as the journal button.</summary>
+        public void OnMapOfBritainPressed()
+        {
+            if (IsOpen) ToggleInventory();
+            MapOfBritainUI.Open();
+        }
+
+        /// <summary>WIKIBRITAIN button: same pause-balance contract as the map button.</summary>
+        public void OnWikiBritainPressed()
+        {
+            if (IsOpen) ToggleInventory();
+            WikiBritainUI.Open();
+        }
+
+        /// <summary>Depth-first name search — the rebuild tool nests its buttons under LeftStats.</summary>
+        private static Transform FindChildByName(Transform root, string childName)
+        {
+            if (root == null) return null;
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name == childName) return t;
+            return null;
+        }
+
+        // ── Tooltip action buttons ──────────────────────────────────────────────────────
+        // EQUIP moves the item into its paper-doll slot; DROP tosses one unit onto the
+        // ground as a DroppedItemPickup that can be picked back up.
+
+        private GameObject _dropButton;
+        private GameObject _equipButton;
+
+        /// <summary>Which paper-doll slot the open tooltip came from; null when it came from the bag.</summary>
+        private ItemType? _tooltipEquipSlot;
+
+        private void CachePlaceholderButtons()
+        {
+            if (TooltipPanel == null) return;
+            Transform drop = TooltipPanel.transform.Find("DropButton");
+            Transform equip = TooltipPanel.transform.Find("EquipButton");
+            _dropButton = drop != null ? drop.gameObject : null;
+            _equipButton = equip != null ? equip.gameObject : null;
+
+            if (equip != null)
+            {
+                var btn = equip.GetComponent<Button>();
+                if (btn != null) btn.onClick.AddListener(EquipTooltipItem);
+            }
+            if (drop != null)
+            {
+                var btn = drop.GetComponent<Button>();
+                if (btn != null) btn.onClick.AddListener(DropTooltipItem);
+            }
+        }
+
+        private void RefreshPlaceholderButtons(ItemData item)
+        {
+            bool fromDoll = _tooltipEquipSlot.HasValue;
+            if (_dropButton != null) _dropButton.SetActive(item != null && !fromDoll);
+            if (_equipButton != null)
+                _equipButton.SetActive(item != null && !fromDoll && item.IsEquippable);
+        }
+
+        private void EquipTooltipItem()
+        {
+            ItemData item = _tooltipItem;
+            var session = PlayerSession.Instance;
+            if (item == null || session == null || !item.IsEquippable) return;
+
+            if (session.Equip(item))
+                HideTooltip();
+        }
+
+        private void UnequipTooltipItem()
+        {
+            if (_tooltipEquipSlot == null) return;
+            PlayerSession.Instance?.Unequip(_tooltipEquipSlot.Value);
+            HideTooltip();
+        }
+
+        /// <summary>
+        /// Tosses one unit of the tooltip's item onto the ground at the player's feet. The
+        /// removal runs first — RemoveItem is all-or-nothing, so a unit that is not there
+        /// spawns nothing and loses nothing.
+        /// </summary>
+        private void DropTooltipItem()
+        {
+            ItemData item = _tooltipItem;
+            var session = PlayerSession.Instance;
+            var player = ExiledAlvaston.Combat.CombatController.Instance;
+            if (item == null || session == null || player == null) return;
+
+            if (!session.RemoveItem(item, 1)) return;
+
+            Vector3 dropAt = player.transform.position + player.FacingDirection * 0.6f;
+            ExiledAlvaston.World.DroppedItemPickup.Spawn(item, 1, dropAt);
+            HideTooltip();
+        }
+
+        // ── Paper doll ──────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Binds the paper-doll slots the rebuild tool laid out: EquipSlot0..6 → ItemTypes per
+        /// EquipmentSlotMap. Populates EquipmentSlots (dead until the doll existed) and puts a
+        /// Button on each slot that opens the worn item's tooltip, where UNEQUIP lives.
+        /// </summary>
+        private void BuildEquipmentSlots()
+        {
+            EquipmentSlots.Clear();
+            if (PaperDollContainer == null) return;
+
+            for (int i = 0; i < EquipmentSlotMap.SlotCount; i++)
+            {
+                ItemType type = EquipmentSlotMap.SlotOrder[i];
+                Transform slot = PaperDollContainer.Find($"EquipSlot{i}");
+                if (slot == null) continue;
+
+                Image img = slot.GetComponent<Image>();
+                if (img != null) EquipmentSlots[type] = img;
+
+                var btn = slot.GetComponent<Button>();
+                if (btn == null) btn = slot.gameObject.AddComponent<Button>();
+                btn.onClick.RemoveAllListeners();
+                ItemType captured = type;
+                btn.onClick.AddListener(() => ShowEquippedTooltip(captured));
+            }
+
+            RefreshEquipmentSlots();
+        }
+
+        /// <summary>Draws each slot's worn icon (white on the field) or the empty sunken grey.</summary>
+        private void RefreshEquipmentSlots()
+        {
+            var session = PlayerSession.Instance;
+            foreach (var pair in EquipmentSlots)
+            {
+                ItemData item = session != null ? session.EquippedIn(pair.Key) : null;
+                pair.Value.sprite = item != null ? item.Icon : null;
+                pair.Value.color = item != null && item.Icon != null ? Color.white : Win95Skin.SlotFill;
+            }
+        }
+
+        private void ShowEquippedTooltip(ItemType type)
+        {
+            var session = PlayerSession.Instance;
+            ItemData item = session != null ? session.EquippedIn(type) : null;
+            if (item == null) return; // empty slot: nothing to show
+            _tooltipEquipSlot = type;
+            ShowTooltip(item);
         }
 
         public void BindCharacter(CharacterData data)
@@ -166,9 +390,12 @@ namespace ExiledAlvaston.UI
         {
             EnsureInventorySubscription();
             PopulateBackpack();
+            RefreshEquipmentSlots();
             RefreshCurrency();
 
             if (_boundCharacter == null) return;
+
+            RefreshPaperDollPreview();
 
             if (CharacterNameText != null)
                 CharacterNameText.text = _boundCharacter.CharacterName;
@@ -187,10 +414,24 @@ namespace ExiledAlvaston.UI
             if (ResistancesText != null)
             {
                 var r = _boundCharacter.BaseResistances;
+                int armor = r.Physical + (PlayerSession.Instance != null ? PlayerSession.Instance.TotalArmor() : 0);
                 ResistancesText.text =
-                    $"Armor {r.Physical}\nFire {r.Fire}  Cold {r.Cold}\n" +
+                    $"Armor {armor}\nFire {r.Fire}  Cold {r.Cold}\n" +
                     $"Poison {r.Poison}  Magic {r.Magic}";
             }
+        }
+
+        /// <summary>
+        /// The idle player sprite on the paper doll's blue block: the character creator's
+        /// PlayerClassPreviewUI (added to CharacterSprite by the rebuild tool) fed with the
+        /// bound character's class. No-op if the tool has not been run yet.
+        /// </summary>
+        private void RefreshPaperDollPreview()
+        {
+            if (PaperDollContainer == null || _boundCharacter == null) return;
+            var preview = PaperDollContainer.GetComponentInChildren<PlayerClassPreviewUI>(true);
+            if (preview != null)
+                preview.ShowClass(_boundCharacter.Class);
         }
 
         public void ShowTooltip(ItemData item)
@@ -199,6 +440,9 @@ namespace ExiledAlvaston.UI
 
             TooltipPanel.SetActive(true);
             RefreshUseButton(item);
+            RefreshPlaceholderButtons(item);
+            if (UnequipButton != null)
+                UnequipButton.gameObject.SetActive(_tooltipEquipSlot.HasValue);
             if (TooltipIcon != null)
             {
                 TooltipIcon.sprite = item.Icon;
@@ -219,6 +463,17 @@ namespace ExiledAlvaston.UI
         {
             if (TooltipPanel != null)
                 TooltipPanel.SetActive(false);
+            _tooltipEquipSlot = null;
+            if (UnequipButton != null)
+                UnequipButton.gameObject.SetActive(false);
+            RefreshPlaceholderButtons(null);
+        }
+
+        /// <summary>Bag-slot click: the tooltip is not from the doll, so EQUIP not UNEQUIP applies.</summary>
+        private void ShowBagTooltip(ItemData item)
+        {
+            _tooltipEquipSlot = null;
+            ShowTooltip(item);
         }
 
         // ── USE ─────────────────────────────────────────────────────────────────────────────
@@ -258,14 +513,15 @@ namespace ExiledAlvaston.UI
             var go = new GameObject("UseButton", typeof(RectTransform));
             go.transform.SetParent(TooltipPanel.transform, false);
             var rt = (RectTransform)go.transform;
-            // Bottom-left of the tooltip, clear of UnequipButton, which the scene anchors right.
+            // Bottom row, left third: USE · DROP · UNEQUIP/EQUIP share the tooltip's bottom strip.
             rt.anchorMin = new Vector2(0.04f, 0.04f);
-            rt.anchorMax = new Vector2(0.46f, 0.20f);
+            rt.anchorMax = new Vector2(0.34f, 0.20f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
-            go.AddComponent<Image>().color = EKVibe.ButtonBrown;
+            go.AddComponent<Image>();
 
             var button = go.AddComponent<Button>();
+            Win95Skin.StyleButton(button);
             button.onClick.AddListener(UseTooltipItem);
 
             var labelGo = new GameObject("Label", typeof(RectTransform));
@@ -277,11 +533,10 @@ namespace ExiledAlvaston.UI
             lrt.offsetMax = Vector2.zero;
             var tmp = labelGo.AddComponent<TextMeshProUGUI>();
             tmp.text = "USE";
-            tmp.color = EKVibe.TextLight;
-            tmp.fontSize = 22;
+            tmp.fontSize = 18;
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.raycastTarget = false;
+            Win95Skin.StyleLabel(tmp);
 
             return button;
         }
@@ -351,22 +606,9 @@ namespace ExiledAlvaston.UI
             }
         }
 
-        public void EquipItem(ItemData item)
-        {
-            if (item == null || !EquipmentSlots.ContainsKey(item.Type)) return;
-
-            Image slotImage = EquipmentSlots[item.Type];
-            if (slotImage != null)
-            {
-                slotImage.sprite = item.Icon;
-                slotImage.enabled = item.Icon != null;
-            }
-            ShowTooltip(item);
-        }
-
         /// <summary>
-        /// Fills the backpack grid from PlayerSession's live inventory. The 20 slot GameObjects
-        /// (BagSlot0..19) already exist in the scene as plain framed Images — this sets each
+        /// Fills the backpack grid from PlayerSession's live inventory. The slot GameObjects
+        /// (BagSlot0..35) already exist in the scene as plain framed Images — this sets each
         /// one's icon/tint from the matching inventory stack rather than instantiating a prefab.
         /// </summary>
         public void PopulateBackpack()
@@ -404,7 +646,7 @@ namespace ExiledAlvaston.UI
             if (icon != null)
             {
                 icon.sprite = item != null ? item.Icon : null;
-                icon.color = item != null && item.Icon != null ? Color.white : EKVibe.SlotEmpty;
+                icon.color = item != null && item.Icon != null ? Color.white : Win95Skin.SlotFill;
             }
 
             TextMeshProUGUI qtyLabel = GetOrCreateQuantityLabel(slot);
@@ -418,7 +660,7 @@ namespace ExiledAlvaston.UI
                 button = slot.gameObject.AddComponent<Button>();
             button.onClick.RemoveAllListeners();
             if (item != null)
-                button.onClick.AddListener(() => ShowTooltip(item));
+                button.onClick.AddListener(() => ShowBagTooltip(item));
         }
 
         private static TextMeshProUGUI GetOrCreateQuantityLabel(Transform slot)
@@ -433,15 +675,19 @@ namespace ExiledAlvaston.UI
             rt.anchorMin = new Vector2(1, 0);
             rt.anchorMax = new Vector2(1, 0);
             rt.pivot = new Vector2(1, 0);
-            rt.anchoredPosition = new Vector2(-4, 2);
-            rt.sizeDelta = new Vector2(28, 18);
+            rt.anchoredPosition = new Vector2(-2, 1);
+            rt.sizeDelta = new Vector2(40, 28);
 
+            // Big enough to read over a busy icon: white bold with a black outline.
             var tmp = go.AddComponent<TextMeshProUGUI>();
-            tmp.color = EKVibe.TextLight;
-            tmp.fontSize = 16;
+            tmp.color = Color.white;
+            tmp.fontSize = 24;
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.BottomRight;
             tmp.raycastTarget = false;
+            var outline = go.AddComponent<Outline>();
+            outline.effectColor = Color.black;
+            outline.effectDistance = new Vector2(2f, -2f);
             return tmp;
         }
     }

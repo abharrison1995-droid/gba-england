@@ -44,6 +44,16 @@ namespace ExiledAlvaston.Combat
         {
             if (IsDead) return;
 
+            // Armour only exists on the player (equipment lives on PlayerSession), so the
+            // reduction is gated on this Health belonging to the player — enemies keep
+            // taking raw damage. Floored at 0: a fully plated hit can whiff to nothing.
+            if (GetComponent<CombatController>() != null)
+            {
+                var session = Flow.PlayerSession.Instance;
+                if (session != null)
+                    damage = Mathf.Max(0, damage - session.TotalArmor());
+            }
+
             LastAttacker = attacker;
             CurrentHealth -= damage;
             OnTakeDamage?.Invoke(damage);

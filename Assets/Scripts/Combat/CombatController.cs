@@ -435,6 +435,11 @@ namespace ExiledAlvaston.Combat
                 int hitCount = Physics.OverlapSphereNonAlloc(hitCenter, hitRadius, _hitResults);
                 int damage = PlayerData != null ? PlayerData.BaseTraits.Strength * 2 + 5 : 10;
 
+                // Equipped weapon adds its Damage on top of the Strength roll.
+                var session = Flow.PlayerSession.Instance;
+                Data.ItemData weapon = session != null ? session.EquippedWeapon() : null;
+                if (weapon != null) damage += weapon.Damage;
+
                 _hitThisSwing.Clear();
                 for (int i = 0; i < hitCount; i++)
                 {
