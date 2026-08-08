@@ -206,13 +206,14 @@ namespace ExiledAlvaston.UI
 
             _panelRoot = dim;
 
-            GameObject panel = CreateImage("PickpocketPanel", dim.transform, EKVibe.ParchmentPanel);
+            GameObject panel = CreateImage("PickpocketPanel", dim.transform, Win95Skin.Face);
+            Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
             prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
             prt.sizeDelta = new Vector2(640, 480);
             panel.GetComponent<Image>().raycastTarget = true;
 
-            GameObject header = CreateImage("Header", panel.transform, EKVibe.ParchmentDark);
+            GameObject header = CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             Stretch(header, new Vector2(0, 1), Vector2.one);
             var hrt = header.GetComponent<RectTransform>();
             hrt.pivot = new Vector2(0.5f, 1f);
@@ -256,11 +257,12 @@ namespace ExiledAlvaston.UI
 
         private void BuildRow(PickpocketSlot slot)
         {
-            GameObject row = CreateImage("PocketRow", _rowContainer, EKVibe.SlotFrame);
+            GameObject row = CreateImage("PocketRow", _rowContainer, Win95Skin.SlotFill);
+            Win95Skin.AddBevel((RectTransform)row.transform, sunken: true);
             var rrt = row.GetComponent<RectTransform>();
             rrt.sizeDelta = new Vector2(0, 72);
 
-            var name = CreateTMP("Name", row.transform, slot.Name, EKVibe.TextLight, 24,
+            var name = CreateTMP("Name", row.transform, slot.Name, Win95Skin.FieldText, 24,
                 TextAlignmentOptions.Left);
             Stretch(name.gameObject, Vector2.zero, Vector2.one);
             var nrt = name.GetComponent<RectTransform>();
@@ -300,7 +302,7 @@ namespace ExiledAlvaston.UI
                 var label = btn.GetComponentInChildren<TextMeshProUGUI>();
                 if (label != null) label.text = "NICKED";
                 var img = btn.GetComponent<Image>();
-                if (img != null) img.color = EKVibe.SlotEmpty;
+                if (img != null) img.color = Win95Skin.Shadow;
             }
         }
 
@@ -318,10 +320,11 @@ namespace ExiledAlvaston.UI
         private static GameObject CreateButton(string name, Transform parent, string label,
             UnityEngine.Events.UnityAction onClick)
         {
-            GameObject go = CreateImage(name, parent, EKVibe.ButtonBrown);
+            GameObject go = CreateImage(name, parent, Win95Skin.Face);
             var btn = go.AddComponent<Button>();
+            Win95Skin.StyleButton(btn);
             btn.onClick.AddListener(onClick);
-            var tmp = CreateTMP("Label", go.transform, label, EKVibe.TextLight, 22,
+            var tmp = CreateTMP("Label", go.transform, label, Win95Skin.FieldText, 22,
                 TextAlignmentOptions.Center);
             Stretch(tmp.gameObject, Vector2.zero, Vector2.one);
             return go;

@@ -100,12 +100,13 @@ namespace ExiledAlvaston.UI
             dim.AddComponent<Button>().onClick.AddListener(Close);
             _root = dim;
 
-            GameObject panel = QuestUIBuilder.CreateImage("QuestPopup", dim.transform, EKVibe.ParchmentPanel);
+            GameObject panel = QuestUIBuilder.CreateImage("QuestPopup", dim.transform, Win95Skin.Face);
+            Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
             prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.55f);
             prt.sizeDelta = new Vector2(560, 320);
 
-            GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, EKVibe.ParchmentDark);
+            GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             var hrt = header.GetComponent<RectTransform>();
             hrt.anchorMin = new Vector2(0, 1);
             hrt.anchorMax = Vector2.one;
@@ -267,7 +268,7 @@ namespace ExiledAlvaston.UI
         private void AddSectionLabel(string text)
         {
             var tmp = QuestUIBuilder.CreateTMP("Section", _listContainer, text,
-                EKVibe.ParchmentDark, 22, TextAlignmentOptions.BottomLeft, FontStyles.Bold);
+                Win95Skin.TitleBar, 22, TextAlignmentOptions.BottomLeft, FontStyles.Bold);
             var rt = tmp.rectTransform;
             rt.anchorMin = new Vector2(0, 1);
             rt.anchorMax = new Vector2(1, 1);
@@ -281,7 +282,8 @@ namespace ExiledAlvaston.UI
         private void AddQuestRow(QuestProgress q, bool resolved)
         {
             const float rowH = 108f;
-            GameObject row = QuestUIBuilder.CreateImage("QuestRow", _listContainer, EKVibe.SlotFrame);
+            GameObject row = QuestUIBuilder.CreateImage("QuestRow", _listContainer, Win95Skin.SlotFill);
+            Win95Skin.AddBevel((RectTransform)row.transform, sunken: true);
             var rrt = row.GetComponent<RectTransform>();
             rrt.anchorMin = new Vector2(0, 1);
             rrt.anchorMax = new Vector2(1, 1);
@@ -293,8 +295,8 @@ namespace ExiledAlvaston.UI
             row.AddComponent<Button>().onClick.AddListener(() => ShowDetail(q));
 
             Color titleColor = resolved
-                ? new Color(EKVibe.TextLight.r, EKVibe.TextLight.g, EKVibe.TextLight.b, 0.6f)
-                : EKVibe.TextLight;
+                ? new Color(0f, 0f, 0f, 0.45f)
+                : Win95Skin.FieldText;
 
             var titleTmp = QuestUIBuilder.CreateTMP("Title", row.transform, q.Title, titleColor, 24,
                 TextAlignmentOptions.TopLeft, resolved ? FontStyles.Strikethrough | FontStyles.Bold : FontStyles.Bold);
@@ -315,7 +317,7 @@ namespace ExiledAlvaston.UI
 
             // One-line objective preview (full text lives on the detail page).
             var objTmp = QuestUIBuilder.CreateTMP("Objective", row.transform, resolved ? "Resolved." : q.Objective,
-                new Color(EKVibe.TextLight.r, EKVibe.TextLight.g, EKVibe.TextLight.b, 0.7f), 16,
+                new Color(0f, 0f, 0f, 0.7f), 16,
                 TextAlignmentOptions.TopLeft, FontStyles.Normal);
             QuestUIBuilder.Stretch(objTmp.gameObject, Vector2.zero, Vector2.one);
             objTmp.rectTransform.offsetMin = new Vector2(16, 8);
@@ -326,7 +328,7 @@ namespace ExiledAlvaston.UI
 
             // Tap-through chevron.
             var chev = QuestUIBuilder.CreateTMP("Chevron", row.transform, ">",
-                new Color(EKVibe.TextLight.r, EKVibe.TextLight.g, EKVibe.TextLight.b, 0.55f), 30,
+                new Color(0f, 0f, 0f, 0.55f), 30,
                 TextAlignmentOptions.Center, FontStyles.Bold);
             var crt = chev.rectTransform;
             crt.anchorMin = new Vector2(1, 0);
@@ -348,12 +350,13 @@ namespace ExiledAlvaston.UI
             dim.AddComponent<Button>().onClick.AddListener(Close);
             _root = dim;
 
-            GameObject panel = QuestUIBuilder.CreateImage("JournalPanel", dim.transform, EKVibe.ParchmentPanel);
+            GameObject panel = QuestUIBuilder.CreateImage("JournalPanel", dim.transform, Win95Skin.Face);
+            Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
             prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
             prt.sizeDelta = new Vector2(980, 800);
 
-            GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, EKVibe.ParchmentDark);
+            GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             var hrt = header.GetComponent<RectTransform>();
             hrt.anchorMin = new Vector2(0, 1);
             hrt.anchorMax = Vector2.one;
@@ -426,7 +429,7 @@ namespace ExiledAlvaston.UI
                 EKVibe.TextDark, new Vector2(0.05f, 0.86f), new Vector2(0.72f, 0.965f));
             _dTitle.enableWordWrapping = true;
 
-            var statusBg = QuestUIBuilder.CreateImage("StatusPill", _detailView.transform, EKVibe.ParchmentDark);
+            var statusBg = QuestUIBuilder.CreateImage("StatusPill", _detailView.transform, Win95Skin.TitleBar);
             var srt = statusBg.GetComponent<RectTransform>();
             srt.anchorMin = new Vector2(0.72f, 0.885f);
             srt.anchorMax = new Vector2(0.95f, 0.955f);
@@ -530,23 +533,27 @@ namespace ExiledAlvaston.UI
 
         public static void CreateCloseX(Transform header, UnityEngine.Events.UnityAction onClick)
         {
-            GameObject x = CreateImage("CloseButton", header, EKVibe.ButtonBrown);
+            GameObject x = CreateImage("CloseButton", header, Win95Skin.Face);
             var xrt = x.GetComponent<RectTransform>();
             xrt.anchorMin = xrt.anchorMax = new Vector2(1f, 0.5f);
             xrt.pivot = new Vector2(1f, 0.5f);
             xrt.anchoredPosition = new Vector2(-8, 0);
             xrt.sizeDelta = new Vector2(40, 40);
-            x.AddComponent<Button>().onClick.AddListener(onClick);
-            var label = CreateTMP("X", x.transform, "X", EKVibe.TextLight, 22,
+            var xbtn = x.AddComponent<Button>();
+            Win95Skin.StyleButton(xbtn);
+            xbtn.onClick.AddListener(onClick);
+            var label = CreateTMP("X", x.transform, "X", Win95Skin.FieldText, 22,
                 TextAlignmentOptions.Center, FontStyles.Bold);
             Stretch(label.gameObject, Vector2.zero, Vector2.one);
         }
 
         public static GameObject CreateButton(string name, Transform parent, string label, UnityEngine.Events.UnityAction onClick)
         {
-            GameObject go = CreateImage(name, parent, EKVibe.ButtonBrown);
-            go.AddComponent<Button>().onClick.AddListener(onClick);
-            var tmp = CreateTMP("Label", go.transform, label, EKVibe.TextLight, 22,
+            GameObject go = CreateImage(name, parent, Win95Skin.Face);
+            var btn = go.AddComponent<Button>();
+            Win95Skin.StyleButton(btn);
+            btn.onClick.AddListener(onClick);
+            var tmp = CreateTMP("Label", go.transform, label, Win95Skin.FieldText, 22,
                 TextAlignmentOptions.Center, FontStyles.Bold);
             Stretch(tmp.gameObject, Vector2.zero, Vector2.one);
             return go;

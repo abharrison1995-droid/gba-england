@@ -43,12 +43,13 @@ namespace ExiledAlvaston.UI
             QuestUIBuilder.Stretch(_root, Vector2.zero, Vector2.one);
             _root.AddComponent<Button>().onClick.AddListener(Close);
 
-            GameObject panel = QuestUIBuilder.CreateImage("Panel", _root.transform, EKVibe.ParchmentPanel);
+            GameObject panel = QuestUIBuilder.CreateImage("Panel", _root.transform, Win95Skin.Face);
+            Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
             prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
             prt.sizeDelta = new Vector2(760, 620);
 
-            GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, EKVibe.ParchmentDark);
+            GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             var hrt = header.GetComponent<RectTransform>();
             hrt.anchorMin = new Vector2(0, 1); hrt.anchorMax = Vector2.one; hrt.pivot = new Vector2(0.5f, 1f);
             hrt.anchoredPosition = Vector2.zero; hrt.sizeDelta = new Vector2(0, 56);
@@ -61,7 +62,8 @@ namespace ExiledAlvaston.UI
             for (int i = 0; i < CombatController.SpellSlots; i++)
             {
                 int slot = i;
-                GameObject b = QuestUIBuilder.CreateImage($"Slot{i}", panel.transform, EKVibe.SlotFrame);
+                GameObject b = QuestUIBuilder.CreateImage($"Slot{i}", panel.transform, Win95Skin.SlotFill);
+                Win95Skin.AddBevel((RectTransform)b.transform, sunken: true);
                 var brt = b.GetComponent<RectTransform>();
                 float w = 0.2f;
                 brt.anchorMin = new Vector2(0.06f + i * 0.23f, 0.72f);
@@ -69,7 +71,7 @@ namespace ExiledAlvaston.UI
                 brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
                 b.AddComponent<Button>().onClick.AddListener(() => SelectSlot(slot));
                 _slotBg[i] = b.GetComponent<Image>();
-                var t = QuestUIBuilder.CreateTMP($"SlotTxt{i}", b.transform, "", EKVibe.TextLight, 18,
+                var t = QuestUIBuilder.CreateTMP($"SlotTxt{i}", b.transform, "", Win95Skin.FieldText, 18,
                     TextAlignmentOptions.Center, FontStyles.Bold);
                 QuestUIBuilder.Stretch(t.gameObject, Vector2.zero, Vector2.one);
                 t.enableWordWrapping = true;
@@ -150,7 +152,9 @@ namespace ExiledAlvaston.UI
                 _slotText[i].text = a != null
                     ? $"Slot {i + 1}\n{Glyph(a)} {a.AbilityName}"
                     : $"Slot {i + 1}\n(empty)";
-                _slotBg[i].color = i == _selectedSlot ? EKVibe.ButtonBrown : EKVibe.SlotFrame;
+                bool selected = i == _selectedSlot;
+                _slotBg[i].color = selected ? Win95Skin.TitleBar : Win95Skin.SlotFill;
+                _slotText[i].color = selected ? Color.white : Win95Skin.FieldText;
             }
 
             foreach (Transform c in _listContainer) Destroy(c.gameObject);
@@ -163,11 +167,12 @@ namespace ExiledAlvaston.UI
             foreach (AbilityData a in combat.KnownSpells)
             {
                 AbilityData spell = a;
-                GameObject row = QuestUIBuilder.CreateImage("SpellRow", _listContainer, EKVibe.SlotFrame);
+                GameObject row = QuestUIBuilder.CreateImage("SpellRow", _listContainer, Win95Skin.SlotFill);
+                Win95Skin.AddBevel((RectTransform)row.transform, sunken: true);
                 row.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 56);
                 row.AddComponent<Button>().onClick.AddListener(() => BindSpell(spell));
                 var t = QuestUIBuilder.CreateTMP("T", row.transform, $"{Glyph(a)}  {a.AbilityName}",
-                    EKVibe.TextLight, 22, TextAlignmentOptions.Left, FontStyles.Bold);
+                    Win95Skin.FieldText, 22, TextAlignmentOptions.Left, FontStyles.Bold);
                 QuestUIBuilder.Stretch(t.gameObject, Vector2.zero, Vector2.one);
                 t.rectTransform.offsetMin = new Vector2(18, 0);
                 t.raycastTarget = false;
@@ -176,7 +181,7 @@ namespace ExiledAlvaston.UI
 
         private void AddRowLabel(string text)
         {
-            var t = QuestUIBuilder.CreateTMP("Empty", _listContainer, text, EKVibe.ParchmentDark, 20,
+            var t = QuestUIBuilder.CreateTMP("Empty", _listContainer, text, new Color(0f, 0f, 0f, 0.6f), 20,
                 TextAlignmentOptions.Center, FontStyles.Italic);
             t.rectTransform.sizeDelta = new Vector2(0, 40);
         }

@@ -76,6 +76,24 @@ namespace ExiledAlvaston.UI
         {
             EnsureJournalButton();
             BuildActionButtons();
+            RestyleSceneHudButtons();
+        }
+
+        /// <summary>
+        /// The one legacy scene button still visible — MapBagShortcut ("Bag") — gets the Win95
+        /// skin at runtime. The rest of the legacy cluster is retired by BuildActionButtons,
+        /// so restyling it in the scene would paint objects nobody sees.
+        /// </summary>
+        private void RestyleSceneHudButtons()
+        {
+            Transform bag = FindChildRecursive(transform, "MapBagShortcut");
+            if (bag == null) return;
+
+            var btn = bag.GetComponent<Button>();
+            if (btn != null) Win95Skin.StyleButton(btn);
+
+            var label = bag.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (label != null) Win95Skin.StyleLabel(label);
         }
 
         private void Update()
@@ -367,9 +385,10 @@ namespace ExiledAlvaston.UI
             rt.pivot = new Vector2(1, 1);
             rt.anchoredPosition = new Vector2(-24, -120);
             rt.sizeDelta = new Vector2(72, 56);
-            var img = btn.AddComponent<Image>();
-            img.color = EKVibe.ButtonBrown;
-            btn.AddComponent<Button>().onClick.AddListener(QuestJournalUI.Toggle);
+            btn.AddComponent<Image>();
+            var bagBtn = btn.AddComponent<Button>();
+            Win95Skin.StyleButton(bagBtn);
+            bagBtn.onClick.AddListener(QuestJournalUI.Toggle);
 
             var labelGO = new GameObject("Label", typeof(RectTransform));
             labelGO.transform.SetParent(btn.transform, false);
@@ -380,10 +399,9 @@ namespace ExiledAlvaston.UI
             lrt.offsetMax = Vector2.zero;
             var tmp = labelGO.AddComponent<TextMeshProUGUI>();
             tmp.text = "LOG";
-            tmp.color = EKVibe.TextLight;
             tmp.fontSize = 20;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.raycastTarget = false;
+            Win95Skin.StyleLabel(tmp);
         }
 
         /// <summary>
@@ -405,9 +423,9 @@ namespace ExiledAlvaston.UI
                 rt.pivot = new Vector2(1, 0);
                 rt.anchoredPosition = new Vector2(-140, 260);
                 rt.sizeDelta = new Vector2(90, 90);
-                var img = btn.AddComponent<Image>();
-                img.color = EKVibe.ButtonBrown;
-                btn.AddComponent<Button>();
+                btn.AddComponent<Image>();
+                var useBtn = btn.AddComponent<Button>();
+                Win95Skin.StyleButton(useBtn);
                 var action = btn.AddComponent<HUDActionButton>();
                 action.Kind = HUDActionButton.ActionKind.Interact;
 
@@ -420,10 +438,9 @@ namespace ExiledAlvaston.UI
                 lrt.offsetMax = Vector2.zero;
                 var labelTmp = labelGO.AddComponent<TextMeshProUGUI>();
                 labelTmp.text = "USE";
-                labelTmp.color = EKVibe.TextLight;
                 labelTmp.fontSize = 20;
                 labelTmp.alignment = TextAlignmentOptions.Center;
-                labelTmp.raycastTarget = false;
+                Win95Skin.StyleLabel(labelTmp);
 
                 InteractButtonRoot = btn;
             }
@@ -471,7 +488,7 @@ namespace ExiledAlvaston.UI
 
             // ATK — big melee button, bottom-right.
             CreateActionButton(panel.transform, "ATK", HUDActionButton.ActionKind.Attack, 0,
-                new Vector2(130f, 130f), new Vector2(-24f, 30f), new Color(0.55f, 0.3f, 0.22f, 1f));
+                new Vector2(130f, 130f), new Vector2(-24f, 30f));
 
             // 4 spell slots, vertical column above ATK, right-aligned.
             const float size = 100f, gap = 12f, baseY = 175f;
@@ -480,7 +497,7 @@ namespace ExiledAlvaston.UI
                 float y = baseY + i * (size + gap);
                 var b = CreateActionButton(panel.transform, (i + 1).ToString(),
                     HUDActionButton.ActionKind.Ability, i, new Vector2(size, size),
-                    new Vector2(-24f, y), EKVibe.ButtonBrown);
+                    new Vector2(-24f, y));
                 _spellSlotImages[i] = b.GetComponent<Image>();
                 _spellSlotLabels[i] = b.GetComponentInChildren<TextMeshProUGUI>();
             }
@@ -488,7 +505,7 @@ namespace ExiledAlvaston.UI
             // CRO — crouch toggle, third in the bottom row: ATK, USE, CRO reading right to left.
             // Same size as USE and permanently visible, unlike USE, which hides with its prompt.
             var crouch = CreateActionButton(panel.transform, "CRO", HUDActionButton.ActionKind.Crouch, 0,
-                new Vector2(110f, 110f), new Vector2(-424f, 40f), EKVibe.ButtonBrown);
+                new Vector2(110f, 110f), new Vector2(-424f, 40f));
             _crouchButtonImage = crouch.GetComponent<Image>();
             _crouchButtonLabel = crouch.GetComponentInChildren<TextMeshProUGUI>();
             RefreshCrouchButton();
@@ -508,8 +525,12 @@ namespace ExiledAlvaston.UI
             var stealth = World.StealthController.Instance;
             bool crouched = stealth != null && stealth.IsCrouched;
 
+            // Win95 toggle: crouched reads as a pressed-in button — darker face, sunken bevel.
             if (_crouchButtonImage != null)
-                _crouchButtonImage.color = crouched ? EKVibe.ButtonBrownActive : EKVibe.ButtonBrown;
+            {
+                _crouchButtonImage.color = crouched ? Win95Skin.FacePressed : Win95Skin.Face;
+                Win95Skin.AddBevel((RectTransform)_crouchButtonImage.transform, sunken: crouched);
+            }
 
             if (_crouchButtonLabel != null)
             {
@@ -519,7 +540,7 @@ namespace ExiledAlvaston.UI
         }
 
         private GameObject CreateActionButton(Transform parent, string label, HUDActionButton.ActionKind kind,
-            int abilityIndex, Vector2 size, Vector2 pos, Color color)
+            int abilityIndex, Vector2 size, Vector2 pos)
         {
             var go = new GameObject(kind == HUDActionButton.ActionKind.Ability ? $"Spell{abilityIndex}" : label,
                 typeof(RectTransform));
@@ -530,9 +551,9 @@ namespace ExiledAlvaston.UI
             rt.anchoredPosition = pos;
             rt.sizeDelta = size;
 
-            var img = go.AddComponent<Image>();
-            img.color = color;
-            go.AddComponent<Button>();
+            go.AddComponent<Image>();
+            var btn = go.AddComponent<Button>();
+            Win95Skin.StyleButton(btn);
             var action = go.AddComponent<HUDActionButton>(); // wires click + cooldown sweep
             action.Kind = kind;
             action.AbilityIndex = abilityIndex;
@@ -546,11 +567,10 @@ namespace ExiledAlvaston.UI
             lrt.offsetMax = Vector2.zero;
             var tmp = labelGo.AddComponent<TextMeshProUGUI>();
             tmp.text = label;
-            tmp.color = EKVibe.TextLight;
             tmp.fontSize = kind == HUDActionButton.ActionKind.Attack ? 26 : 24;
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.raycastTarget = false;
+            Win95Skin.StyleLabel(tmp);
             return go;
         }
 
