@@ -38,7 +38,12 @@ namespace ExiledAlvaston.Combat
             // wanted level. One line, so reversing this decision is one line.
             if (ai.IsPolice) return;
 
-            int amount = EKVibe.KillXPBase;
+            // With an EnemyLevel the payout follows the same curve its health and damage do; with
+            // none it is a flat level-1 kill, which is what every enemy in the game is today.
+            var level = victim.GetComponent<EnemyLevel>();
+            int amount = level != null
+                ? EKVibe.ScaledKillXP(level.BaseXP, level.Level)
+                : EKVibe.KillXPBase;
 
             PlayerSession.Instance?.GrantXP(amount, victim.DisplayName);
         }
