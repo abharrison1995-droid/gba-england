@@ -67,6 +67,17 @@ namespace ExiledAlvaston.Flow
         // Appended for WIKIBRITAIN: EntryIDs of unlocked encyclopedia entries, same append-only
         // rule — a pre-wiki save reads back empty. EntryIDs are save keys: never rename one.
         public List<string> UnlockedWikiEntries = new List<string>();
+
+        // Appended for progression, same append-only rule: a pre-progression save has no TotalXP
+        // key, JsonUtility reads it back as 0, and 0 XP derives to level 1 — the correct starting
+        // level, so no migration is needed. Nothing may be inserted above this line.
+        //
+        // ⚠ The field name IS the JSON key. JsonUtility knows nothing of [FormerlySerializedAs],
+        // so renaming this silently reverts every existing player to level 1. Never rename it.
+        //
+        // The LEVEL is deliberately not stored — it is derived from this total on every read, so
+        // the curve in EKVibe can be retuned without touching a single save file.
+        public int TotalXP;
     }
 
     /// <summary>
@@ -93,6 +104,7 @@ namespace ExiledAlvaston.Flow
             data.PlayerClass = session != null ? (int)session.Class : 0;
             data.TutorialComplete = session != null && session.TutorialComplete;
             data.Pounds = session != null ? session.Pounds : 0;
+            data.TotalXP = session != null ? session.TotalXP : 0;
 
             Vector3 pos = player.transform.position;
             data.ChunkName = chunkMgr.CurrentChunkData.ChunkName;
