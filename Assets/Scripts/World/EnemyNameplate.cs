@@ -6,7 +6,8 @@ using ExiledAlvaston.Vibe;
 namespace ExiledAlvaston.World
 {
     /// <summary>
-    /// EK enemy chrome: red name, level badge, green HP bar.
+    /// EK enemy chrome: red name, level badge, green HP bar — shown only while the enemy is in
+    /// combat with the player or standing close enough to be one.
     /// </summary>
     [RequireComponent(typeof(Health))]
     public class EnemyNameplate : MonoBehaviour
@@ -16,16 +17,39 @@ namespace ExiledAlvaston.World
         public int Level = 3;
         public float HeightOffset = 1.7f;
 
+        [Tooltip("Seconds the plate stays visible after the last time this enemy was engaged. " +
+                 "Same field name and meaning as PlayerHealthBar's, so the two read alike.")]
+        public float VisibleDuration = 4f;
+
         private Health _health;
         private Transform _root;
         private Transform _hpFill;
         private TMPro.TextMeshPro _nameText;
         private string _shownName;
 
+        /// <summary>
+        /// The plate is built on first show, not in Awake. It saves five GameObjects, two
+        /// TextMeshPros and three material lookups for every enemy that never fights — and it
+        /// fixes a real bug: <c>AddComponent&lt;EnemyNameplate&gt;()</c> runs Awake synchronously,
+        /// so TutorialSequence's <c>plate.Level = 1</c> on the following line used to land after
+        /// the badge had already been rendered with the field default of 3. Building later means
+        /// the assignment always precedes the render.
+        /// </summary>
+        private bool _built;
+
+        private float _hideAt;
+
         private void Awake()
         {
             _health = GetComponent<Health>();
-            Build();
+
+            if (_health != null)
+            {
+                // Covers a hit from something with no aggro — a spell from out of sight. Paired
+                // with the removals in OnDestroy, as EnemyAI does for the same two events.
+                _health.OnTakeDamage.AddListener(OnDamaged);
+                _health.OnDeath.AddListener(OnDied);
+            }
         }
 
         /// <summary>
@@ -34,6 +58,9 @@ namespace ExiledAlvaston.World
         ///
         /// False deliberately does nothing — the plate's own timer runs out on its own, so a plate
         /// fades out after a fight rather than snapping off the instant an enemy loses interest.
+        ///
+        /// "Deals damage" needs no trigger of its own: an EnemyAI cannot swing without a target, so
+        /// aggro strictly precedes it.
         /// </summary>
         public void SetEngaged(bool engaged)
         {
@@ -41,15 +68,50 @@ namespace ExiledAlvaston.World
             Show();
         }
 
+        private void OnDamaged(int amount)
+        {
+            Show();
+        }
+
+        /// <summary>
+        /// Hides at once rather than on the timer, so a corpse waiting out Health.DestroyDelay does
+        /// not keep a plate floating over it.
+        /// </summary>
+        private void OnDied()
+        {
+            if (_root != null) _root.gameObject.SetActive(false);
+        }
+
         private void Show()
         {
+            // ⚠ The dead enemy's own PerceptionRoutine keeps ticking for the whole destroy delay
+            // and would push SetEngaged(true) five more times, putting the plate straight back over
+            // the corpse OnDied just cleared.
+            if (_health != null && _health.IsDead) return;
+
+            if (!_built)
+            {
+                Build();
+                _built = true;
+            }
+
+            _hideAt = Time.time + VisibleDuration;
             if (_root != null && !_root.gameObject.activeSelf)
                 _root.gameObject.SetActive(true);
         }
 
+        private void Update()
+        {
+            if (_root != null && _root.gameObject.activeSelf && Time.time >= _hideAt)
+                _root.gameObject.SetActive(false);
+        }
+
         private void LateUpdate()
         {
-            if (_root == null) return;
+            // ⚠ Must stay the first statement. Hidden, this component costs one bool a frame —
+            // cheaper than it was before the gate, when an idle enemy paid a Camera.main lookup, a
+            // position write, a rotation write, a string compare and a health division every frame.
+            if (_root == null || !_root.gameObject.activeSelf) return;
 
             _root.position = transform.position + Vector3.up * HeightOffset;
 
@@ -120,6 +182,14 @@ namespace ExiledAlvaston.World
 
         private void OnDestroy()
         {
+            if (_health != null)
+            {
+                _health.OnTakeDamage.RemoveListener(OnDamaged);
+                _health.OnDeath.RemoveListener(OnDied);
+            }
+
+            // _root is a scene-root GameObject, never parented to this actor, so it does not die
+            // with us unless it is destroyed here.
             if (_root != null)
                 Destroy(_root.gameObject);
         }
