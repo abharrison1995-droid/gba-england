@@ -464,7 +464,10 @@ namespace ExiledAlvaston.Combat
                     string foeName = string.IsNullOrEmpty(targetHealth.DisplayName)
                         ? targetHealth.name.Replace("(Clone)", "").Trim()
                         : targetHealth.DisplayName;
-                    targetHealth.TakeDamage(damage, "you", foeName);
+                    // Four-argument overload: passing gameObject is what sets Health.LastAttacker
+                    // to the player. Without it the player is invisible to anything that asks who
+                    // landed the killing blow — no error, just an attribution that never matches.
+                    targetHealth.TakeDamage(damage, "you", foeName, gameObject);
                 }
 
                 yield return new WaitForSeconds(attackDuration);
@@ -653,7 +656,8 @@ namespace ExiledAlvaston.Combat
                 {
                     LightningBolt.Spawn(origin, target.transform.position);
                     if (ability.BaseDamage > 0)
-                        target.TakeDamage(ability.BaseDamage, shout, target.DisplayName);
+                        // Same reason as the melee site: attribute the spell to the player.
+                        target.TakeDamage(ability.BaseDamage, shout, target.DisplayName, gameObject);
                 }
                 else
                 {
