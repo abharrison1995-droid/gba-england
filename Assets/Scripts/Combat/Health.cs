@@ -64,8 +64,8 @@ namespace ExiledAlvaston.Combat
         /// Applies damage, unless the target refuses it.
         /// </summary>
         /// <returns>
-        /// True if the hit landed. False means it was refused — currently only because the target
-        /// was already dead — and a caller must not follow up with knockback, on-hit effects or
+        /// True if the hit landed. False means it was refused — the target was already dead, or was
+        /// mid-dodge — and a caller must not follow up with knockback, on-hit effects or
         /// attribution. Returning this rather than nothing is what lets an attacker tell a hit that
         /// connected from one that did not; without it every follow-up effect fires regardless.
         ///
@@ -77,6 +77,16 @@ namespace ExiledAlvaston.Combat
         public bool TakeDamage(int damage, string attackerName, string targetLabel, GameObject attacker)
         {
             if (IsDead) return false;
+
+            // ⚠ Above LastAttacker, above armour, above the combat log: a dodged hit did not
+            // happen, so it must not claim attribution and must not be narrated. Gating it here
+            // rather than at each attack site is what makes every future damage source — spells,
+            // traps — respect i-frames without having to know they exist.
+            if (_combat != null && _combat.IsInvulnerable)
+            {
+                FloatingDamageText.Spawn(transform.position, "Dodged!", EKVibe.TextLight);
+                return false;
+            }
 
             // Armour only exists on the player (equipment lives on PlayerSession), so the
             // reduction is gated on this Health belonging to the player — enemies keep taking
