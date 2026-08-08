@@ -186,6 +186,12 @@ namespace ExiledAlvaston.Combat
                 if (_plate != null)
                     _plate.SetEngaged(_target != null || _playerInSight);
 
+                // Same push, the other way: the player's own bar stays up for the whole fight and
+                // fades a few seconds after the last enemy loses interest.
+                if (_target != null && CombatController.Instance != null
+                    && _target == CombatController.Instance.transform)
+                    CombatController.Instance.PingHealthBar();
+
                 yield return wait;
             }
         }

@@ -23,6 +23,7 @@ namespace ExiledAlvaston.Combat
         private Rigidbody _rb;
         private Health _health;
         private WorldActorVisual _actorVisual;
+        private PlayerHealthBar _bar;
         private RuntimeAnimatorController _animatorParamsFor;
         private bool _hasSpeedParam;
         private bool _hasCyclingParam;
@@ -77,6 +78,10 @@ namespace ExiledAlvaston.Combat
             _rb = GetComponent<Rigidbody>();
             _health = GetComponent<Health>();
             _actorVisual = GetComponent<WorldActorVisual>();
+            // ⚠ Cached, not looked up per hit. FindObjectOfType at a damage site would scan the
+            // scene on every swing; a static would be one more lifetime to get wrong. This is what
+            // EnemyAI does for its own Health and WorldActorVisual.
+            _bar = GetComponent<PlayerHealthBar>();
             _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
             _baseManaRegen = ManaRegenPerSecond;
@@ -538,6 +543,7 @@ namespace ExiledAlvaston.Combat
                     // to the player. Without it the player is invisible to anything that asks who
                     // landed the killing blow — no error, just an attribution that never matches.
                     targetHealth.TakeDamage(damage, "you", foeName, gameObject);
+                    _bar?.Ping();
                 }
 
                 yield return new WaitForSeconds(attackDuration);
@@ -565,6 +571,20 @@ namespace ExiledAlvaston.Combat
         #endregion
 
         #region Health & Damage
+        /// <summary>
+        /// Raises the player's floating health bar. A one-line pass-through so an enemy taking
+        /// aggro can raise it without knowing what component it lives on.
+        ///
+        /// ⚠ Pushed from EnemyAI's 0.2 s perception tick, not polled. Asking "does anything have
+        /// aggro on me?" from the player is a global question, and the two obvious answers — a
+        /// static counter that leaks on chunk teardown, or a per-frame scan that allocates — are
+        /// both worse than five calls a second per aggroed enemy.
+        /// </summary>
+        public void PingHealthBar()
+        {
+            _bar?.Ping();
+        }
+
         /// <summary>Legacy entry point — routes through Health so death/feedback stay unified.</summary>
         public void TakeDamage(int damage)
         {
@@ -736,6 +756,7 @@ namespace ExiledAlvaston.Combat
                             : ability.BaseDamage;
                         // Same reason as the melee site: attribute the spell to the player.
                         target.TakeDamage(spellDamage, shout, target.DisplayName, gameObject);
+                        _bar?.Ping();
                     }
                 }
                 else
