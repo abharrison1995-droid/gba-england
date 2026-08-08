@@ -98,6 +98,43 @@ namespace ExiledAlvaston.Data
             }
         }
 
+        /// <summary>
+        /// What one level is worth to a class. Code-only balance data — no asset, prefab or save
+        /// stores it, so retuning these numbers costs nothing but a recompile.
+        /// </summary>
+        [System.Serializable]
+        public class LevelGrowth
+        {
+            public int MaxHealth;
+            public int MaxManaStamina;
+        }
+
+        /// <summary>
+        /// Automatic per-level growth, applied as <c>(Level - 1) * growth</c> by
+        /// <c>PlayerSession.RecalculateDerivedStats</c>. At the cap of 25 this takes, for example,
+        /// Bunda Basher from 160 HP to 376 and Dynamo from 80 resource to 200.
+        /// </summary>
+        /// <remarks>
+        /// ⚠️ Traits deliberately do not grow. Melee damage is <c>Strength * 2 + 5</c>, so even
+        /// +1 Strength a level would have a level-25 Young Driller swinging for 67 before weapon or
+        /// perks against 19 at level 1 — that retunes the entire enemy roster in one go. Traits are
+        /// perk territory in v1. If trait growth is wanted later, the honest shape is a point every
+        /// N levels rather than a per-level integer, and the enemy damage/health constants in
+        /// <c>EKVibe</c> need revisiting in the same change.
+        /// </remarks>
+        public static LevelGrowth GrowthPerLevel(PlayerClass c)
+        {
+            switch (c)
+            {
+                case PlayerClass.YoungDriller: return new LevelGrowth { MaxHealth = 6, MaxManaStamina = 3 };
+                case PlayerClass.Stabmeister: return new LevelGrowth { MaxHealth = 7, MaxManaStamina = 2 };
+                case PlayerClass.MrHood: return new LevelGrowth { MaxHealth = 5, MaxManaStamina = 3 };
+                case PlayerClass.Dynamo: return new LevelGrowth { MaxHealth = 4, MaxManaStamina = 5 };
+                case PlayerClass.BundaBasher: return new LevelGrowth { MaxHealth = 9, MaxManaStamina = 2 };
+                default: return new LevelGrowth { MaxHealth = 5, MaxManaStamina = 3 };
+            }
+        }
+
         public static int StartingMaxHealth(PlayerClass c)
         {
             switch (c)
