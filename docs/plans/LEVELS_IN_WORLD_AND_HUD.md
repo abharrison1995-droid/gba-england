@@ -365,8 +365,12 @@ is learned from the first hit.
 
 That is why §5.2.1 pushes `_target != null || player within SightRadius` rather than aggro alone. It
 costs nothing (the distance is already computed at `EnemyAI.cs:160`) and the plate appears as you
-approach — before contact, but only for enemies actually near you. If the owner wants the stricter
-reading, deleting the second term is a one-word change. I recommend keeping it.
+approach — before contact, but only for enemies actually near you.
+
+**Owner decision 2026-08-08: keep the sight-radius term.** The plate shows on aggro *or* when the
+player is within `SightRadius`, so a fight can be judged before it is taken. This reverses the
+earlier "damaged or aggroed" answer deliberately. Dropping the second term later is a one-word
+change if it proves too noisy in play.
 
 ### Work item 3 — the HUD cluster
 
