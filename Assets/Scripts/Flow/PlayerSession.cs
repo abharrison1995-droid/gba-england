@@ -255,9 +255,10 @@ namespace ExiledAlvaston.Flow
             ResourceRegenMultiplier = 1f;
             ExtraLootRolls = 0;
 
-            // 4. Perk FLAT adds, then 5. perk PERCENT multipliers — in that order, so a percentage
-            //    perk multiplies the flat ones rather than the other way round. Two passes over a
-            //    handful of ids, on level-up and load only; nothing here runs per frame or per hit.
+            // 4. Perk FLAT adds. Percentages are gathered here and applied after the loop (step 5),
+            //    so a percentage perk multiplies the flat ones rather than the other way round.
+            //    One pass over a handful of ids, on level-up, load and spend only — nothing in
+            //    here runs per frame or per hit.
             float maxHealthPercent = 0f;
 
             foreach (string perkId in _spentPerkIds)
