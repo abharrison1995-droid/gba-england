@@ -141,14 +141,17 @@ work, not an afterthought.
   of passive effects. Effects as an **append-only enum** + magnitude.
 - **v1 effect set — decided 2026-08-08**, three families:
   - *Combat:* melee and spell damage, read at hit time so they compose with `weapon.Damage`.
-    ⚠️ **There is no player ranged attack.** `CombatController` has exactly two damage sites,
-    melee and spell; `RangedCaster` is an `EnemyAI` field. A ranged-damage perk would be
-    spendable and do nothing, so it is deferred — the effect enum is append-only, so it costs
-    one line whenever a ranged attack exists.
-  - *Survivability:* max health, armour, and the `Resistances` block on `CharacterData`.
-    ⚠️ **`Resistances` is not read by anything.** Nothing in `Health.TakeDamage` consults it; its
-    only read is a character-sheet readout. A perk touching it moves a number on the sheet and
-    changes no damage until resistances are actually wired into the damage path.
+    ⚠️ **There is no player ranged attack, so ranged damage is deferred and no enum member for it
+    exists.** `CombatController` has exactly two damage sites, melee and spell; `RangedCaster` is an
+    `EnemyAI` field. A ranged-damage perk would be spendable and do nothing. The effect enum is
+    append-only, so adding it costs one line whenever a ranged attack exists.
+  - *Survivability:* max health and armour.
+    ⚠️ **Only `Resistances.Physical` is load-bearing, and only as of Phase 3.** It is now added to
+    worn armour to form the single figure `EKVibe.ArmourReduction` reads, which is also what makes
+    the character sheet's Armor line — which has always printed `Physical + TotalArmor()` — honest.
+    The other four (Fire, Cold, Poison, Magic) are read by nothing at all: there is no damage-type
+    system to attach them to, so a perk raising one would move a number on the sheet and no damage.
+    No v1 perk touches them, and no effect enum member exists for them.
   - *Utility:* move speed, max mana/stamina and its regen, loot rolls.
 - ⚠️ **The crime layer is deliberately excluded from v1** — no concealment, pickpocket-odds or
   wanted-decay perks. Owner's call; they can append later, and the effect enum is append-only
@@ -162,11 +165,12 @@ work, not an afterthought.
 detail pane, and a spend button; plus its toast for "perk point earned". Do **not** model it on
 SpellbookUI.
 
-⚠️ **Reaching it costs an editor step.** The bag window is built by
-`Assets/Editor/InventoryWin95Builder.cs`, so a PERKS button means editing that tool and the owner
-running the menu item — the button does not exist until they do. The right rail is already full
-(QUEST JOURNAL, SPELLS, WIKIBRITAIN, MAP OF BRITAIN); the level readout in the left stats panel is
-the natural place to hang it, since that panel is already the character sheet.
+**Reaching it costs no editor step.** `InventoryController.BuildSpellsButton` already creates the
+SPELLS rail button at runtime in `Awake`, styled through `Win95Skin`, and `InventoryWin95Builder`
+documents that arrangement rather than owning it. PERKS follows the same precedent and exists as
+soon as the code compiles; the rebuild tool uses `FindOrCreate` throughout, so it never deletes a
+runtime-built button. The right rail is already full (QUEST JOURNAL, SPELLS, WIKIBRITAIN, MAP OF
+BRITAIN), so the button hangs in the left stats panel, which is already the character sheet.
 
 ## Phase 4 — loot tiers
 
