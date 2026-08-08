@@ -164,6 +164,14 @@ namespace ExiledAlvaston.Vibe
             return Mathf.Min(ArmourMaxReduction, (float)armour / (armour + ArmourSoftCap));
         }
 
+        /// <summary>
+        /// Perk points earned by reaching a level: one every two levels, at 2, 4, 6 … 24, so twelve
+        /// across the cap of 25. Derived on every read and never stored, exactly like the level
+        /// itself — retuning this needs no save migration, and a downward retune cannot leave a
+        /// negative figure because <c>PlayerSession.UnspentPerkPoints</c> clamps at 0.
+        /// </summary>
+        public static int PerkPointsAtLevel(int level) => Mathf.Clamp(level, 1, MaxPlayerLevel) / 2;
+
         /// <summary>Cumulative XP needed to have reached the given level. Level 1 and below cost 0.</summary>
         public static int TotalXPForLevel(int level)
         {

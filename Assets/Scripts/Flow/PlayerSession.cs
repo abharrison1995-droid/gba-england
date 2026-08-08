@@ -157,6 +157,11 @@ namespace ExiledAlvaston.Flow
             // So does the encyclopedia: no entries carry over from the last run.
             _unlockedWikiEntries.Clear();
 
+            // And no perks. Load depends on this too — RestoreFromSave calls this method first, so
+            // clearing here is what lets RestorePerkIds put the saved set back cleanly.
+            _spentPerkIds.Clear();
+            OnPerksChanged?.Invoke();
+
             Pounds = 0;
             OnPoundsChanged?.Invoke();
 
@@ -572,6 +577,97 @@ namespace ExiledAlvaston.Flow
             {
                 if (!string.IsNullOrEmpty(id)) _unlockedWikiEntries.Add(id);
             }
+        }
+
+        // ── Perks ───────────────────────────────────────────────────────────────────────
+        // Which perks the player has spent points on, by PerkId. Same save contract as the wiki
+        // unlocks above: a runtime HashSet here, a List<string> on SaveData.
+
+        private readonly HashSet<string> _spentPerkIds = new HashSet<string>();
+
+        /// <summary>Read-only view for the saver. Enumeration order is not meaningful.</summary>
+        public IEnumerable<string> SpentPerkIds => _spentPerkIds;
+
+        /// <summary>Fires whenever the set of taken perks changes (spend, restore from save).</summary>
+        public event Action OnPerksChanged;
+
+        /// <summary>
+        /// Points earned by the current level, less those already spent.
+        ///
+        /// Clamped at 0 deliberately: if the curve in <see cref="EKVibe.PerkPointsAtLevel"/> is ever
+        /// retuned downward, a loaded player can hold more spent ids than the new curve pays for.
+        /// The clamp only keeps this figure from going negative — the derivation still honours
+        /// EVERY spent id, so nothing is quietly unspent behind the player's back.
+        /// </summary>
+        public int UnspentPerkPoints =>
+            Mathf.Max(0, EKVibe.PerkPointsAtLevel(Level) - _spentPerkIds.Count);
+
+        /// <summary>True if the player has taken this perk. Ids are compared verbatim.</summary>
+        public bool HasPerk(string perkId)
+        {
+            if (string.IsNullOrEmpty(perkId)) return false;
+            return _spentPerkIds.Contains(perkId);
+        }
+
+        /// <summary>
+        /// Everything that would stop <see cref="SpendPerkPoint"/> succeeding, so the UI can grey
+        /// its button and say why without attempting the spend. Null when the perk can be taken.
+        /// Generated text, not prose.
+        /// </summary>
+        public string PerkRefusalReason(PerkData perk)
+        {
+            if (perk == null || string.IsNullOrEmpty(perk.PerkId)) return "Unavailable";
+            if (HasPerk(perk.PerkId)) return "Already taken";
+            if (!perk.CanBeTakenBy(Class)) return PlayerClassInfo.DisplayName(Class) + " cannot take this";
+            if (Level < perk.MinLevel) return "Requires level " + perk.MinLevel;
+            if (perk.Prerequisite != null && !HasPerk(perk.Prerequisite.PerkId))
+                return "Requires " + (string.IsNullOrEmpty(perk.Prerequisite.Title)
+                    ? perk.Prerequisite.PerkId
+                    : perk.Prerequisite.Title);
+            if (UnspentPerkPoints <= 0) return "No points to spend";
+            return null;
+        }
+
+        /// <summary>
+        /// Spends a point on a perk. Returns false and changes nothing if anything refuses it —
+        /// the same all-or-nothing contract as <see cref="RemoveItem"/> and
+        /// <see cref="SpendPounds"/>.
+        /// </summary>
+        public bool SpendPerkPoint(PerkData perk)
+        {
+            if (PerkRefusalReason(perk) != null) return false;
+
+            _spentPerkIds.Add(perk.PerkId);
+            RecalculateDerivedStats();
+            OnPerksChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>
+        /// Replace the taken-perk set with a saved snapshot (load game). Null = a pre-perk save →
+        /// nothing taken yet.
+        ///
+        /// Ids that no longer resolve to an asset are KEPT, which is deliberately the opposite of
+        /// what <see cref="RestoreInventory"/> does with an unresolvable item. Dropping them looks
+        /// tidy but quietly refunds the point, so a temporarily missing or renamed asset would hand
+        /// out a free respec. Keeping the id leaves the point spent; the derivation skips what it
+        /// cannot resolve, and re-adding the asset restores the perk.
+        ///
+        /// The recompute at the end is not optional: loading rebuilds RuntimeStats from the class
+        /// baseline, so without it the perks are listed as taken and none of their effects exist.
+        /// </summary>
+        public void RestorePerkIds(List<string> saved)
+        {
+            _spentPerkIds.Clear();
+            if (saved != null)
+            {
+                foreach (string id in saved)
+                {
+                    if (!string.IsNullOrEmpty(id)) _spentPerkIds.Add(id);
+                }
+            }
+            RecalculateDerivedStats();
+            OnPerksChanged?.Invoke();
         }
 
         /// <summary>Replace the carried inventory with a saved snapshot (load game). Unresolvable item ids are skipped.</summary>
