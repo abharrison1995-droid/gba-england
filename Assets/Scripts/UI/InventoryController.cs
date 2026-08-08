@@ -89,6 +89,7 @@ namespace ExiledAlvaston.UI
             }
 
             BuildSpellsButton();
+            BuildPerksButton();
 
             // The scene stores LevelText as fileID: 0 and no builder tool assigns it, so without
             // this fallback the readout the bag already reserves stays dead forever — and it would
@@ -111,6 +112,8 @@ namespace ExiledAlvaston.UI
                 PlayerSession.Instance.OnPoundsChanged -= HandlePoundsChanged;
                 PlayerSession.Instance.OnEquipmentChanged -= HandleEquipmentChanged;
                 PlayerSession.Instance.OnXPChanged -= HandleXPChanged;
+                PlayerSession.Instance.OnLevelUp -= HandleLevelUp;
+                PlayerSession.Instance.OnPerksChanged -= HandlePerksChanged;
             }
         }
 
@@ -122,7 +125,31 @@ namespace ExiledAlvaston.UI
             PlayerSession.Instance.OnPoundsChanged += HandlePoundsChanged;
             PlayerSession.Instance.OnEquipmentChanged += HandleEquipmentChanged;
             PlayerSession.Instance.OnXPChanged += HandleXPChanged;
+            PlayerSession.Instance.OnLevelUp += HandleLevelUp;
+            PlayerSession.Instance.OnPerksChanged += HandlePerksChanged;
             _subscribedToInventory = true;
+        }
+
+        /// <summary>
+        /// Toasts when a level-up actually pays a perk point.
+        ///
+        /// Gated on the point count moving — points come every second level, so firing on every
+        /// level-up would promise a point on odd levels that the curve does not pay.
+        /// </summary>
+        private void HandleLevelUp(int newLevel)
+        {
+            if (EKVibe.PerkPointsAtLevel(newLevel) <= EKVibe.PerkPointsAtLevel(newLevel - 1)) return;
+            if (UIManager.Instance == null) return;
+
+            // ⚠ PLACEHOLDER. The wording is the owner's own work (CLAUDE.md §3) — replace the
+            // whole string, do not decorate it.
+            UIManager.Instance.ShowToast("[perk point earned - owner to write]");
+        }
+
+        /// <summary>Perk spends can change the Armor line, the same way equipping a shield does.</summary>
+        private void HandlePerksChanged()
+        {
+            if (IsOpen) RefreshUI();
         }
 
         private void HandleInventoryChanged()
@@ -208,6 +235,57 @@ namespace ExiledAlvaston.UI
             Win95Skin.StyleLabel(tmp);
         }
 
+        /// <summary>
+        /// Adds a "PERKS" button that opens the perk window. Built at runtime in the image of
+        /// <see cref="BuildSpellsButton"/>, so it needs no editor step and no rebuild-tool run —
+        /// and the rebuild tool uses FindOrCreate throughout, so it never deletes this.
+        ///
+        /// It goes in the LEFT stats panel, not the right rail: the rail is full (the backpack
+        /// occupies y 0.34-0.948, then QUEST JOURNAL, SPELLS and WIKIBRITAIN take the rest), and
+        /// the left panel is already the character sheet, which is what a perk is part of.
+        ///
+        /// ⚠ The free band under MAP OF BRITAIN is only about 39 px tall against about 65 px for a
+        /// rail button. This is the one layout number here that was reasoned about rather than
+        /// looked at. If it reads cramped, raise Resistances to (0.08, 0.20)-(0.92, 0.38) in
+        /// Assets/Editor/InventoryWin95Builder.cs, widen this button to 0.118-0.19, and re-run
+        /// Tools > GBH > UI > Rebuild Inventory Panel (Win95) with Play mode stopped.
+        /// </summary>
+        private void BuildPerksButton()
+        {
+            Transform leftStats = FindChildByName(InventoryUIPanel.transform, "LeftStats");
+            // No LeftStats means an older bag layout: skip rather than hanging the button somewhere
+            // arbitrary where it would overlap the backpack.
+            if (leftStats == null) return;
+            if (leftStats.Find("PerksButton") != null) return;
+
+            var go = new GameObject("PerksButton", typeof(RectTransform));
+            go.transform.SetParent(leftStats, false);
+            var rt = (RectTransform)go.transform;
+            // The free band between MAP OF BRITAIN (top 0.115) and Resistances (bottom 0.16).
+            rt.anchorMin = new Vector2(0.10f, 0.118f);
+            rt.anchorMax = new Vector2(0.90f, 0.156f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            go.AddComponent<Image>();
+            var perksButton = go.AddComponent<Button>();
+            Win95Skin.StyleButton(perksButton);
+            perksButton.onClick.AddListener(OnPerksPressed);
+
+            var labelGo = new GameObject("Label", typeof(RectTransform));
+            labelGo.transform.SetParent(go.transform, false);
+            var lrt = (RectTransform)labelGo.transform;
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = Vector2.zero;
+            lrt.offsetMax = Vector2.zero;
+            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = "PERKS";
+            tmp.fontSize = 18;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = TextAlignmentOptions.Center;
+            Win95Skin.StyleLabel(tmp);
+        }
+
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.I))
@@ -266,6 +344,13 @@ namespace ExiledAlvaston.UI
         {
             if (IsOpen) ToggleInventory();
             WikiBritainUI.Open();
+        }
+
+        /// <summary>PERKS button: same pause-balance contract as the wiki button.</summary>
+        public void OnPerksPressed()
+        {
+            if (IsOpen) ToggleInventory();
+            PerkWindowUI.Open();
         }
 
         /// <summary>Depth-first name search — the rebuild tool nests its buttons under LeftStats.</summary>
