@@ -291,6 +291,32 @@ GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix
 each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
 `sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
 
+**Also outstanding — enemy levels in the world, combat nameplates, bigger HUD.** Merged
+2026-08-08, code-reviewed against its plan, never compiled:
+
+- **Enemy levels are authorable but nothing is authored.** `PlacementPreset.EnemyLevel` and the
+  palette's per-stamp Level field attach an `EnemyLevel` at placement. **A level of 0 attaches no
+  component at all** — deliberate, because a level-1 component is not inert: the nameplate starts
+  reading it and the badge flips from the prefab's "3" to "1". ⚠️ **No enemy prefab is placed
+  anywhere in any chunk or in `c.unity`** — the only `EnemyAI` in the scene is the PCSO — so this
+  path has never run. *Stamp an enemy from the palette at Level 4 and check it is tougher than
+  one stamped at Level 1.*
+- **Nameplates are combat-gated and now build lazily.** They show on aggro **or** when the player
+  is within `SightRadius`, and hide a few seconds after. *Check a plate appears as you approach
+  rather than only after the first hit, and that it does not reappear over a corpse.* The tutorial
+  bandit's badge should now read **1, not 3** — that line was a real bug, set after the badge had
+  already been drawn.
+- ⚠️ **`EnemyAI` resolves its nameplate in `Start`, not `Awake`.** `TutorialSequence` adds
+  `EnemyAI` before `EnemyNameplate`, and `AddComponent` runs `Awake` synchronously, so caching in
+  `Awake` would cache null and leave the tutorial bandit with no plate at all. Do not move it.
+- **The player's bar carries a level badge** and now rises when they deal damage or draw aggro,
+  not only when hit. *Check the badge tracks a level-up while the bar is visible.*
+- **The top-left HUD cluster is scaled 1.6× at runtime** from `EKVibe.HudClusterScale`. The
+  ceiling is 1.75, where it would overlap the combat log. A `SafeAreaFitter` is added to the HUD
+  panel at runtime — *invisible in a 16:9 Game view; needs the Device Simulator.*
+
+→ [docs/plans/LEVELS_IN_WORLD_AND_HUD.md](docs/plans/LEVELS_IN_WORLD_AND_HUD.md) §10.3 for the routes.
+
 **Also outstanding — perks, growth and proportional armour, phase 3.** Merged 2026-08-08,
 code-reviewed against its plan, never compiled:
 
