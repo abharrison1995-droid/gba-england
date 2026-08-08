@@ -247,14 +247,78 @@ namespace ExiledAlvaston.Flow
             RuntimeStats.MaxHealth += growth.MaxHealth * levelsGained;
             RuntimeStats.MaxManaStamina += growth.MaxManaStamina * levelsGained;
 
-            // 4/5. Perk flat adds then perk percentages — nothing spends perks yet.
-
-            // 6. Cached query values, reset every run so they never accumulate either.
+            // 6. Cached query values, reset here so they never accumulate either. Reset before the
+            //    perk passes below, which add into them.
             MeleeDamageMultiplier = 1f;
             SpellDamageMultiplier = 1f;
             MoveSpeedMultiplier = 1f;
             ResourceRegenMultiplier = 1f;
             ExtraLootRolls = 0;
+
+            // 4. Perk FLAT adds, then 5. perk PERCENT multipliers — in that order, so a percentage
+            //    perk multiplies the flat ones rather than the other way round. Two passes over a
+            //    handful of ids, on level-up and load only; nothing here runs per frame or per hit.
+            float maxHealthPercent = 0f;
+
+            foreach (string perkId in _spentPerkIds)
+            {
+                PerkData perk = PerkDatabase.Find(perkId);
+                // Null means the asset is missing or the id was renamed. The id stays spent (see
+                // RestorePerkIds); PerkDatabase.Find has already logged it, so say nothing more.
+                if (perk == null || perk.Effects == null) continue;
+
+                for (int i = 0; i < perk.Effects.Count; i++)
+                {
+                    PerkEffect effect = perk.Effects[i];
+                    if (effect == null) continue;
+
+                    switch (effect.Type)
+                    {
+                        // Flat adds (step 4).
+                        case PerkEffectType.MaxHealthFlat:
+                            RuntimeStats.MaxHealth += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+                        case PerkEffectType.MaxResourceFlat:
+                            RuntimeStats.MaxManaStamina += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+                        case PerkEffectType.ArmourFlat:
+                            // Into Physical, which is what BOTH the character sheet's Armor line and
+                            // EffectiveArmour read — so the readout and the mitigation move together.
+                            RuntimeStats.BaseResistances.Physical += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+
+                        // Percentages (step 5), gathered here and applied after the loop.
+                        case PerkEffectType.MaxHealthPercent:
+                            maxHealthPercent += effect.Magnitude;
+                            break;
+
+                        // Cached query values (step 6). Magnitude is a percentage: 15 means +15%.
+                        case PerkEffectType.MeleeDamagePercent:
+                            MeleeDamageMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.SpellDamagePercent:
+                            SpellDamageMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.ResourceRegenPercent:
+                            ResourceRegenMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.MoveSpeedPercent:
+                            MoveSpeedMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.ExtraLootRolls:
+                            ExtraLootRolls += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+                    }
+                }
+            }
+
+            // 5. Percentages last, over the flat total.
+            if (maxHealthPercent != 0f)
+                RuntimeStats.MaxHealth = Mathf.RoundToInt(RuntimeStats.MaxHealth * (1f + maxHealthPercent / 100f));
+
+            ExtraLootRolls = Mathf.Max(0, ExtraLootRolls);
+            MoveSpeedMultiplier = Mathf.Max(0.1f, MoveSpeedMultiplier);
+            ResourceRegenMultiplier = Mathf.Max(0f, ResourceRegenMultiplier);
 
             RuntimeStats.MaxHealth = Mathf.Max(1, RuntimeStats.MaxHealth);
             RuntimeStats.MaxManaStamina = Mathf.Max(0, RuntimeStats.MaxManaStamina);

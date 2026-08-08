@@ -504,6 +504,12 @@ namespace ExiledAlvaston.Combat
                 Data.ItemData weapon = session != null ? session.EquippedWeapon() : null;
                 if (weapon != null) damage += weapon.Damage;
 
+                // After the weapon, so a perk multiplies the whole swing rather than the bare
+                // Strength roll. A cached float, never a walk over the perk list — this is a hot
+                // path and the multiplier only moves on level-up, load and perk spend.
+                if (session != null)
+                    damage = Mathf.RoundToInt(damage * session.MeleeDamageMultiplier);
+
                 _hitThisSwing.Clear();
                 for (int i = 0; i < hitCount; i++)
                 {
@@ -705,9 +711,13 @@ namespace ExiledAlvaston.Combat
             {
                 SetAnimatorTrigger("CastSpell");
 
+                // Hoisted rather than fetching Instance twice — the spell damage multiplier below
+                // needs it too.
+                var session = Flow.PlayerSession.Instance;
+
                 // Shout the (player-named) spell overhead as you cast: "Spark Out!"
-                string shout = IsMagic(ability) && Flow.PlayerSession.Instance != null
-                    ? Flow.PlayerSession.Instance.SpellName
+                string shout = IsMagic(ability) && session != null
+                    ? session.SpellName
                     : ability.AbilityName;
                 UI.SpellShoutText.Spawn(transform.position, shout);
 
@@ -720,8 +730,13 @@ namespace ExiledAlvaston.Combat
                 {
                     LightningBolt.Spawn(origin, target.transform.position);
                     if (ability.BaseDamage > 0)
+                    {
+                        int spellDamage = session != null
+                            ? Mathf.RoundToInt(ability.BaseDamage * session.SpellDamageMultiplier)
+                            : ability.BaseDamage;
                         // Same reason as the melee site: attribute the spell to the player.
-                        target.TakeDamage(ability.BaseDamage, shout, target.DisplayName, gameObject);
+                        target.TakeDamage(spellDamage, shout, target.DisplayName, gameObject);
+                    }
                 }
                 else
                 {
