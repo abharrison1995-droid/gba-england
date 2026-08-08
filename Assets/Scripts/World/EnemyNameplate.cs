@@ -28,6 +28,25 @@ namespace ExiledAlvaston.World
             Build();
         }
 
+        /// <summary>
+        /// Pushed from <see cref="EnemyAI.PerceptionRoutine"/> five times a second: true while this
+        /// enemy has the player aggroed or within its sight radius.
+        ///
+        /// False deliberately does nothing — the plate's own timer runs out on its own, so a plate
+        /// fades out after a fight rather than snapping off the instant an enemy loses interest.
+        /// </summary>
+        public void SetEngaged(bool engaged)
+        {
+            if (!engaged) return;
+            Show();
+        }
+
+        private void Show()
+        {
+            if (_root != null && !_root.gameObject.activeSelf)
+                _root.gameObject.SetActive(true);
+        }
+
         private void LateUpdate()
         {
             if (_root == null) return;

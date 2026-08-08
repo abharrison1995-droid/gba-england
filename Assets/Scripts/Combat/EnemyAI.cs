@@ -42,6 +42,19 @@ namespace ExiledAlvaston.Combat
         private bool _isAttacking;
         private readonly RaycastHit[] _losHits = new RaycastHit[8];
 
+        /// <summary>May legitimately be null — a hand-built enemy need not carry a nameplate.</summary>
+        private EnemyNameplate _plate;
+
+        /// <summary>
+        /// Whether the player was inside <see cref="SightRadius"/> at the last perception tick,
+        /// regardless of line of sight. Written by <see cref="TryAcquireTarget"/>, which already
+        /// computes the distance, so this costs nothing extra.
+        /// </summary>
+        private bool _playerInSight;
+
+        /// <summary>True while this enemy is chasing something.</summary>
+        public bool HasAggro => _target != null;
+
         private void Awake()
         {
             _selfHealth = GetComponent<Health>();
@@ -72,6 +85,12 @@ namespace ExiledAlvaston.Combat
 
         private void Start()
         {
+            // ⚠ Resolved here rather than in Awake. AddComponent runs Awake synchronously, and
+            // TutorialSequence builds its bandit by adding the EnemyAI *before* the nameplate — an
+            // Awake lookup would cache null and that bandit's plate would never be pushed to.
+            // Start runs after every component added in the same frame.
+            _plate = GetComponent<EnemyNameplate>();
+
             SnapToNavMesh();
             StartCoroutine(PerceptionRoutine());
         }
@@ -121,6 +140,18 @@ namespace ExiledAlvaston.Combat
             }
         }
 
+        /// <summary>
+        /// Aggro and proximity, re-evaluated five times a second — and, at the end of each tick,
+        /// pushed to this enemy's nameplate.
+        ///
+        /// ⚠ A push, not a poll. Nothing is added to any Update or LateUpdate: this routine already
+        /// exists, already runs at 0.2 s and already does the distance maths, so the gate costs a
+        /// nameplate nothing per frame. It is also deliberately not a static aggro counter — a
+        /// counter has to be decremented in OnDestroy, and a chunk teardown that destroys thirty
+        /// aggroed enemies in one frame is exactly where such a counter drifts and never recovers.
+        /// This coroutine is a while(true) on the enemy, so it dies with the object: no
+        /// unsubscribe, no static state, nothing to leak across a chunk transition.
+        /// </summary>
         private IEnumerator PerceptionRoutine()
         {
             var wait = new WaitForSeconds(0.2f);
@@ -128,6 +159,7 @@ namespace ExiledAlvaston.Combat
             {
                 if (_target == null)
                 {
+                    _playerInSight = false;
                     TryAcquireTarget();
                 }
                 else
@@ -148,6 +180,12 @@ namespace ExiledAlvaston.Combat
                     }
                 }
 
+                // Aggro OR proximity: the plate appears as the player comes within sight radius,
+                // so a fight can be judged before it is taken rather than learned from the first
+                // hit. Dropping the second term is a one-word change if it proves too noisy.
+                if (_plate != null)
+                    _plate.SetEngaged(_target != null || _playerInSight);
+
                 yield return wait;
             }
         }
@@ -159,6 +197,11 @@ namespace ExiledAlvaston.Combat
 
             float dist = Vector3.Distance(transform.position, player.transform.position);
             if (dist > SightRadius) return;
+
+            // Set before the line-of-sight test on purpose: the nameplate gate is about how close
+            // the player is, not about whether this enemy can see them round a corner.
+            _playerInSight = true;
+
             if (!HasLineOfSight(player.transform)) return;
 
             _target = player.transform;
