@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ExiledAlvaston.Data;
+using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.Flow
 {
@@ -58,6 +59,26 @@ namespace ExiledAlvaston.Flow
 
         /// <summary>Fires whenever the wallet changes (payout, spend, restore from save).</summary>
         public event Action OnPoundsChanged;
+
+        [Header("Progression")]
+        [Tooltip("Cumulative XP earned this run. The level is DERIVED from this and never stored, " +
+                 "so retuning the curve in EKVibe needs no save migration.")]
+        public int TotalXP;
+
+        /// <summary>Fires whenever the XP total changes (kill, quest reward, restore from save).</summary>
+        public event Action OnXPChanged;
+
+        /// <summary>Fires once per level crossed, with the level just reached.</summary>
+        public event Action<int> OnLevelUp;
+
+        /// <summary>The player's level, derived from <see cref="TotalXP"/>. Never stored.</summary>
+        public int Level => EKVibe.LevelForXP(TotalXP);
+
+        /// <summary>XP earned into the current level's band. Pass-through so no UI does curve maths.</summary>
+        public int XPIntoLevel => EKVibe.XPIntoLevel(TotalXP);
+
+        /// <summary>XP still needed for the next level; 0 at the cap, which means "MAX", not "none needed".</summary>
+        public int XPForNextLevel => EKVibe.XPForNextLevel(TotalXP);
 
         [Header("Magic")]
         [Tooltip("Set once Daniel Pauls teaches the first spell.")]
@@ -129,6 +150,12 @@ namespace ExiledAlvaston.Flow
 
             Pounds = 0;
             OnPoundsChanged?.Invoke();
+
+            // Same contract again, and load depends on it: RestoreFromSave calls this method first,
+            // so clearing here is what lets RestoreTotalXP put the saved figure back cleanly. Miss
+            // it and a New Game in the same app session starts mid-level with no error anywhere.
+            TotalXP = 0;
+            OnXPChanged?.Invoke();
 
             if (RuntimeStats == null)
                 RuntimeStats = ScriptableObject.CreateInstance<CharacterData>();
@@ -289,6 +316,36 @@ namespace ExiledAlvaston.Flow
         {
             Pounds = Mathf.Max(0, saved);
             OnPoundsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Awards XP. Non-positive amounts are ignored rather than silently taking XP back, the
+        /// same guard <see cref="AddPounds"/> uses.
+        ///
+        /// <paramref name="source"/> is a label for whoever granted it (an enemy's display name, a
+        /// quest id) — carried for future toasts and debugging, not used for any arithmetic.
+        ///
+        /// <see cref="OnLevelUp"/> fires once per level crossed: a single large grant (a quest
+        /// reward, say) can cross more than one, so this loops rather than assuming one.
+        /// </summary>
+        public void GrantXP(int amount, string source = null)
+        {
+            if (amount <= 0) return;
+
+            int before = Level;
+            TotalXP += amount;
+            OnXPChanged?.Invoke();
+
+            int after = Level;
+            for (int level = before + 1; level <= after; level++)
+                OnLevelUp?.Invoke(level);
+        }
+
+        /// <summary>Replace the XP total with a saved snapshot (load game).</summary>
+        public void RestoreTotalXP(int saved)
+        {
+            TotalXP = Mathf.Max(0, saved);
+            OnXPChanged?.Invoke();
         }
 
         /// <summary>Records that a Fixed container has been emptied. Ids are compared verbatim.</summary>
