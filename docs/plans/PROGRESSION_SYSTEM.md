@@ -140,9 +140,15 @@ work, not an afterthought.
   `PerkId` (⚠️ save key), name, description, class restriction, min level, prereq perk, and a list
   of passive effects. Effects as an **append-only enum** + magnitude.
 - **v1 effect set — decided 2026-08-08**, three families:
-  - *Combat:* melee, ranged and spell damage, read at hit time so they compose with `weapon.Damage`.
-  - *Survivability:* max health, armour, and the `Resistances` block that already exists on
-    `CharacterData` and is barely used.
+  - *Combat:* melee and spell damage, read at hit time so they compose with `weapon.Damage`.
+    ⚠️ **There is no player ranged attack.** `CombatController` has exactly two damage sites,
+    melee and spell; `RangedCaster` is an `EnemyAI` field. A ranged-damage perk would be
+    spendable and do nothing, so it is deferred — the effect enum is append-only, so it costs
+    one line whenever a ranged attack exists.
+  - *Survivability:* max health, armour, and the `Resistances` block on `CharacterData`.
+    ⚠️ **`Resistances` is not read by anything.** Nothing in `Health.TakeDamage` consults it; its
+    only read is a character-sheet readout. A perk touching it moves a number on the sheet and
+    changes no damage until resistances are actually wired into the damage path.
   - *Utility:* move speed, max mana/stamina and its regen, loot rolls.
 - ⚠️ **The crime layer is deliberately excluded from v1** — no concealment, pickpocket-odds or
   wanted-decay perks. Owner's call; they can append later, and the effect enum is append-only
