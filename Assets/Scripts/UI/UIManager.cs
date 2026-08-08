@@ -78,6 +78,30 @@ namespace ExiledAlvaston.UI
             BuildActionButtons();
             RestyleSceneHudButtons();
             ScaleHudCluster();
+            EnsureHudSafeArea();
+        }
+
+        /// <summary>
+        /// Keeps the whole gameplay HUD inside the device's reported safe area. There has never
+        /// been a SafeAreaFitter on it — the only two in c.unity sit under the title and creator
+        /// layouts — and the cluster is 16 px from the left edge, which in landscape is exactly
+        /// where a notch or a rounded corner lands.
+        ///
+        /// HUDPanel is already a full stretch with zero offsets and zero anchoredPosition, which is
+        /// what SafeAreaFitter overwrites, so it is a drop-in.
+        ///
+        /// ⚠ This moves the <b>whole</b> HUD, including the runtime-built action buttons and the
+        /// joystick — wanted, since a home indicator is as much in their way as a notch is in the
+        /// cluster's, but a bigger behavioural change than anything else here. ⚠ It is also
+        /// invisible in a 16:9 Game view, which reports no inset: seeing nothing change there is
+        /// not evidence that it works. Window → General → Device Simulator, landscape, notched
+        /// device.
+        /// </summary>
+        private void EnsureHudSafeArea()
+        {
+            Transform hud = FindChildRecursive(transform, "HUDPanel");
+            if (hud != null && hud.GetComponent<SafeAreaFitter>() == null)
+                hud.gameObject.AddComponent<SafeAreaFitter>();
         }
 
         /// <summary>
