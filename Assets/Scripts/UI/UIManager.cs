@@ -77,23 +77,59 @@ namespace ExiledAlvaston.UI
             EnsureJournalButton();
             BuildActionButtons();
             RestyleSceneHudButtons();
+            ScaleHudCluster();
         }
 
         /// <summary>
-        /// The one legacy scene button still visible — MapBagShortcut ("Bag") — gets the Win95
-        /// skin at runtime. The rest of the legacy cluster is retired by BuildActionButtons,
-        /// so restyling it in the scene would paint objects nobody sees.
+        /// Grows the top-left cluster to something readable at arm's length on a phone.
+        ///
+        /// Scales the <b>panel</b>, never an element inside it. The four children are positioned by
+        /// absolute anchoredPosition, so scaling the panel preserves the authored layout exactly,
+        /// where resizing each element would mean re-deriving every offset — and would fight
+        /// <see cref="EnsureDedicatedTrack"/>, which copies anchors, pivot, anchoredPosition and
+        /// sizeDelta between rects. localScale touches none of those, so the two cannot interact.
+        /// ⚠ That only holds while this is the one and only localScale write in the HUD.
+        ///
+        /// The panel's pivot and anchor are both (0,1), so it grows right and down from the screen
+        /// corner and its safe-area exposure is unchanged.
+        ///
+        /// ⚠ Assign, never multiply. If anything ever runs this twice — a HUD rebuild, a second
+        /// UIManager — an assignment is idempotent and a multiply leaves the cluster at 2.56x,
+        /// which reads as a baffling layout bug rather than a double call.
+        /// </summary>
+        private void ScaleHudCluster()
+        {
+            if (TopLeftPortraitPanel != null)
+                TopLeftPortraitPanel.localScale = Vector3.one * EKVibe.HudClusterScale;
+        }
+
+        /// <summary>
+        /// The legacy scene buttons still visible — MapBagShortcut ("Bag") and the authored USE
+        /// button — get the Win95 skin at runtime. The rest of the legacy cluster is retired by
+        /// BuildActionButtons, so restyling it in the scene would paint objects nobody sees.
         /// </summary>
         private void RestyleSceneHudButtons()
         {
             Transform bag = FindChildRecursive(transform, "MapBagShortcut");
-            if (bag == null) return;
+            if (bag != null)
+            {
+                var btn = bag.GetComponent<Button>();
+                if (btn != null) Win95Skin.StyleButton(btn);
 
-            var btn = bag.GetComponent<Button>();
-            if (btn != null) Win95Skin.StyleButton(btn);
+                var label = bag.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (label != null) Win95Skin.StyleLabel(label);
+            }
 
-            var label = bag.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (label != null) Win95Skin.StyleLabel(label);
+            // The scene-authored USE button predates the skin, and EnsureInteractUI returns
+            // early precisely because it exists — so this is the only restyle it ever gets.
+            if (InteractButtonRoot != null)
+            {
+                var useBtn = InteractButtonRoot.GetComponent<Button>();
+                if (useBtn != null) Win95Skin.StyleButton(useBtn);
+
+                var useLabel = InteractButtonRoot.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (useLabel != null) Win95Skin.StyleLabel(useLabel);
+            }
         }
 
         /// <summary>
