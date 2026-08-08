@@ -62,11 +62,11 @@ shipped one. Add to CLAUDE.md §3 alongside the others when this lands.
   (identified by `GetComponent<CombatController>() != null`, as the armour code already does). That
   keeps police-kills-civilian and enemy-kills-enemy from paying out.
 
-  ⚠️ **`LastAttacker` is never set to the player today.** Both player damage sites —
-  `CombatController` melee and the spell path — call the three-argument `TakeDamage` overload,
-  which forwards `attacker: null`. Only `EnemyAI` passes a GameObject. Attribution therefore grants
-  **nothing, forever, with no log** until those two call sites pass `gameObject`. That fix is a
-  prerequisite commit, not part of the XP work.
+  `LastAttacker` **is** set to the player, as of the "Attribute player hits to the player" commit
+  on `progression-levelling`. Before it, both player damage sites — `CombatController` melee and
+  the spell path — called the three-argument `TakeDamage`, which forwards `attacker: null`, so
+  attribution matched nothing and would have granted no XP at all with no log. Both now pass
+  `gameObject` to the four-argument overload.
 - **Quests:** append `public int XP;` to `QuestReward`; the payout site calls the grant. Safe
   append — `QuestDefinition` ships in every build, but an int adds no dependency graph.
 
