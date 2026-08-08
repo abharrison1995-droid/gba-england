@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7fc51ae09f9646d48896705b87b1ac3f, type: 3}
-  m_Name: CherryMangoVape
+  m_Name: Blackberry
   m_EditorClassIdentifier: 
-  ItemID: cherry_mango_vape
-  ItemName: Cherry Mango Vape
-  Description: A disposable vape, cherry mango flavour, near enough empty. Kinda
-    weird looking too.
-  Icon: {fileID: 21300000, guid: c1b8ba13228dcd749b971a9c34367586, type: 3}
-  Type: 8
+  ItemID: blackberry
+  ItemName: Blackberry
+  Description: Tasty berries! No chance I'm eating these without a good wash. Mosleys
+    got the council using weedkiller that glows in the dark.
+  Icon: {fileID: 21300000, guid: e208cbe080a832746b850a8551b600a5, type: 3}
+  Type: 7
   AllowedClasses: 
   Value: 0
   Damage: 0
   Armor: 0
-  Stackable: 0
-  MaxStack: 0
-  HealHP: 0
-  HealMana: 0
+  Stackable: 1
+  MaxStack: 20
+  HealHP: 4
+  HealMana: 2
   UseAnimationTrigger: 
