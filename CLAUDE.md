@@ -291,6 +291,24 @@ GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix
 each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
 `sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
 
+**Also outstanding — perks, growth and proportional armour, phase 3.** Merged 2026-08-08,
+code-reviewed against its plan, never compiled:
+
+- ⚠️ **Armour is now proportional, not a flat subtraction.** `EKVibe.ArmourSoftCap` is 20, capped
+  at 75% reduction. `TestShield`'s Armor 4 now reads as ~16.7% off a hit instead of a flat 4.
+  *Take a hit with and without the shield equipped and check the numbers look sane.*
+- **Stats are recomputed from level and perks on every new game and every load.** The baseline
+  capture is guarded against the character template aliasing `RuntimeStats` — without that guard a
+  second load in one app session bakes growth and perks into the baseline and inflates stats
+  permanently. *Load the same save twice in one sitting and check the stats read identically the
+  second time.* This is the failure most likely to go unnoticed.
+- **No perk assets exist yet**, so the perk window has only ever had an empty state to draw.
+  Prose is the owner's: grep `[no perks written yet` and `[perk point earned`.
+- **`SaveData.PerkIds` is appended.** An id that no longer resolves is deliberately **kept**, so
+  the point stays spent rather than being silently refunded.
+- **Traits do not auto-grow** — only HP and resource. Deliberate: `CombatController` reads
+  `Strength*2+5`, so growing Strength would retune the whole enemy roster at once.
+
 **Also outstanding — XP and levels, phases 1–2, none of it exercised.** Merged 2026-08-08,
 code-reviewed against its plan, never compiled:
 
