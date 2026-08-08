@@ -210,5 +210,18 @@ namespace ExiledAlvaston.Data
                  "pickpocketing them opens the tap-to-lift minigame; leave it empty and it stays " +
                  "the single instant pounds roll. Only read when Pickpocketable is on.")]
         public LootBand PickpocketBand;
+
+        // ── Enemy — level ────────────────────────────────────────────────────────────────────
+        // Appended at the very end, per §7, for the same reason as every block above it: no preset
+        // already authored carries a value for it, so they all read 0 — which means "attach
+        // nothing", i.e. exactly what they place today.
+        [Header("Enemy — level")]
+        [Tooltip("0 leaves the enemy exactly as its prefab authors it — no EnemyLevel component is " +
+                 "added at all. 1 or more attaches one at that level.\n\n" +
+                 "The prefab's Health and Damage are the level-1 baseline, and Override Health / " +
+                 "Override Damage above replace that baseline before the level multiplies it. So " +
+                 "Override Health 100 with a level of 5 is 240 HP in play, and the Inspector on the " +
+                 "placed enemy still reads 100 — the scale happens at runtime, not at placement.")]
+        public int EnemyLevel = 0;
     }
 }
