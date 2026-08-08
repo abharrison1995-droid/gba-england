@@ -113,9 +113,19 @@ namespace ExiledAlvaston.Flow
             Inventory.Clear();
             OnInventoryChanged?.Invoke();
 
+            // Same contract for worn gear: a New Game starts with an empty paper doll.
+            _equipment.Clear();
+            OnEquipmentChanged?.Invoke();
+
             // Same reason: without this a New Game started in the same app session would find
             // every bin the previous playthrough emptied still empty.
             _lootedContainers.Clear();
+
+            // And the map starts blank again: none of the previous run's travels happened.
+            _visitedChunks.Clear();
+
+            // So does the encyclopedia: no entries carry over from the last run.
+            _unlockedWikiEntries.Clear();
 
             Pounds = 0;
             OnPoundsChanged?.Invoke();
@@ -314,6 +324,80 @@ namespace ExiledAlvaston.Flow
             }
         }
 
+        // ── Visited chunks ──────────────────────────────────────────────────────────────
+        // Every chunk the player has set foot in, by ChunkName — the Map of Britain draws a
+        // named node for each of these and "???" for the rest. Same save contract as
+        // _lootedContainers: a runtime HashSet here, a List<string> on SaveData.
+
+        private readonly HashSet<string> _visitedChunks = new HashSet<string>();
+
+        /// <summary>Read-only view for the saver. Enumeration order is not meaningful.</summary>
+        public IEnumerable<string> VisitedChunks => _visitedChunks;
+
+        /// <summary>Records that the player has entered a chunk. Names are compared verbatim.</summary>
+        public void MarkChunkVisited(string chunkName)
+        {
+            if (string.IsNullOrEmpty(chunkName)) return;
+            _visitedChunks.Add(chunkName);
+        }
+
+        /// <summary>True if the player entered this chunk earlier in the run, or in a loaded save.</summary>
+        public bool IsChunkVisited(string chunkName)
+        {
+            if (string.IsNullOrEmpty(chunkName)) return false;
+            return _visitedChunks.Contains(chunkName);
+        }
+
+        /// <summary>Replace the visited set with a saved snapshot (load game). Null means a pre-map save → nothing visited yet.</summary>
+        public void RestoreVisitedChunks(List<string> saved)
+        {
+            _visitedChunks.Clear();
+            if (saved == null) return;
+
+            foreach (string name in saved)
+            {
+                if (!string.IsNullOrEmpty(name)) _visitedChunks.Add(name);
+            }
+        }
+
+        // ── Wiki unlocks ────────────────────────────────────────────────────────────────
+        // WIKIBRITAIN entries the player has unlocked, by EntryID. The encyclopedia window
+        // greys out everything not in here; the toast pops when an id first lands in it.
+
+        private readonly HashSet<string> _unlockedWikiEntries = new HashSet<string>();
+
+        /// <summary>Read-only view for the saver. Enumeration order is not meaningful.</summary>
+        public IEnumerable<string> UnlockedWikiEntries => _unlockedWikiEntries;
+
+        /// <summary>
+        /// Records an unlocked WIKIBRITAIN entry. Returns true only the first time an id is
+        /// unlocked — callers use that to fire the toast on genuinely new entries.
+        /// </summary>
+        public bool UnlockWikiEntry(string entryId)
+        {
+            if (string.IsNullOrEmpty(entryId)) return false;
+            return _unlockedWikiEntries.Add(entryId);
+        }
+
+        /// <summary>True if this entry was unlocked earlier in the run, or in a loaded save.</summary>
+        public bool IsWikiEntryUnlocked(string entryId)
+        {
+            if (string.IsNullOrEmpty(entryId)) return false;
+            return _unlockedWikiEntries.Contains(entryId);
+        }
+
+        /// <summary>Replace the unlock set with a saved snapshot (load game). Null = pre-wiki save → nothing unlocked yet.</summary>
+        public void RestoreWikiEntries(List<string> saved)
+        {
+            _unlockedWikiEntries.Clear();
+            if (saved == null) return;
+
+            foreach (string id in saved)
+            {
+                if (!string.IsNullOrEmpty(id)) _unlockedWikiEntries.Add(id);
+            }
+        }
+
         /// <summary>Replace the carried inventory with a saved snapshot (load game). Unresolvable item ids are skipped.</summary>
         public void RestoreInventory(List<InventorySaveEntry> saved)
         {
@@ -329,6 +413,89 @@ namespace ExiledAlvaston.Flow
                 }
             }
             OnInventoryChanged?.Invoke();
+        }
+
+        // ── Equipment ─────────────────────────────────────────────────────────────────
+        // What the paper doll wears: one item per equippable ItemType, the bag holds the rest.
+        // Equip/Unequip move items between the two, so the bag and doll redraw together.
+
+        private readonly Dictionary<ItemType, ItemData> _equipment = new Dictionary<ItemType, ItemData>();
+
+        public event Action OnEquipmentChanged;
+
+        public IReadOnlyDictionary<ItemType, ItemData> Equipment => _equipment;
+
+        public ItemData EquippedIn(ItemType type)
+        {
+            _equipment.TryGetValue(type, out ItemData item);
+            return item;
+        }
+
+        public ItemData EquippedWeapon() => EquippedIn(ItemType.Weapon);
+
+        /// <summary>Sum of Armor across every worn piece — subtracted from incoming player damage.</summary>
+        public int TotalArmor()
+        {
+            int total = 0;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.Armor;
+            return total;
+        }
+
+        /// <summary>
+        /// Moves one of the item from the bag into its paper-doll slot; the piece already
+        /// there goes back to the bag (a swap). Refuses class-gated and non-equippable items,
+        /// and items the player does not actually carry — RemoveItem's all-or-nothing check
+        /// runs before anything moves.
+        /// </summary>
+        public bool Equip(ItemData item)
+        {
+            if (item == null || !item.IsEquippable) return false;
+            if (!item.CanBeUsedBy(Class)) return false;
+            if (!RemoveItem(item, 1)) return false;
+
+            ItemData previous = EquippedIn(item.Type);
+            _equipment[item.Type] = item;
+            if (previous != null)
+                AddItem(previous, 1);
+
+            OnEquipmentChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>Returns the slot's item to the bag. False if the slot is already empty.</summary>
+        public bool Unequip(ItemType type)
+        {
+            ItemData item = EquippedIn(type);
+            if (item == null) return false;
+
+            _equipment.Remove(type);
+            AddItem(item, 1);
+            OnEquipmentChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>
+        /// Replace equipment with a saved snapshot (load game). Entries whose id no longer
+        /// resolves, whose slot index is out of range, or whose item type no longer matches
+        /// the slot are skipped rather than breaking the load.
+        /// </summary>
+        public void RestoreEquipment(List<EquipSaveEntry> saved)
+        {
+            _equipment.Clear();
+            if (saved != null)
+            {
+                foreach (var entry in saved)
+                {
+                    if (entry == null) continue;
+                    if (!Enum.IsDefined(typeof(ItemType), entry.Slot)) continue;
+
+                    ItemData item = ItemDatabase.Find(entry.ItemID);
+                    if (item != null && item.IsEquippable && item.Type == (ItemType)entry.Slot)
+                        _equipment[(ItemType)entry.Slot] = item;
+                }
+            }
+            OnEquipmentChanged?.Invoke();
         }
     }
 }

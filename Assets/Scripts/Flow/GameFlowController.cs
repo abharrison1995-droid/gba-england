@@ -200,11 +200,19 @@ namespace ExiledAlvaston.Flow
                 data.CharacterName, (PlayerClass)data.PlayerClass, data.TutorialComplete, templateData);
             QuestManager.Instance.RestoreQuests(data.Quests);
             PlayerSession.Instance.RestoreInventory(data.Inventory);
+            PlayerSession.Instance.RestoreEquipment(data.Equipment); // null in pre-equipment saves → empty doll
             PlayerSession.Instance.RestorePounds(data.Pounds);
             // Before either route that builds the world — the EnterManorCellars branch just below
             // and the LoadWorld call further down. Every SpriteContainer reads this set in its own
             // Awake, so a chunk built first would refill every bin the player had already cleared.
             PlayerSession.Instance.RestoreLootedContainers(data.LootedContainers);
+            // Any time before the map is opened is fine — it is only read on open.
+            PlayerSession.Instance.RestoreVisitedChunks(data.VisitedChunks);
+            PlayerSession.Instance.RestoreWikiEntries(data.UnlockedWikiEntries);
+            // Backfill for pre-wiki saves: chunks already visited grant their location entries
+            // silently, so a veteran save opens a populated encyclopedia without a toast storm.
+            foreach (string chunkName in PlayerSession.Instance.VisitedChunks)
+                UI.WikiUnlock.GrantForChunk(chunkName, silent: true);
             BindPlayerToSession(existing);
 
             // Mid-tutorial saves restart the tutorial cleanly rather than resuming half-staged
@@ -270,6 +278,9 @@ namespace ExiledAlvaston.Flow
                     Destroy(ChunkManager.CurrentChunkInstance);
 
                 ChunkManager.CurrentChunkData = ManorCellarsChunk;
+                PlayerSession.Instance?.MarkChunkVisited(ManorCellarsChunk.ChunkName);
+                // Silent: the new-game wake-up, respawns and arrests land here — none are discoveries.
+                UI.WikiUnlock.GrantForChunk(ManorCellarsChunk.ChunkName, silent: true);
                 ChunkManager.CurrentChunkInstance = Instantiate(
                     ManorCellarsChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 ChunkManager.CurrentChunkInstance.name = ManorCellarsChunk.ChunkPrefab.name;
@@ -467,6 +478,9 @@ namespace ExiledAlvaston.Flow
                 Destroy(ChunkManager.CurrentChunkInstance);
 
             ChunkManager.CurrentChunkData = LondonChunk;
+            PlayerSession.Instance?.MarkChunkVisited(LondonChunk.ChunkName);
+            // Toast: stepping out of the manor gates into London for the first time IS a discovery.
+            UI.WikiUnlock.GrantForChunk(LondonChunk.ChunkName, silent: false);
             ChunkManager.CurrentChunkInstance = Instantiate(LondonChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
             ChunkManager.CurrentChunkInstance.name = LondonChunk.ChunkPrefab.name;
 

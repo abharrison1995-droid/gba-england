@@ -16,6 +16,14 @@ namespace ExiledAlvaston.Flow
         public int Quantity;
     }
 
+    /// <summary>One saved equipment slot — the slot as an ItemType index plus the worn item's id.</summary>
+    [Serializable]
+    public class EquipSaveEntry
+    {
+        public int Slot;
+        public string ItemID;
+    }
+
     /// <summary>Everything a checkpoint needs to survive an app restart.</summary>
     [Serializable]
     public class SaveData
@@ -33,6 +41,9 @@ namespace ExiledAlvaston.Flow
         public List<QuestProgress> Quests = new List<QuestProgress>();
         public List<InventorySaveEntry> Inventory = new List<InventorySaveEntry>();
 
+        /// <summary>Worn gear, appended after Inventory. Absent in pre-equipment saves — restores treat null as empty.</summary>
+        public List<EquipSaveEntry> Equipment = new List<EquipSaveEntry>();
+
         // Appended, per the rule in SAVE_AND_SERIALIZATION.md: a save written before the wallet
         // existed has no Pounds key at all, and JsonUtility reads it back as 0 — which is the
         // correct starting balance, so no migration is needed.
@@ -46,6 +57,16 @@ namespace ExiledAlvaston.Flow
         // A public FIELD, not a property: JsonUtility only serializes fields, and a property here
         // would silently never persist.
         public List<string> LootedContainers = new List<string>();
+
+        // Appended for the Map of Britain, same append-only rule as the fields above: a pre-map
+        // save has no VisitedChunks key, JsonUtility hands back an empty list, and the map simply
+        // shows nothing discovered yet — no migration needed. Entries are ChunkName values,
+        // compared verbatim.
+        public List<string> VisitedChunks = new List<string>();
+
+        // Appended for WIKIBRITAIN: EntryIDs of unlocked encyclopedia entries, same append-only
+        // rule — a pre-wiki save reads back empty. EntryIDs are save keys: never rename one.
+        public List<string> UnlockedWikiEntries = new List<string>();
     }
 
     /// <summary>
@@ -93,7 +114,15 @@ namespace ExiledAlvaston.Flow
                     data.Inventory.Add(new InventorySaveEntry { ItemID = stack.Item.ItemID, Quantity = stack.Quantity });
                 }
 
+                foreach (var pair in session.Equipment)
+                {
+                    if (pair.Value == null) continue;
+                    data.Equipment.Add(new EquipSaveEntry { Slot = (int)pair.Key, ItemID = pair.Value.ItemID });
+                }
+
                 data.LootedContainers.AddRange(session.LootedContainers);
+                data.VisitedChunks.AddRange(session.VisitedChunks);
+                data.UnlockedWikiEntries.AddRange(session.UnlockedWikiEntries);
             }
 
             try
@@ -151,6 +180,9 @@ namespace ExiledAlvaston.Flow
                 UnityEngine.Object.Destroy(chunkMgr.CurrentChunkInstance);
 
             chunkMgr.CurrentChunkData = chunk;
+            PlayerSession.Instance?.MarkChunkVisited(chunk.ChunkName);
+            // Silent: loading a save must not pop a toast for the chunk it lands in.
+            UI.WikiUnlock.GrantForChunk(chunk.ChunkName, silent: true);
             GameObject instance = UnityEngine.Object.Instantiate(chunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
             instance.name = chunk.ChunkPrefab.name;
             chunkMgr.CurrentChunkInstance = instance;
