@@ -291,6 +291,32 @@ GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix
 each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
 `sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
 
+**Also outstanding — the dodge roll, phase 1.** On `dodge-roll-phase1`, never compiled:
+
+- **`Health.TakeDamage` now returns `bool`** — true if the hit landed. Nothing in phase 1 reads it;
+  it exists so enemy knockback can tell a connected hit from a dodged one. ⚠ **The method is no
+  longer bindable in a `UnityEvent` dropdown**, because Unity only offers void methods there.
+  Nothing binds it today — `grep -rn "m_MethodName: TakeDamage" Assets/` was empty before it
+  landed, and is the check to re-run if anything ever stops taking damage for no visible reason.
+- **Space rolls the player**, 2.4 m over 0.40 s for 14 stamina, i-frames 0.05–0.30 s in, 1 s
+  cooldown. *Check the distance looks like the field says, that a second Space inside a second
+  does nothing, and that rolling off a kerb still falls rather than hovering* — hovering means the
+  velocity zeroing has been moved inside the loop.
+- **`Health` refuses damage outright while `IsInvulnerable`.** *Stand in the PCSO's range — the
+  only `EnemyAI` in `c.unity` — and roll through its swing. A white **"Dodged!"** should appear, no
+  red number, and health should not move.*
+- **Rolling breaks stealth.** *Crouch with **C**, roll, and check the toast reads "Out of stealth.",
+  the CRO button pops back out and walk speed returns.*
+- **The DGE button is built at runtime**, fourth in the bottom row. It will not appear in the
+  Hierarchy until Play starts — look for `UI/UICanvas/HUDPanel/ActionButtons/DGE`. *Check it is
+  reachable with a thumb in the Device Simulator, landscape;* it is invisible in a 16:9 Game view.
+- **No roll animation exists.** `SetAnimatorTrigger("Roll")` no-ops against a controller without
+  the parameter, so the player slides through the roll silently. That is expected until phase 3.
+- ⚠ **`RollSpeedCurve` integrates to exactly 1 over [0,1]**, and that is the only reason the roll
+  travels `RollDistance`. Reshaping it without preserving that decouples the two silently.
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
 **Also outstanding — enemy levels in the world, combat nameplates, bigger HUD.** Merged
 2026-08-08, code-reviewed against its plan, never compiled:
 
