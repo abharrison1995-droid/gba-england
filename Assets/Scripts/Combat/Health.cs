@@ -25,6 +25,13 @@ namespace ExiledAlvaston.Combat
 
         private void Awake()
         {
+            // ⚠ Must stay ABOVE the line below. EnemyLevel raises MaxHealth, and anything reordered
+            // past this point leaves a levelled enemy alive at level-1 health under a raised
+            // maximum — which looks like a broken health bar, not a broken scale. Call order is the
+            // guard here deliberately, rather than a [DefaultExecutionOrder] nobody would see.
+            // No component, or a level of 1, means nothing is touched at all.
+            GetComponent<EnemyLevel>()?.ApplyTo(this);
+
             CurrentHealth = MaxHealth;
             if (string.IsNullOrEmpty(DisplayName))
                 DisplayName = gameObject.name;
