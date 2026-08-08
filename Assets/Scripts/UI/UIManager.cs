@@ -426,6 +426,13 @@ namespace ExiledAlvaston.UI
         /// touchscreen-first game meant stealth — and therefore pickpocketing, which requires
         /// IsCrouched — could not be used on a device at all.
         /// </summary>
+        public void OnDodgePressed()
+        {
+            var combat = Combat.CombatController.Instance;
+            if (combat != null)
+                combat.PerformDodge();
+        }
+
         public void OnCrouchPressed()
         {
             var stealth = World.StealthController.Instance ?? FindObjectOfType<World.StealthController>();
@@ -587,6 +594,12 @@ namespace ExiledAlvaston.UI
             _crouchButtonImage = crouch.GetComponent<Image>();
             _crouchButtonLabel = crouch.GetComponentInChildren<TextMeshProUGUI>();
             RefreshCrouchButton();
+
+            // DGE — dodge roll, fourth in the bottom row: ATK, USE, CRO, DGE reading right to left.
+            // Keeps CRO's size and its 200 px pitch, so on the 1920-wide reference it spans
+            // x 1186-1296 — clear of the joystick, which lives against the opposite edge.
+            CreateActionButton(panel.transform, "DGE", HUDActionButton.ActionKind.Dodge, 0,
+                new Vector2(110f, 110f), new Vector2(-624f, 40f));
 
             RepositionInteractButton();
         }
