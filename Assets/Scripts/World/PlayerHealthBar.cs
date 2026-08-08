@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.Vibe;
 
@@ -18,7 +19,20 @@ namespace ExiledAlvaston.World
         private Health _health;
         private Transform _root;
         private Transform _hpFill;
+        private TextMeshPro _levelText;
         private float _hideAt;
+
+        /// <summary>
+        /// The level currently painted into the badge; -1 until the first paint.
+        ///
+        /// ⚠ Unlike an enemy's, the player's level changes at runtime, so the badge cannot be
+        /// written once in Build. It is polled rather than subscribed for the same reason
+        /// UIManager polls: PlayerSession is a DontDestroyOnLoad singleton that need not exist when
+        /// this Awake runs, and a missed unsubscribe would keep a destroyed bar receiving events
+        /// across a reload. The int compare is the point — ToString() allocates, and writing it
+        /// every frame would put a per-frame allocation on a mobile hot path.
+        /// </summary>
+        private int _shownLevel = -1;
 
         private void Awake()
         {
@@ -43,6 +57,15 @@ namespace ExiledAlvaston.World
 
         private void OnDamaged(int amount)
         {
+            Ping();
+        }
+
+        /// <summary>
+        /// Raise the bar and restart its timer. Called on taking damage, and by CombatController
+        /// when the player deals damage or an enemy takes aggro on them.
+        /// </summary>
+        public void Ping()
+        {
             _hideAt = Time.time + VisibleDuration;
             if (_root != null) _root.gameObject.SetActive(true);
         }
@@ -61,6 +84,14 @@ namespace ExiledAlvaston.World
         private void LateUpdate()
         {
             if (_root == null || !_root.gameObject.activeSelf) return;
+
+            // Behind the activeSelf return on purpose: costs nothing at all while the bar is down.
+            var session = Flow.PlayerSession.Instance;
+            if (session != null && session.Level != _shownLevel)
+            {
+                _shownLevel = session.Level;
+                if (_levelText != null) _levelText.text = _shownLevel.ToString();
+            }
 
             _root.position = transform.position + Vector3.up * HeightOffset;
 
@@ -97,21 +128,53 @@ namespace ExiledAlvaston.World
             fill.transform.localScale = Vector3.one;
             SetUnlit(fill, EKVibe.HealthBar);
             _hpFill = fill.transform;
+
+            // Left of the track, never over the fill. Modelled on EnemyNameplate's badge and
+            // deliberately sized to match it, so the player's level reads like an enemy's.
+            // CreateTmp there is private to another class; six copied lines beat making it public
+            // for two billboards with slightly different needs — this file already duplicates
+            // SetUnlit for the same reason.
+            GameObject badge = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            badge.name = "LevelBadge";
+            Object.Destroy(badge.GetComponent<Collider>());
+            badge.transform.SetParent(root.transform, false);
+            badge.transform.localPosition = new Vector3(-0.56f, 0f, 0f);
+            badge.transform.localScale = new Vector3(0.28f, 0.28f, 1f);
+            SetUnlit(badge, EKVibe.LevelBadge);
+
+            var textGo = new GameObject("LevelText");
+            textGo.transform.SetParent(badge.transform, false);
+            textGo.transform.localPosition = Vector3.zero;
+            _levelText = textGo.AddComponent<TextMeshPro>();
+            _levelText.text = "";
+            _levelText.fontSize = 1.6f;
+            _levelText.color = EKVibe.TextDark;
+            _levelText.alignment = TextAlignmentOptions.Center;
+            _levelText.rectTransform.sizeDelta = new Vector2(2f, 0.5f);
         }
 
         private static Material _sharedTrackMat;
         private static Material _sharedFillMat;
+        private static Material _sharedBadgeMat;
 
         private static void SetUnlit(GameObject go, Color color)
         {
             var r = go.GetComponent<Renderer>();
             Shader sh = Shader.Find("Unlit/Color") ?? Shader.Find("Standard");
 
-            // Only two colors ever used here (track/fill) — share materials instead of leaking one per player.
+            // Three colors ever used here (track/fill/badge) — share materials instead of leaking
+            // one per player. ⚠ Each has its own branch keyed by colour: with a single fallback
+            // branch the badge would take whichever colour reached it first and come out the
+            // track's near-black, with nothing to say why.
             if (color == EKVibe.HealthBar)
             {
                 if (_sharedFillMat == null) _sharedFillMat = new Material(sh) { color = color };
                 r.sharedMaterial = _sharedFillMat;
+            }
+            else if (color == EKVibe.LevelBadge)
+            {
+                if (_sharedBadgeMat == null) _sharedBadgeMat = new Material(sh) { color = color };
+                r.sharedMaterial = _sharedBadgeMat;
             }
             else
             {
