@@ -1,14 +1,16 @@
 # Save format and Unity serialization
 
 ```
-Last verified against: working tree on branch progression-levelling, 2026-08-08
+Last verified against: working tree on branch progression-perks, 2026-08-08
 Verification scope:    code (read line by line); tracked prefab/asset YAML. The appended
                        BundaBasher=4 class mapping is code-reviewed but not Unity-tested. Quest persistence
                        across an autosave was confirmed in an editor session by reading
                        savegame.json directly. The three quest fixes on main POSTDATE that
-                       session and are UNVERIFIED. The appended TotalXP field is code-read only —
-                       no compiler and no Unity have seen it, and no save has been round-tripped
-                       with it present.
+                       session and are UNVERIFIED. The appended TotalXP and PerkIds fields are
+                       code-read only — no compiler and no Unity have seen either, and no save has
+                       been round-tripped with them present. PerkData.PerkId is documented from the
+                       code that reads it; no PerkData asset exists yet, so no perk id has ever
+                       been written to a save file.
 ```
 
 **This is the highest-risk area in the repo.** A mistake here corrupts player saves silently —
@@ -21,7 +23,7 @@ nothing throws, nothing logs, the data is just gone.
 
 `SaveData` holds, in declaration order: character name, class, `TutorialComplete`, chunk name,
 position, health, mana, stamina, quest list, inventory, `Equipment`, `Pounds`, `LootedContainers`,
-`VisitedChunks`, `UnlockedWikiEntries`, `TotalXP`.
+`VisitedChunks`, `UnlockedWikiEntries`, `TotalXP`, `PerkIds`.
 
 Everything from `Equipment` onwards was **appended**, so a save written before that feature existed
 has no such key at all and `JsonUtility` reads back the type's default — `0` for `Pounds` and
@@ -35,6 +37,8 @@ alongside `RestoreInventory`.
 retuned freely without touching a save file. The field name **is** the JSON key —
 `JsonUtility` ignores `[FormerlySerializedAs]` — so renaming it would silently revert every
 existing player to level 1.
+
+The same warning applies to `PerkIds` — see its own save-key section below.
 
 ## Five call sites write a save
 
@@ -70,6 +74,30 @@ through `Resources/Items` by `PlayerSession.RestoreInventory`.
 - Changing an `ItemID` **value** on an existing item orphans it out of every save **silently** —
   the entry is read, the lookup fails, the item is dropped and nothing is reported.
 - An item must stay reachable from `Resources/Items`, since that is how the load resolves it.
+
+### `WikiEntryData.EntryID`
+
+WIKIBRITAIN unlocks are saved as a plain `List<string>` of `EntryID` values in
+`SaveData.UnlockedWikiEntries`, resolved back through `Resources/Wiki` by `WikiDatabase`. Changing a
+shipped `EntryID` **value** relocks that entry for every existing save, silently.
+
+### `PerkData.PerkId`
+
+Spent perks are saved as a plain `List<string>` of `PerkId` values in `SaveData.PerkIds`, resolved
+back through `Resources/Perks` by `PerkDatabase.Find`. Same never-rename rule as the three above.
+
+- Changing a shipped `PerkId` **value** orphans that perk: the id is read, the lookup fails, and the
+  perk's effects silently stop existing.
+- ⚠️ **Unresolvable ids are kept, not dropped** — deliberately the opposite of what
+  `RestoreInventory` does with an unresolvable `ItemID`. Dropping them would look tidy and quietly
+  refund the perk point, handing out a free respec whenever an asset was temporarily missing.
+  `PlayerSession.RestorePerkIds` stores the raw string; `RecalculateDerivedStats` skips what
+  `PerkDatabase.Find` cannot resolve, and `Find` logs it once. Re-adding the asset restores the perk.
+- The player's **perk points are derived**, never stored: `EKVibe.PerkPointsAtLevel` computes them
+  from the level, which is itself derived from `TotalXP`. So the cadence can be retuned without a
+  save migration, exactly like the XP curve. `PlayerSession.UnspentPerkPoints` clamps at 0 so a
+  downward retune cannot show a negative figure; the derivation still honours every spent id.
+- `PerkEffectType` is serialized by integer index inside each `PerkData` asset. Append only.
 
 ### Container ids — `"<ChunkName>/<GameObjectName>"`
 
@@ -179,12 +207,13 @@ git ls-files 'Assets/**/*.cs' | while read f; do [ -f "$f.meta" ] || echo "NO ME
 
 Reordering or inserting values silently remaps existing data. **Always append.**
 
-Thirteen live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
+Fifteen live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
 
 `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`, `GameFlowState`,
 `HUDActionButton.ActionKind`, `InstanceDoor.Destination`, `PlacementCategory`, `CityRegion`,
 `QuestConditionType`, `MagicTutorial.Stage`, `TutorialSequence.Stage`,
-`SpriteContainer.ContainerMode` (`Fixed = 0`, `Respawning = 1`).
+`SpriteContainer.ContainerMode` (`Fixed = 0`, `Respawning = 1`), `WikiCategory`,
+`PerkEffectType`.
 
 `HUDActionButton.ActionKind` is the one with values proven live in serialized data: `c.unity`
 holds six authored `HUDActionButton` components covering `Attack=0`, `Ability=1`, `Inventory=2`

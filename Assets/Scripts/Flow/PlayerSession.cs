@@ -71,6 +71,15 @@ namespace ExiledAlvaston.Flow
         /// <summary>Fires once per level crossed, with the level just reached.</summary>
         public event Action<int> OnLevelUp;
 
+        /// <summary>
+        /// Fires at the end of every <see cref="RecalculateDerivedStats"/>, i.e. whenever the
+        /// derived figures in <see cref="RuntimeStats"/> or the cached multipliers below may have
+        /// moved. <see cref="Combat.CombatController"/> listens so a mid-run level-up reaches the
+        /// running player — <c>GameFlowController.BindPlayerToSession</c> only runs on new-game and
+        /// load, so without this the health bar would keep the old maximum until the next reload.
+        /// </summary>
+        public event Action OnStatsChanged;
+
         /// <summary>The player's level, derived from <see cref="TotalXP"/>. Never stored.</summary>
         public int Level => EKVibe.LevelForXP(TotalXP);
 
@@ -148,6 +157,11 @@ namespace ExiledAlvaston.Flow
             // So does the encyclopedia: no entries carry over from the last run.
             _unlockedWikiEntries.Clear();
 
+            // And no perks. Load depends on this too — RestoreFromSave calls this method first, so
+            // clearing here is what lets RestorePerkIds put the saved set back cleanly.
+            _spentPerkIds.Clear();
+            OnPerksChanged?.Invoke();
+
             Pounds = 0;
             OnPoundsChanged?.Invoke();
 
@@ -160,15 +174,177 @@ namespace ExiledAlvaston.Flow
             if (RuntimeStats == null)
                 RuntimeStats = ScriptableObject.CreateInstance<CharacterData>();
 
-            if (template != null)
+            // ⚠ template may BE RuntimeStats. Both callers pass the scene player's
+            // CombatController.PlayerData, and BindPlayerToSession assigns RuntimeStats to that
+            // field — so from the second new-game or load in an app session onwards, the "template"
+            // is this session's own derived stats. Re-capturing the baseline from it would bake
+            // every level's growth and every perk into the baseline, and the next recompute would
+            // add them again. When that happens the baseline we already hold is the right one.
+            if (template != null && template != RuntimeStats)
             {
                 RuntimeStats.Portrait = template.Portrait;
-                RuntimeStats.BaseResistances = template.BaseResistances;
+                _baselineResistances = CopyOf(template.BaseResistances);
             }
 
             RuntimeStats.CharacterName = CharacterName;
-            RuntimeStats.ApplyClassDefaults(Class);
+            RecalculateDerivedStats();
         }
+
+        // ── Derived stats ───────────────────────────────────────────────────────────────
+        // One deterministic recompute, and the only place derived figures are written. Every step
+        // OVERWRITES; nothing accumulates. Running it twice in a row must produce identical
+        // results — that property is what makes it safe to call from every place below.
+
+        /// <summary>
+        /// The class template's resistances, held apart from <see cref="RuntimeStats"/> so the
+        /// recompute has something to reset to.
+        ///
+        /// ⚠ <c>CharacterData.ApplyClassDefaults</c> does NOT reset <c>BaseResistances</c>. Without
+        /// this snapshot, anything that ADDS to a resistance would add again on every recompute:
+        /// five level-ups later the player quietly has five times the armour they earned, and
+        /// nothing logs it.
+        /// </summary>
+        private Resistances _baselineResistances = new Resistances();
+
+        /// <summary>Value copy — assigning the reference would let the derivation write back into the template asset.</summary>
+        private static Resistances CopyOf(Resistances source)
+        {
+            if (source == null) return new Resistances();
+            return new Resistances
+            {
+                Physical = source.Physical,
+                Magic = source.Magic,
+                Fire = source.Fire,
+                Cold = source.Cold,
+                Poison = source.Poison,
+            };
+        }
+
+        /// <summary>
+        /// Recomputes everything derived from level and perks: <see cref="RuntimeStats"/>'s maxima
+        /// and resistances, plus the cached query multipliers read at hit time.
+        ///
+        /// Order is fixed: class defaults, baseline resistances, level growth, perk flat adds, perk
+        /// percentages, cached query values, event. Equipment is deliberately NOT folded in — it is
+        /// read live at its two use sites (<c>CombatController</c> for weapon damage,
+        /// <c>Health</c> for armour), and duplicating it here would double-count every weapon and
+        /// every shield with nothing to show for it but wrong numbers.
+        /// </summary>
+        public void RecalculateDerivedStats()
+        {
+            if (RuntimeStats == null) return;
+
+            // 1. Class baseline: resets BaseTraits, MaxHealth, MaxManaStamina.
+            RuntimeStats.ApplyClassDefaults(Class);
+
+            // 2. ApplyClassDefaults leaves BaseResistances alone, so reset it here or every
+            //    later addition compounds. See _baselineResistances.
+            RuntimeStats.BaseResistances = CopyOf(_baselineResistances);
+
+            // 3. Automatic per-class growth. Traits deliberately do not grow — see GrowthPerLevel.
+            var growth = PlayerClassInfo.GrowthPerLevel(Class);
+            int levelsGained = Mathf.Max(0, Level - 1);
+            RuntimeStats.MaxHealth += growth.MaxHealth * levelsGained;
+            RuntimeStats.MaxManaStamina += growth.MaxManaStamina * levelsGained;
+
+            // 6. Cached query values, reset here so they never accumulate either. Reset before the
+            //    perk passes below, which add into them.
+            MeleeDamageMultiplier = 1f;
+            SpellDamageMultiplier = 1f;
+            MoveSpeedMultiplier = 1f;
+            ResourceRegenMultiplier = 1f;
+            ExtraLootRolls = 0;
+
+            // 4. Perk FLAT adds. Percentages are gathered here and applied after the loop (step 5),
+            //    so a percentage perk multiplies the flat ones rather than the other way round.
+            //    One pass over a handful of ids, on level-up, load and spend only — nothing in
+            //    here runs per frame or per hit.
+            float maxHealthPercent = 0f;
+
+            foreach (string perkId in _spentPerkIds)
+            {
+                PerkData perk = PerkDatabase.Find(perkId);
+                // Null means the asset is missing or the id was renamed. The id stays spent (see
+                // RestorePerkIds); PerkDatabase.Find has already logged it, so say nothing more.
+                if (perk == null || perk.Effects == null) continue;
+
+                for (int i = 0; i < perk.Effects.Count; i++)
+                {
+                    PerkEffect effect = perk.Effects[i];
+                    if (effect == null) continue;
+
+                    switch (effect.Type)
+                    {
+                        // Flat adds (step 4).
+                        case PerkEffectType.MaxHealthFlat:
+                            RuntimeStats.MaxHealth += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+                        case PerkEffectType.MaxResourceFlat:
+                            RuntimeStats.MaxManaStamina += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+                        case PerkEffectType.ArmourFlat:
+                            // Into Physical, which is what BOTH the character sheet's Armor line and
+                            // EffectiveArmour read — so the readout and the mitigation move together.
+                            RuntimeStats.BaseResistances.Physical += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+
+                        // Percentages (step 5), gathered here and applied after the loop.
+                        case PerkEffectType.MaxHealthPercent:
+                            maxHealthPercent += effect.Magnitude;
+                            break;
+
+                        // Cached query values (step 6). Magnitude is a percentage: 15 means +15%.
+                        case PerkEffectType.MeleeDamagePercent:
+                            MeleeDamageMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.SpellDamagePercent:
+                            SpellDamageMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.ResourceRegenPercent:
+                            ResourceRegenMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.MoveSpeedPercent:
+                            MoveSpeedMultiplier += effect.Magnitude / 100f;
+                            break;
+                        case PerkEffectType.ExtraLootRolls:
+                            ExtraLootRolls += Mathf.RoundToInt(effect.Magnitude);
+                            break;
+                    }
+                }
+            }
+
+            // 5. Percentages last, over the flat total.
+            if (maxHealthPercent != 0f)
+                RuntimeStats.MaxHealth = Mathf.RoundToInt(RuntimeStats.MaxHealth * (1f + maxHealthPercent / 100f));
+
+            ExtraLootRolls = Mathf.Max(0, ExtraLootRolls);
+            MoveSpeedMultiplier = Mathf.Max(0.1f, MoveSpeedMultiplier);
+            ResourceRegenMultiplier = Mathf.Max(0f, ResourceRegenMultiplier);
+
+            RuntimeStats.MaxHealth = Mathf.Max(1, RuntimeStats.MaxHealth);
+            RuntimeStats.MaxManaStamina = Mathf.Max(0, RuntimeStats.MaxManaStamina);
+
+            OnStatsChanged?.Invoke();
+        }
+
+        // Cached query values, recomputed only in RecalculateDerivedStats and read raw at hit time.
+        // Plain fields on purpose: this project keeps hot paths allocation-free (CLAUDE.md §2), and
+        // walking a perk list on every swing would allocate an enumerator per hit.
+
+        /// <summary>Multiplies the whole melee swing, weapon included. 1 = unmodified.</summary>
+        public float MeleeDamageMultiplier { get; private set; } = 1f;
+
+        /// <summary>Multiplies a cast ability's BaseDamage. 1 = unmodified.</summary>
+        public float SpellDamageMultiplier { get; private set; } = 1f;
+
+        /// <summary>Registered with CombatController.SetSpeedMultiplier, never written to MovementSpeed.</summary>
+        public float MoveSpeedMultiplier { get; private set; } = 1f;
+
+        /// <summary>Scales the authored mana/stamina regen rates. 1 = unmodified.</summary>
+        public float ResourceRegenMultiplier { get; private set; } = 1f;
+
+        /// <summary>Extra rolls a loot container makes on top of its band's own count.</summary>
+        public int ExtraLootRolls { get; private set; }
 
         /// <summary>Rebuild the session from a save file (same stat derivation as a new game).</summary>
         public void RestoreFromSave(string characterName, PlayerClass playerClass, bool tutorialComplete, CharacterData template)
@@ -337,15 +513,28 @@ namespace ExiledAlvaston.Flow
             OnXPChanged?.Invoke();
 
             int after = Level;
+
+            // Once, after the loop rather than per level crossed: the derivation reads Level, not
+            // a delta, so recomputing inside the loop would do identical work several times.
+            if (after != before) RecalculateDerivedStats();
+
             for (int level = before + 1; level <= after; level++)
                 OnLevelUp?.Invoke(level);
         }
 
-        /// <summary>Replace the XP total with a saved snapshot (load game).</summary>
+        /// <summary>
+        /// Replace the XP total with a saved snapshot (load game).
+        ///
+        /// The recompute is not optional: loading calls RestoreFromSave -> BeginNewGame ->
+        /// ApplyClassDefaults, which rebuilds RuntimeStats from the level-1 class baseline. Without
+        /// this the level is restored but every level's growth is silently stripped, and the player
+        /// looks fine — just weaker than when they saved.
+        /// </summary>
         public void RestoreTotalXP(int saved)
         {
             TotalXP = Mathf.Max(0, saved);
             OnXPChanged?.Invoke();
+            RecalculateDerivedStats();
         }
 
         /// <summary>Records that a Fixed container has been emptied. Ids are compared verbatim.</summary>
@@ -455,6 +644,97 @@ namespace ExiledAlvaston.Flow
             }
         }
 
+        // ── Perks ───────────────────────────────────────────────────────────────────────
+        // Which perks the player has spent points on, by PerkId. Same save contract as the wiki
+        // unlocks above: a runtime HashSet here, a List<string> on SaveData.
+
+        private readonly HashSet<string> _spentPerkIds = new HashSet<string>();
+
+        /// <summary>Read-only view for the saver. Enumeration order is not meaningful.</summary>
+        public IEnumerable<string> SpentPerkIds => _spentPerkIds;
+
+        /// <summary>Fires whenever the set of taken perks changes (spend, restore from save).</summary>
+        public event Action OnPerksChanged;
+
+        /// <summary>
+        /// Points earned by the current level, less those already spent.
+        ///
+        /// Clamped at 0 deliberately: if the curve in <see cref="EKVibe.PerkPointsAtLevel"/> is ever
+        /// retuned downward, a loaded player can hold more spent ids than the new curve pays for.
+        /// The clamp only keeps this figure from going negative — the derivation still honours
+        /// EVERY spent id, so nothing is quietly unspent behind the player's back.
+        /// </summary>
+        public int UnspentPerkPoints =>
+            Mathf.Max(0, EKVibe.PerkPointsAtLevel(Level) - _spentPerkIds.Count);
+
+        /// <summary>True if the player has taken this perk. Ids are compared verbatim.</summary>
+        public bool HasPerk(string perkId)
+        {
+            if (string.IsNullOrEmpty(perkId)) return false;
+            return _spentPerkIds.Contains(perkId);
+        }
+
+        /// <summary>
+        /// Everything that would stop <see cref="SpendPerkPoint"/> succeeding, so the UI can grey
+        /// its button and say why without attempting the spend. Null when the perk can be taken.
+        /// Generated text, not prose.
+        /// </summary>
+        public string PerkRefusalReason(PerkData perk)
+        {
+            if (perk == null || string.IsNullOrEmpty(perk.PerkId)) return "Unavailable";
+            if (HasPerk(perk.PerkId)) return "Already taken";
+            if (!perk.CanBeTakenBy(Class)) return PlayerClassInfo.DisplayName(Class) + " cannot take this";
+            if (Level < perk.MinLevel) return "Requires level " + perk.MinLevel;
+            if (perk.Prerequisite != null && !HasPerk(perk.Prerequisite.PerkId))
+                return "Requires " + (string.IsNullOrEmpty(perk.Prerequisite.Title)
+                    ? perk.Prerequisite.PerkId
+                    : perk.Prerequisite.Title);
+            if (UnspentPerkPoints <= 0) return "No points to spend";
+            return null;
+        }
+
+        /// <summary>
+        /// Spends a point on a perk. Returns false and changes nothing if anything refuses it —
+        /// the same all-or-nothing contract as <see cref="RemoveItem"/> and
+        /// <see cref="SpendPounds"/>.
+        /// </summary>
+        public bool SpendPerkPoint(PerkData perk)
+        {
+            if (PerkRefusalReason(perk) != null) return false;
+
+            _spentPerkIds.Add(perk.PerkId);
+            RecalculateDerivedStats();
+            OnPerksChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>
+        /// Replace the taken-perk set with a saved snapshot (load game). Null = a pre-perk save →
+        /// nothing taken yet.
+        ///
+        /// Ids that no longer resolve to an asset are KEPT, which is deliberately the opposite of
+        /// what <see cref="RestoreInventory"/> does with an unresolvable item. Dropping them looks
+        /// tidy but quietly refunds the point, so a temporarily missing or renamed asset would hand
+        /// out a free respec. Keeping the id leaves the point spent; the derivation skips what it
+        /// cannot resolve, and re-adding the asset restores the perk.
+        ///
+        /// The recompute at the end is not optional: loading rebuilds RuntimeStats from the class
+        /// baseline, so without it the perks are listed as taken and none of their effects exist.
+        /// </summary>
+        public void RestorePerkIds(List<string> saved)
+        {
+            _spentPerkIds.Clear();
+            if (saved != null)
+            {
+                foreach (string id in saved)
+                {
+                    if (!string.IsNullOrEmpty(id)) _spentPerkIds.Add(id);
+                }
+            }
+            RecalculateDerivedStats();
+            OnPerksChanged?.Invoke();
+        }
+
         /// <summary>Replace the carried inventory with a saved snapshot (load game). Unresolvable item ids are skipped.</summary>
         public void RestoreInventory(List<InventorySaveEntry> saved)
         {
@@ -490,7 +770,7 @@ namespace ExiledAlvaston.Flow
 
         public ItemData EquippedWeapon() => EquippedIn(ItemType.Weapon);
 
-        /// <summary>Sum of Armor across every worn piece — subtracted from incoming player damage.</summary>
+        /// <summary>Sum of Armor across every worn piece.</summary>
         public int TotalArmor()
         {
             int total = 0;
@@ -498,6 +778,19 @@ namespace ExiledAlvaston.Flow
                 if (pair.Value != null) total += pair.Value.Armor;
             return total;
         }
+
+        /// <summary>
+        /// Worn armour plus derived Physical resistance — the single number the mitigation curve
+        /// reads (<see cref="EKVibe.ArmourReduction"/>).
+        ///
+        /// Physical is included deliberately: the character sheet has always printed
+        /// <c>BaseResistances.Physical + TotalArmor()</c> as one "Armor" figure while only
+        /// TotalArmor() actually reduced damage. Feeding Physical into the curve is what makes that
+        /// readout honest, and it is also where perk armour lands, so a perk moves the readout and
+        /// the mitigation together rather than only the readout.
+        /// </summary>
+        public int EffectiveArmour() =>
+            TotalArmor() + (RuntimeStats != null ? RuntimeStats.BaseResistances.Physical : 0);
 
         /// <summary>
         /// Moves one of the item from the bag into its paper-doll slot; the piece already

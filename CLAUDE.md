@@ -64,8 +64,8 @@ docs/               # everything else — routed from docs/README.md
 - **Tuning constants belong in `EKVibe`** (`Scripts/Vibe/EKVibe.cs`) — colours, sizes, camera,
   `ChunkSize`, `CharacterHeight`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
-- **Editor menu path**: `Tools/GBH/<Category>/...` — `Place`, `Art`, `World`, `Debug`, `Repair`,
-  `Content`, plus **`Danger Zone`** for the five tools that overwrite or re-create assets. Each of
+- **Editor menu path**: `Tools/GBH/<Category>/...` — `Place`, `Art`, `World`, `UI`, `Debug`,
+  `Repair`, `Content`, plus **`Danger Zone`** for the five tools that overwrite or re-create assets. Each of
   those confirms first and names what it destroys. **Nothing destructive may go anywhere else.**
   `Tools/GBH/World Palette` is the one deliberate uncategorised exception.
 - **Mobile-first**: hot paths avoid allocation deliberately (preallocated `Collider[] _hitResults`,
@@ -90,6 +90,10 @@ logs, the data is gone:
   `Manor_Cellars_Data` uses `"Manor Cellars"` **with a space**. Do not normalise it.
 - **`ItemData.ItemID`** — inventory is saved as `ItemID` + `Quantity` and resolved through
   `Resources/Items`. A changed id is read, fails to resolve, and is dropped in silence.
+- **`WikiEntryData.EntryID`** — unlocked encyclopedia entries are saved as a list of these.
+- **`PerkData.PerkId`** — spent perks are saved as a list of these and resolved through
+  `Resources/Perks`. A changed id is read, fails to resolve, and the perk's effects quietly stop
+  existing — the id is deliberately **kept** rather than dropped, so the point stays spent.
 
 There is **one** save file: `persistentDataPath/savegame.json`, written with `JsonUtility`. Not
 PlayerPrefs. Five call sites write it.
@@ -100,7 +104,7 @@ PlayerPrefs. Five call sites write it.
 
 - **Renaming a public serialized field drops its value everywhere** unless you add
   `[FormerlySerializedAs]`. Appending a field is safe; inserting is not.
-- **Enums are serialized by integer index. Always append.** Twelve are live.
+- **Enums are serialized by integer index. Always append.** Fifteen are live.
 - **Commit a script's `.meta` with the script.** The GUID inside it is what binds prefabs and the
   scene to the class. This has gone wrong twice, and it fails silently on a fresh clone.
 - ⚠️ **Never rebuild an existing prefab by deleting and re-saving it.** That takes the `.meta` with

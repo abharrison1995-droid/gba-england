@@ -213,6 +213,11 @@ namespace ExiledAlvaston.Flow
             // No Awake-ordering dependency of the kind RestoreLootedContainers has: XP is read on
             // demand, not consumed by anything the world builds.
             PlayerSession.Instance.RestoreTotalXP(data.TotalXP);
+            // After RestoreTotalXP: both end in a stat recompute, and the perk one wants the level
+            // already restored. Recomputing twice is harmless — the derivation overwrites rather
+            // than accumulates — and BindPlayerToSession below still runs after both, so the load
+            // path pushes the final figures onto the player.
+            PlayerSession.Instance.RestorePerkIds(data.PerkIds);
             // Backfill for pre-wiki saves: chunks already visited grant their location entries
             // silently, so a veteran save opens a populated encyclopedia without a toast storm.
             foreach (string chunkName in PlayerSession.Instance.VisitedChunks)

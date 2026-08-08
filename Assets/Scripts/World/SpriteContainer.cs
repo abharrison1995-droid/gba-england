@@ -155,7 +155,19 @@ namespace ExiledAlvaston.World
             _entries = new List<LootEntry>();
             if (Band == null) return;
 
-            foreach (LootBandResult result in Band.Roll())
+            // The explicit-count overload rather than Roll(), so a perk can add rolls on top of the
+            // band's own count.
+            //
+            // ⚠ This runs in Awake, not on open, so a perk taken mid-run only affects containers
+            // instantiated after it was taken — the bins already standing in the current chunk keep
+            // the contents they rolled on arrival. Known and accepted, not a bug.
+            //
+            // Deliberately NOT applied to PickpocketInteractable, which uses the same overload:
+            // that is the crime layer, which the owner excluded from the v1 perk set, and wiring it
+            // there would smuggle a crime perk in through the back door.
+            int extraRolls = PlayerSession.Instance != null ? PlayerSession.Instance.ExtraLootRolls : 0;
+
+            foreach (LootBandResult result in Band.Roll(Mathf.Max(1, Band.RollCount) + extraRolls))
             {
                 if (result == null || result.Item == null || result.Quantity <= 0) continue;
 

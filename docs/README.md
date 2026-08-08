@@ -43,8 +43,9 @@ python Tools/art_status.py
 |---|---|
 | [plans/STAGE_RF_PLAN_REVISED.md](plans/STAGE_RF_PLAN_REVISED.md) | Stage F, the inventory and loot overhaul. Not implemented. |
 | [plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md](plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md) | Design record for chunk suspend/resume. Not implemented. |
-| [plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md](plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md) | XP, player level and enemy levels. Phases 1–2 written on `progression-levelling`; unseen by a compiler or the editor. Its §9.3 is the owner's check list. |
-| [plans/PROGRESSION_SYSTEM.md](plans/PROGRESSION_SYSTEM.md) | Parent design for the whole levelling system. Phases 3–5 (auto growth, perks, loot bands) not implemented. |
+| [plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md](plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md) | XP, player level and enemy levels. **Landed on `main`**; unseen by a compiler or the editor. Its §9.3 is the owner's check list. |
+| [plans/PROGRESSION_PHASE3_IMPLEMENTATION.md](plans/PROGRESSION_PHASE3_IMPLEMENTATION.md) | Player gains: level growth, proportional armour, perks and the perk window. Written on `progression-perks`; unseen by a compiler or the editor. Its §10.3 is the owner's check list, and §10.3 check 7 is how the first perk asset gets authored. |
+| [plans/PROGRESSION_SYSTEM.md](plans/PROGRESSION_SYSTEM.md) | Parent design for the whole levelling system. Phase 4 (loot tiers) not implemented. |
 
 ## Archive — history only
 

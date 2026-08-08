@@ -78,6 +78,16 @@ namespace ExiledAlvaston.Flow
         // The LEVEL is deliberately not stored — it is derived from this total on every read, so
         // the curve in EKVibe can be retuned without touching a single save file.
         public int TotalXP;
+
+        // Appended for perks, same append-only rule again: a save written before perks existed has
+        // no PerkIds key, JsonUtility hands back an empty list, and no perks are taken — correct
+        // for a pre-perk save, so no migration is needed. Nothing may be inserted above this line.
+        //
+        // ⚠ Entries are PerkData.PerkId values and are SAVE KEYS, compared verbatim and resolved
+        // through PerkDatabase. Changing a shipped PerkId orphans that perk silently. And as with
+        // TotalXP, the field name IS the JSON key — JsonUtility knows nothing of
+        // [FormerlySerializedAs], so renaming this un-spends every perk every player has taken.
+        public List<string> PerkIds = new List<string>();
     }
 
     /// <summary>
@@ -135,6 +145,7 @@ namespace ExiledAlvaston.Flow
                 data.LootedContainers.AddRange(session.LootedContainers);
                 data.VisitedChunks.AddRange(session.VisitedChunks);
                 data.UnlockedWikiEntries.AddRange(session.UnlockedWikiEntries);
+                data.PerkIds.AddRange(session.SpentPerkIds);
             }
 
             try
