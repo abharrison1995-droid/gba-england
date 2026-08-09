@@ -1,12 +1,14 @@
 # The art importer and actor visuals
 
 ```
-Last verified against: working tree, 2026-08-06
+Last verified against: working tree, 2026-08-09
 Verification scope:    code. Player-class profile refresh and creator preview wiring are
                        UNVERIFIED in Unity. The importer has done real round trips (Mosley, the pharmacist, the
                        player's five sheets, the London enemies) and the BuildController fix was
                        play-tested. Sprite sizing at the NEW 1.55/1.8 heights is UNVERIFIED —
-                       nothing has been seen rendered since that change.
+                       nothing has been seen rendered since that change. The `roll`/`knockback`
+                       wiring described below is UNVERIFIED: no roll or knockback sheet has ever
+                       been through the importer, and no controller yet holds either state.
 ```
 
 This document owns the **Unity side**: what `ArtImportTool` does to a delivered PNG, and how
@@ -67,7 +69,10 @@ Do not undo these to simplify the code. Each cost a wasted generation cycle.
   halo.
 - **Sheets are never trimmed** — it would shift every cell off the grid.
 - **Sheets are checked for a shared baseline.** A figure that drifts up its cell between frames
-  bobs in motion while looking fine frame by frame. Refused above 2 px at final size.
+  bobs in motion while looking fine frame by frame. Refused above 2 px at final size. `death`,
+  `cycle`, `roll` and `knockback` are exempt — the figure is *supposed* to leave the ground —
+  and so are exempt from the cross-sheet height comparison. **Width is never exempt** for any
+  action: nothing makes a character half as wide as they stand except drawing them edge-on.
 - **Sheets of one subject are checked against each other.** Each can be internally perfect and
   still disagree — a walk drawn near edge-on was 47 px wide against the idle sheet's 122. Refused
   above 1.4× on width or 1.15× on height.
@@ -117,9 +122,29 @@ gets stuck in doorways, and London now has buildings.
 
 ## Animator controllers
 
-The generated controller defines `Speed`, `MeleeAttack`, `Hit`, `Death`, `CastSpell` and a
-`Cycling` bool. `Cycling` would hold a `Cycle` state while riding, but **no `cycle` sheet is
-requested any more**, so no controller has that state and the parameter is never created.
+The generated controller defines `Speed`, `MeleeAttack`, `Hit`, `Death`, `CastSpell`, `Roll`,
+`Knockback` and a `Cycling` bool. `Cycling` would hold a `Cycle` state while riding, but **no
+`cycle` sheet is requested any more**, so no controller has that state and the parameter is never
+created.
+
+`Roll` and `Knockback` are ordinary one-shots and go through the same wiring as attack and cast: a
+`Roll`/`Knockback` state carrying the imported clip, one Any State transition on the trigger of the
+same name, and an exit-time return to `Idle`. `CombatController` fires both through
+`SetAnimatorTrigger`, which checks the parameter exists first, so a controller without them is
+silent rather than noisy.
+
+⚠️ **`ApplyKnockback` clears the `Hit` trigger before setting `Knockback`.** A knockback only ever
+follows a hit that landed, so `OnHealthDamaged` has already set `Hit` in the same frame; with both
+set, the Animator takes whichever Any State transition it evaluates first and holds the other for
+the next frame, which either eats the tumble's first frame or cuts it off. Knockback supersedes
+Hurt deliberately.
+
+**The knockback clip outlasts the shove, on purpose.** 6 frames at 12 fps is 0.50 s of animation
+against `CombatController.KnockbackSlideDuration` of 0.22 s. Control returns when the body stops,
+not when the clip ends, and the only way out of the `Knockback` state before its exit time is
+another Any State trigger — so walking during the overhang keeps the tumble drawn (`Speed` drives
+`Idle`→`Run` only), while attacking, casting or taking another hit cuts it. If that overhang ever
+reads badly, shorten the clip rather than lengthening the slide.
 
 **The Animator goes on `ActorVisual/SwingRoot`** — the same GameObject as the `SpriteRenderer` —
 because the importer binds every clip with an **empty path**. One level up and the clips animate

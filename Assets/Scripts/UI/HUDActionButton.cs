@@ -14,9 +14,11 @@ namespace ExiledAlvaston.UI
         /// ⚠ Serialized by integer index — APPEND ONLY (CLAUDE.md §7). All four original values are
         /// live in c.unity's legacy action cluster (Attack=0 on AttackButton, Ability=1 on Skill0-2,
         /// Inventory=2 on MapBagShortcut, Interact=3 on InteractButton), so reordering would silently
-        /// turn the attack button into something else. Crouch was appended as 4.
+        /// turn the attack button into something else. Crouch was appended as 4, Dodge as 5 —
+        /// both are built at runtime by UIManager.BuildActionButtons and so are absent from the
+        /// scene, but they are indices in the same sequence and the append rule covers them.
         /// </summary>
-        public enum ActionKind { Attack, Ability, Inventory, Interact, Crouch }
+        public enum ActionKind { Attack, Ability, Inventory, Interact, Crouch, Dodge }
 
         public ActionKind Kind = ActionKind.Ability;
         public int AbilityIndex;
@@ -86,6 +88,9 @@ namespace ExiledAlvaston.UI
                     break;
                 case ActionKind.Crouch:
                     UIManager.Instance.OnCrouchPressed();
+                    break;
+                case ActionKind.Dodge:
+                    UIManager.Instance.OnDodgePressed();
                     break;
                 default:
                     UIManager.Instance.OnActionButtonPressed(AbilityIndex);

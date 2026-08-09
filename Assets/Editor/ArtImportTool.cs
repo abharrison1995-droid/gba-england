@@ -51,6 +51,8 @@ public static class ArtImportTool
         { "death",  "Death"  },
         { "cast",   "Cast"   },
         { "cycle",  "Cycle"  },   // riding a vehicle — held by a bool, not fired by a trigger
+        { "roll",       "Roll"      },
+        { "knockback",  "Knockback" },
     };
 
     /// <summary>Bool parameters, for states that are held rather than fired once.</summary>
@@ -62,9 +64,11 @@ public static class ArtImportTool
         { "hurt",   "Hit"         },
         { "death",  "Death"       },
         { "cast",   "CastSpell"   },   // nothing in the project defines this yet — see CLAUDE.md §8
+        { "roll",       "Roll"      },
+        { "knockback",  "Knockback" },
     };
 
-    /// <summary>The frame/fps/loop table from ART_PIPELINE.md §7.3, so the two cannot drift apart.</summary>
+    /// <summary>The frame/fps/loop table from ART_PIPELINE.md §8, so the two cannot drift apart.</summary>
     private class ActionSpec
     {
         public int Frames;
@@ -81,6 +85,12 @@ public static class ArtImportTool
         { "hurt",   new ActionSpec { Frames = 3, Fps = 12f, Loop = false } },
         { "death",  new ActionSpec { Frames = 6, Fps = 10f, Loop = false } },
         { "cycle",  new ActionSpec { Frames = 6, Fps = 12f, Loop = true  } },
+        { "roll",       new ActionSpec { Frames = 6, Fps = 14f, Loop = false } },
+        // 6 frames, not the 3 this started as: the delivered knockback is a full tumble — launched,
+        // over the back, planted, upright — which cannot be told in three. 6 @ 12 fps = 0.50 s of
+        // clip against a 0.22 s physical slide; see CombatController.KnockbackSlideDuration for why
+        // that mismatch is deliberate.
+        { "knockback",  new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
     };
 
     /// <summary>
@@ -316,15 +326,20 @@ public static class ArtImportTool
         RefreshPlayerClassVisualLibrary(report, problems, classArtInBatch);
 
         // Every other subject in a run is an NPC, and NPCs are authored as PlacementPresets rather
-        // than as scene objects. The player is excluded because they are a scene object with their
-        // own wiring above — nothing the palette ever stamps.
+        // than as scene objects. The PLAYER is excluded because they are a scene object with their
+        // own wiring above — nothing the palette ever stamps. Player-CLASS subjects are not
+        // excluded: the wiring only ever touches a preset that explicitly claims the subject, and
+        // Preset_Stabmeister does exactly that. (The class's own visual library is refreshed above;
+        // this is about stamping the class as a world NPC.)
         foreach (string subject in clipsBySubject.Keys)
         {
-            if (IsPlayerClassSubject(subject)) continue;
+            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
 
             heightBySubject.TryGetValue(subject, out float worldHeight);
             WirePresetsForSubject(subject, worldHeight, report);
         }
+
+        AssignNpcPortraits(report, problems);
     }
 
     private static Sprite FindImported(string baseName)
@@ -583,6 +598,92 @@ public static class ArtImportTool
         return wired;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  PORTRAITS
+    //  A dialogue portrait is a single named spr_portrait_<subject>. It is not a scene object and
+    //  not part of a preset's placed body — it is the face DialogueManager.DisplayNode shows, read
+    //  from node.Speaker.Portrait. The one CharacterData that becomes that node.Speaker is
+    //  PlacementPreset.Speaker (PresetDialogueTools copies it into the generated node), keyed by the
+    //  same ArtSubject WirePresetsForSubject uses. So a portrait is wired by walking
+    //  subject → preset(s) with that ArtSubject → their Speaker CharacterData → Portrait.
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private const string PortraitPrefix = "spr_portrait_";
+
+    /// <summary>
+    /// Assigns every imported <c>spr_portrait_&lt;subject&gt;</c> single to the <c>Portrait</c> of the
+    /// <see cref="ExiledAlvaston.Data.CharacterData"/> that speaks for that subject — the
+    /// <c>Speaker</c> on any <c>PlacementPreset</c> carrying the matching <c>ArtSubject</c>.
+    ///
+    /// Scans what is on disk rather than a batch, like the other single assignments, so it is
+    /// idempotent and re-runnable from the "Wire Presets" menu. Overwrites outright, matching the
+    /// asymmetry of the preset wiring: the portrait is derived from the art, so a fresh import wins.
+    ///
+    /// Reports a problem, never silence, when a portrait has nowhere to go — no preset for its
+    /// subject, or presets that exist but have no Speaker CharacterData wired yet (currently every
+    /// one of them). That gap is the owner's to close by assigning a CharacterData to each talking
+    /// preset's Speaker field; this only stops the portrait being lost when they do.
+    /// </summary>
+    private static void AssignNpcPortraits(List<string> report, List<string> problems)
+    {
+        if (!AssetDatabase.IsValidFolder(ArtRoot)) return;
+
+        foreach (string guid in AssetDatabase.FindAssets("t:Sprite", new[] { ArtRoot }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = Path.GetFileNameWithoutExtension(path);
+            if (!file.StartsWith(PortraitPrefix, StringComparison.Ordinal)) continue;
+
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite == null) continue;
+
+            string subject = file.Substring(PortraitPrefix.Length);
+
+            // Distinct Speaker assets across every preset on this subject — one CharacterData may be
+            // shared by several presets, and it must not be reported (or recorded) twice.
+            var speakers = new List<ExiledAlvaston.Data.CharacterData>();
+            bool matchedAnyPreset = false;
+
+            foreach (string presetGuid in AssetDatabase.FindAssets("t:PlacementPreset"))
+            {
+                var preset = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.PlacementPreset>(
+                    AssetDatabase.GUIDToAssetPath(presetGuid));
+                if (preset == null) continue;
+                if (!string.Equals(preset.ArtSubject, subject, StringComparison.OrdinalIgnoreCase)) continue;
+
+                matchedAnyPreset = true;
+                if (preset.Speaker != null && !speakers.Contains(preset.Speaker))
+                    speakers.Add(preset.Speaker);
+            }
+
+            if (!matchedAnyPreset)
+            {
+                problems.Add($"{file}: imported, but no PlacementPreset has ArtSubject '{subject}', " +
+                             "so there is no character to hang the portrait on.");
+                continue;
+            }
+
+            if (speakers.Count == 0)
+            {
+                problems.Add($"{file}: imported, but no preset for '{subject}' has a Speaker " +
+                             "CharacterData, so the dialogue window has nothing to assign it to. " +
+                             "Set the Speaker field on that character's preset and re-run " +
+                             "Tools → GBH → Content → Wire Presets From Imported Art.");
+                continue;
+            }
+
+            foreach (var speaker in speakers)
+            {
+                if (speaker.Portrait == sprite) continue;
+
+                Undo.RecordObject(speaker, "Assign generated portrait");
+                speaker.Portrait = sprite;
+                EditorUtility.SetDirty(speaker);
+                report.Add($"    {speaker.name}.Portrait ← {file}");
+            }
+        }
+    }
+
     /// <summary>
     /// First frame of a subject's idle sheet — the pose the character holds when nothing is
     /// animating them.
@@ -749,10 +850,19 @@ public static class ArtImportTool
             if (!file.EndsWith(ControllerSuffix, StringComparison.Ordinal)) continue;
 
             string subject = file.Substring(0, file.Length - ControllerSuffix.Length);
-            if (IsPlayerClassSubject(subject)) continue;
+            // Only the player is skipped — a scene object, never palette-stamped. A preset that
+            // explicitly claims a player-CLASS subject (Preset_Stabmeister does) gets wired like
+            // any NPC's; without this the class presets stay unwired no matter how often this runs.
+            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
 
             if (WirePresetsForSubject(subject, 0f, report) > 0) subjects++;
         }
+
+        // Portraits are singles, not driven by a controller, so the controller sweep above never
+        // reaches them — assign them from disk here on the same terms.
+        var portraitProblems = new List<string>();
+        AssignNpcPortraits(report, portraitProblems);
+        foreach (string p in portraitProblems) report.Add($"    (skipped) {p}");
 
         AssetDatabase.SaveAssets();
 
@@ -909,7 +1019,7 @@ public static class ArtImportTool
     }
 
     /// <summary>
-    /// Checks a sheet against the frame/fps/loop table in ART_PIPELINE.md §7.3, and fills in fps
+    /// Checks a sheet against the frame/fps/loop table in ART_PIPELINE.md §8, and fills in fps
     /// and loop from it when the manifest omits them. Warns rather than refuses: the numbers are a
     /// house style, and a deliberate deviation should not cost a regeneration cycle.
     /// </summary>
@@ -1243,11 +1353,18 @@ public static class ArtImportTool
     }
 
     /// <summary>
-    /// Actions where the figure is *supposed* to change shape — falling over, sitting on a bike.
-    /// Height and baseline comparisons are meaningless for these; width still is not, because no
-    /// legitimate pose makes a character half as wide as they are standing.
+    /// Actions where the figure is *supposed* to change shape — falling over, sitting on a bike,
+    /// tucking into a roll, being flipped off their feet. Height and baseline comparisons are
+    /// meaningless for these; width still is not, because no legitimate pose makes a character
+    /// half as wide as they are standing.
+    ///
+    /// knockback used to be excluded here on the reading that a stagger is a standing pose. The
+    /// delivered art is not a stagger: it is a 6-frame airborne tumble, feet leaving the ground
+    /// entirely, so the standing height and baseline checks would refuse every one of them for
+    /// doing exactly what was asked for.
     /// </summary>
-    private static bool ShapeChanges(string action) => action == "death" || action == "cycle";
+    private static bool ShapeChanges(string action) =>
+        action == "death" || action == "cycle" || action == "roll" || action == "knockback";
 
     private static readonly Dictionary<string, List<SubjectShape>> ShapesBySubject =
         new Dictionary<string, List<SubjectShape>>();

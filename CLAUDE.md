@@ -219,7 +219,10 @@ confirmed, rather than leaving it hedged.
    `UIManager` and everything the pounds rename touched. **It proves they compile, nothing more:
    none of their behaviour has been exercised.** The creator tool was run again later the same
    day, after `CharacterCreatorUI`, `PlayerSession`, `SaveGameManager` and `CharacterCreatorSetup`
-   changed, so those compile too.
+   changed, so those compile too. **The project compiled again on 2026-08-09**, when
+   `Tools → GBH → Art → Import Generated Art` ran successfully — that clears everything changed
+   between those two dates, including `CombatController`, `ArtImportTool` and the whole mobile
+   performance pass. Again: it proves they compile and nothing else.
 2. **`UIManager.EnsureDedicatedTrack`** — wraps a bar fill in its own parent when the scene did not
    give it one, fixing the concealment readout overlapping the mana bar. *Check the readouts no
    longer overlap, and that the concealment bar snaps back to wherever it was actually authored* —
@@ -242,11 +245,11 @@ confirmed, rather than leaving it hedged.
 7. **`murtaugh_Controller` is hand-authored YAML**, verified only structurally. *Check Murtaugh
    animates while roaming instead of sliding.* If Unity rejects it, re-stage the walk pair from
    `art_incoming/processed/` and re-run the importer.
-8. ⚠️ **The pounds rename relies on `[FormerlySerializedAs]` doing its job.** 25 `Preset_*.asset`
-   files still hold the old `…Gold` keys on disk. *Open any robbable
-   preset (e.g. `Preset_Villager`) in the Inspector and check Pickpocket Min/Max Pounds read
-   **5 and 25**, not 0.* If they read 0 the remap did not take and the values are gone — restore
-   from git rather than retyping 25 assets.
+8. **The pounds rename works.** `Preset_Stabmeister.asset` was rewritten by Unity on 2026-08-09
+   and came out holding `PickpocketMinPounds: 5` / `PickpocketMaxPounds: 25` — the
+   `[FormerlySerializedAs]` remap carried the values across intact. The remaining 24
+   `Preset_*.asset` files still hold the old `…Gold` keys on disk and will convert the same way
+   the first time each is touched. Nothing to do; no longer a risk.
 9. **£ may not be in the TMP font atlas.** `EKVibe.FormatPounds` emits U+00A3, and TMP's default
    static atlases are often ASCII-only, which renders it as a missing-glyph box. *Check the bag's
    money readout and the pickpocket toast.* Fix is on the font asset (Project → the TMP font →
@@ -290,6 +293,111 @@ and were hidden until now inside a `--check-dangling` baseline that called them 
 GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix is reassigning
 each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
 `sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
+
+**Also outstanding — the dodge roll, phase 1.** On `dodge-roll-phase2` (which carries phase 1),
+never compiled:
+
+- **`Health.TakeDamage` now returns `bool`** — true if the hit landed. Nothing in phase 1 reads it;
+  it exists so enemy knockback can tell a connected hit from a dodged one. ⚠ **The method is no
+  longer bindable in a `UnityEvent` dropdown**, because Unity only offers void methods there.
+  Nothing binds it today — `grep -rn "m_MethodName: TakeDamage" Assets/` was empty before it
+  landed, and is the check to re-run if anything ever stops taking damage for no visible reason.
+- **Space rolls the player**, 2.4 m over 0.40 s for 14 stamina, i-frames 0.05–0.30 s in, 1 s
+  cooldown. *Check the distance looks like the field says, that a second Space inside a second
+  does nothing, and that rolling off a kerb still falls rather than hovering* — hovering means the
+  velocity zeroing has been moved inside the loop.
+- **`Health` refuses damage outright while `IsInvulnerable`.** *Stand in the PCSO's range — the
+  only `EnemyAI` in `c.unity` — and roll through its swing. A white **"Dodged!"** should appear, no
+  red number, and health should not move.*
+- **Rolling breaks stealth.** *Crouch with **C**, roll, and check the toast reads "Out of stealth.",
+  the CRO button pops back out and walk speed returns.*
+- **The DGE button is built at runtime**, fourth in the bottom row. It will not appear in the
+  Hierarchy until Play starts — look for `UI/UICanvas/HUDPanel/ActionButtons/DGE`. *Check it is
+  reachable with a thumb in the Device Simulator, landscape;* it is invisible in a 16:9 Game view.
+- **The roll animation landed 2026-08-09 and plays.** `player_Controller` holds a `Roll` state on
+  a 6-frame clip, and the other four class controllers do too.
+- ⚠ **`RollSpeedCurve` integrates to exactly 1 over [0,1]**, and that is the only reason the roll
+  travels `RollDistance`. Reshaping it without preserving that decouples the two silently.
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
+**Also outstanding — enemy knockback of the player, phase 2.** On `dodge-roll-phase2` (built on
+the phase 1 branch), never compiled:
+
+- **`EnemyAI.KnockbackDistance`, default 0** — no prefab or scene file changed, so nothing knocks
+  the player back until the Inspector pass sets it. Per the recorded decision: `Enemy_OG` and
+  `Enemy_Tainted` at **2 m**, police at **0**, folded into the same Inspector session as the
+  `Level: 3` and `IsPolice` prefab passes. *Stamp `Enemy_OG` from the palette, set Knockback
+  Distance = 2 outside Play mode, take a hit, and check the slide is ~2 m and stops at walls.*
+- **A dodged hit no longer shoves.** Both `AttackRoutine` damage branches gate the shove on
+  `TakeDamage` returning true. *Roll through the stamped enemy's swing: "Dodged!", no red number,
+  and crucially no slide.* This is the defect the whole return value exists to fix.
+- **Knockback wins over a roll in progress** — the roll polls `_isKnockedBack` and yields the
+  body to it. *Roll into a 2 m hit and check the player ends up shoved, not rolled.*
+- **0.4 s of recovery i-frames as the slide ends** (`KnockbackRecoveryIFrames`), so two enemies
+  cannot chain-stun. *With two knockers in range, check a second hit during the recovery is
+  refused — "Dodged!" over the player, no damage.*
+- **The player's knockback animation landed 2026-08-09** and is wired into all five class
+  controllers, but has never been seen play because nothing sets `KnockbackDistance`. **No enemy
+  subject has a knockback sheet**, so `EnemyAI`'s own `SetAnimatorTrigger("Knockback")` still
+  no-ops — guarded, so no console errors — and the `Hit` trigger carries the feedback there.
+- **The slide uses the same `MovePosition` sweep as walking** — deliberate asymmetry with the
+  enemy-side knockback coming in phase 4, which must capsule-cast because enemies move by
+  transform. *If the player ever slides through a wall here, the Rigidbody has been switched to
+  kinematic somewhere — check that first.*
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
+**Also outstanding — the melee knockback perk, phase 4.** On `dodge-roll-phase2`, never compiled:
+
+- **`PerkEffectType.MeleeKnockback = 9` is appended, never reordered** — the enum is serialized by
+  integer index inside every `PerkData` asset, and the first asset authored freezes these indices
+  forever. Magnitude is a **flat metre value**, not a percentage. **No perk asset exists** — the
+  owner authors it: Create → `ExiledAlvaston/Data/Perk`, into a `Resources/Perks` folder, one
+  effect of type MeleeKnockback, Magnitude 2. *Then spend a point and hit something: the enemy
+  should slide ~2 m and stop at walls.*
+- **`PlayerSession.MeleeKnockbackDistance` resets with the other cached query values** in
+  `RecalculateDerivedStats` step 6 — stats recompute on every load, so a cached value that is added
+  to but never reset would accumulate per load. *Take the perk, note the shove, reload the save,
+  and check the shove is the same rather than doubled.*
+- **Enemies slide by transform through a capsule cast** (`TryStep`, factored out of
+  `TryCollideMove`), the mirror image of the player's `MovePosition` slide — each side uses the
+  mechanism its body type requires, and the comments at both sites say so. The agent is paused by
+  `updatePosition = false`, never `agent.enabled`.
+- **A killed enemy is never shoved** — the melee site gates on `!targetHealth.IsDead` because
+  `Health.Die` has already disabled the agent and the AI. *Kill something with the perk on and
+  check the corpse does not slide.*
+- **EnemyAI's three `SetTrigger` sites are now guarded** like CombatController's — before this,
+  firing an undefined trigger logged an error every call, and no enemy controller defines
+  `Knockback` yet. Expected silence until the band 10 sheets are delivered and imported.
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
+**Also outstanding — enemy levels in the world, combat nameplates, bigger HUD.** Merged
+2026-08-08, code-reviewed against its plan, never compiled:
+
+- **Enemy levels are authorable but nothing is authored.** `PlacementPreset.EnemyLevel` and the
+  palette's per-stamp Level field attach an `EnemyLevel` at placement. **A level of 0 attaches no
+  component at all** — deliberate, because a level-1 component is not inert: the nameplate starts
+  reading it and the badge flips from the prefab's "3" to "1". ⚠️ **No enemy prefab is placed
+  anywhere in any chunk or in `c.unity`** — the only `EnemyAI` in the scene is the PCSO — so this
+  path has never run. *Stamp an enemy from the palette at Level 4 and check it is tougher than
+  one stamped at Level 1.*
+- **Nameplates are combat-gated and now build lazily.** They show on aggro **or** when the player
+  is within `SightRadius`, and hide a few seconds after. *Check a plate appears as you approach
+  rather than only after the first hit, and that it does not reappear over a corpse.* The tutorial
+  bandit's badge should now read **1, not 3** — that line was a real bug, set after the badge had
+  already been drawn.
+- ⚠️ **`EnemyAI` resolves its nameplate in `Start`, not `Awake`.** `TutorialSequence` adds
+  `EnemyAI` before `EnemyNameplate`, and `AddComponent` runs `Awake` synchronously, so caching in
+  `Awake` would cache null and leave the tutorial bandit with no plate at all. Do not move it.
+- **The player's bar carries a level badge** and now rises when they deal damage or draw aggro,
+  not only when hit. *Check the badge tracks a level-up while the bar is visible.*
+- **The top-left HUD cluster is scaled 1.6× at runtime** from `EKVibe.HudClusterScale`. The
+  ceiling is 1.75, where it would overlap the combat log. A `SafeAreaFitter` is added to the HUD
+  panel at runtime — *invisible in a 16:9 Game view; needs the Device Simulator.*
+
+→ [docs/plans/LEVELS_IN_WORLD_AND_HUD.md](docs/plans/LEVELS_IN_WORLD_AND_HUD.md) §10.3 for the routes.
 
 **Also outstanding — perks, growth and proportional armour, phase 3.** Merged 2026-08-08,
 code-reviewed against its plan, never compiled:
@@ -343,6 +451,107 @@ code-reviewed against its plan, never compiled:
   backfill path in `ContinueFromSave` is the one most likely to be wrong.
 - **Three new save fields** (`Equipment`, `VisitedChunks`, `UnlockedWikiEntries`). *Load a
   pre-equipment save and check it arrives with an empty doll and a blank map instead of failing.*
+
+**Also outstanding — the survival pressure pass, none of it exercised.** Committed 2026-08-09,
+never compiled:
+
+- ⚠️ **Mana no longer regenerates at all.** It comes back through consumables, the pub's full
+  restore, and a heal spell that does not exist yet. `ManaRegenPerSecond` is deleted and leaves an
+  orphan key in `c.unity` that Unity drops on the scene's next save — **do not hand-edit the scene
+  to remove it.** *Cast Spark, stand still 30 s, and check mana does not move.*
+- ⚠️ **The dodge roll costs 50% of maximum stamina, floored.** `CurrentRollCost` uses
+  `FloorToInt`, and that is load-bearing: `PerformDodge` refuses on `CurrentStamina < cost`, so a
+  cost above half the pool makes the second roll impossible. Rounding put a 55 pool's cost at 28,
+  which left 27 and refused. *Check a Young Driller gets exactly two rolls from full — 55 → 28 →
+  1 — and that the third is refused. One roll then a refusal means the floor was lost.*
+- **Stamina regenerates at 5% of maximum per second**, a percent rather than a flat rate so the
+  economy does not drift as the pool grows with level. *Check ~3 points a second on a 55 pool: one
+  roll back after ~10 s, full after ~20 s.* It ticks in combat deliberately — there is no combat
+  state and the code documents why the two obvious ways to build one fail.
+- **A third HUD bar, amber, built at runtime** by `UIManager.EnsureStaminaBar` — nothing to wire.
+  *Check it reads `55 / 55`, sits below the mana bar, does not reach the combat log or the
+  joystick, and survives the Device Simulator in landscape.*
+- **The concealment bar and stealth are sidelined by decision**, not overlooked. `ConcealmentBar`
+  is inactive in `c.unity` and nothing activates it, so there is a deliberate 28 px gap where its
+  slot is reserved. The stray duplicate `MPFill` inside it was left alone. **Not a defect of this
+  pass.**
+- ⚠️ **A pre-existing bug is now written up but not fixed**: `UIManager.EnsureDedicatedTrack`
+  tests `parent.childCount == 1`, and `EnsureBarLabel` later adds the readout beside the fill, so
+  the next call wraps a fill that never needed it — inheriting the fill fraction as the new track's
+  size. HP and MP both take that path, invisibly, because their first paint is a full bar. *It
+  would show as a health bar that tops out at a third after loading a save at low health.* Its own
+  pass; the stamina bar is built so it cannot be reached.
+- **No save key changed**, and `Health`/`Mana`/`Stamina` already round-trip. *Load a save made
+  before today and check it arrives with whatever mana it held, no error, and HP never at 0.*
+- **The magic tutorial is the one scripted sequence written while mana came back.** Spark costs 12
+  against a 55–80 pool and melee is always available. *Walk it end to end once.*
+
+→ [docs/plans/SURVIVAL_PRESSURE_RESOURCES.md](docs/plans/SURVIVAL_PRESSURE_RESOURCES.md) §10.3 for
+the full routes.
+
+**Also outstanding — roll and knockback, imported 2026-08-09, only half exercised.**
+
+The import ran and accepted all ten sheets, so `Assembly-CSharp` compiled and the importer's own
+checks passed on real art. **The roll has been seen playing and is good.** What that does *not*
+cover is below:
+
+- **The knockback has never been seen play.** It needs an enemy with `KnockbackDistance` set,
+  which no prefab has — see the phase 2 entry above. *Stamp `Enemy_OG`, set Knockback Distance = 2
+  outside Play mode, and take a hit.*
+- **`ApplyKnockback` clears the `Hit` trigger before setting `Knockback`.** Both were being set in
+  the same frame, since a knockback only ever follows a landed hit, and the Animator would take
+  whichever Any State transition it evaluated first while holding the other for the next frame.
+  Compiles; never run. *Check the tumble plays whole rather than flickering through a Hurt frame.*
+- **The knockback clip is 0.50 s against a 0.22 s slide, deliberately.** *Check the player can move
+  ~0.28 s before the tumble finishes drawing, and that walking during that window keeps the tumble
+  on screen until it ends.* That is the exit-time return, not a defect.
+- ⚠️ **Reimport idempotency is unproven.** The second run reported nothing waiting, which proves
+  the archive step worked and nothing more. *Move one pair back from `art_incoming/processed/`,
+  re-run the import, and check the Animator window shows no new transitions and the report says
+  `0 duplicate transition(s) removed`.*
+- ⚠️ **`knockback` is now a shape-changing action** alongside `death`, `cycle` and `roll` — exempt
+  from the standing height and baseline checks in both `ArtImportTool` and `Tools/precheck_sheets.py`,
+  and its contract is now 6 frames at 12 fps, was 3. The delivered art is an airborne tumble, not
+  the standing stagger the action was first specified as. Feet moved 90–134 px between frames on
+  these sheets and were correctly not flagged. **Width is still checked.** *If a stagger-style
+  knockback is ever wanted instead, this is the line that changed.*
+- **`player_bundabasher` has no `idle`**, so its two sheets imported with the width comparison
+  skipped, and the class is still a Young Driller fallback — roll and knockback do not count toward
+  the six core actions that release a class into gameplay. Its controller now exists holding only
+  those two states.
+- **`Tools/precheck_sheets.py` compares width as a fraction of the cell**, not in raw pixels. Three
+  class idles are drawn on 1024 px cells against these sheets' 512, which was reporting correct art
+  as "2× narrower".
+
+→ [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) for the wiring.
+
+**Also outstanding — the mobile performance pass, none of it exercised.** Landed on `main`, never
+compiled:
+
+- **Two runtime scripts and one editor script are new, and their `.meta` files were hand-authored**
+  with fresh GUIDs — no Unity was available to generate them. *Confirm on first open that Unity
+  accepts them rather than minting new ones,* which would silently break nothing yet but is worth
+  knowing either way.
+- **`Tools → GBH → Art → Apply Mobile Texture Settings` has never been run.** Creating the tool
+  changed no texture. Run the Dry Run first and confirm the sprite cast under
+  `Assets/Art/Generated/` never appears in the applied list, then run it for real — expect ~50-60
+  `.meta` files to change. *Check the Animated Chest afterward in `c.unity` at normal camera
+  distance* — its three TGAs should have gone from ~2048² uncompressed to 512² ASTC.
+- ⚠️ **`GraphicsPrefs.Apply()` re-applies the shadow override after `SetQualityLevel`, on
+  purpose** — `SetQualityLevel` overwrites `QualitySettings.shadows` as a side effect, so doing it
+  in the other order would silently revert a disabled shadow setting the next time quality changes.
+  *Turn Shadows OFF in the new settings window, then cycle Quality, and check shadows stay off.*
+- **The settings window has never been opened.** *Check `Settings` appears directly above `Quit`
+  on the title screen, that opening and closing it twice doesn't leave the game frozen (a
+  `PauseManager` push/pop imbalance), and that a chosen quality level survives a Play-mode
+  stop/start* — that last one is the only proof the boot hook actually fires.
+- **Android is still ARMv7-only with no scripting backend set** (falls through to Mono) — the
+  project cannot currently publish to the Play Store, independent of this pass. Not scriptable;
+  see [docs/plans/MOBILE_PERFORMANCE_PASS.md](docs/plans/MOBILE_PERFORMANCE_PASS.md) §10.3 check 9
+  for the Project Settings route.
+
+→ [docs/plans/MOBILE_PERFORMANCE_PASS.md](docs/plans/MOBILE_PERFORMANCE_PASS.md) §10.3 for the full
+check list.
 
 ---
 

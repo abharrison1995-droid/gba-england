@@ -370,8 +370,13 @@ namespace ExiledAlvaston.UI
             GameObject panel = QuestUIBuilder.CreateImage("WikiPanel", dim.transform, Win95Skin.Face);
             Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
-            prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
-            prt.sizeDelta = new Vector2(980f, 800f);
+            // Near-fullscreen like the bag window — a thin screen margin on every side, so the
+            // window fills a phone display instead of floating as a 980x800 box in the middle.
+            // Interior panes are pinned by offsets, so they redistribute on their own.
+            prt.anchorMin = new Vector2(0.01f, 0.02f);
+            prt.anchorMax = new Vector2(0.99f, 0.98f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
 
             GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             var hrt = header.GetComponent<RectTransform>();

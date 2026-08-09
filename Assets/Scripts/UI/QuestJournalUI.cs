@@ -115,12 +115,12 @@ namespace ExiledAlvaston.UI
             hrt.sizeDelta = new Vector2(0, 52);
 
             var headerLabel = QuestUIBuilder.CreateTMP("HeaderLabel", header.transform, "NEW QUEST",
-                EKVibe.XpBar, 24, TextAlignmentOptions.Center, FontStyles.Bold);
+                Win95Skin.TitleText, 24, TextAlignmentOptions.Center, FontStyles.Bold);
             QuestUIBuilder.Stretch(headerLabel.gameObject, Vector2.zero, Vector2.one);
 
             QuestUIBuilder.CreateCloseX(header.transform, Close);
 
-            _titleText = QuestUIBuilder.CreateTMP("QuestTitle", panel.transform, "", EKVibe.TextDark, 30,
+            _titleText = QuestUIBuilder.CreateTMP("QuestTitle", panel.transform, "", Win95Skin.FieldText, 30,
                 TextAlignmentOptions.Center, FontStyles.Bold);
             var trt = _titleText.GetComponent<RectTransform>();
             trt.anchorMin = new Vector2(0, 1);
@@ -129,7 +129,7 @@ namespace ExiledAlvaston.UI
             trt.anchoredPosition = new Vector2(0, -64);
             trt.sizeDelta = new Vector2(-40, 40);
 
-            _bodyText = QuestUIBuilder.CreateTMP("QuestBody", panel.transform, "", EKVibe.TextDark, 21,
+            _bodyText = QuestUIBuilder.CreateTMP("QuestBody", panel.transform, "", Win95Skin.FieldText, 21,
                 TextAlignmentOptions.Top, FontStyles.Normal);
             var brt = _bodyText.GetComponent<RectTransform>();
             brt.anchorMin = new Vector2(0, 0);
@@ -353,8 +353,12 @@ namespace ExiledAlvaston.UI
             GameObject panel = QuestUIBuilder.CreateImage("JournalPanel", dim.transform, Win95Skin.Face);
             Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
-            prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
-            prt.sizeDelta = new Vector2(980, 800);
+            // Near-fullscreen like the bag/wiki/map windows — a thin screen margin on every
+            // side, so the journal fills a phone display instead of floating at 980x800.
+            prt.anchorMin = new Vector2(0.01f, 0.02f);
+            prt.anchorMax = new Vector2(0.99f, 0.98f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
 
             GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             var hrt = header.GetComponent<RectTransform>();

@@ -30,6 +30,10 @@ namespace ExiledAlvaston.Vibe
         // --- HUD / combat ---
         public static readonly Color HealthBar = new Color(0.75f, 0.15f, 0.12f, 1f);
         public static readonly Color ManaBar = new Color(0.2f, 0.35f, 0.75f, 1f);
+        /// <summary>Amber, for the stamina bar. Deliberately its own constant rather than a reuse
+        /// of <see cref="XpBar"/>, which it currently matches — the two answer to different things
+        /// and must be free to diverge without one silently dragging the other.</summary>
+        public static readonly Color StaminaBar = new Color(0.85f, 0.7f, 0.15f, 1f);
         public static readonly Color XpBar = new Color(0.85f, 0.7f, 0.15f, 1f);
         public static readonly Color LevelBadge = new Color(0.9f, 0.75f, 0.2f, 1f);
         public static readonly Color DamageFloat = new Color(0.95f, 0.2f, 0.15f, 1f);
@@ -52,6 +56,20 @@ namespace ExiledAlvaston.Vibe
         public const float AttackButtonSize = 100f;
         public const float SkillButtonSize = 72f;
         public const float QuickSlotSize = 64f;
+
+        /// <summary>
+        /// Runtime localScale for the top-left HUD cluster — portrait, HP/MP/concealment bars and
+        /// their readouts. Applied by UIManager to the panel, never to a track or a fill.
+        ///
+        /// 1.6 sits between two bounds. The hard ceiling is the combat log: the cluster's right
+        /// edge is 16 + 390*k and the log's left edge is 700 at the 1920x1080 reference, so
+        /// ⚠ <b>anything above ~1.75 overlaps it</b> and needs the log moved, which is a scene edit.
+        /// The floor is legibility — the rest of the HUD is built at 100-130 px with 20-26 pt
+        /// labels, and the cluster was 28 px bars with an 18 pt readout. At 1.6 the bars are
+        /// 44.8 px, the readout 28.8 pt and the portrait 153.6 px, level with the 130 px ATK
+        /// button. Derived from geometry and parity, not measured on a device.
+        /// </summary>
+        public const float HudClusterScale = 1.6f;
 
         // --- World presentation (small characters, wide view) ---
         public const float TileSize = 1f;

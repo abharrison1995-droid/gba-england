@@ -30,14 +30,22 @@ namespace ExiledAlvaston.Data
         MaxHealthPercent = 3,
         ArmourFlat = 4,
         MaxResourceFlat = 5,
+        /// <summary>Scales STAMINA regen only. Mana does not regenerate — it comes back through
+        /// items, the pub and heal spells — so this has one input, despite the general name. The
+        /// name and its index 6 are frozen: three members follow it and the enum is serialized by
+        /// integer index, so renaming is pointless and removing would silently rewrite them.</summary>
         ResourceRegenPercent = 6,
         MoveSpeedPercent = 7,
-        ExtraLootRolls = 8
+        ExtraLootRolls = 8,
+        /// <summary>Flat metres the player's melee hits shove the target — not a percentage,
+        /// not a chance. Read by PlayerSession.MeleeKnockbackDistance.</summary>
+        MeleeKnockback = 9
     }
 
     /// <summary>
     /// One thing a perk does. <see cref="Magnitude"/> is read as whole points for the Flat and
     /// ExtraLootRolls types and as a percentage for the Percent types — 15 meaning +15%.
+    /// MeleeKnockback reads it as a flat metre value (2 = shoved two metres).
     /// </summary>
     [System.Serializable]
     public class PerkEffect

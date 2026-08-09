@@ -4,8 +4,9 @@ Checks, per ART_PIPELINE.md / CLAUDE.md §12:
   1. JSON fields sane and grid matches PNG dimensions.
   2. One drawing per cell (layout): no empty cells, no fragment frames.
   3. Figure fills ~90% of cell height (measured on keyed mask).
-  4. Baseline drift across cells <= 2 px at final size (65 px cell)  [death exempt]
-  5. Mean opaque width per cell within 1.4x of *that subject's own* idle sheet  [never exempt]
+  4. Baseline drift across cells <= 2 px at final size (65 px cell)  [shape-changing exempt]
+  5. Mean opaque width per cell within 1.4x of *that subject's own* idle sheet  [never exempt],
+     compared as a FRACTION of the cell, so a 512 px sheet may be checked against a 1024 px idle
   6. Frames actually differ from one another (nothing else catches a tiled still)
 
 Checks the band-2 sheets by default (ART_PIPELINE.md §7.4). Pass sheet filenames as
@@ -38,6 +39,15 @@ WIDTH_TOLERANCE = 1.4
 STILL_FRAME_RATIO = 0.10
 
 MAGENTA = np.array([255, 0, 255])
+
+# Actions where the figure is *supposed* to change shape, so height, fill and baseline say nothing
+# about whether the sheet is right. Mirrors ArtImportTool.ShapeChanges — the two must agree or this
+# file stops predicting what the importer will do, which is its entire purpose.
+#
+# `knockback` is here because the delivered art is a full airborne tumble (launched, over the back,
+# planted, upright), not the standing stagger the action was first specified as. `cycle` is listed
+# for parity with the importer even though no cycle sheet is requested any more.
+SHAPE_CHANGING = ("death", "cycle", "roll", "knockback")
 
 # Band 2 of the queue in ART_PIPELINE.md §7.4/§7.5: the tutorial cast. Daniel Pauls needs no
 # hostile set and the geezer never casts, which is why the two lists differ.
@@ -153,7 +163,7 @@ def load_pair(png: Path):
     return meta, img
 
 
-def check_sheet(png: Path, idle_mean_width: float | None):
+def check_sheet(png: Path, idle_width_frac: float | None):
     print(f"\n=== {png.name} ===")
     problems = []
     meta, img = load_pair(png)
@@ -161,7 +171,7 @@ def check_sheet(png: Path, idle_mean_width: float | None):
         print("  !! no sidecar JSON")
         return False
     action = meta.get("action", "?")
-    exempt = action == "death"  # height/baseline exempt, width never exempt
+    exempt = action in SHAPE_CHANGING  # height/baseline exempt, width never exempt
 
     fw, fh = meta["frameWidth"], meta["frameHeight"]
     cols, rows = meta["columns"], meta["rows"]
@@ -251,12 +261,18 @@ def check_sheet(png: Path, idle_mean_width: float | None):
                     f"strict baseline drift {sdrift_final:.1f}px final > {DRIFT_LIMIT_FINAL_PX}px "
                     f"(cell {worst[0]} reads {worst[1]}; importer would refuse)")
     elif exempt:
-        print("  (death: height/baseline checks exempt, width still applies)")
+        print(f"  ({action}: shape-changing — height/baseline checks exempt, width still applies)")
 
-    if idle_mean_width and good:
-        mean_w = float(np.mean([g["mean_width"] for g in good]))
-        ratio = idle_mean_width / mean_w
-        print(f"  width vs idle: {mean_w:.0f}px vs idle {idle_mean_width:.0f}px -> idle/new {ratio:.2f}x (limit {WIDTH_TOLERANCE}x)")
+    # Width is compared as a fraction of the cell, never in raw pixels. The importer measures it
+    # that way (CellMetrics.WidthFraction), and it has to: cell sizes differ between sheets — the
+    # roll and knockback sheets are 512 px cells while several accepted idles are 1024 — so a raw
+    # pixel comparison reported a correctly-drawn 512 px sheet as "2x narrower" purely because its
+    # cell was half the size. Comparing fractions removes the cell size from the question entirely.
+    if idle_width_frac and good:
+        width_frac = float(np.mean([g["width_frac"] for g in good]))
+        ratio = idle_width_frac / width_frac
+        print(f"  width vs idle: {width_frac:.3f} of cell vs idle {idle_width_frac:.3f} "
+              f"-> idle/new {ratio:.2f}x (limit {WIDTH_TOLERANCE}x)")
         if ratio > WIDTH_TOLERANCE:
             problems.append(f"too narrow: {ratio:.2f}x narrower than idle (limit {WIDTH_TOLERANCE}x)")
 
@@ -269,21 +285,25 @@ def check_sheet(png: Path, idle_mean_width: float | None):
     return not problems
 
 
-def mean_width(png: Path) -> float | None:
-    """Mean opaque width per cell, or None if the sheet is unusable as a reference."""
+def mean_width_frac(png: Path) -> float | None:
+    """Mean opaque width per cell **as a fraction of cell width**, or None if unusable.
+
+    A fraction, not pixels, so a sheet may be compared against a reference drawn on a different
+    cell size — which is the normal case now that not every sheet in the project uses 512 px cells.
+    """
     if not png.exists():
         return None
     meta, img = load_pair(png)
     if meta is None:
         return None
     mask = key_mask(img)
-    widths = []
+    fracs = []
     for i in range(meta["columns"] * meta["rows"]):
         s = cell_stats(mask, meta["frameWidth"], meta["frameHeight"],
                        i % meta["columns"], i // meta["columns"])
         if s:
-            widths.append(s["mean_width"])
-    return float(np.mean(widths)) if widths else None
+            fracs.append(s["width_frac"])
+    return float(np.mean(fracs)) if fracs else None
 
 
 def reference_width(subject: str):
@@ -298,7 +318,7 @@ def reference_width(subject: str):
     references its own idle rather than having nothing to compare to.
     """
     for folder in (PROCESSED, INCOMING):
-        width = mean_width(folder / f"sheet_char_{subject}_idle.png")
+        width = mean_width_frac(folder / f"sheet_char_{subject}_idle.png")
         if width is not None:
             return width, folder
     return None, None
@@ -327,7 +347,7 @@ def main():
                       f"processed/ or staging, so the width check is skipped for this subject. "
                       f"Deliver its idle sheet first, or it goes unchecked.")
             else:
-                print(f"\nreference for '{subject}': idle mean width {width:.0f}px/cell "
+                print(f"\nreference for '{subject}': idle mean width {width:.3f} of cell "
                       f"(from {folder.name}/)")
 
         ok = check_sheet(png, references.get(subject)) and ok

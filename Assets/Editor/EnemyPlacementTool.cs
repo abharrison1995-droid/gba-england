@@ -21,6 +21,13 @@ public class EnemyPlacementTool : EditorWindow
     private bool _overrideDamage;
     private int _damageOverride = 7;
 
+    /// <summary>
+    /// Parity with the World Palette's own per-stamp level. Without it the two placement paths
+    /// disagree, and the disagreement is the kind found six months later by someone wondering why
+    /// their enemy is level 1.
+    /// </summary>
+    private int _level;
+
     private readonly List<LootDrop> _loot = new List<LootDrop>();
     private string _questKey = "";
 
@@ -54,6 +61,13 @@ public class EnemyPlacementTool : EditorWindow
         using (new EditorGUI.DisabledScope(!_overrideDamage))
             _damageOverride = EditorGUILayout.IntField("Damage", _damageOverride);
         EditorGUILayout.EndHorizontal();
+
+        _level = Mathf.Max(0, EditorGUILayout.IntField(
+            new GUIContent("Level", "0 attaches no EnemyLevel component at all — the enemy is " +
+                "exactly what its prefab authors. 1 or more attaches one at that level.\n\n" +
+                "The Health and Damage above are the level-1 baseline and are multiplied at " +
+                "runtime, so the placed enemy's Inspector still reads the unscaled numbers."),
+            _level));
 
         _questKey = EditorGUILayout.TextField(
             new GUIContent("Quest Key (optional)", "Adds a QuestActor with this key so quest code can find this exact enemy (e.g. via Health.OnDeath)."),
@@ -118,6 +132,22 @@ public class EnemyPlacementTool : EditorWindow
         EnemyAI ai = instance.GetComponent<EnemyAI>();
         if (_overrideDamage && ai != null)
             ai.Damage = _damageOverride;
+
+        // Below 1 attaches nothing: level 1 and unlevelled are the same behaviourally, and a
+        // level-1 component would still change the nameplate badge and the kill-XP source.
+        // GetComponent first, never a bare AddComponent — two EnemyLevels would both run ApplyTo
+        // and compound the scale with nothing logged.
+        if (_level >= 1 && ai != null)
+        {
+            var enemyLevel = instance.GetComponent<EnemyLevel>();
+            if (enemyLevel == null) enemyLevel = instance.AddComponent<EnemyLevel>();
+            enemyLevel.Level = _level;
+        }
+        else if (_level >= 1)
+        {
+            Debug.LogWarning($"EnemyPlacementTool: Level {_level} was set but '{instance.name}' has " +
+                             "no EnemyAI, so no EnemyLevel was attached.");
+        }
 
         List<LootDrop> validLoot = _loot.FindAll(d => d != null && d.Item != null && d.Quantity > 0);
         if (validLoot.Count > 0)

@@ -67,9 +67,12 @@ namespace ExiledAlvaston.UI
             if (chunkMgr != null && chunkMgr.CurrentChunkData != null)
                 PlayerSession.Instance?.MarkChunkVisited(chunkMgr.CurrentChunkData.ChunkName);
 
-            Populate();
             _root.SetActive(true);
             Systems.PauseManager.Push();
+            // Populate measures the now-fullscreen field's live rect, so layout must be real
+            // first — ForceUpdateCanvases computes it synchronously, no waiting a frame.
+            Canvas.ForceUpdateCanvases();
+            Populate();
         }
 
         private void Close()
@@ -136,9 +139,9 @@ namespace ExiledAlvaston.UI
                 }
             }
 
-            // Layout: centre the graph's bounding box on the field's midpoint. Positions are
-            // offsets from the field's centre anchor, so no live rect read is needed — the
-            // field is inactive until after Populate, when its rect would be unreliable.
+            // Layout: centre the graph's bounding box on the field's midpoint, spreading the
+            // cells across the live (now fullscreen-sized) field measured in OpenInternal.
+            // The 700x500 fallback covers a degenerate rect rather than a real one.
             int minX = int.MaxValue, maxX = int.MinValue, minY = int.MaxValue, maxY = int.MinValue;
             foreach (var pair in nodes)
             {
@@ -150,10 +153,12 @@ namespace ExiledAlvaston.UI
 
             float spanX = Mathf.Max(1, maxX - minX);
             float spanY = Mathf.Max(1, maxY - minY);
-            const float FieldW = 700f, FieldH = 500f;  // a margin inside the 728x544 field
-            const float MaxCellX = 200f, MaxCellY = 160f;
-            float cellX = Mathf.Min(MaxCellX, FieldW / spanX);
-            float cellY = Mathf.Min(MaxCellY, FieldH / spanY);
+            Rect fieldRect = _mapArea.rect;
+            float fieldW = fieldRect.width > 100f ? fieldRect.width * 0.9f : 700f;
+            float fieldH = fieldRect.height > 100f ? fieldRect.height * 0.9f : 500f;
+            const float MaxCellX = 320f, MaxCellY = 240f;
+            float cellX = Mathf.Min(MaxCellX, fieldW / spanX);
+            float cellY = Mathf.Min(MaxCellY, fieldH / spanY);
             float midX = (minX + maxX) * 0.5f;
             float midY = (minY + maxY) * 0.5f;
 
@@ -250,8 +255,12 @@ namespace ExiledAlvaston.UI
             GameObject panel = QuestUIBuilder.CreateImage("MapPanel", dim.transform, Win95Skin.Face);
             Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
-            prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
-            prt.sizeDelta = new Vector2(760f, 620f);
+            // Near-fullscreen like the bag/wiki windows — a thin screen margin on every side,
+            // so the map fills a phone display instead of floating as a 760x620 box.
+            prt.anchorMin = new Vector2(0.01f, 0.02f);
+            prt.anchorMax = new Vector2(0.99f, 0.98f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
 
             GameObject header = QuestUIBuilder.CreateImage("Header", panel.transform, Win95Skin.TitleBar);
             var hrt = header.GetComponent<RectTransform>();

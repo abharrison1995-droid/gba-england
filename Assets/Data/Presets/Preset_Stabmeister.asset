@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Stabmeister
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: 4591883935067358977, guid: 2a97068cd72af6d49a53b90fb490646b, type: 3}
   Prefab: {fileID: 0}
   NpcName: Stabmeister
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: 4591883935067358977, guid: 2a97068cd72af6d49a53b90fb490646b, type: 3}
+  NpcController: {fileID: 9100000, guid: 33e1642b1f197f34db0b525a5a96e900, type: 2}
   Conversation: {fileID: 0}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -39,13 +39,15 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: player_stabmeister
-  NpcHeight: 0
+  NpcHeight: 1.55
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
   AmbientLine: 
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 1
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0

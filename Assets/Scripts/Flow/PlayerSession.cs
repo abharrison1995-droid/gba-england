@@ -254,6 +254,7 @@ namespace ExiledAlvaston.Flow
             MoveSpeedMultiplier = 1f;
             ResourceRegenMultiplier = 1f;
             ExtraLootRolls = 0;
+            MeleeKnockbackDistance = 0f;
 
             // 4. Perk FLAT adds. Percentages are gathered here and applied after the loop (step 5),
             //    so a percentage perk multiplies the flat ones rather than the other way round.
@@ -309,6 +310,10 @@ namespace ExiledAlvaston.Flow
                         case PerkEffectType.ExtraLootRolls:
                             ExtraLootRolls += Mathf.RoundToInt(effect.Magnitude);
                             break;
+                        case PerkEffectType.MeleeKnockback:
+                            // Flat metres, not a percentage — two such perks stack by addition.
+                            MeleeKnockbackDistance += effect.Magnitude;
+                            break;
                     }
                 }
             }
@@ -318,6 +323,7 @@ namespace ExiledAlvaston.Flow
                 RuntimeStats.MaxHealth = Mathf.RoundToInt(RuntimeStats.MaxHealth * (1f + maxHealthPercent / 100f));
 
             ExtraLootRolls = Mathf.Max(0, ExtraLootRolls);
+            MeleeKnockbackDistance = Mathf.Max(0f, MeleeKnockbackDistance);
             MoveSpeedMultiplier = Mathf.Max(0.1f, MoveSpeedMultiplier);
             ResourceRegenMultiplier = Mathf.Max(0f, ResourceRegenMultiplier);
 
@@ -340,11 +346,15 @@ namespace ExiledAlvaston.Flow
         /// <summary>Registered with CombatController.SetSpeedMultiplier, never written to MovementSpeed.</summary>
         public float MoveSpeedMultiplier { get; private set; } = 1f;
 
-        /// <summary>Scales the authored mana/stamina regen rates. 1 = unmodified.</summary>
+        /// <summary>Scales the authored STAMINA regen rate. 1 = unmodified. Mana has no regen rate
+        /// to scale — it is replenished by items, the pub and heal spells only.</summary>
         public float ResourceRegenMultiplier { get; private set; } = 1f;
 
         /// <summary>Extra rolls a loot container makes on top of its band's own count.</summary>
         public int ExtraLootRolls { get; private set; }
+
+        /// <summary>Metres the player's melee hits shove a living enemy. 0 = no shove.</summary>
+        public float MeleeKnockbackDistance { get; private set; }
 
         /// <summary>Rebuild the session from a save file (same stat derivation as a new game).</summary>
         public void RestoreFromSave(string characterName, PlayerClass playerClass, bool tutorialComplete, CharacterData template)
