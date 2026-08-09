@@ -45,9 +45,12 @@ namespace ExiledAlvaston.Combat
         public float MeleeRecovery = 0.35f;
 
         [Header("Dodge Roll")]
-        [Tooltip("Stamina spent per roll. At the 7/s regen rate 14 repays in two seconds, so the " +
-                 "cooldown governs the second roll and the pool governs the third. Shared with " +
-                 "stamina abilities — raising this eats into them.")]
+        [Tooltip("Percent of MAXIMUM stamina spent per roll. 50 means exactly two rolls from full " +
+                 "at every level, because the price scales with the pool. See CurrentRollCost.")]
+        public float RollStaminaPercent = 50f;
+        [Tooltip("Fallback flat cost, used only before a session binds and PlayerData still points " +
+                 "at the template — the title screen and the character creator. In play the " +
+                 "percent above is what is charged.")]
         public int RollStaminaCost = 14;
         [Tooltip("Seconds the roll lasts.")]
         public float RollDuration = 0.40f;
@@ -625,6 +628,26 @@ namespace ExiledAlvaston.Combat
         /// Mirrors <see cref="PerformMeleeAttack"/>: every reason to refuse is checked here, and the
         /// coroutine only starts once the stamina has actually been paid.
         /// </summary>
+        /// <summary>
+        /// Stamina the next roll will cost: <see cref="RollStaminaPercent"/> of the live maximum.
+        ///
+        /// ⚠ **Floors, never rounds.** <see cref="PerformDodge"/> refuses on
+        /// `CurrentStamina &lt; cost`, so the cost must stay at or below half the pool or the
+        /// second roll is refused and the "two rolls from full" economy silently becomes one.
+        /// Rounding breaks that on odd maxima — a 55 pool rounds to 28, leaving 27, which is short.
+        /// Worse, Mathf.RoundToInt is banker's rounding, so it would fail on some maxima and not
+        /// others as the pool grew with level, reading as an intermittent bug rather than an
+        /// arithmetic one. Flooring makes `2 × cost &lt;= max` an invariant.
+        ///
+        /// The Max(1, …) guard is separate, and keeps a future 1-maximum perk or curse from making
+        /// rolls free. PlayerData is PlayerSession.RuntimeStats once a session has bound, so this
+        /// is the level-grown, perk-adjusted maximum — not the template's.
+        /// </summary>
+        private int CurrentRollCost =>
+            PlayerData != null
+                ? Mathf.Max(1, Mathf.FloorToInt(PlayerData.MaxManaStamina * RollStaminaPercent / 100f))
+                : RollStaminaCost;
+
         public void PerformDodge()
         {
             // No rolling out of a swing. Committing to the attack is what the attack costs, and the
@@ -635,7 +658,10 @@ namespace ExiledAlvaston.Combat
             if (BlockedByRiding()) return;
             if (Time.time < _nextRollTime) return;
 
-            if (CurrentStamina < RollStaminaCost)
+            // Read once into a local: the check and the spend must charge the same number even if
+            // the maximum moved between them (a level-up lands through OnSessionStatsChanged).
+            int cost = CurrentRollCost;
+            if (CurrentStamina < cost)
             {
                 if (UIManager.Instance != null)
                     UIManager.Instance.LogCombat("Not enough Stamina.");
@@ -651,7 +677,7 @@ namespace ExiledAlvaston.Combat
             if (dir.sqrMagnitude < 0.0001f) dir = Vector3.forward;
             dir.Normalize();
 
-            CurrentStamina -= RollStaminaCost;
+            CurrentStamina -= cost;
             _nextRollTime = Time.time + RollCooldown;
 
             // Diving across the floor is not sneaking. Routed through ToggleStealth rather than
