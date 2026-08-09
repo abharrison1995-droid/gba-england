@@ -451,6 +451,34 @@ code-reviewed against its plan, never compiled:
 - **Three new save fields** (`Equipment`, `VisitedChunks`, `UnlockedWikiEntries`). *Load a
   pre-equipment save and check it arrives with an empty doll and a blank map instead of failing.*
 
+**Also outstanding — the mobile performance pass, none of it exercised.** Landed on `main`, never
+compiled:
+
+- **Two runtime scripts and one editor script are new, and their `.meta` files were hand-authored**
+  with fresh GUIDs — no Unity was available to generate them. *Confirm on first open that Unity
+  accepts them rather than minting new ones,* which would silently break nothing yet but is worth
+  knowing either way.
+- **`Tools → GBH → Art → Apply Mobile Texture Settings` has never been run.** Creating the tool
+  changed no texture. Run the Dry Run first and confirm the sprite cast under
+  `Assets/Art/Generated/` never appears in the applied list, then run it for real — expect ~50-60
+  `.meta` files to change. *Check the Animated Chest afterward in `c.unity` at normal camera
+  distance* — its three TGAs should have gone from ~2048² uncompressed to 512² ASTC.
+- ⚠️ **`GraphicsPrefs.Apply()` re-applies the shadow override after `SetQualityLevel`, on
+  purpose** — `SetQualityLevel` overwrites `QualitySettings.shadows` as a side effect, so doing it
+  in the other order would silently revert a disabled shadow setting the next time quality changes.
+  *Turn Shadows OFF in the new settings window, then cycle Quality, and check shadows stay off.*
+- **The settings window has never been opened.** *Check `Settings` appears directly above `Quit`
+  on the title screen, that opening and closing it twice doesn't leave the game frozen (a
+  `PauseManager` push/pop imbalance), and that a chosen quality level survives a Play-mode
+  stop/start* — that last one is the only proof the boot hook actually fires.
+- **Android is still ARMv7-only with no scripting backend set** (falls through to Mono) — the
+  project cannot currently publish to the Play Store, independent of this pass. Not scriptable;
+  see [docs/plans/MOBILE_PERFORMANCE_PASS.md](docs/plans/MOBILE_PERFORMANCE_PASS.md) §10.3 check 9
+  for the Project Settings route.
+
+→ [docs/plans/MOBILE_PERFORMANCE_PASS.md](docs/plans/MOBILE_PERFORMANCE_PASS.md) §10.3 for the full
+check list.
+
 ---
 
 ## 6. Working agreement
