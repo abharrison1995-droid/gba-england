@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 75f5a7290faf847469e9e4388c387449
+guid: 28c30c596bf72c64b8dfaf0a456d45a0
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_walk_0
+      name: sheet_char_underhoused_death_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 74
-        height: 74
+        width: 65
+        height: 65
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 28773b05bb05feed0800000000000000
-      internalID: -2382596912412657790
+      spriteID: e4d3725c2e2c6ae10800000000000000
+      internalID: 2208666946497887566
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_walk_1
+      name: sheet_char_underhoused_death_1
       rect:
         serializedVersion: 2
-        x: 74
+        x: 65
         y: 0
-        width: 74
-        height: 74
+        width: 65
+        height: 65
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,20 +145,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 486c4fe646b63f1a0800000000000000
-      internalID: -6776954935160027516
+      spriteID: 10b2c98131424e820800000000000000
+      internalID: 2946519720643013377
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_walk_2
+      name: sheet_char_underhoused_death_2
       rect:
         serializedVersion: 2
-        x: 148
+        x: 130
         y: 0
-        width: 74
-        height: 74
+        width: 65
+        height: 65
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -166,20 +166,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e6af2d9b6a65b5ad0800000000000000
-      internalID: -2712479076478420370
+      spriteID: 85cc61496977d9ac0800000000000000
+      internalID: -3846787018091213736
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_walk_3
+      name: sheet_char_underhoused_death_3
       rect:
         serializedVersion: 2
-        x: 222
+        x: 195
         y: 0
-        width: 74
-        height: 74
+        width: 65
+        height: 65
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -187,20 +187,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6909124ef502f4cb0800000000000000
-      internalID: -4877644275197570922
+      spriteID: 04cd18ddec6adc210800000000000000
+      internalID: 1354922470318136384
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_walk_4
+      name: sheet_char_underhoused_death_4
       rect:
         serializedVersion: 2
-        x: 296
+        x: 260
         y: 0
-        width: 74
-        height: 74
+        width: 65
+        height: 65
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -208,20 +208,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: abded9c53ae91fe50800000000000000
-      internalID: 6841423733423205818
+      spriteID: cda44f16f126b25d0800000000000000
+      internalID: -3086265232705434916
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: sheet_char_player_stabmeister_walk_5
+      name: sheet_char_underhoused_death_5
       rect:
         serializedVersion: 2
-        x: 370
+        x: 325
         y: 0
-        width: 74
-        height: 74
+        width: 65
+        height: 65
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -229,8 +229,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ed19f2f7122e55e80800000000000000
-      internalID: -8190391713807756834
+      spriteID: 31220e8f8b2c7cda0800000000000000
+      internalID: -5924552685077388781
       vertices: []
       indices: 
       edges: []
@@ -246,12 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      sheet_char_player_stabmeister_walk_0: -2382596912412657790
-      sheet_char_player_stabmeister_walk_1: -6776954935160027516
-      sheet_char_player_stabmeister_walk_2: -2712479076478420370
-      sheet_char_player_stabmeister_walk_3: -4877644275197570922
-      sheet_char_player_stabmeister_walk_4: 6841423733423205818
-      sheet_char_player_stabmeister_walk_5: -8190391713807756834
+      sheet_char_underhoused_death_0: 2208666946497887566
+      sheet_char_underhoused_death_1: 2946519720643013377
+      sheet_char_underhoused_death_2: -3846787018091213736
+      sheet_char_underhoused_death_3: 1354922470318136384
+      sheet_char_underhoused_death_4: -3086265232705434916
+      sheet_char_underhoused_death_5: -5924552685077388781
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

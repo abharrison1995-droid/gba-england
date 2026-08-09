@@ -39,13 +39,15 @@ MonoBehaviour:
   SpawnPointId: 
   QuestKey: 
   ArtSubject: underhoused
-  NpcHeight: 0
+  NpcHeight: 1.35
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 0}
   AmbientLine: 
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 0
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
