@@ -48,6 +48,7 @@ python Tools/art_status.py
 | [plans/PROGRESSION_SYSTEM.md](plans/PROGRESSION_SYSTEM.md) | Parent design for the whole levelling system. Phase 4 (loot tiers) not implemented. |
 | [plans/LEVELS_IN_WORLD_AND_HUD.md](plans/LEVELS_IN_WORLD_AND_HUD.md) | Authorable enemy levels at placement time, combat-gated nameplates, a bigger HUD cluster. Implemented on `levels-in-world-and-hud`; unseen by a compiler or the editor. Its §10.3 is the owner's check list. |
 | [plans/MOBILE_PERFORMANCE_PASS.md](plans/MOBILE_PERFORMANCE_PASS.md) | Android/iOS texture compression tool, mobile quality tiers, a persisted graphics settings menu. Landed on `main`; unseen by a compiler or the editor. Its §10.3 is the owner's check list. |
+| [plans/SURVIVAL_PRESSURE_RESOURCES.md](plans/SURVIVAL_PRESSURE_RESOURCES.md) | A stamina bar, a dodge roll priced at half the pool, slow stamina regen and the end of automatic mana regen. Phase 1 implemented; unseen by a compiler or the editor. Its §10.3 is the owner's check list; phases 2 and 3 are staged, not approved. |
 
 ## Archive — history only
 

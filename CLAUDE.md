@@ -452,6 +452,43 @@ code-reviewed against its plan, never compiled:
 - **Three new save fields** (`Equipment`, `VisitedChunks`, `UnlockedWikiEntries`). *Load a
   pre-equipment save and check it arrives with an empty doll and a blank map instead of failing.*
 
+**Also outstanding — the survival pressure pass, none of it exercised.** Committed 2026-08-09,
+never compiled:
+
+- ⚠️ **Mana no longer regenerates at all.** It comes back through consumables, the pub's full
+  restore, and a heal spell that does not exist yet. `ManaRegenPerSecond` is deleted and leaves an
+  orphan key in `c.unity` that Unity drops on the scene's next save — **do not hand-edit the scene
+  to remove it.** *Cast Spark, stand still 30 s, and check mana does not move.*
+- ⚠️ **The dodge roll costs 50% of maximum stamina, floored.** `CurrentRollCost` uses
+  `FloorToInt`, and that is load-bearing: `PerformDodge` refuses on `CurrentStamina < cost`, so a
+  cost above half the pool makes the second roll impossible. Rounding put a 55 pool's cost at 28,
+  which left 27 and refused. *Check a Young Driller gets exactly two rolls from full — 55 → 28 →
+  1 — and that the third is refused. One roll then a refusal means the floor was lost.*
+- **Stamina regenerates at 5% of maximum per second**, a percent rather than a flat rate so the
+  economy does not drift as the pool grows with level. *Check ~3 points a second on a 55 pool: one
+  roll back after ~10 s, full after ~20 s.* It ticks in combat deliberately — there is no combat
+  state and the code documents why the two obvious ways to build one fail.
+- **A third HUD bar, amber, built at runtime** by `UIManager.EnsureStaminaBar` — nothing to wire.
+  *Check it reads `55 / 55`, sits below the mana bar, does not reach the combat log or the
+  joystick, and survives the Device Simulator in landscape.*
+- **The concealment bar and stealth are sidelined by decision**, not overlooked. `ConcealmentBar`
+  is inactive in `c.unity` and nothing activates it, so there is a deliberate 28 px gap where its
+  slot is reserved. The stray duplicate `MPFill` inside it was left alone. **Not a defect of this
+  pass.**
+- ⚠️ **A pre-existing bug is now written up but not fixed**: `UIManager.EnsureDedicatedTrack`
+  tests `parent.childCount == 1`, and `EnsureBarLabel` later adds the readout beside the fill, so
+  the next call wraps a fill that never needed it — inheriting the fill fraction as the new track's
+  size. HP and MP both take that path, invisibly, because their first paint is a full bar. *It
+  would show as a health bar that tops out at a third after loading a save at low health.* Its own
+  pass; the stamina bar is built so it cannot be reached.
+- **No save key changed**, and `Health`/`Mana`/`Stamina` already round-trip. *Load a save made
+  before today and check it arrives with whatever mana it held, no error, and HP never at 0.*
+- **The magic tutorial is the one scripted sequence written while mana came back.** Spark costs 12
+  against a 55–80 pool and melee is always available. *Walk it end to end once.*
+
+→ [docs/plans/SURVIVAL_PRESSURE_RESOURCES.md](docs/plans/SURVIVAL_PRESSURE_RESOURCES.md) §10.3 for
+the full routes.
+
 **Also outstanding — roll and knockback, imported 2026-08-09, only half exercised.**
 
 The import ran and accepted all ten sheets, so `Assembly-CSharp` compiled and the importer's own
