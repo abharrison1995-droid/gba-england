@@ -74,8 +74,11 @@ namespace ExiledAlvaston.Combat
         // old 2.5/s field is retired, and its orphan key in c.unity is ignored on load and dropped
         // on the scene's next save. If mana regen ever returns it must be a new design decision,
         // not a quiet resurrection of the stale value.
-        [Tooltip("Stamina restored per second — fast, physical skills cycle often.")]
-        public float StaminaRegenPerSecond = 7f;
+        [Tooltip("Stamina restored per second, as a PERCENT of maximum. A percent and not a flat " +
+                 "rate because the roll costs a percent too: a flat rate would make dodge recovery " +
+                 "slower at every level as the pool grew. 5 repays one roll in ~10s, a full pool " +
+                 "in ~20s. Scaled by the ResourceRegenPercent perk.")]
+        public float StaminaRegenPercentPerSecond = 5f;
 
         [Header("Abilities")]
         public List<AbilityData> EquippedAbilities;
@@ -92,9 +95,6 @@ namespace ExiledAlvaston.Combat
         private readonly Collider[] _hitResults = new Collider[10];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
         private float _staminaRegenCarry;
-        // Authored regen rate, remembered at Awake. The perk multiplier is applied to THIS, never
-        // to the current value — multiplying the live field would compound on every recompute.
-        private float _baseStaminaRegen;
         /// <summary>Last non-zero move direction — melee aims this way while idle.</summary>
         private Vector3 _facingDir = Vector3.forward;
 
@@ -123,8 +123,6 @@ namespace ExiledAlvaston.Combat
             // EnemyAI does for its own Health and WorldActorVisual.
             _bar = GetComponent<PlayerHealthBar>();
             _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-
-            _baseStaminaRegen = StaminaRegenPerSecond;
 
             if (PlayerData != null)
             {
@@ -228,7 +226,18 @@ namespace ExiledAlvaston.Combat
         {
             int max = PlayerData != null ? PlayerData.MaxManaStamina : 50;
 
-            _staminaRegenCarry += StaminaRegenPerSecond * Time.deltaTime;
+            // The perk multiplier is read here rather than baked into the rate field at
+            // OnSessionStatsChanged, because the rate is now a percent of a maximum that itself
+            // moves with level and perks — there is no longer a stable "authored rate" worth
+            // remembering separately, and multiplying the live field would compound per recompute.
+            // One static-property read and three multiplies; no allocation, which this Update path
+            // requires.
+            var session = Flow.PlayerSession.Instance;
+            float multiplier = session != null ? session.ResourceRegenMultiplier : 1f;
+
+            // The integer carry is what makes a fractional rate work against an int pool — 5% of
+            // 55 is 2.75/s, which would otherwise floor to 2 every second and quietly lose 27%.
+            _staminaRegenCarry += StaminaRegenPercentPerSecond * multiplier * max / 100f * Time.deltaTime;
             if (_staminaRegenCarry >= 1f)
             {
                 int whole = Mathf.FloorToInt(_staminaRegenCarry);
@@ -272,8 +281,6 @@ namespace ExiledAlvaston.Combat
                 CurrentMana = Mathf.Min(CurrentMana, stats.MaxManaStamina);
                 CurrentStamina = Mathf.Min(CurrentStamina, stats.MaxManaStamina);
             }
-
-            StaminaRegenPerSecond = _baseStaminaRegen * session.ResourceRegenMultiplier;
 
             // ⚠ Through the modifier system, never by writing MovementSpeed — that field is the
             // authored baseline crouching and vehicles compose against, and overwriting it is
