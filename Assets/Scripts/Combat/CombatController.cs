@@ -732,7 +732,21 @@ namespace ExiledAlvaston.Combat
 
         #region Knockback
         /// <summary>Seconds the slide lasts. A fixed feel value, not a knob — only the recovery
-        /// i-frames are tuned in the Inspector.</summary>
+        /// i-frames are tuned in the Inspector.
+        ///
+        /// ⚠ This is deliberately SHORTER than the knockback clip, and the two are not meant to
+        /// match. The physical shove is 0.22 s; the imported clip is 6 frames at 12 fps = 0.50 s
+        /// (ArtImportTool's action contract). The player therefore regains control roughly 0.28 s
+        /// before the tumble finishes drawing — the body has stopped, the character is still
+        /// getting up. That is the intent: a half-second of hard movement lock reads as a freeze,
+        /// while a recovery animation the player can act out of reads as a recovery.
+        ///
+        /// The consequence to know about: the Knockback state has only an exit-time return to Idle,
+        /// so walking away during those 0.28 s keeps the tumble on screen until it finishes (Speed
+        /// only drives Idle→Run). Attacking, casting or being hit again cuts it short through its
+        /// own Any State transition, which is correct — a new action should win over a finished
+        /// slide. Shortening the clip, not lengthening the slide, is the fix if the overhang ever
+        /// reads badly.</summary>
         private const float KnockbackSlideDuration = 0.22f;
 
         /// <summary>
@@ -762,8 +776,14 @@ namespace ExiledAlvaston.Combat
 
             try
             {
-                // A no-op until the knockback sheet lands (Phase 3); the Hit trigger from
-                // OnHealthDamaged already carries the feedback today.
+                // ⚠ Hit is cleared before Knockback is set, and the order matters. A knockback only
+                // ever happens because a hit landed, so OnHealthDamaged has already fired "Hit" this
+                // same frame — EnemyAI calls TakeDamage, then TryKnockback. Leaving both triggers set
+                // makes the Animator take whichever Any State transition it evaluates first and hold
+                // the other for the next frame, so the tumble either loses its first frame to Hurt or
+                // gets cut off by it. Knockback is the more specific reaction and supersedes it.
+                // Harmless when the controller has neither parameter — both helpers check first.
+                ClearAnimatorTrigger("Hit");
                 SetAnimatorTrigger("Knockback");
 
                 // Once, at the start — same reasoning as RollRoutine: per-step zeroing would
@@ -1024,15 +1044,26 @@ namespace ExiledAlvaston.Combat
         /// </summary>
         private void SetAnimatorTrigger(string trigger)
         {
-            if (PlayerAnimator == null) return;
+            if (HasAnimatorTrigger(trigger)) PlayerAnimator.SetTrigger(trigger);
+        }
+
+        /// <summary>
+        /// Consumes a trigger that has been set but not yet taken. Same parameter check as
+        /// <see cref="SetAnimatorTrigger"/>, for the same reason — ResetTrigger on a controller
+        /// that lacks the parameter logs the same error SetTrigger does.
+        /// </summary>
+        private void ClearAnimatorTrigger(string trigger)
+        {
+            if (HasAnimatorTrigger(trigger)) PlayerAnimator.ResetTrigger(trigger);
+        }
+
+        private bool HasAnimatorTrigger(string trigger)
+        {
+            if (PlayerAnimator == null) return false;
             foreach (var p in PlayerAnimator.parameters)
-            {
                 if (p.type == AnimatorControllerParameterType.Trigger && p.name == trigger)
-                {
-                    PlayerAnimator.SetTrigger(trigger);
-                    return;
-                }
-            }
+                    return true;
+            return false;
         }
 
         /// <summary>Closest living enemy Health within range (never the player themselves).</summary>
