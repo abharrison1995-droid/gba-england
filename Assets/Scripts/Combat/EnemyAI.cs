@@ -31,6 +31,10 @@ namespace ExiledAlvaston.Combat
                  "Defaults to 0 so every existing prefab behaves exactly as before — which enemies " +
                  "shove is an Inspector pass, not a code change.")]
         public float KnockbackDistance = 0f;
+        [Range(0f, 1f)]
+        [Tooltip("Probability a landed hit shoves, rolled per attack. 1 = every hit, 0.35 = about " +
+                 "a third. Only consulted when Knockback Distance is above 0.")]
+        public float KnockbackChance = 1f;
 
         [Header("Movement")]
         public float MoveSpeed = 3.6f;
@@ -446,9 +450,28 @@ namespace ExiledAlvaston.Combat
             _isAttacking = false;
         }
 
+        /// <summary>
+        /// Shoves the target if this enemy shoves at all, and if the per-attack roll comes up.
+        ///
+        /// Called only when the hit LANDED — a hit refused by the player's i-frames never reaches
+        /// here — so the chance is a chance to shove, not a chance to hit. The two must not be
+        /// conflated: rolling here does not affect damage, and a dodged hit is already gone.
+        ///
+        /// ⚠ Default is 1, not 0. Appending a field defaulted to 0 would have silently switched
+        /// off every knockback the moment it landed, because no prefab on disk carries the key yet
+        /// and a missing key reads back as the field initialiser. 1 means "distance alone still
+        /// means always", which is what the existing tuning notes assume.
+        /// </summary>
         private void TryKnockback(Vector3 toTarget)
         {
             if (KnockbackDistance <= 0f || toTarget.sqrMagnitude <= 0.001f) return;
+
+            // The >= 1 short-circuit is not a micro-optimisation: Random.value is inclusive of 1,
+            // so a bare `Random.value < KnockbackChance` would refuse roughly one hit in ten
+            // million at a chance of exactly 1. Rare enough to never be reproduced, and exactly
+            // the kind of thing that gets blamed on something else.
+            if (KnockbackChance < 1f && Random.value >= KnockbackChance) return;
+
             var cc = _target.GetComponentInParent<CombatController>();
             if (cc != null) cc.ApplyKnockback(toTarget.normalized, KnockbackDistance);
         }

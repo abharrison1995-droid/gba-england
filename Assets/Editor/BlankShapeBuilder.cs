@@ -7,8 +7,10 @@ using UnityEngine.Rendering;
 namespace ExiledAlvaston.EditorTools
 {
     /// <summary>
-    /// Creates the blank flat-shape kit: untextured primitives sized in real metres, each with its
-    /// own material, ready for the owner to drop a texture onto.
+    /// Creates the blank shape kit: untextured primitives sized in real metres, each with its own
+    /// material, ready for the owner to drop a texture onto. Flats (Slab/Strip/Cap/Decal) are
+    /// collider-less ground dressing; Wall/HalfWall are solid, collide, and are marked Navigation
+    /// Static so they block movement once the chunk's NavMesh is rebaked.
     ///
     /// Built through GameObject.CreatePrimitive rather than hand-authored prefab YAML so that Unity
     /// supplies the built-in mesh references itself. Nothing here overwrites: a prefab or material
@@ -59,6 +61,15 @@ namespace ExiledAlvaston.EditorTools
             // markings, manhole covers, drain grates. No TilingSurface, because a decal is one
             // stamp that should stretch with the transform rather than repeat.
             BuildFlat("Blank_Decal", new Vector3(1f, 1f, 1f), 0f, true, created, skipped);
+
+            // A full wall: 2m wide (repeat it along X for a longer run, or scale X directly -- the
+            // collider and the tiling both follow), 2.4m tall -- above CharacterHeight (1.55-1.8m)
+            // so it blocks sight as well as movement, not just movement.
+            BuildWall("Blank_Wall", new Vector3(2f, 2.4f, 0.3f), 0.5f, created, skipped);
+
+            // A half wall: same width, waist-high (1m, well under CharacterHeight) so it blocks
+            // movement but not sight -- garden walls, low barriers, balustrades.
+            BuildWall("Blank_HalfWall", new Vector3(2f, 1f, 0.25f), 0.5f, created, skipped);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -129,6 +140,65 @@ namespace ExiledAlvaston.EditorTools
 
             PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             Object.DestroyImmediate(root);
+
+            created.Add(prefabPath);
+        }
+
+        /// <summary>
+        /// A solid Cube, unlike BuildFlat's Quad -- a wall needs real depth for a believable
+        /// silhouette and a genuine BoxCollider for the game to actually block movement with,
+        /// rather than the flat kit's stripped-collider ground dressing. No child rotation trick is
+        /// needed either: a Cube's faces already align to local axes, so the root scale directly
+        /// gives width (X), height (Y) and depth (Z) in metres.
+        ///
+        /// Pivot sits at the base, not the centre -- rootScale.y * 0.5f lift -- so placing the
+        /// prefab at a ground point puts its foot there instead of burying half of it.
+        /// </summary>
+        private static void BuildWall(
+            string name,
+            Vector3 rootScale,
+            float tilesPerMetre,
+            List<string> created,
+            List<string> skipped)
+        {
+            string prefabPath = PrefabFolder + "/" + name + ".prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null)
+            {
+                skipped.Add(prefabPath);
+                return;
+            }
+
+            Material material = GetOrCreateMaterial("Mat_" + name, false, created, skipped);
+
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.localPosition = new Vector3(0f, rootScale.y * 0.5f, 0f);
+            go.transform.localScale = rootScale;
+
+            var renderer = go.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+
+            // Tiles across the wall's visible face (width x height), not its thin depth --
+            // TilingSurface's Auto mode would otherwise have no degenerate axis to key off since a
+            // Cube's bounds are non-zero on all three, unlike the flat kit's Quad/Plane meshes.
+            var tiling = go.AddComponent<TilingSurface>();
+            tiling.TilesPerMetre = tilesPerMetre;
+            tiling.CrossAxisMultiplier = 1f;
+            tiling.Plane = TilingSurface.TilingPlane.XY;
+
+            // CreatePrimitive's BoxCollider is deliberately kept, non-trigger -- this is the piece
+            // of the kit meant to physically block movement, the opposite of BuildFlat's ground
+            // dressing which strips its collider.
+            //
+            // EKNavMeshBaker.MarkHierarchy treats any object with a real (non-trigger) collider as
+            // nav-blocking regardless of name, but NavigationStatic is set here too rather than
+            // relying on that alone -- both "Wall" and "HalfWall" also match its name-based
+            // allowlist, so this is belt-and-braces, not load-bearing.
+            var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic | StaticEditorFlags.NavigationStatic;
+            GameObjectUtility.SetStaticEditorFlags(go, flags);
+
+            PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
+            Object.DestroyImmediate(go);
 
             created.Add(prefabPath);
         }
