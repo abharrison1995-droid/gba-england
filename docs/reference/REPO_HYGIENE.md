@@ -56,7 +56,10 @@ textures. Exclude those, or every pack looks used.
 |---|---|---|
 | `psx urban pack` | 10 / 1009 | 105 MB |
 | `Animated Chest` | 6 / 7 | 46 MB |
-| `retro_house_pack` | 6 / 69 | 36 MB |
+
+`retro_house_pack` (0 / 59, 36 MB) was fully unreferenced — not "partial" as this table once said —
+and has been deleted entirely, along with the four `Assets/Materials/RetroHouses/*.mat` that
+pointed into it.
 
 **Biggest remaining trim: `Animated Chest` — 45 MB for one decorative prop**, almost all
 uncompressed TGA. It is committed only because `c.unity` references its `Chest.prefab`. Delete the
