@@ -22,6 +22,8 @@ namespace ExiledAlvaston.UI
 
         private void Awake()
         {
+            RestyleWin95();
+
             if (ClassButtons != null)
             {
                 for (int i = 0; i < ClassButtons.Length; i++)
@@ -80,6 +82,39 @@ namespace ExiledAlvaston.UI
             RefreshSelectedTab();
         }
 
+        /// <summary>
+        /// One-time Win95 skin for the scene-authored creator widgets: buttons raised grey,
+        /// the name box a sunken white edit field, the readouts black.
+        /// </summary>
+        private void RestyleWin95()
+        {
+            if (ClassButtons != null)
+                foreach (Button b in ClassButtons)
+                    Win95Skin.StyleButtonWithLabel(b);
+
+            Win95Skin.StyleButtonWithLabel(ConfirmButton);
+            Win95Skin.StyleButtonWithLabel(BackButton);
+
+            if (NameInput != null)
+            {
+                Image img = NameInput.GetComponent<Image>();
+                if (img != null)
+                {
+                    img.color = Color.white;
+                    Win95Skin.AddBevel((RectTransform)img.transform, sunken: true);
+                }
+                if (NameInput.textComponent != null)
+                    NameInput.textComponent.color = Win95Skin.FieldText;
+            }
+
+            // ClassTitle is deliberately absent: the Win95 layout sits it white-on-black in a
+            // NameBox while the parchment layout inks it dark, so its colour belongs to
+            // whichever builder built the scene. Overriding it here would clash with one.
+            if (ClassBlurb != null) ClassBlurb.color = Win95Skin.FieldText;
+            if (StatsPreview != null) StatsPreview.color = Win95Skin.FieldText;
+            if (WeaponPreview != null) WeaponPreview.color = Win95Skin.FieldText;
+        }
+
         private void RefreshSelectedTab()
         {
             if (ClassButtons == null) return;
@@ -89,15 +124,11 @@ namespace ExiledAlvaston.UI
                 Button button = ClassButtons[i];
                 if (button == null) continue;
 
-                ColorBlock colors = button.colors;
+                // Win95 radio-tab behaviour: the picked class reads pressed-in, the rest raised.
                 bool selected = i == (int)_selected;
-                colors.normalColor = selected
-                    ? new Color(0.82f, 0.69f, 0.45f, 1f)
-                    : Color.white;
-                colors.selectedColor = selected
-                    ? new Color(0.9f, 0.78f, 0.52f, 1f)
-                    : colors.highlightedColor;
-                button.colors = colors;
+                Image img = button.GetComponent<Image>();
+                if (img != null) img.color = selected ? Win95Skin.FacePressed : Win95Skin.Face;
+                Win95Skin.AddBevel((RectTransform)button.transform, sunken: selected);
             }
         }
 

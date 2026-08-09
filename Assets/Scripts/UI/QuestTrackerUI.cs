@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using ExiledAlvaston.Quests;
-using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.UI
 {
@@ -83,7 +82,8 @@ namespace ExiledAlvaston.UI
         /// <summary>
         /// Converts the fixed-size box into a top-anchored panel that grows downward to fit its
         /// text (via VerticalLayoutGroup + ContentSizeFitter) and adds the collapse toggle.
-        /// Runs once; cheap to call from every Refresh.
+        /// Also applies the Win95 skin: grey raised-bevel panel, black text. Runs once; cheap
+        /// to call from every Refresh.
         /// </summary>
         private void EnsureLayout()
         {
@@ -91,6 +91,17 @@ namespace ExiledAlvaston.UI
             _built = true;
 
             _boxRt = Root.GetComponent<RectTransform>();
+
+            Image boxImage = Root.GetComponent<Image>();
+            if (boxImage != null)
+            {
+                // The scene-authored parchment sprite goes; the skin draws its own chrome.
+                boxImage.sprite = null;
+                Win95Skin.StyleWindow(boxImage);
+            }
+
+            Win95Skin.StyleLabel(TitleText);
+            Win95Skin.StyleLabel(ObjectiveText);
 
             var vlg = Root.GetComponent<VerticalLayoutGroup>();
             if (vlg == null) vlg = Root.AddComponent<VerticalLayoutGroup>();
@@ -140,9 +151,9 @@ namespace ExiledAlvaston.UI
             // Float over the corner instead of being stacked by the layout group.
             go.AddComponent<LayoutElement>().ignoreLayout = true;
 
-            var img = go.AddComponent<Image>();
-            img.color = EKVibe.ButtonBrown;
-            go.AddComponent<Button>().onClick.AddListener(ToggleCollapse);
+            go.AddComponent<Image>();
+            Button button = go.AddComponent<Button>();
+            button.onClick.AddListener(ToggleCollapse);
 
             var labelGo = new GameObject("Label", typeof(RectTransform));
             labelGo.transform.SetParent(go.transform, false);
@@ -153,11 +164,13 @@ namespace ExiledAlvaston.UI
             lrt.offsetMax = Vector2.zero;
             _toggleLabel = labelGo.AddComponent<TextMeshProUGUI>();
             _toggleLabel.text = "-";
-            _toggleLabel.color = EKVibe.TextLight;
             _toggleLabel.fontSize = 24;
             _toggleLabel.fontStyle = FontStyles.Bold;
             _toggleLabel.alignment = TextAlignmentOptions.Center;
-            _toggleLabel.raycastTarget = false;
+
+            // Small raised grey title-bar-style button, black glyph — same chrome as the
+            // window min/max/close squares.
+            Win95Skin.StyleButtonWithLabel(button);
         }
     }
 }

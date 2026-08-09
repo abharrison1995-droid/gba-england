@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using ExiledAlvaston.Data;
-using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.Dialogue
 {
@@ -315,6 +314,12 @@ namespace ExiledAlvaston.Dialogue
 
         // ---------- runtime-built UI (used when nothing is wired in the scene) ----------
 
+        /// <summary>
+        /// Builds the Win95 dialogue window: grey raised panel, navy title bar carrying the
+        /// speaker's name, a sunken portrait slot top-left (kept empty and disabled until
+        /// CharacterData.Portrait art exists — the space is reserved regardless), the line
+        /// itself black on a white sunken field, and raised grey choice buttons.
+        /// </summary>
         private void EnsureUI()
         {
             if (DialoguePanel != null && MainDialogueText != null && ChoicesContainer != null)
@@ -331,49 +336,58 @@ namespace ExiledAlvaston.Dialogue
             scaler.matchWidthOrHeight = 0.5f;
             canvasGO.AddComponent<GraphicRaycaster>();
 
-            // Bottom-anchored parchment panel, EK style
-            GameObject panel = CreateImage("DialoguePanel", canvasGO.transform, EKVibe.ParchmentPanel);
+            // Bottom-anchored grey window
+            GameObject panel = CreateImage("DialoguePanel", canvasGO.transform, UI.Win95Skin.Face);
             var prt = panel.GetComponent<RectTransform>();
             prt.anchorMin = new Vector2(0.5f, 0f);
             prt.anchorMax = new Vector2(0.5f, 0f);
             prt.pivot = new Vector2(0.5f, 0f);
             prt.anchoredPosition = new Vector2(0, 20);
             prt.sizeDelta = new Vector2(1100, 400);
+            UI.Win95Skin.StyleWindow(panel.GetComponent<Image>());
 
-            // Portrait box, top-left
-            GameObject portraitFrame = CreateImage("PortraitFrame", panel.transform, EKVibe.ParchmentDark);
+            // Navy title bar; its caption doubles as the speaker-name readout.
+            RectTransform bar = UI.Win95Skin.AddTitleBar(prt, "", 36f);
+            SpeakerNameText = bar.Find("TitleText").GetComponent<TextMeshProUGUI>();
+            SpeakerNameText.fontSize = 22f;
+
+            // Portrait slot, top-left under the bar. Sunken grey frame reserved for the
+            // eventual NPC portrait; the Image inside stays disabled until one is assigned.
+            GameObject portraitFrame = CreateImage("PortraitFrame", panel.transform, UI.Win95Skin.SlotFill);
             var pfrt = portraitFrame.GetComponent<RectTransform>();
             pfrt.anchorMin = pfrt.anchorMax = new Vector2(0f, 1f);
             pfrt.pivot = new Vector2(0f, 1f);
-            pfrt.anchoredPosition = new Vector2(16, -16);
+            pfrt.anchoredPosition = new Vector2(16, -52);
             pfrt.sizeDelta = new Vector2(110, 110);
+            UI.Win95Skin.AddBevel(pfrt, sunken: true);
 
             GameObject portrait = CreateImage("Portrait", portraitFrame.transform, Color.white);
             var port = portrait.GetComponent<RectTransform>();
             port.anchorMin = Vector2.zero;
             port.anchorMax = Vector2.one;
-            port.offsetMin = new Vector2(6, 6);
-            port.offsetMax = new Vector2(-6, -6);
+            port.offsetMin = new Vector2(5, 5);
+            port.offsetMax = new Vector2(-5, -5);
             PortraitImage = portrait.GetComponent<Image>();
             PortraitImage.enabled = false;
 
-            SpeakerNameText = CreateTMP("SpeakerName", panel.transform, "", EKVibe.TextDark, 28,
-                TextAlignmentOptions.TopLeft, FontStyles.Bold);
-            var snrt = SpeakerNameText.GetComponent<RectTransform>();
-            snrt.anchorMin = new Vector2(0f, 1f);
-            snrt.anchorMax = new Vector2(1f, 1f);
-            snrt.pivot = new Vector2(0f, 1f);
-            snrt.anchoredPosition = new Vector2(142, -20);
-            snrt.sizeDelta = new Vector2(-160, 36);
+            // White sunken field the spoken line sits in, right of the portrait slot.
+            GameObject textField = CreateImage("TextField", panel.transform, Color.white);
+            var tfrt = textField.GetComponent<RectTransform>();
+            tfrt.anchorMin = new Vector2(0f, 1f);
+            tfrt.anchorMax = new Vector2(1f, 1f);
+            tfrt.pivot = new Vector2(0f, 1f);
+            tfrt.anchoredPosition = new Vector2(142, -52);
+            tfrt.sizeDelta = new Vector2(-160, 128);
+            UI.Win95Skin.AddBevel(tfrt, sunken: true);
 
-            MainDialogueText = CreateTMP("DialogueText", panel.transform, "", EKVibe.TextDark, 22,
+            MainDialogueText = CreateTMP("DialogueText", textField.transform, "", UI.Win95Skin.FieldText, 22,
                 TextAlignmentOptions.TopLeft, FontStyles.Normal);
             var mrt = MainDialogueText.GetComponent<RectTransform>();
-            mrt.anchorMin = new Vector2(0f, 1f);
-            mrt.anchorMax = new Vector2(1f, 1f);
-            mrt.pivot = new Vector2(0f, 1f);
-            mrt.anchoredPosition = new Vector2(142, -60);
-            mrt.sizeDelta = new Vector2(-160, 120);
+            mrt.anchorMin = Vector2.zero;
+            mrt.anchorMax = Vector2.one;
+            mrt.offsetMin = new Vector2(10, 8);
+            mrt.offsetMax = new Vector2(-10, -8);
+            MainDialogueText.enableWordWrapping = true;
 
             var choicesGO = new GameObject("Choices", typeof(RectTransform));
             choicesGO.transform.SetParent(panel.transform, false);
@@ -396,17 +410,20 @@ namespace ExiledAlvaston.Dialogue
 
         private GameObject BuildRuntimeChoiceButton()
         {
-            GameObject go = CreateImage("ChoiceButton", ChoicesContainer, EKVibe.ButtonBrown);
+            GameObject go = CreateImage("ChoiceButton", ChoicesContainer, UI.Win95Skin.Face);
             go.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 46);
-            go.AddComponent<Button>();
+            Button button = go.AddComponent<Button>();
 
-            var tmp = CreateTMP("Label", go.transform, "", EKVibe.TextLight, 20,
+            var tmp = CreateTMP("Label", go.transform, "", UI.Win95Skin.FieldText, 20,
                 TextAlignmentOptions.Left, FontStyles.Normal);
             var trt = tmp.GetComponent<RectTransform>();
             trt.anchorMin = Vector2.zero;
             trt.anchorMax = Vector2.one;
             trt.offsetMin = new Vector2(16, 0);
             trt.offsetMax = new Vector2(-16, 0);
+
+            UI.Win95Skin.StyleButton(button);
+            tmp.raycastTarget = false;
             return go;
         }
 

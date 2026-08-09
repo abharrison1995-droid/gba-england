@@ -5,13 +5,13 @@ using TMPro;
 namespace ExiledAlvaston.UI
 {
     /// <summary>
-    /// Win95 chrome for the inventory window: flat greys, 2 px bevel edges, navy title bar.
-    /// Built from pure uGUI primitives — no sprite assets. Shared by the scene rebuild tool
-    /// (Editor/InventoryWin95Builder) and the buttons InventoryController builds at runtime,
-    /// so both draw the same skin.
+    /// Win95 chrome: flat greys, 2 px bevel edges, navy title bar.
+    /// Built from pure uGUI primitives — no sprite assets. Shared by the scene rebuild tools
+    /// (Editor/InventoryWin95Builder, TitleScreenWin95Builder, CharacterCreatorWin95Builder)
+    /// and the buttons built at runtime, so every window draws the same skin.
     ///
-    /// EKVibe keeps the parchment palette for the rest of the game; this skin is scoped to
-    /// the inventory panel only.
+    /// EKVibe keeps the parchment palette for the rest of the game; this skin covers the
+    /// inventory, title screen and character creator windows.
     /// </summary>
     public static class Win95Skin
     {
@@ -48,6 +48,115 @@ namespace ExiledAlvaston.UI
             if (img == null) return;
             img.color = SlotFill;
             AddBevel((RectTransform)img.transform, sunken: true);
+        }
+
+        /// <summary>
+        /// Navy title bar across the top of a window: white bold caption on the left, inert
+        /// min/max/close buttons on the right (window management does not exist — they are
+        /// chrome only, matching the inventory bar). Idempotent — children are found by name
+        /// on re-run. Sits inside the window's raised bevel, so call StyleWindow first.
+        /// Returns the bar so callers can hang extra chrome off it.
+        /// </summary>
+        public static RectTransform AddTitleBar(RectTransform window, string caption, float barHeight = 30f)
+        {
+            if (window == null) return null;
+
+            Transform existing = window.Find("TitleBar");
+            RectTransform bar;
+            if (existing != null)
+            {
+                bar = (RectTransform)existing;
+            }
+            else
+            {
+                var go = new GameObject("TitleBar", typeof(RectTransform));
+                bar = (RectTransform)go.transform;
+                bar.SetParent(window, false);
+            }
+
+            bar.anchorMin = new Vector2(0f, 1f);
+            bar.anchorMax = new Vector2(1f, 1f);
+            bar.pivot = new Vector2(0.5f, 1f);
+            bar.offsetMin = new Vector2(3f, -barHeight - 3f);
+            bar.offsetMax = new Vector2(-3f, -3f);
+
+            Image barImg = bar.GetComponent<Image>();
+            if (barImg == null) barImg = bar.gameObject.AddComponent<Image>();
+            barImg.color = TitleBar;
+            barImg.raycastTarget = false;
+
+            TextMeshProUGUI title = FindOrCreateTmp(bar, "TitleText");
+            title.text = caption;
+            title.color = TitleText;
+            title.fontStyle = FontStyles.Bold;
+            title.alignment = TextAlignmentOptions.Left;
+            title.raycastTarget = false;
+            RectTransform titleRt = (RectTransform)title.transform;
+            titleRt.anchorMin = Vector2.zero;
+            titleRt.anchorMax = Vector2.one;
+            titleRt.offsetMin = new Vector2(10f, 0f);
+            titleRt.offsetMax = new Vector2(-130f, 0f);
+
+            TitleButton(bar, "CloseButton", "X", -6f, barHeight);
+            TitleButton(bar, "TitleMaxButton", "[]", -46f, barHeight);
+            TitleButton(bar, "TitleMinButton", "_", -86f, barHeight);
+            return bar;
+        }
+
+        /// <summary>Small raised grey square on the title bar. No listener — decoration only.</summary>
+        private static void TitleButton(RectTransform bar, string name, string glyph, float rightOffset, float barHeight)
+        {
+            Transform existing = bar.Find(name);
+            RectTransform rt;
+            Button btn;
+            if (existing != null)
+            {
+                rt = (RectTransform)existing;
+                btn = rt.GetComponent<Button>();
+            }
+            else
+            {
+                var go = new GameObject(name, typeof(RectTransform));
+                rt = (RectTransform)go.transform;
+                rt.SetParent(bar, false);
+                go.AddComponent<Image>();
+                btn = go.AddComponent<Button>();
+            }
+
+            rt.anchorMin = rt.anchorMax = new Vector2(1f, 0.5f);
+            rt.pivot = new Vector2(1f, 0.5f);
+            rt.sizeDelta = new Vector2(34f, Mathf.Max(18f, barHeight - 8f));
+            rt.anchoredPosition = new Vector2(rightOffset, 0f);
+
+            TextMeshProUGUI label = FindOrCreateTmp(rt, "Label");
+            label.text = glyph;
+            label.alignment = TextAlignmentOptions.Center;
+            RectTransform labelRt = (RectTransform)label.transform;
+            labelRt.anchorMin = Vector2.zero;
+            labelRt.anchorMax = Vector2.one;
+            labelRt.offsetMin = Vector2.zero;
+            labelRt.offsetMax = Vector2.zero;
+
+            StyleButtonWithLabel(btn);
+        }
+
+        private static TextMeshProUGUI FindOrCreateTmp(Transform parent, string name)
+        {
+            Transform existing = parent.Find(name);
+            GameObject go;
+            if (existing != null)
+            {
+                go = existing.gameObject;
+            }
+            else
+            {
+                go = new GameObject(name, typeof(RectTransform));
+                go.transform.SetParent(parent, false);
+            }
+
+            TextMeshProUGUI tmp = go.GetComponent<TextMeshProUGUI>();
+            if (tmp == null) tmp = go.AddComponent<TextMeshProUGUI>();
+            return tmp;
         }
 
         /// <summary>
@@ -94,6 +203,15 @@ namespace ExiledAlvaston.UI
             if (tmp == null) return;
             tmp.color = FieldText;
             tmp.raycastTarget = false;
+        }
+
+        /// <summary>StyleButton plus a styled child TMP label, if the button has one. Null-safe.</summary>
+        public static void StyleButtonWithLabel(Button btn)
+        {
+            if (btn == null) return;
+            StyleButton(btn);
+            var label = btn.GetComponentInChildren<TextMeshProUGUI>(true);
+            StyleLabel(label);
         }
 
         /// <summary>

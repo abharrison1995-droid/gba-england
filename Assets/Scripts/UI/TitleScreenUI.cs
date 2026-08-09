@@ -29,11 +29,24 @@ namespace ExiledAlvaston.UI
                 _continueButton = ContinueButton;
                 WireContinueButton();
             }
+
+            RestyleWin95();
         }
 
         private void OnEnable()
         {
             RefreshContinueButton();
+        }
+
+        /// <summary>
+        /// One-time Win95 skin for the scene-authored title buttons. The runtime-cloned
+        /// Continue button inherits it, being an Instantiate of the already-styled New Game button.
+        /// </summary>
+        private void RestyleWin95()
+        {
+            Win95Skin.StyleButtonWithLabel(NewGameButton);
+            Win95Skin.StyleButtonWithLabel(QuitButton);
+            Win95Skin.StyleButtonWithLabel(ContinueButton);
         }
 
         /// <summary>
