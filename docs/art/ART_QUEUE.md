@@ -50,10 +50,10 @@ the bands win.
 | `player` | player | Y | Y | Y | Y | Y | Y | Y | - | - |
 | `player_bundabasher` | player |  |  |  |  |  |  |  | - | idle, walk, attack, cast, hurt, death |
 | `player_butterknife` | hostile |  |  | Y |  |  |  | Y | - | idle, walk, hurt, death |
-| `player_dynamo` | player |  |  |  |  |  |  |  | - | idle, walk, attack, cast, hurt, death |
+| `player_dynamo` | player | Y | Y | Y | Y | Y |  | Y | - | death |
 | `player_mrhood` | player | Y |  |  |  |  |  | Y | - | walk, attack, cast, hurt, death |
 | `player_slingshot` | hostile |  |  | Y |  |  |  | Y | - | idle, walk, hurt, death |
-| `player_stabmeister` | player | Y |  |  |  |  |  | Y | Stabmeister | walk, attack, cast, hurt, death |
+| `player_stabmeister` | player | Y | Y | Y | Y | Y | Y | Y | Stabmeister | - |
 | `police_bobby` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `police_pcso` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `quidlandclerk` | talker | Y |  |  |  |  |  | Y | Quidland Clerk | - |
@@ -66,7 +66,7 @@ the bands win.
 | `squirrel` | talker |  |  |  |  |  |  |  | Angry Squirrel | idle, walk |
 | `tainted` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `torturedneek` | hostile | Y |  |  |  |  |  | Y | - | walk, attack, hurt, death |
-| `underhoused` | hostile | Y |  |  | Y | Y |  | Y | Tracksuit Geezer | walk, attack, death |
+| `underhoused` | hostile | Y | Y | Y | Y | Y | Y | Y | Tracksuit Geezer | - |
 | `villager` | talker | Y | Y |  |  |  |  | Y | Villager | - |
 | `villager_black` | talker | Y | Y |  |  |  |  | Y | Villager (Black) | - |
 | `villager_child` | talker | Y | Y |  |  |  |  | Y | Villager (Child) | - |
@@ -103,6 +103,7 @@ not when they have been delivered.
 | **6** | The London buildings | 5 models | **3D, not sprites — outside this pipeline.** Read the section before starting one. |
 | **7** | Item icons | 8 singles | Inventory icons. Cheap, and the inventory overhaul needs them. |
 | **8** | Per-weapon attack sheets | 5 sheets | One player attack sheet per weapon. Last on purpose: each is a redraw of a pose that is already solved, and it is worth nothing until the weapons exist in code. |
+| **9** | NPC portraits | 13 singles | The dialogue window reserves a portrait slot top-left; it stays an empty grey frame until these land. Order them after the cast sheets they must match. |
 | **10** | Roll and knockback sheets | 2 sheets, then more | The dodge roll and knockback mechanics are already in code and fully playable silently — these sheets are pure feedback. Player first, classes and hostiles only after. |
 
 ### Band 2 — the tutorial cast
@@ -113,10 +114,12 @@ it is NOT done**, and an earlier version of this file said it was.
 | Subject | Delivered | Outstanding |
 |---|---|---|
 | `danielpauls` | `idle` | `walk`, `cast` |
-| `underhoused` | `idle`, `hurt`, `cast` | `walk`, `attack`, `death` |
+| `underhoused` | **all six — complete** | - |
 
-⚠️ `underhoused` was specified below as needing `attack`, not `cast`, and a `cast` sheet was
-delivered instead. Both are now wanted: `cast` exists and is kept, `attack` is still outstanding.
+~~⚠️ `underhoused` was specified below as needing `attack`, not `cast`, and a `cast` sheet was
+delivered instead. Both are now wanted: `cast` exists and is kept, `attack` is still outstanding.~~
+**Resolved 2026-08-09** — `walk`, `attack` and `death` have all landed, so the geezer's full
+hostile set is on disk.
 
 **Daniel Pauls** — `sheet_char_danielpauls_<action>.png`, actions: `idle`, `walk`, `cast`.
 A stage magician in a **pink jazzy Las Vegas suit** — sequins, wide lapels, ruffled shirt, far too
@@ -393,8 +396,8 @@ the complete Young Driller visual until all six actions for that class exist.
 
 | Subject | Class | Required actions | Priority |
 |---|---|---|---|
-| `player_dynamo` | Dynamo | idle, walk, attack, hurt, death, cast | **next — owner's call, 2026-08-05** |
-| `player_stabmeister` | Stabmeister | ~~idle~~ delivered; walk, attack, hurt, death, cast | |
+| `player_dynamo` | Dynamo | ~~idle, walk, attack, hurt, cast~~ delivered; **death** | **next — owner's call, 2026-08-05** |
+| `player_stabmeister` | Stabmeister | **all six — delivered 2026-08-09** | |
 | `player_mrhood` | Mr Hood | ~~idle~~ delivered; walk, attack, hurt, death, cast | |
 | `player_bundabasher` | Bunda Basher | idle, walk, attack, hurt, death, cast | |
 
@@ -451,16 +454,17 @@ sheets are where the contrast pays off, so keep her mild in `idle` and `walk`.
 ⚠️ **The visual description of each class is the owner's to write and is not in this file. Ask
 before drawing any of them.** All five now have a tagline in `PlayerClass.cs`, real traits, HP,
 resource and a specialism label as of 2026-08-05, and Dynamo and Bunda Basher have the visuals
-above. **Stabmeister and Mr Hood have delivered idles but no written visual** — match their
-existing sheets rather than inventing.
+above. **Mr Hood has a delivered idle but no written visual; Stabmeister's full set is now
+delivered, also with no written visual** — match their existing sheets rather than inventing.
 
 **Match the existing `player` (Young Driller) sheets** for build, cell fill and baseline. Five
 classes that disagree with each other are worse than five that agree.
 
-**Do the remaining `idle` sheets first.** They are what the creator preview needs and they are
-cheap. Two of four are delivered — Stabmeister and Mr Hood — leaving **Dynamo, then Bunda Basher**,
-after which the 20 non-idle sheets follow. Gameplay keeps the Young Driller visual for a class
-until all six of its actions exist, so a lone idle changes the creator and nothing else.
+**Do the remaining `idle` sheets first** was the rule, and the deliveries have overtaken it:
+**Stabmeister's full six are done and Dynamo is five of six, owing only `death`** — one sheet
+short of gameplay switching over from Young Driller. **Mr Hood still owes five, Bunda Basher all
+six.** Gameplay keeps the Young Driller visual for a class until all six of its actions exist, so
+Dynamo's `death` is the single sheet that flips a second class live.
 
 #### What this needs on the Unity side
 
@@ -473,6 +477,54 @@ until all six of its actions exist, so a lone idle changes the creator and nothi
 - `PlayerClass` is serialized by index and `BundaBasher` was correctly **appended** as 4. Any
   further class must also be appended — see
   [../reference/SAVE_AND_SERIALIZATION.md](../reference/SAVE_AND_SERIALIZATION.md).
+
+### Band 9 — NPC portraits
+
+Head-and-shoulders portraits for the dialogue window's portrait slot, which the Win95 dialogue
+UI reserves top-left as a 110×110 sunken frame (inner ~100 px). **Singles, not sheets** — no
+grid, no baseline, no frame count, same delivery as props and item icons: magenta backdrop,
+`art_incoming/`, PNG + JSON.
+
+Like item icons, a portrait has no world size, so `worldHeight` is again **a way of asking for a
+pixel height**: use `2.0` for all thirteen, which lands a 96 px portrait that fills the frame.
+
+**Drawn straight-on, head and shoulders, facing the camera** — not the isometric projection the
+props use; these are faces in a menu, not bodies in the world. **Match the subject's delivered
+`idle` sheet exactly** — same face, same hair, same clothes. A portrait that disagrees with the
+sprite standing in front of the player is worse than the empty frame.
+
+Only characters who actually hold a conversation get one — the thirteen with a
+`CharacterData`/`DialogueData` behind them. Generic villagers have no dialogue, so no portrait.
+
+| File | Who | Match against |
+|---|---|---|
+| `spr_portrait_danielpauls.png` | Daniel Pauls — stage magician, pink sequinned Las Vegas suit | `sheet_char_danielpauls_idle` |
+| `spr_portrait_underhoused.png` | The tracksuit geezer — wild unkempt hair, twitchy | `sheet_char_underhoused_idle` |
+| `spr_portrait_mosley.png` | Councillor Mosley — elderly, grey suit, lanyard, comb-over | `sheet_char_mosley_idle` |
+| `spr_portrait_neigelfromage.png` | Neigel Fromage | `sheet_char_neigelfromage_idle` |
+| `spr_portrait_mayorswalls.png` | Mayor Swalls — chain of office, chin up | `sheet_char_mayorswalls_idle` |
+| `spr_portrait_quidlandclerk.png` | Quidland clerk — cheap branded polo, bored | `sheet_char_quidlandclerk_idle` |
+| `spr_portrait_fusportsclerk.png` | F.U. Sports clerk — own-brand tracksuit uniform, lanyard | `sheet_char_fusportsclerk_idle` |
+| `spr_portrait_spencer.png` | Commissioner Spencer — immaculate dress uniform, red-faced | `sheet_char_spencer_idle` |
+| `spr_portrait_riggs.png` | Officer Riggs — plain navy constable, stab vest | `sheet_char_riggs_idle` |
+| `spr_portrait_murtaugh.png` | Officer Murtaugh — same uniform, grey, heavy, tired | `sheet_char_murtaugh_idle` |
+| `spr_portrait_ralph.png` | Ralph — raggedy knock-off tracksuit, hood up | `sheet_char_ralph_idle` |
+| `spr_portrait_sanjeet.png` | Sanjeet — different-coloured tracksuit, hood down | `sheet_char_sanjeet_idle` |
+| `spr_portrait_pharmacist.png` | Roaming pharmacist — white coat, name badge, deadpan | `sheet_char_pharmacist_idle` |
+
+> **For the Unity side, not the art agent:** the importer reduces the PNG like any single and now
+> assigns it to `CharacterData.Portrait` — the field `DialogueManager.DisplayNode` reads and
+> enables. It routes `spr_portrait_<subject>` → the `PlacementPreset` whose `ArtSubject` is that
+> subject → that preset's `Speaker` CharacterData, and re-runs from disk via
+> `Tools → GBH → Content → Wire Presets From Imported Art`. The one prerequisite is the preset's
+> `Speaker` field: it is empty on every preset today, so until a `CharacterData` is assigned there
+> the importer reports the portrait as skipped rather than assigning it. The player gets no
+> portrait — `Speaker` in dialogue data is always the NPC.
+>
+> ⚠ **Contradiction to resolve, 2026-08-09:** five `spr_portrait_player_*` singles have been
+> delivered anyway (player + all four classes), against the line above. Either the importer's
+> portrait routing needs to accept player-class subjects, or the five files are surplus — the
+> owner's call; the queue text and the delivery currently disagree.
 
 ### Band 10 — roll and knockback
 

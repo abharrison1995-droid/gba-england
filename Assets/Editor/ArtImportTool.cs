@@ -322,15 +322,20 @@ public static class ArtImportTool
         RefreshPlayerClassVisualLibrary(report, problems, classArtInBatch);
 
         // Every other subject in a run is an NPC, and NPCs are authored as PlacementPresets rather
-        // than as scene objects. The player is excluded because they are a scene object with their
-        // own wiring above — nothing the palette ever stamps.
+        // than as scene objects. The PLAYER is excluded because they are a scene object with their
+        // own wiring above — nothing the palette ever stamps. Player-CLASS subjects are not
+        // excluded: the wiring only ever touches a preset that explicitly claims the subject, and
+        // Preset_Stabmeister does exactly that. (The class's own visual library is refreshed above;
+        // this is about stamping the class as a world NPC.)
         foreach (string subject in clipsBySubject.Keys)
         {
-            if (IsPlayerClassSubject(subject)) continue;
+            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
 
             heightBySubject.TryGetValue(subject, out float worldHeight);
             WirePresetsForSubject(subject, worldHeight, report);
         }
+
+        AssignNpcPortraits(report, problems);
     }
 
     private static Sprite FindImported(string baseName)
@@ -589,6 +594,92 @@ public static class ArtImportTool
         return wired;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  PORTRAITS
+    //  A dialogue portrait is a single named spr_portrait_<subject>. It is not a scene object and
+    //  not part of a preset's placed body — it is the face DialogueManager.DisplayNode shows, read
+    //  from node.Speaker.Portrait. The one CharacterData that becomes that node.Speaker is
+    //  PlacementPreset.Speaker (PresetDialogueTools copies it into the generated node), keyed by the
+    //  same ArtSubject WirePresetsForSubject uses. So a portrait is wired by walking
+    //  subject → preset(s) with that ArtSubject → their Speaker CharacterData → Portrait.
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    private const string PortraitPrefix = "spr_portrait_";
+
+    /// <summary>
+    /// Assigns every imported <c>spr_portrait_&lt;subject&gt;</c> single to the <c>Portrait</c> of the
+    /// <see cref="ExiledAlvaston.Data.CharacterData"/> that speaks for that subject — the
+    /// <c>Speaker</c> on any <c>PlacementPreset</c> carrying the matching <c>ArtSubject</c>.
+    ///
+    /// Scans what is on disk rather than a batch, like the other single assignments, so it is
+    /// idempotent and re-runnable from the "Wire Presets" menu. Overwrites outright, matching the
+    /// asymmetry of the preset wiring: the portrait is derived from the art, so a fresh import wins.
+    ///
+    /// Reports a problem, never silence, when a portrait has nowhere to go — no preset for its
+    /// subject, or presets that exist but have no Speaker CharacterData wired yet (currently every
+    /// one of them). That gap is the owner's to close by assigning a CharacterData to each talking
+    /// preset's Speaker field; this only stops the portrait being lost when they do.
+    /// </summary>
+    private static void AssignNpcPortraits(List<string> report, List<string> problems)
+    {
+        if (!AssetDatabase.IsValidFolder(ArtRoot)) return;
+
+        foreach (string guid in AssetDatabase.FindAssets("t:Sprite", new[] { ArtRoot }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = Path.GetFileNameWithoutExtension(path);
+            if (!file.StartsWith(PortraitPrefix, StringComparison.Ordinal)) continue;
+
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite == null) continue;
+
+            string subject = file.Substring(PortraitPrefix.Length);
+
+            // Distinct Speaker assets across every preset on this subject — one CharacterData may be
+            // shared by several presets, and it must not be reported (or recorded) twice.
+            var speakers = new List<ExiledAlvaston.Data.CharacterData>();
+            bool matchedAnyPreset = false;
+
+            foreach (string presetGuid in AssetDatabase.FindAssets("t:PlacementPreset"))
+            {
+                var preset = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.PlacementPreset>(
+                    AssetDatabase.GUIDToAssetPath(presetGuid));
+                if (preset == null) continue;
+                if (!string.Equals(preset.ArtSubject, subject, StringComparison.OrdinalIgnoreCase)) continue;
+
+                matchedAnyPreset = true;
+                if (preset.Speaker != null && !speakers.Contains(preset.Speaker))
+                    speakers.Add(preset.Speaker);
+            }
+
+            if (!matchedAnyPreset)
+            {
+                problems.Add($"{file}: imported, but no PlacementPreset has ArtSubject '{subject}', " +
+                             "so there is no character to hang the portrait on.");
+                continue;
+            }
+
+            if (speakers.Count == 0)
+            {
+                problems.Add($"{file}: imported, but no preset for '{subject}' has a Speaker " +
+                             "CharacterData, so the dialogue window has nothing to assign it to. " +
+                             "Set the Speaker field on that character's preset and re-run " +
+                             "Tools → GBH → Content → Wire Presets From Imported Art.");
+                continue;
+            }
+
+            foreach (var speaker in speakers)
+            {
+                if (speaker.Portrait == sprite) continue;
+
+                Undo.RecordObject(speaker, "Assign generated portrait");
+                speaker.Portrait = sprite;
+                EditorUtility.SetDirty(speaker);
+                report.Add($"    {speaker.name}.Portrait ← {file}");
+            }
+        }
+    }
+
     /// <summary>
     /// First frame of a subject's idle sheet — the pose the character holds when nothing is
     /// animating them.
@@ -755,10 +846,19 @@ public static class ArtImportTool
             if (!file.EndsWith(ControllerSuffix, StringComparison.Ordinal)) continue;
 
             string subject = file.Substring(0, file.Length - ControllerSuffix.Length);
-            if (IsPlayerClassSubject(subject)) continue;
+            // Only the player is skipped — a scene object, never palette-stamped. A preset that
+            // explicitly claims a player-CLASS subject (Preset_Stabmeister does) gets wired like
+            // any NPC's; without this the class presets stay unwired no matter how often this runs.
+            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
 
             if (WirePresetsForSubject(subject, 0f, report) > 0) subjects++;
         }
+
+        // Portraits are singles, not driven by a controller, so the controller sweep above never
+        // reaches them — assign them from disk here on the same terms.
+        var portraitProblems = new List<string>();
+        AssignNpcPortraits(report, portraitProblems);
+        foreach (string p in portraitProblems) report.Add($"    (skipped) {p}");
 
         AssetDatabase.SaveAssets();
 
