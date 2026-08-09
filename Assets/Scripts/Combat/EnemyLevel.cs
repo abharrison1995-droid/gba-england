@@ -7,6 +7,16 @@ namespace ExiledAlvaston.Combat
     /// The level of one placed enemy. Absent means level 1, and level 1 scales nothing, so adding
     /// this script changes no existing enemy anywhere until an owner deliberately sets a Level.
     ///
+    /// Attached at placement time by the World Palette, from PlacementPreset.EnemyLevel (or the
+    /// palette's own per-stamp override). A preset level of 0 attaches nothing at all, so the two
+    /// states an author sees are "this object has an Enemy Level component" and "it does not".
+    ///
+    /// ⚠ Ordering with the preset's OverrideHealth/OverrideDamage: the override is baked into the
+    /// placed instance in the editor and is therefore the <b>level-1 baseline</b>; this multiplies
+    /// it at runtime. An enemy placed with Override Health 100 and Level 5 reads 100 in the
+    /// Inspector and has 240 HP in play. That is not a bug to fix — scaling first and overriding
+    /// second would make the override silently cancel the level.
+    ///
     /// Deliberately its own component rather than a promotion of <see cref="World.EnemyNameplate"/>'s
     /// Level field: all eleven nameplate-carrying prefabs store a 3 on disk, and reading that as a
     /// real level would make the entire cast level 3 and scale it up with nothing logged.

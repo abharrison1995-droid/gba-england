@@ -34,6 +34,19 @@ public class WorldPaletteWindow : EditorWindow
     private MapChunkData _vehicleChunk;
 
     /// <summary>
+    /// The level the next enemy stamp gets, overriding the armed preset's own Enemy Level.
+    ///
+    /// Lives on the window and therefore in no asset: a preset is a single file, so a level that
+    /// only lived on it would mean one preset per band (Preset_Roadman_Lv2, _Lv6, …) or editing the
+    /// asset between placements, which is a hidden mode nobody remembers they are in. Stamp five
+    /// Lv2 Roadmen in Alvaston, retype 6, stamp five more in London.
+    ///
+    /// Reset from the preset every time one is armed, so a level never silently carries over from
+    /// the last enemy stamped.
+    /// </summary>
+    private int _enemyLevel;
+
+    /// <summary>
     /// Everything this window has placed, and the parent the last one went into.
     ///
     /// Placing selects what it just made, so you can nudge it straight away — but the parent is
@@ -91,6 +104,10 @@ public class WorldPaletteWindow : EditorWindow
                 "Click in the Scene view to place. Hold Shift to keep placing.\n" +
                 "Esc, or clicking the armed preset again, disarms.",
                 MessageType.Info);
+
+            if (_armed.Category == PlacementPreset.PlacementCategory.Enemy)
+                DrawEnemyLevel();
+
             if (GUILayout.Button("Disarm")) Disarm();
         }
         else
@@ -229,6 +246,20 @@ public class WorldPaletteWindow : EditorWindow
         EditorGUI.indentLevel--;
     }
 
+    private void DrawEnemyLevel()
+    {
+        // Clamped at 0 so -1 can never be typed: PlacementBuilders reads a negative as "no
+        // override, use the preset", which is not something the author should be able to mean by
+        // accident.
+        _enemyLevel = Mathf.Max(0, EditorGUILayout.IntField(
+            new GUIContent("Level", "Level for the enemies you stamp next, overriding the preset's " +
+                "own Enemy Level. 0 attaches no EnemyLevel component at all — the enemy is exactly " +
+                "what its prefab authors.\n\n" +
+                "The prefab's Health and Damage are the level-1 baseline and are multiplied at " +
+                "runtime, so a placed enemy's Inspector still reads the unscaled numbers."),
+            _enemyLevel));
+    }
+
     private static Texture IconFor(PlacementPreset preset)
     {
         if (preset.Icon == null) return null;
@@ -243,6 +274,9 @@ public class WorldPaletteWindow : EditorWindow
     {
         _armed = preset;
         _hoverValid = false;
+        // From the preset every time, so arming a Lv1 Neek after stamping Lv6 Roadmen does not
+        // quietly place Lv6 Neeks.
+        _enemyLevel = preset != null ? Mathf.Max(0, preset.EnemyLevel) : 0;
         SceneView.RepaintAll();
         Repaint();
     }
@@ -354,7 +388,7 @@ public class WorldPaletteWindow : EditorWindow
         PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
         Transform parent = ResolveParent(stage);
 
-        GameObject created = PlacementBuilders.Build(_armed, point, parent);
+        GameObject created = PlacementBuilders.Build(_armed, point, parent, _enemyLevel);
         if (created == null) return;
 
         _placed.Add(created.GetInstanceID());

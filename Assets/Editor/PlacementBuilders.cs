@@ -20,8 +20,16 @@ using ExiledAlvaston.Vibe;
 /// </summary>
 public static class PlacementBuilders
 {
-    /// <summary>Builds whatever the preset describes. Returns null if it cannot.</summary>
-    public static GameObject Build(PlacementPreset preset, Vector3 position, Transform parent)
+    /// <summary>
+    /// Builds whatever the preset describes. Returns null if it cannot.
+    ///
+    /// <paramref name="enemyLevelOverride"/> is the palette's per-stamp level: a preset is a single
+    /// asset, so a level living only on it would mean one preset per level band, or editing the
+    /// asset between placements. -1 means "use the preset's own value" and is the default, so every
+    /// existing call site keeps its meaning.
+    /// </summary>
+    public static GameObject Build(PlacementPreset preset, Vector3 position, Transform parent,
+                                   int enemyLevelOverride = -1)
     {
         if (preset == null) return null;
 
@@ -29,12 +37,12 @@ public static class PlacementBuilders
         // keeps a preset that points at real authored content from being half-overwritten by
         // defaults left in the fields below it.
         if (preset.Prefab != null)
-            return BuildFromPrefab(preset, position, parent);
+            return BuildFromPrefab(preset, position, parent, enemyLevelOverride);
 
         switch (preset.Category)
         {
             case PlacementPreset.PlacementCategory.NPC:        return BuildNPC(preset, position, parent);
-            case PlacementPreset.PlacementCategory.Enemy:      return BuildEnemy(preset, position, parent);
+            case PlacementPreset.PlacementCategory.Enemy:      return BuildEnemy(preset, position, parent, enemyLevelOverride);
             case PlacementPreset.PlacementCategory.Chest:      return BuildChest(preset, position, parent);
             case PlacementPreset.PlacementCategory.Portal:     return BuildPortal(preset, position, parent);
             case PlacementPreset.PlacementCategory.SpawnPoint: return BuildSpawnPoint(preset, position, parent);
@@ -49,14 +57,15 @@ public static class PlacementBuilders
     //  BUILDERS
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    private static GameObject BuildFromPrefab(PlacementPreset preset, Vector3 position, Transform parent)
+    private static GameObject BuildFromPrefab(PlacementPreset preset, Vector3 position, Transform parent,
+                                              int enemyLevelOverride)
     {
         // InstantiatePrefab rather than Object.Instantiate: it keeps the prefab link, so the
         // placement still tracks edits to the prefab instead of becoming a detached copy.
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(preset.Prefab);
         Place(instance, position, parent, $"Place {preset.Label}");
 
-        ApplyEnemyOverrides(preset, instance);
+        ApplyEnemyOverrides(preset, instance, enemyLevelOverride);
         ApplyQuestKey(preset, instance);
         return instance;
     }
@@ -85,7 +94,8 @@ public static class PlacementBuilders
         return go;
     }
 
-    private static GameObject BuildEnemy(PlacementPreset preset, Vector3 position, Transform parent)
+    private static GameObject BuildEnemy(PlacementPreset preset, Vector3 position, Transform parent,
+                                         int enemyLevelOverride)
     {
         if (preset.EnemyPrefab == null)
         {
@@ -96,12 +106,13 @@ public static class PlacementBuilders
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(preset.EnemyPrefab);
         Place(instance, position, parent, $"Place {preset.Label}");
 
-        ApplyEnemyOverrides(preset, instance);
+        ApplyEnemyOverrides(preset, instance, enemyLevelOverride);
         ApplyQuestKey(preset, instance);
         return instance;
     }
 
-    private static void ApplyEnemyOverrides(PlacementPreset preset, GameObject instance)
+    private static void ApplyEnemyOverrides(PlacementPreset preset, GameObject instance,
+                                            int enemyLevelOverride)
     {
         if (instance == null) return;
 
@@ -121,6 +132,8 @@ public static class PlacementBuilders
             if (ai != null) ai.Damage = preset.Damage;
         }
 
+        ApplyEnemyLevel(preset, instance, enemyLevelOverride);
+
         List<LootDrop> valid = ValidLoot(preset.Loot);
         if (valid.Count > 0)
         {
@@ -128,6 +141,48 @@ public static class PlacementBuilders
             if (loot == null) loot = instance.AddComponent<LootOnDeath>();
             loot.Loot = valid.ToArray();
         }
+    }
+
+    /// <summary>
+    /// Attaches an <see cref="EnemyLevel"/> when the preset asks for one.
+    ///
+    /// A level below 1 attaches nothing at all, which is what every preset authored before the
+    /// field existed reads: level 1 and "unlevelled" are the same thing behaviourally, and a
+    /// level-1 component would still change the nameplate badge and the kill-XP source.
+    ///
+    /// ⚠ Ordering with OverrideHealth/OverrideDamage: the override runs here, in the editor, and
+    /// bakes the level-1 baseline into the placed instance. EnemyLevel.ApplyTo runs at runtime,
+    /// from Health.Awake, and multiplies whatever the instance carries. So an override of 100 with
+    /// a level of 5 is 240 HP in play while the Inspector still reads 100. That is the only order
+    /// that composes — scaling first and overriding second would make the override silently cancel
+    /// the level.
+    /// </summary>
+    private static void ApplyEnemyLevel(PlacementPreset preset, GameObject instance,
+                                        int enemyLevelOverride)
+    {
+        // -1 means the palette had nothing to say; 0 or more is a deliberate per-stamp level.
+        int level = enemyLevelOverride >= 0 ? enemyLevelOverride : preset.EnemyLevel;
+        if (level < 1) return;
+
+        // ApplyEnemyOverrides is called for every category from BuildFromPrefab, so a chest or NPC
+        // preset with a stray level would otherwise get an EnemyLevel — whose [RequireComponent]
+        // would silently add a Health to a chest, making it killable. Scaling Damage is meaningless
+        // without an EnemyAI anyway, so require one and say so rather than failing quietly.
+        if (instance.GetComponent<EnemyAI>() == null)
+        {
+            Debug.LogWarning($"PlacementBuilders: preset '{preset.Label}' sets Enemy Level {level} " +
+                             $"but '{instance.name}' has no EnemyAI, so no EnemyLevel was attached.");
+            return;
+        }
+
+        // Never a bare AddComponent: Unity permits duplicate components, and two EnemyLevels would
+        // both run ApplyTo and compound the scale with nothing logged (_applied is per component).
+        var enemyLevel = instance.GetComponent<EnemyLevel>();
+        if (enemyLevel == null) enemyLevel = instance.AddComponent<EnemyLevel>();
+        enemyLevel.Level = level;
+
+        // BaseXP is deliberately left alone — AddComponent runs field initialisers, so it is
+        // already EKVibe.KillXPBase.
     }
 
     private static GameObject BuildChest(PlacementPreset preset, Vector3 position, Transform parent)

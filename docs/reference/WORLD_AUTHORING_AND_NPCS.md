@@ -1,12 +1,14 @@
 # World authoring — the palette, presets and NPCs
 
 ```
-Last verified against: working tree, 2026-08-06
-Verification scope:    code; tracked preset/prefab YAML (30 presets read). The villager path was
+Last verified against: working tree, 2026-08-08
+Verification scope:    code; tracked preset/prefab YAML (32 presets read). The villager path was
                        exercised end to end in the editor and reported working by the owner.
-                       The six London enemy prefabs have NEVER been seen in play. The preset
-                       count and the "no preset has Prefab assigned" claim are from grep over
-                       tracked YAML; nothing here has been reopened in the editor.
+                       The six London enemy prefabs have NEVER been seen in play, and a GUID scan
+                       of the chunk prefabs and c.unity says none of them is placed anywhere. The
+                       preset count, the "no preset has Prefab assigned" claim and the enemy-level
+                       path below are from reading code and tracked YAML; nothing here has been
+                       reopened in the editor, and no enemy has been placed with a level.
 ```
 
 ## The World Palette
@@ -57,6 +59,34 @@ It sits directly at `Tools/GBH/World Palette`, uncategorised — the one deliber
 
 The five `Place/…` windows still exist and still work. They have not been removed because none has
 been checked for anything the palette cannot yet do.
+
+### Enemy levels
+
+An enemy's level comes from **two** places, and the palette wins:
+
+- `PlacementPreset.EnemyLevel` — the preset's default, appended at the end of the class. All 32
+  presets on disk carry no key for it, so they read **0**.
+- The palette's own **Level** field, drawn only while an `Enemy` preset is armed, held on the
+  `EditorWindow` and stored in no asset. It is reset from the preset every time one is armed, so a
+  level never carries over from the last enemy stamped. It exists because a preset is a single
+  file: a level living only on it would mean one preset per band, or editing the asset between
+  placements.
+
+**0 means no `EnemyLevel` component is attached at all** — not level 1. The two are the same
+behaviourally, but a level-1 component would still make `EnemyNameplate` read it (flipping every
+badge from the prefab's authored 3 to 1) and switch `KillXP` from `EKVibe.KillXPBase` to the scaled
+figure. `PlacementBuilders` also requires an `EnemyAI` before attaching and warns by name when a
+level is set without one, because `EnemyLevel`'s `[RequireComponent(typeof(Health))]` would
+otherwise give a chest a `Health` and make it killable.
+
+⚠️ **Ordering with `OverrideHealth` / `OverrideDamage`: the override is the level-1 baseline.** The
+override is baked into the placed instance in the editor; `EnemyLevel.ApplyTo` multiplies it at
+runtime from `Health.Awake`. So a preset with `OverrideHealth = 100` and a level of 5 places an
+enemy whose Inspector reads **100** and which has **240 HP in play**. That is not a bug to fix —
+scaling first and overriding second would make the override silently cancel the level, invisibly.
+
+`Tools → GBH → Place → Enemy Placement` has the same **Level** field, on the same rules, so the two
+placement paths agree.
 
 ---
 
@@ -147,6 +177,11 @@ Enemy-category preset pointing at it.
 Six exist — Neek, OG, Roadman, Spicehead, Tainted, Tortured Neek — built by
 `Tools > GBH > Content > Build Enemies From Generated Art`. **None has been seen in play.**
 
+⚠️ **None of them is placed anywhere.** A GUID scan of all six `.prefab.meta` GUIDs across
+`Assets/Prefabs/Chunks/*.prefab` and `Assets/c.unity` returns zero hits: the only `EnemyAI` in the
+scene is the PCSO actor. There is no authored enemy in the world, so nothing needed migrating when
+levels arrived, and there is nothing standing that a level could be added to without stamping it.
+
 Build prefabs **in place** (`LoadPrefabContents` → `SaveAsPrefabAsset`), never delete-and-recreate.
 
 ⚠️ **Death sheets shrink in figure height as the body goes prone** (Neek's death: fill 81% → 17%).
@@ -157,7 +192,8 @@ untested for these subjects.
 
 ## The London cast
 
-`Assets/Data/Presets/` holds 30 presets. The London cast is `Region: London`: Mayor Swalls, the
+`Assets/Data/Presets/` holds 32 presets, six of which are `Category: Enemy`. The London cast is
+`Region: London`: Mayor Swalls, the
 Quidland and F.U. Sports clerks, Commissioner Spencer, Officer Riggs, Officer Murtaugh, Ralph and
 Sanjeet, plus Councillor Mosley and Daniel Pauls. The villagers stay `Assorted`, since they are
 placed everywhere.

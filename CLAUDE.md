@@ -291,6 +291,113 @@ GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix
 each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
 `sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
 
+**Also outstanding — the dodge roll, phase 1.** On `dodge-roll-phase2` (which carries phase 1),
+never compiled:
+
+- **`Health.TakeDamage` now returns `bool`** — true if the hit landed. Nothing in phase 1 reads it;
+  it exists so enemy knockback can tell a connected hit from a dodged one. ⚠ **The method is no
+  longer bindable in a `UnityEvent` dropdown**, because Unity only offers void methods there.
+  Nothing binds it today — `grep -rn "m_MethodName: TakeDamage" Assets/` was empty before it
+  landed, and is the check to re-run if anything ever stops taking damage for no visible reason.
+- **Space rolls the player**, 2.4 m over 0.40 s for 14 stamina, i-frames 0.05–0.30 s in, 1 s
+  cooldown. *Check the distance looks like the field says, that a second Space inside a second
+  does nothing, and that rolling off a kerb still falls rather than hovering* — hovering means the
+  velocity zeroing has been moved inside the loop.
+- **`Health` refuses damage outright while `IsInvulnerable`.** *Stand in the PCSO's range — the
+  only `EnemyAI` in `c.unity` — and roll through its swing. A white **"Dodged!"** should appear, no
+  red number, and health should not move.*
+- **Rolling breaks stealth.** *Crouch with **C**, roll, and check the toast reads "Out of stealth.",
+  the CRO button pops back out and walk speed returns.*
+- **The DGE button is built at runtime**, fourth in the bottom row. It will not appear in the
+  Hierarchy until Play starts — look for `UI/UICanvas/HUDPanel/ActionButtons/DGE`. *Check it is
+  reachable with a thumb in the Device Simulator, landscape;* it is invisible in a 16:9 Game view.
+- **No roll animation exists yet.** `SetAnimatorTrigger("Roll")` no-ops against a controller without
+  the parameter, so the player slides through the roll silently. Phase 3 has landed — the importer
+  knows the `roll` action and the sheets are queue band 10 — so silence is expected only until
+  `sheet_char_player_roll` is delivered and imported.
+- ⚠ **`RollSpeedCurve` integrates to exactly 1 over [0,1]**, and that is the only reason the roll
+  travels `RollDistance`. Reshaping it without preserving that decouples the two silently.
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
+**Also outstanding — enemy knockback of the player, phase 2.** On `dodge-roll-phase2` (built on
+the phase 1 branch), never compiled:
+
+- **`EnemyAI.KnockbackDistance`, default 0** — no prefab or scene file changed, so nothing knocks
+  the player back until the Inspector pass sets it. Per the recorded decision: `Enemy_OG` and
+  `Enemy_Tainted` at **2 m**, police at **0**, folded into the same Inspector session as the
+  `Level: 3` and `IsPolice` prefab passes. *Stamp `Enemy_OG` from the palette, set Knockback
+  Distance = 2 outside Play mode, take a hit, and check the slide is ~2 m and stops at walls.*
+- **A dodged hit no longer shoves.** Both `AttackRoutine` damage branches gate the shove on
+  `TakeDamage` returning true. *Roll through the stamped enemy's swing: "Dodged!", no red number,
+  and crucially no slide.* This is the defect the whole return value exists to fix.
+- **Knockback wins over a roll in progress** — the roll polls `_isKnockedBack` and yields the
+  body to it. *Roll into a 2 m hit and check the player ends up shoved, not rolled.*
+- **0.4 s of recovery i-frames as the slide ends** (`KnockbackRecoveryIFrames`), so two enemies
+  cannot chain-stun. *With two knockers in range, check a second hit during the recovery is
+  refused — "Dodged!" over the player, no damage.*
+- **No knockback animation exists yet** — `SetAnimatorTrigger("Knockback")` no-ops on both sides
+  (EnemyAI's calls are now guarded, so no console errors either), and the `Hit` trigger carries
+  the feedback. The importer knows the action and the sheets are in queue band 10, so silence is
+  expected only until those sheets are delivered and imported.
+- **The slide uses the same `MovePosition` sweep as walking** — deliberate asymmetry with the
+  enemy-side knockback coming in phase 4, which must capsule-cast because enemies move by
+  transform. *If the player ever slides through a wall here, the Rigidbody has been switched to
+  kinematic somewhere — check that first.*
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
+**Also outstanding — the melee knockback perk, phase 4.** On `dodge-roll-phase2`, never compiled:
+
+- **`PerkEffectType.MeleeKnockback = 9` is appended, never reordered** — the enum is serialized by
+  integer index inside every `PerkData` asset, and the first asset authored freezes these indices
+  forever. Magnitude is a **flat metre value**, not a percentage. **No perk asset exists** — the
+  owner authors it: Create → `ExiledAlvaston/Data/Perk`, into a `Resources/Perks` folder, one
+  effect of type MeleeKnockback, Magnitude 2. *Then spend a point and hit something: the enemy
+  should slide ~2 m and stop at walls.*
+- **`PlayerSession.MeleeKnockbackDistance` resets with the other cached query values** in
+  `RecalculateDerivedStats` step 6 — stats recompute on every load, so a cached value that is added
+  to but never reset would accumulate per load. *Take the perk, note the shove, reload the save,
+  and check the shove is the same rather than doubled.*
+- **Enemies slide by transform through a capsule cast** (`TryStep`, factored out of
+  `TryCollideMove`), the mirror image of the player's `MovePosition` slide — each side uses the
+  mechanism its body type requires, and the comments at both sites say so. The agent is paused by
+  `updatePosition = false`, never `agent.enabled`.
+- **A killed enemy is never shoved** — the melee site gates on `!targetHealth.IsDead` because
+  `Health.Die` has already disabled the agent and the AI. *Kill something with the perk on and
+  check the corpse does not slide.*
+- **EnemyAI's three `SetTrigger` sites are now guarded** like CombatController's — before this,
+  firing an undefined trigger logged an error every call, and no enemy controller defines
+  `Knockback` yet. Expected silence until the band 10 sheets are delivered and imported.
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
+**Also outstanding — enemy levels in the world, combat nameplates, bigger HUD.** Merged
+2026-08-08, code-reviewed against its plan, never compiled:
+
+- **Enemy levels are authorable but nothing is authored.** `PlacementPreset.EnemyLevel` and the
+  palette's per-stamp Level field attach an `EnemyLevel` at placement. **A level of 0 attaches no
+  component at all** — deliberate, because a level-1 component is not inert: the nameplate starts
+  reading it and the badge flips from the prefab's "3" to "1". ⚠️ **No enemy prefab is placed
+  anywhere in any chunk or in `c.unity`** — the only `EnemyAI` in the scene is the PCSO — so this
+  path has never run. *Stamp an enemy from the palette at Level 4 and check it is tougher than
+  one stamped at Level 1.*
+- **Nameplates are combat-gated and now build lazily.** They show on aggro **or** when the player
+  is within `SightRadius`, and hide a few seconds after. *Check a plate appears as you approach
+  rather than only after the first hit, and that it does not reappear over a corpse.* The tutorial
+  bandit's badge should now read **1, not 3** — that line was a real bug, set after the badge had
+  already been drawn.
+- ⚠️ **`EnemyAI` resolves its nameplate in `Start`, not `Awake`.** `TutorialSequence` adds
+  `EnemyAI` before `EnemyNameplate`, and `AddComponent` runs `Awake` synchronously, so caching in
+  `Awake` would cache null and leave the tutorial bandit with no plate at all. Do not move it.
+- **The player's bar carries a level badge** and now rises when they deal damage or draw aggro,
+  not only when hit. *Check the badge tracks a level-up while the bar is visible.*
+- **The top-left HUD cluster is scaled 1.6× at runtime** from `EKVibe.HudClusterScale`. The
+  ceiling is 1.75, where it would overlap the combat log. A `SafeAreaFitter` is added to the HUD
+  panel at runtime — *invisible in a 16:9 Game view; needs the Device Simulator.*
+
+→ [docs/plans/LEVELS_IN_WORLD_AND_HUD.md](docs/plans/LEVELS_IN_WORLD_AND_HUD.md) §10.3 for the routes.
+
 **Also outstanding — perks, growth and proportional armour, phase 3.** Merged 2026-08-08,
 code-reviewed against its plan, never compiled:
 

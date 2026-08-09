@@ -24,8 +24,18 @@ namespace ExiledAlvaston.Combat
         /// <summary>The GameObject that last dealt damage to this entity. Used by arrest logic to check if attacker was police.</summary>
         [System.NonSerialized] public GameObject LastAttacker;
 
+        /// <summary>
+        /// Non-null only on the player — armour lives on PlayerSession but is gated on this Health
+        /// belonging to the player, which is what this component answers. Cached rather than looked
+        /// up per hit: nothing in the project adds a CombatController at runtime, so a null cached
+        /// on an enemy stays correct for that object's whole life.
+        /// </summary>
+        private CombatController _combat;
+
         private void Awake()
         {
+            _combat = GetComponent<CombatController>();
+
             // ⚠ Must stay ABOVE the line below. EnemyLevel raises MaxHealth, and anything reordered
             // past this point leaves a levelled enemy alive at level-1 health under a raised
             // maximum — which looks like a broken health bar, not a broken scale. Call order is the
@@ -38,19 +48,45 @@ namespace ExiledAlvaston.Combat
                 DisplayName = gameObject.name;
         }
 
-        public void TakeDamage(int damage)
+        /// <returns>True if the hit landed — see the four-argument overload.</returns>
+        public bool TakeDamage(int damage)
         {
-            TakeDamage(damage, "Something", DisplayName);
+            return TakeDamage(damage, "Something", DisplayName);
         }
 
-        public void TakeDamage(int damage, string attackerName, string targetLabel)
+        /// <returns>True if the hit landed — see the four-argument overload.</returns>
+        public bool TakeDamage(int damage, string attackerName, string targetLabel)
         {
-            TakeDamage(damage, attackerName, targetLabel, null);
+            return TakeDamage(damage, attackerName, targetLabel, null);
         }
 
-        public void TakeDamage(int damage, string attackerName, string targetLabel, GameObject attacker)
+        /// <summary>
+        /// Applies damage, unless the target refuses it.
+        /// </summary>
+        /// <returns>
+        /// True if the hit landed. False means it was refused — the target was already dead, or was
+        /// mid-dodge — and a caller must not follow up with knockback, on-hit effects or
+        /// attribution. Returning this rather than nothing is what lets an attacker tell a hit that
+        /// connected from one that did not; without it every follow-up effect fires regardless.
+        ///
+        /// ⚠ Unity's Inspector only offers void methods in a UnityEvent dropdown, so this is no
+        /// longer bindable there. Nothing binds it today (verified: no m_MethodName: TakeDamage
+        /// anywhere under Assets/). If something ever needs to, add a void ApplyDamage wrapper
+        /// rather than taking this return value away.
+        /// </returns>
+        public bool TakeDamage(int damage, string attackerName, string targetLabel, GameObject attacker)
         {
-            if (IsDead) return;
+            if (IsDead) return false;
+
+            // ⚠ Above LastAttacker, above armour, above the combat log: a dodged hit did not
+            // happen, so it must not claim attribution and must not be narrated. Gating it here
+            // rather than at each attack site is what makes every future damage source — spells,
+            // traps — respect i-frames without having to know they exist.
+            if (_combat != null && _combat.IsInvulnerable)
+            {
+                FloatingDamageText.Spawn(transform.position, "Dodged!", EKVibe.TextLight);
+                return false;
+            }
 
             // Armour only exists on the player (equipment lives on PlayerSession), so the
             // reduction is gated on this Health belonging to the player — enemies keep taking
@@ -60,7 +96,7 @@ namespace ExiledAlvaston.Combat
             // Mathf.Max(1, ...) keeps a hit always landing for something. The damage > 0 gate is
             // load-bearing — TakeDamage(int) is public, and without it a 0-damage call would be
             // floored *upward* to 1 and start hurting the player.
-            if (GetComponent<CombatController>() != null && damage > 0)
+            if (_combat != null && damage > 0)
             {
                 var session = Flow.PlayerSession.Instance;
                 if (session != null)
@@ -82,6 +118,8 @@ namespace ExiledAlvaston.Combat
 
             if (CurrentHealth <= 0)
                 Die();
+
+            return true;
         }
 
         /// <summary>Restore health up to MaxHealth. No effect on the dead — use Revive for that.</summary>

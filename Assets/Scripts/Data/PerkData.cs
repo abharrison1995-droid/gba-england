@@ -32,12 +32,16 @@ namespace ExiledAlvaston.Data
         MaxResourceFlat = 5,
         ResourceRegenPercent = 6,
         MoveSpeedPercent = 7,
-        ExtraLootRolls = 8
+        ExtraLootRolls = 8,
+        /// <summary>Flat metres the player's melee hits shove the target — not a percentage,
+        /// not a chance. Read by PlayerSession.MeleeKnockbackDistance.</summary>
+        MeleeKnockback = 9
     }
 
     /// <summary>
     /// One thing a perk does. <see cref="Magnitude"/> is read as whole points for the Flat and
     /// ExtraLootRolls types and as a percentage for the Percent types — 15 meaning +15%.
+    /// MeleeKnockback reads it as a flat metre value (2 = shoved two metres).
     /// </summary>
     [System.Serializable]
     public class PerkEffect

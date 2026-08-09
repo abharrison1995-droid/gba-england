@@ -103,6 +103,7 @@ not when they have been delivered.
 | **6** | The London buildings | 5 models | **3D, not sprites — outside this pipeline.** Read the section before starting one. |
 | **7** | Item icons | 8 singles | Inventory icons. Cheap, and the inventory overhaul needs them. |
 | **8** | Per-weapon attack sheets | 5 sheets | One player attack sheet per weapon. Last on purpose: each is a redraw of a pose that is already solved, and it is worth nothing until the weapons exist in code. |
+| **10** | Roll and knockback sheets | 2 sheets, then more | The dodge roll and knockback mechanics are already in code and fully playable silently — these sheets are pure feedback. Player first, classes and hostiles only after. |
 
 ### Band 2 — the tutorial cast
 
@@ -472,6 +473,25 @@ until all six of its actions exist, so a lone idle changes the creator and nothi
 - `PlayerClass` is serialized by index and `BundaBasher` was correctly **appended** as 4. Any
   further class must also be appended — see
   [../reference/SAVE_AND_SERIALIZATION.md](../reference/SAVE_AND_SERIALIZATION.md).
+
+### Band 10 — roll and knockback
+
+Two new bonus actions for sheets that already have their mechanics: the dodge roll and the
+knockback slide shipped in code first, guarded animator calls, so they play silently until these
+land. **Never ahead of a subject's six core sheets** — a roll for a class whose `attack` does not
+exist yet is worth nothing. In this order:
+
+1. **`sheet_char_player_roll`** — 6 frames, 6×1, 512 px cells, 14 fps, no loop. The money sheet:
+   a tucked dive, ~2.4 m of travel in 0.40 s, fast out and trailing into recovery. Same baseline
+   and cell fill as the existing `player` sheets.
+2. **`sheet_char_player_knockback`** — 3 frames, 3×1, 12 fps, no loop. A stagger driven backward,
+   feet trailing — a *standing* pose throughout (the importer runs the full idle-comparison suite
+   on this one; a figure that crumples like `death` will fail it).
+3. **`roll` for the four other class subjects** — only once that class's six core sheets are
+   accepted. Match the class's own `idle`, same as every other class action.
+4. **`knockback` for hostile subjects that can be knocked back** — the owner picks the list;
+   start with `roadman`, `neek`, `spicehead`. Until a subject has one, its `hurt` clip carries the
+   feedback, which is why this is last.
 
 ### Cancelled and not requested
 

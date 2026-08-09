@@ -107,9 +107,13 @@ Scaling, whichever wins:
 - **Nameplate** shows the level (the badge already renders `Level.ToString()`).
 - **XP:** base XP per enemy × the same level formula → what the kill grants.
 
-Level is set per placed instance in the Inspector, so the same Roadman is Lv2 in Alvaston and Lv6
-in London. Editing placed instances touches chunk prefabs and `c.unity` — edit prefabs in place,
-never delete/re-save; commit the new script's `.meta`.
+Level is authored **at placement time**, so the same Roadman is Lv2 in Alvaston and Lv6 in London:
+the World Palette carries a Level field beside the armed enemy preset, and stamping attaches an
+`EnemyLevel` component at that level. The preset's own `EnemyLevel` is the default the palette
+starts from, and 0 attaches no component at all. See
+[../reference/WORLD_AUTHORING_AND_NPCS.md](../reference/WORLD_AUTHORING_AND_NPCS.md). Editing an
+already-placed instance in the Inspector still works and touches chunk prefabs — edit prefabs in
+place, never delete/re-save.
 
 ## Phase 3 — player gains
 

@@ -51,6 +51,8 @@ public static class ArtImportTool
         { "death",  "Death"  },
         { "cast",   "Cast"   },
         { "cycle",  "Cycle"  },   // riding a vehicle — held by a bool, not fired by a trigger
+        { "roll",       "Roll"      },
+        { "knockback",  "Knockback" },
     };
 
     /// <summary>Bool parameters, for states that are held rather than fired once.</summary>
@@ -62,9 +64,11 @@ public static class ArtImportTool
         { "hurt",   "Hit"         },
         { "death",  "Death"       },
         { "cast",   "CastSpell"   },   // nothing in the project defines this yet — see CLAUDE.md §8
+        { "roll",       "Roll"      },
+        { "knockback",  "Knockback" },
     };
 
-    /// <summary>The frame/fps/loop table from ART_PIPELINE.md §7.3, so the two cannot drift apart.</summary>
+    /// <summary>The frame/fps/loop table from ART_PIPELINE.md §8, so the two cannot drift apart.</summary>
     private class ActionSpec
     {
         public int Frames;
@@ -81,6 +85,8 @@ public static class ArtImportTool
         { "hurt",   new ActionSpec { Frames = 3, Fps = 12f, Loop = false } },
         { "death",  new ActionSpec { Frames = 6, Fps = 10f, Loop = false } },
         { "cycle",  new ActionSpec { Frames = 6, Fps = 12f, Loop = true  } },
+        { "roll",       new ActionSpec { Frames = 6, Fps = 14f, Loop = false } },
+        { "knockback",  new ActionSpec { Frames = 3, Fps = 12f, Loop = false } },
     };
 
     /// <summary>
@@ -909,7 +915,7 @@ public static class ArtImportTool
     }
 
     /// <summary>
-    /// Checks a sheet against the frame/fps/loop table in ART_PIPELINE.md §7.3, and fills in fps
+    /// Checks a sheet against the frame/fps/loop table in ART_PIPELINE.md §8, and fills in fps
     /// and loop from it when the manifest omits them. Warns rather than refuses: the numbers are a
     /// house style, and a deliberate deviation should not cost a regeneration cycle.
     /// </summary>
@@ -1243,11 +1249,14 @@ public static class ArtImportTool
     }
 
     /// <summary>
-    /// Actions where the figure is *supposed* to change shape — falling over, sitting on a bike.
-    /// Height and baseline comparisons are meaningless for these; width still is not, because no
-    /// legitimate pose makes a character half as wide as they are standing.
+    /// Actions where the figure is *supposed* to change shape — falling over, sitting on a bike,
+    /// tucking into a roll. Height and baseline comparisons are meaningless for these; width still
+    /// is not, because no legitimate pose makes a character half as wide as they are standing.
+    /// knockback is deliberately NOT here: a stagger is a standing pose and must pass the full
+    /// idle-comparison suite.
     /// </summary>
-    private static bool ShapeChanges(string action) => action == "death" || action == "cycle";
+    private static bool ShapeChanges(string action) =>
+        action == "death" || action == "cycle" || action == "roll";
 
     private static readonly Dictionary<string, List<SubjectShape>> ShapesBySubject =
         new Dictionary<string, List<SubjectShape>>();

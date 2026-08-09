@@ -77,23 +77,83 @@ namespace ExiledAlvaston.UI
             EnsureJournalButton();
             BuildActionButtons();
             RestyleSceneHudButtons();
+            ScaleHudCluster();
+            EnsureHudSafeArea();
         }
 
         /// <summary>
-        /// The one legacy scene button still visible — MapBagShortcut ("Bag") — gets the Win95
-        /// skin at runtime. The rest of the legacy cluster is retired by BuildActionButtons,
-        /// so restyling it in the scene would paint objects nobody sees.
+        /// Keeps the whole gameplay HUD inside the device's reported safe area. There has never
+        /// been a SafeAreaFitter on it — the only two in c.unity sit under the title and creator
+        /// layouts — and the cluster is 16 px from the left edge, which in landscape is exactly
+        /// where a notch or a rounded corner lands.
+        ///
+        /// HUDPanel is already a full stretch with zero offsets and zero anchoredPosition, which is
+        /// what SafeAreaFitter overwrites, so it is a drop-in.
+        ///
+        /// ⚠ This moves the <b>whole</b> HUD, including the runtime-built action buttons and the
+        /// joystick — wanted, since a home indicator is as much in their way as a notch is in the
+        /// cluster's, but a bigger behavioural change than anything else here. ⚠ It is also
+        /// invisible in a 16:9 Game view, which reports no inset: seeing nothing change there is
+        /// not evidence that it works. Window → General → Device Simulator, landscape, notched
+        /// device.
+        /// </summary>
+        private void EnsureHudSafeArea()
+        {
+            Transform hud = FindChildRecursive(transform, "HUDPanel");
+            if (hud != null && hud.GetComponent<SafeAreaFitter>() == null)
+                hud.gameObject.AddComponent<SafeAreaFitter>();
+        }
+
+        /// <summary>
+        /// Grows the top-left cluster to something readable at arm's length on a phone.
+        ///
+        /// Scales the <b>panel</b>, never an element inside it. The four children are positioned by
+        /// absolute anchoredPosition, so scaling the panel preserves the authored layout exactly,
+        /// where resizing each element would mean re-deriving every offset — and would fight
+        /// <see cref="EnsureDedicatedTrack"/>, which copies anchors, pivot, anchoredPosition and
+        /// sizeDelta between rects. localScale touches none of those, so the two cannot interact.
+        /// ⚠ That only holds while this is the one and only localScale write in the HUD.
+        ///
+        /// The panel's pivot and anchor are both (0,1), so it grows right and down from the screen
+        /// corner and its safe-area exposure is unchanged.
+        ///
+        /// ⚠ Assign, never multiply. If anything ever runs this twice — a HUD rebuild, a second
+        /// UIManager — an assignment is idempotent and a multiply leaves the cluster at 2.56x,
+        /// which reads as a baffling layout bug rather than a double call.
+        /// </summary>
+        private void ScaleHudCluster()
+        {
+            if (TopLeftPortraitPanel != null)
+                TopLeftPortraitPanel.localScale = Vector3.one * EKVibe.HudClusterScale;
+        }
+
+        /// <summary>
+        /// The legacy scene buttons still visible — MapBagShortcut ("Bag") and the authored USE
+        /// button — get the Win95 skin at runtime. The rest of the legacy cluster is retired by
+        /// BuildActionButtons, so restyling it in the scene would paint objects nobody sees.
         /// </summary>
         private void RestyleSceneHudButtons()
         {
             Transform bag = FindChildRecursive(transform, "MapBagShortcut");
-            if (bag == null) return;
+            if (bag != null)
+            {
+                var btn = bag.GetComponent<Button>();
+                if (btn != null) Win95Skin.StyleButton(btn);
 
-            var btn = bag.GetComponent<Button>();
-            if (btn != null) Win95Skin.StyleButton(btn);
+                var label = bag.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (label != null) Win95Skin.StyleLabel(label);
+            }
 
-            var label = bag.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (label != null) Win95Skin.StyleLabel(label);
+            // The scene-authored USE button predates the skin, and EnsureInteractUI returns
+            // early precisely because it exists — so this is the only restyle it ever gets.
+            if (InteractButtonRoot != null)
+            {
+                var useBtn = InteractButtonRoot.GetComponent<Button>();
+                if (useBtn != null) Win95Skin.StyleButton(useBtn);
+
+                var useLabel = InteractButtonRoot.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (useLabel != null) Win95Skin.StyleLabel(useLabel);
+            }
         }
 
         /// <summary>
@@ -366,6 +426,13 @@ namespace ExiledAlvaston.UI
         /// touchscreen-first game meant stealth — and therefore pickpocketing, which requires
         /// IsCrouched — could not be used on a device at all.
         /// </summary>
+        public void OnDodgePressed()
+        {
+            var combat = Combat.CombatController.Instance;
+            if (combat != null)
+                combat.PerformDodge();
+        }
+
         public void OnCrouchPressed()
         {
             var stealth = World.StealthController.Instance ?? FindObjectOfType<World.StealthController>();
@@ -527,6 +594,12 @@ namespace ExiledAlvaston.UI
             _crouchButtonImage = crouch.GetComponent<Image>();
             _crouchButtonLabel = crouch.GetComponentInChildren<TextMeshProUGUI>();
             RefreshCrouchButton();
+
+            // DGE — dodge roll, fourth in the bottom row: ATK, USE, CRO, DGE reading right to left.
+            // Keeps CRO's size and its 200 px pitch, so on the 1920-wide reference it spans
+            // x 1186-1296 — clear of the joystick, which lives against the opposite edge.
+            CreateActionButton(panel.transform, "DGE", HUDActionButton.ActionKind.Dodge, 0,
+                new Vector2(110f, 110f), new Vector2(-624f, 40f));
 
             RepositionInteractButton();
         }

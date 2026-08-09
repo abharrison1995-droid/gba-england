@@ -23,6 +23,7 @@ namespace ExiledAlvaston.Combat
         private Rigidbody _rb;
         private Health _health;
         private WorldActorVisual _actorVisual;
+        private PlayerHealthBar _bar;
         private RuntimeAnimatorController _animatorParamsFor;
         private bool _hasSpeedParam;
         private bool _hasCyclingParam;
@@ -43,6 +44,27 @@ namespace ExiledAlvaston.Combat
         [Tooltip("Seconds after the hitbox before you can move/attack again.")]
         public float MeleeRecovery = 0.35f;
 
+        [Header("Dodge Roll")]
+        [Tooltip("Stamina spent per roll. At the 7/s regen rate 14 repays in two seconds, so the " +
+                 "cooldown governs the second roll and the pool governs the third. Shared with " +
+                 "stamina abilities — raising this eats into them.")]
+        public int RollStaminaCost = 14;
+        [Tooltip("Seconds the roll lasts.")]
+        public float RollDuration = 0.40f;
+        [Tooltip("Metres covered, averaging ~6 u/s against a 5 u/s walk.")]
+        public float RollDistance = 2.4f;
+        [Tooltip("Seconds into the roll before i-frames begin — a little startup, so a panic-tap isn't free.")]
+        public float RollIFrameStart = 0.05f;
+        [Tooltip("Seconds of invulnerability once they begin.")]
+        public float RollIFrameDuration = 0.25f;
+        [Tooltip("Seconds from the roll's START before another can begin.")]
+        public float RollCooldown = 1f;
+
+        [Header("Knockback")]
+        [Tooltip("Seconds of i-frames granted as a knockback slide ends, so two enemies cannot " +
+                 "chain-stun the player.")]
+        public float KnockbackRecoveryIFrames = 0.4f;
+
         [Header("Regen")]
         [Tooltip("Mana restored per second — slow, spells should feel budgeted.")]
         public float ManaRegenPerSecond = 2.5f;
@@ -56,6 +78,10 @@ namespace ExiledAlvaston.Combat
         private List<string> _activeCooldownKeys = new List<string>(10);
 
         private bool _isAttacking;
+        private bool _isRolling;
+        private bool _isKnockedBack;
+        private float _nextRollTime;
+        private float _invulnerableUntil;
         private bool _isDead;
         private readonly Collider[] _hitResults = new Collider[10];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
@@ -71,12 +97,27 @@ namespace ExiledAlvaston.Combat
         public Vector3 FacingDirection => _facingDir;
         public bool IsDead => _isDead;
 
+        /// <summary>
+        /// True while incoming damage should be refused outright — read by <see cref="Health"/>.
+        ///
+        /// ⚠ Backed by a timestamp, not a bool. More than one thing will want to grant i-frames —
+        /// the roll now, the recovery after a knockback next — and two coroutines setting and
+        /// clearing one shared flag is exactly how a player ends up permanently invulnerable when
+        /// the two overlap. Whoever wants the longer window wins by writing the later time, and
+        /// nothing has to clear anything.
+        /// </summary>
+        public bool IsInvulnerable => Time.time < _invulnerableUntil;
+
         private void Awake()
         {
             Instance = this;
             _rb = GetComponent<Rigidbody>();
             _health = GetComponent<Health>();
             _actorVisual = GetComponent<WorldActorVisual>();
+            // ⚠ Cached, not looked up per hit. FindObjectOfType at a damage site would scan the
+            // scene on every swing; a static would be one more lifetime to get wrong. This is what
+            // EnemyAI does for its own Health and WorldActorVisual.
+            _bar = GetComponent<PlayerHealthBar>();
             _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
             _baseManaRegen = ManaRegenPerSecond;
@@ -136,6 +177,9 @@ namespace ExiledAlvaston.Combat
         private void OnDisable()
         {
             _isAttacking = false;
+            _isRolling = false;
+            _isKnockedBack = false;
+            _invulnerableUntil = 0f;
         }
 
         /// <summary>False on Title/Creator — the player must not move, attack, or regen there.</summary>
@@ -165,7 +209,9 @@ namespace ExiledAlvaston.Combat
         {
             if (!IsFlowPlaying()) return;
 
-            if (!_isAttacking && !_isDead)
+            // The roll and the knockback slide drive the body themselves, so normal movement must
+            // not fight them for the Rigidbody during those frames.
+            if (!_isAttacking && !_isRolling && !_isKnockedBack && !_isDead)
                 HandleMovement();
         }
 
@@ -255,6 +301,10 @@ namespace ExiledAlvaston.Combat
             // Skip clicks that land on UI so HUD taps don't also swing.
             if (Input.GetButtonDown("Fire1") && !_isAttacking && !IsPointerOverUI())
                 PerformMeleeAttack();
+
+            // Desktop fallback only — mobile uses the HUD DGE button.
+            if (Input.GetKeyDown(KeyCode.Space) && !IsPointerOverUI())
+                PerformDodge();
 #endif
             if (Input.GetKeyDown(KeyCode.Alpha1)) TryCastAbility(0);
             if (Input.GetKeyDown(KeyCode.Alpha2)) TryCastAbility(1);
@@ -537,7 +587,15 @@ namespace ExiledAlvaston.Combat
                     // Four-argument overload: passing gameObject is what sets Health.LastAttacker
                     // to the player. Without it the player is invisible to anything that asks who
                     // landed the killing blow — no error, just an attribution that never matches.
-                    targetHealth.TakeDamage(damage, "you", foeName, gameObject);
+                    if (targetHealth.TakeDamage(damage, "you", foeName, gameObject))
+                    {
+                        _bar?.Ping();
+                        // The knockback perk, gated on the hit LANDING and the enemy still being
+                        // alive: Health.Die has already disabled the agent and the AI by now, and
+                        // shoving a corpse would fight the destroy delay.
+                        if (session != null && session.MeleeKnockbackDistance > 0f && !targetHealth.IsDead)
+                            targetHealth.GetComponent<EnemyAI>()?.ApplyKnockback(facing, session.MeleeKnockbackDistance);
+                    }
                 }
 
                 yield return new WaitForSeconds(attackDuration);
@@ -564,21 +622,222 @@ namespace ExiledAlvaston.Combat
         }
         #endregion
 
+        #region Dodge Roll
+        /// <summary>
+        /// Rolls in the current move direction, or in the faced direction when standing still.
+        /// Mirrors <see cref="PerformMeleeAttack"/>: every reason to refuse is checked here, and the
+        /// coroutine only starts once the stamina has actually been paid.
+        /// </summary>
+        public void PerformDodge()
+        {
+            // No rolling out of a swing. Committing to the attack is what the attack costs, and the
+            // rule holds both ways — MeleeHitboxRoutine already refuses to start mid-roll via
+            // _isAttacking's twin below. Cancelling into a roll would be the more action-game feel;
+            // it is deliberately not the choice here.
+            if (_isRolling || _isKnockedBack || _isAttacking || _isDead) return;
+            if (BlockedByRiding()) return;
+            if (Time.time < _nextRollTime) return;
+
+            if (CurrentStamina < RollStaminaCost)
+            {
+                if (UIManager.Instance != null)
+                    UIManager.Instance.LogCombat("Not enough Stamina.");
+                return;
+            }
+
+            // Current input if there is any, else whatever we last faced — rolling backwards out of
+            // a fight has to be possible, which is also why nothing calls SetFacing below: the
+            // sprite keeps looking at the enemy while the body travels the other way.
+            Vector3 dir = GetScreenRelativeMoveDirection(ReadMoveInput());
+            if (dir.sqrMagnitude < 0.0001f) dir = _facingDir;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f) dir = Vector3.forward;
+            dir.Normalize();
+
+            CurrentStamina -= RollStaminaCost;
+            _nextRollTime = Time.time + RollCooldown;
+
+            // Diving across the floor is not sneaking. Routed through ToggleStealth rather than
+            // clearing the speed modifier here, so the sprite tint, the toast and the CRO button
+            // all come back in step — that is its job, and duplicating half of it would drift.
+            var stealth = StealthController.Instance;
+            if (stealth != null && stealth.IsCrouched)
+                stealth.ToggleStealth();
+
+            StartCoroutine(RollRoutine(dir));
+        }
+
+        private IEnumerator RollRoutine(Vector3 dir)
+        {
+            // Same discipline as MeleeHitboxRoutine, for the same reason: a stuck _isRolling gates
+            // HandleMovement forever and the player never moves again. The reset lives in a finally,
+            // never on the happy path.
+            _isRolling = true;
+
+            try
+            {
+                SetAnimatorTrigger("Roll");
+
+                // Once, at the start — not per step. Zeroing velocity every step would suspend
+                // gravity for the whole roll and leave the player hovering if they rolled off a kerb.
+                _rb.velocity = Vector3.zero;
+
+                float elapsed = 0f;
+                var wait = new WaitForFixedUpdate();
+
+                while (elapsed < RollDuration)
+                {
+                    // Cooperative cancellation, checked before moving: dying mid-roll must not
+                    // leave a corpse sliding, and a knockback landing mid-roll always wins —
+                    // the roll yields the body to it. yield break still runs the finally, which
+                    // is why nothing here needs StopCoroutine — whether that runs a finally is
+                    // not something this repo can verify without an editor.
+                    if (_isDead || _isKnockedBack) yield break;
+
+                    float speed = RollDistance / RollDuration * RollSpeedCurve(elapsed / RollDuration);
+
+                    // ⚠ MovePosition, deliberately not a capsule cast. This Rigidbody is
+                    // non-kinematic, so MovePosition sweeps and resolves against colliders — it is
+                    // the same call HandleMovement makes and the reason walking cannot clip a wall.
+                    // Knocking an ENEMY back will need the cast, because an enemy is moved by its
+                    // transform and would punch straight through geometry.
+                    _rb.MovePosition(_rb.position + dir * (speed * Time.fixedDeltaTime));
+
+                    // Re-armed each step rather than set once up front, so a roll cut short leaves
+                    // no invulnerability running past its end. The 1.5x margin covers the gap to the
+                    // next physics step.
+                    if (elapsed >= RollIFrameStart && elapsed < RollIFrameStart + RollIFrameDuration)
+                        _invulnerableUntil = Mathf.Max(_invulnerableUntil,
+                            Time.time + Time.fixedDeltaTime * 1.5f);
+
+                    elapsed += Time.fixedDeltaTime;
+                    yield return wait;
+                }
+            }
+            finally
+            {
+                _isRolling = false;
+            }
+        }
+
+        /// <summary>
+        /// Speed shape across the roll — quick off the mark, trailing off into recovery.
+        ///
+        /// ⚠ Its integral over [0,1] is exactly 1, and that is what makes the roll actually travel
+        /// <see cref="RollDistance"/>. Reshape it without preserving that and the distance silently
+        /// stops matching the field it is read from.
+        /// </summary>
+        private static float RollSpeedCurve(float t) => 1.5f - t;
+        #endregion
+
+        #region Knockback
+        /// <summary>Seconds the slide lasts. A fixed feel value, not a knob — only the recovery
+        /// i-frames are tuned in the Inspector.</summary>
+        private const float KnockbackSlideDuration = 0.22f;
+
+        /// <summary>
+        /// Shoves the player <paramref name="distance"/> metres along <paramref name="dir"/>. Called
+        /// by <see cref="EnemyAI.TryKnockback"/> only when a hit actually landed — a hit refused by
+        /// i-frames must not reach here.
+        ///
+        /// Knockback always wins over a roll in progress: setting <see cref="_isKnockedBack"/> is
+        /// the cooperative flag <see cref="RollRoutine"/> polls to bail out. No coroutine is ever
+        /// stopped — an in-flight melee swing keeps running too, and clears its own flag in its own
+        /// finally; its hitbox either already fired or fires from where the player has been shoved
+        /// out of, which is the correct punish.
+        /// </summary>
+        public void ApplyKnockback(Vector3 dir, float distance)
+        {
+            if (_isDead) return;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f || distance <= 0f) return;
+            StartCoroutine(KnockbackRoutine(dir.normalized, distance));
+        }
+
+        private IEnumerator KnockbackRoutine(Vector3 dir, float distance)
+        {
+            // Same discipline as RollRoutine, for the same reason: a stuck _isKnockedBack gates
+            // HandleMovement forever. The reset lives in a finally, never on the happy path.
+            _isKnockedBack = true;
+
+            try
+            {
+                // A no-op until the knockback sheet lands (Phase 3); the Hit trigger from
+                // OnHealthDamaged already carries the feedback today.
+                SetAnimatorTrigger("Knockback");
+
+                // Once, at the start — same reasoning as RollRoutine: per-step zeroing would
+                // suspend gravity and leave the player hovering off a kerb.
+                _rb.velocity = Vector3.zero;
+
+                float elapsed = 0f;
+                var wait = new WaitForFixedUpdate();
+
+                while (elapsed < KnockbackSlideDuration)
+                {
+                    if (_isDead) yield break;
+
+                    // Same fast-out/slow-in shape as the roll — its integral over [0,1] is 1, so
+                    // the slide covers exactly the distance it was given.
+                    float speed = distance / KnockbackSlideDuration *
+                                  RollSpeedCurve(elapsed / KnockbackSlideDuration);
+
+                    // ⚠ MovePosition, deliberately not a capsule cast — the identical reasoning to
+                    // RollRoutine: this Rigidbody is non-kinematic, so MovePosition sweeps and
+                    // resolves against colliders. The asymmetry with EnemyAI's knockback (which
+                    // MUST cast, because enemies move by transform) is intentional, not drift.
+                    _rb.MovePosition(_rb.position + dir * (speed * Time.fixedDeltaTime));
+
+                    elapsed += Time.fixedDeltaTime;
+                    yield return wait;
+                }
+
+                // Recovery i-frames as the slide ends, so two enemies cannot chain-stun. Written
+                // with Max against the timestamp for the same reason IsInvulnerable is a timestamp
+                // at all — two systems grant i-frames and nothing may clear another's window.
+                _invulnerableUntil = Mathf.Max(_invulnerableUntil, Time.time + KnockbackRecoveryIFrames);
+            }
+            finally
+            {
+                _isKnockedBack = false;
+            }
+        }
+        #endregion
+
         #region Health & Damage
+        /// <summary>
+        /// Raises the player's floating health bar. A one-line pass-through so an enemy taking
+        /// aggro can raise it without knowing what component it lives on.
+        ///
+        /// ⚠ Pushed from EnemyAI's 0.2 s perception tick, not polled. Asking "does anything have
+        /// aggro on me?" from the player is a global question, and the two obvious answers — a
+        /// static counter that leaks on chunk teardown, or a per-frame scan that allocates — are
+        /// both worse than five calls a second per aggroed enemy.
+        /// </summary>
+        public void PingHealthBar()
+        {
+            _bar?.Ping();
+        }
+
         /// <summary>Legacy entry point — routes through Health so death/feedback stay unified.</summary>
-        public void TakeDamage(int damage)
+        /// <returns>
+        /// True if the hit landed, passed straight through from Health so this path can answer the
+        /// same question the four-argument one does. The healthless fallback always lands: there is
+        /// no Health to refuse it.
+        /// </returns>
+        public bool TakeDamage(int damage)
         {
             if (_health != null)
             {
-                _health.TakeDamage(damage, "Enemy", "you");
+                bool landed = _health.TakeDamage(damage, "Enemy", "you");
                 CurrentHealth = _health.CurrentHealth;
+                return landed;
             }
-            else
-            {
-                CurrentHealth -= damage;
-                if (UIManager.Instance != null)
-                    UIManager.Instance.LogCombat($"Something hits you, {damage}");
-            }
+
+            CurrentHealth -= damage;
+            if (UIManager.Instance != null)
+                UIManager.Instance.LogCombat($"Something hits you, {damage}");
+            return true;
         }
 
         private void OnHealthDamaged(int damage)
@@ -592,6 +851,11 @@ namespace ExiledAlvaston.Combat
             if (_isDead) return;
             _isDead = true;
             _isAttacking = false;
+            // RollRoutine and KnockbackRoutine poll _isDead and bail on their own — clearing the
+            // flags here does not stop a running coroutine, so both are needed.
+            _isRolling = false;
+            _isKnockedBack = false;
+            _invulnerableUntil = 0f;
             _rb.velocity = Vector3.zero;
             if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", 0f);
 
@@ -736,6 +1000,7 @@ namespace ExiledAlvaston.Combat
                             : ability.BaseDamage;
                         // Same reason as the melee site: attribute the spell to the player.
                         target.TakeDamage(spellDamage, shout, target.DisplayName, gameObject);
+                        _bar?.Ping();
                     }
                 }
                 else
