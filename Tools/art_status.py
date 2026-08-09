@@ -35,9 +35,18 @@ SHEET_DIR = os.path.join(REPO, "Assets", "Art", "Generated", "characters")
 CONTROLLER_DIR = os.path.join(REPO, "Assets", "Animations", "Generated")
 PRESET_DIR = os.path.join(REPO, "Assets", "Data", "Presets")
 
-# The importer builds a clip per action; these are the ones the pipeline asks for.
-# `cycle` is deliberately absent — it was cancelled, see CLAUDE.md §11.
+# The importer builds a clip per action; these are the ones the pipeline asks for, and they are
+# the matrix's columns. `cycle` is deliberately absent — it was cancelled, see CLAUDE.md §11.
 KNOWN_ACTIONS = ["idle", "walk", "attack", "cast", "hurt", "death"]
+
+# Recognised by the importer and wired into a controller, but NOT part of what any subject owes
+# and deliberately not a matrix column. `roll` and `knockback` are bonus feedback on mechanics
+# that already work silently — a class is released into gameplay by the six core actions above
+# and by nothing else, so counting these would weaken the Young Driller fallback. Listed here
+# only so they stop reading as "unrecognised action" once a subject has them.
+BONUS_ACTIONS = ["roll", "knockback"]
+
+RECOGNISED_ACTIONS = KNOWN_ACTIONS + BONUS_ACTIONS
 
 # A full hostile set. A talker needs nothing like this, so asking every subject for
 # it produces a queue that is mostly noise. Role is inferred instead, in role_of():
@@ -187,12 +196,12 @@ def build_rows(sheets, controllers, presets, hostile_subjects):
                 "actions": sorted(
                     actions,
                     key=lambda a: (
-                        a not in KNOWN_ACTIONS,
-                        KNOWN_ACTIONS.index(a) if a in KNOWN_ACTIONS else 0,
+                        a not in RECOGNISED_ACTIONS,
+                        RECOGNISED_ACTIONS.index(a) if a in RECOGNISED_ACTIONS else 0,
                         a,
                     ),
                 ),
-                "unknown": sorted(a for a in actions if a not in KNOWN_ACTIONS),
+                "unknown": sorted(a for a in actions if a not in RECOGNISED_ACTIONS),
                 "role": role,
                 "missing": missing,
                 "controller": subject in controllers,

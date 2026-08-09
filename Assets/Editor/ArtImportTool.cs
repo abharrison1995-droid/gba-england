@@ -86,7 +86,11 @@ public static class ArtImportTool
         { "death",  new ActionSpec { Frames = 6, Fps = 10f, Loop = false } },
         { "cycle",  new ActionSpec { Frames = 6, Fps = 12f, Loop = true  } },
         { "roll",       new ActionSpec { Frames = 6, Fps = 14f, Loop = false } },
-        { "knockback",  new ActionSpec { Frames = 3, Fps = 12f, Loop = false } },
+        // 6 frames, not the 3 this started as: the delivered knockback is a full tumble — launched,
+        // over the back, planted, upright — which cannot be told in three. 6 @ 12 fps = 0.50 s of
+        // clip against a 0.22 s physical slide; see CombatController.KnockbackSlideDuration for why
+        // that mismatch is deliberate.
+        { "knockback",  new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
     };
 
     /// <summary>
@@ -1350,13 +1354,17 @@ public static class ArtImportTool
 
     /// <summary>
     /// Actions where the figure is *supposed* to change shape — falling over, sitting on a bike,
-    /// tucking into a roll. Height and baseline comparisons are meaningless for these; width still
-    /// is not, because no legitimate pose makes a character half as wide as they are standing.
-    /// knockback is deliberately NOT here: a stagger is a standing pose and must pass the full
-    /// idle-comparison suite.
+    /// tucking into a roll, being flipped off their feet. Height and baseline comparisons are
+    /// meaningless for these; width still is not, because no legitimate pose makes a character
+    /// half as wide as they are standing.
+    ///
+    /// knockback used to be excluded here on the reading that a stagger is a standing pose. The
+    /// delivered art is not a stagger: it is a 6-frame airborne tumble, feet leaving the ground
+    /// entirely, so the standing height and baseline checks would refuse every one of them for
+    /// doing exactly what was asked for.
     /// </summary>
     private static bool ShapeChanges(string action) =>
-        action == "death" || action == "cycle" || action == "roll";
+        action == "death" || action == "cycle" || action == "roll" || action == "knockback";
 
     private static readonly Dictionary<string, List<SubjectShape>> ShapesBySubject =
         new Dictionary<string, List<SubjectShape>>();
