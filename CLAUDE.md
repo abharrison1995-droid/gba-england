@@ -317,6 +317,31 @@ each sprite in the Inspector, then deleting its line from that list. The PCSO on
 
 → [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
 
+**Also outstanding — enemy knockback of the player, phase 2.** On `dodge-roll-phase2` (built on
+the phase 1 branch), never compiled:
+
+- **`EnemyAI.KnockbackDistance`, default 0** — no prefab or scene file changed, so nothing knocks
+  the player back until the Inspector pass sets it. Per the recorded decision: `Enemy_OG` and
+  `Enemy_Tainted` at **2 m**, police at **0**, folded into the same Inspector session as the
+  `Level: 3` and `IsPolice` prefab passes. *Stamp `Enemy_OG` from the palette, set Knockback
+  Distance = 2 outside Play mode, take a hit, and check the slide is ~2 m and stops at walls.*
+- **A dodged hit no longer shoves.** Both `AttackRoutine` damage branches gate the shove on
+  `TakeDamage` returning true. *Roll through the stamped enemy's swing: "Dodged!", no red number,
+  and crucially no slide.* This is the defect the whole return value exists to fix.
+- **Knockback wins over a roll in progress** — the roll polls `_isKnockedBack` and yields the
+  body to it. *Roll into a 2 m hit and check the player ends up shoved, not rolled.*
+- **0.4 s of recovery i-frames as the slide ends** (`KnockbackRecoveryIFrames`), so two enemies
+  cannot chain-stun. *With two knockers in range, check a second hit during the recovery is
+  refused — "Dodged!" over the player, no damage.*
+- **No knockback animation exists** — `SetAnimatorTrigger("Knockback")` no-ops until phase 3, and
+  the `Hit` trigger from `OnHealthDamaged` carries the feedback today. Expected, not a bug.
+- **The slide uses the same `MovePosition` sweep as walking** — deliberate asymmetry with the
+  enemy-side knockback coming in phase 4, which must capsule-cast because enemies move by
+  transform. *If the player ever slides through a wall here, the Rigidbody has been switched to
+  kinematic somewhere — check that first.*
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
 **Also outstanding — enemy levels in the world, combat nameplates, bigger HUD.** Merged
 2026-08-08, code-reviewed against its plan, never compiled:
 
