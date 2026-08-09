@@ -60,6 +60,11 @@ namespace ExiledAlvaston.Combat
         [Tooltip("Seconds from the roll's START before another can begin.")]
         public float RollCooldown = 1f;
 
+        [Header("Knockback")]
+        [Tooltip("Seconds of i-frames granted as a knockback slide ends, so two enemies cannot " +
+                 "chain-stun the player.")]
+        public float KnockbackRecoveryIFrames = 0.4f;
+
         [Header("Regen")]
         [Tooltip("Mana restored per second — slow, spells should feel budgeted.")]
         public float ManaRegenPerSecond = 2.5f;
@@ -74,6 +79,7 @@ namespace ExiledAlvaston.Combat
 
         private bool _isAttacking;
         private bool _isRolling;
+        private bool _isKnockedBack;
         private float _nextRollTime;
         private float _invulnerableUntil;
         private bool _isDead;
@@ -172,6 +178,7 @@ namespace ExiledAlvaston.Combat
         {
             _isAttacking = false;
             _isRolling = false;
+            _isKnockedBack = false;
             _invulnerableUntil = 0f;
         }
 
@@ -202,9 +209,9 @@ namespace ExiledAlvaston.Combat
         {
             if (!IsFlowPlaying()) return;
 
-            // The roll drives the body itself, so normal movement must not fight it for the
-            // Rigidbody during those frames.
-            if (!_isAttacking && !_isRolling && !_isDead)
+            // The roll and the knockback slide drive the body themselves, so normal movement must
+            // not fight them for the Rigidbody during those frames.
+            if (!_isAttacking && !_isRolling && !_isKnockedBack && !_isDead)
                 HandleMovement();
         }
 
@@ -620,7 +627,7 @@ namespace ExiledAlvaston.Combat
             // rule holds both ways — MeleeHitboxRoutine already refuses to start mid-roll via
             // _isAttacking's twin below. Cancelling into a roll would be the more action-game feel;
             // it is deliberately not the choice here.
-            if (_isRolling || _isAttacking || _isDead) return;
+            if (_isRolling || _isKnockedBack || _isAttacking || _isDead) return;
             if (BlockedByRiding()) return;
             if (Time.time < _nextRollTime) return;
 
@@ -673,11 +680,12 @@ namespace ExiledAlvaston.Combat
 
                 while (elapsed < RollDuration)
                 {
-                    // Cooperative cancellation, checked before moving: dying mid-roll must not leave
-                    // a corpse sliding. yield break still runs the finally, which is why nothing here
-                    // needs StopCoroutine — whether that runs a finally is not something this repo
-                    // can verify without an editor.
-                    if (_isDead) yield break;
+                    // Cooperative cancellation, checked before moving: dying mid-roll must not
+                    // leave a corpse sliding, and a knockback landing mid-roll always wins —
+                    // the roll yields the body to it. yield break still runs the finally, which
+                    // is why nothing here needs StopCoroutine — whether that runs a finally is
+                    // not something this repo can verify without an editor.
+                    if (_isDead || _isKnockedBack) yield break;
 
                     float speed = RollDistance / RollDuration * RollSpeedCurve(elapsed / RollDuration);
 
@@ -713,6 +721,80 @@ namespace ExiledAlvaston.Combat
         /// stops matching the field it is read from.
         /// </summary>
         private static float RollSpeedCurve(float t) => 1.5f - t;
+        #endregion
+
+        #region Knockback
+        /// <summary>Seconds the slide lasts. A fixed feel value, not a knob — only the recovery
+        /// i-frames are tuned in the Inspector.</summary>
+        private const float KnockbackSlideDuration = 0.22f;
+
+        /// <summary>
+        /// Shoves the player <paramref name="distance"/> metres along <paramref name="dir"/>. Called
+        /// by <see cref="EnemyAI.TryKnockback"/> only when a hit actually landed — a hit refused by
+        /// i-frames must not reach here.
+        ///
+        /// Knockback always wins over a roll in progress: setting <see cref="_isKnockedBack"/> is
+        /// the cooperative flag <see cref="RollRoutine"/> polls to bail out. No coroutine is ever
+        /// stopped — an in-flight melee swing keeps running too, and clears its own flag in its own
+        /// finally; its hitbox either already fired or fires from where the player has been shoved
+        /// out of, which is the correct punish.
+        /// </summary>
+        public void ApplyKnockback(Vector3 dir, float distance)
+        {
+            if (_isDead) return;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f || distance <= 0f) return;
+            StartCoroutine(KnockbackRoutine(dir.normalized, distance));
+        }
+
+        private IEnumerator KnockbackRoutine(Vector3 dir, float distance)
+        {
+            // Same discipline as RollRoutine, for the same reason: a stuck _isKnockedBack gates
+            // HandleMovement forever. The reset lives in a finally, never on the happy path.
+            _isKnockedBack = true;
+
+            try
+            {
+                // A no-op until the knockback sheet lands (Phase 3); the Hit trigger from
+                // OnHealthDamaged already carries the feedback today.
+                SetAnimatorTrigger("Knockback");
+
+                // Once, at the start — same reasoning as RollRoutine: per-step zeroing would
+                // suspend gravity and leave the player hovering off a kerb.
+                _rb.velocity = Vector3.zero;
+
+                float elapsed = 0f;
+                var wait = new WaitForFixedUpdate();
+
+                while (elapsed < KnockbackSlideDuration)
+                {
+                    if (_isDead) yield break;
+
+                    // Same fast-out/slow-in shape as the roll — its integral over [0,1] is 1, so
+                    // the slide covers exactly the distance it was given.
+                    float speed = distance / KnockbackSlideDuration *
+                                  RollSpeedCurve(elapsed / KnockbackSlideDuration);
+
+                    // ⚠ MovePosition, deliberately not a capsule cast — the identical reasoning to
+                    // RollRoutine: this Rigidbody is non-kinematic, so MovePosition sweeps and
+                    // resolves against colliders. The asymmetry with EnemyAI's knockback (which
+                    // MUST cast, because enemies move by transform) is intentional, not drift.
+                    _rb.MovePosition(_rb.position + dir * (speed * Time.fixedDeltaTime));
+
+                    elapsed += Time.fixedDeltaTime;
+                    yield return wait;
+                }
+
+                // Recovery i-frames as the slide ends, so two enemies cannot chain-stun. Written
+                // with Max against the timestamp for the same reason IsInvulnerable is a timestamp
+                // at all — two systems grant i-frames and nothing may clear another's window.
+                _invulnerableUntil = Mathf.Max(_invulnerableUntil, Time.time + KnockbackRecoveryIFrames);
+            }
+            finally
+            {
+                _isKnockedBack = false;
+            }
+        }
         #endregion
 
         #region Health & Damage
@@ -762,9 +844,10 @@ namespace ExiledAlvaston.Combat
             if (_isDead) return;
             _isDead = true;
             _isAttacking = false;
-            // RollRoutine polls _isDead and bails on its own — clearing the flag here does not stop
-            // a running coroutine, so both are needed.
+            // RollRoutine and KnockbackRoutine poll _isDead and bail on their own — clearing the
+            // flags here does not stop a running coroutine, so both are needed.
             _isRolling = false;
+            _isKnockedBack = false;
             _invulnerableUntil = 0f;
             _rb.velocity = Vector3.zero;
             if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", 0f);
