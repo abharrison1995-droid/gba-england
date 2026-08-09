@@ -342,6 +342,31 @@ the phase 1 branch), never compiled:
 
 → [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
 
+**Also outstanding — the melee knockback perk, phase 4.** On `dodge-roll-phase2`, never compiled:
+
+- **`PerkEffectType.MeleeKnockback = 9` is appended, never reordered** — the enum is serialized by
+  integer index inside every `PerkData` asset, and the first asset authored freezes these indices
+  forever. Magnitude is a **flat metre value**, not a percentage. **No perk asset exists** — the
+  owner authors it: Create → `ExiledAlvaston/Data/Perk`, into a `Resources/Perks` folder, one
+  effect of type MeleeKnockback, Magnitude 2. *Then spend a point and hit something: the enemy
+  should slide ~2 m and stop at walls.*
+- **`PlayerSession.MeleeKnockbackDistance` resets with the other cached query values** in
+  `RecalculateDerivedStats` step 6 — stats recompute on every load, so a cached value that is added
+  to but never reset would accumulate per load. *Take the perk, note the shove, reload the save,
+  and check the shove is the same rather than doubled.*
+- **Enemies slide by transform through a capsule cast** (`TryStep`, factored out of
+  `TryCollideMove`), the mirror image of the player's `MovePosition` slide — each side uses the
+  mechanism its body type requires, and the comments at both sites say so. The agent is paused by
+  `updatePosition = false`, never `agent.enabled`.
+- **A killed enemy is never shoved** — the melee site gates on `!targetHealth.IsDead` because
+  `Health.Die` has already disabled the agent and the AI. *Kill something with the perk on and
+  check the corpse does not slide.*
+- **EnemyAI's three `SetTrigger` sites are now guarded** like CombatController's — before this,
+  firing an undefined trigger logged an error every call, and no enemy controller defines
+  `Knockback` yet. Expected silence until the phase 3 sheets land.
+
+→ [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
+
 **Also outstanding — enemy levels in the world, combat nameplates, bigger HUD.** Merged
 2026-08-08, code-reviewed against its plan, never compiled:
 
