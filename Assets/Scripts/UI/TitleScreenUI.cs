@@ -31,6 +31,7 @@ namespace ExiledAlvaston.UI
             }
 
             RestyleWin95();
+            BuildSettingsButton();
         }
 
         private void OnEnable()
@@ -53,6 +54,28 @@ namespace ExiledAlvaston.UI
         /// Shows the authored Continue button whenever a save exists. Older scenes with no
         /// authored reference retain the original clone-of-New-Game fallback.
         /// </summary>
+        /// <summary>
+        /// Clones New Game rather than adding an authored field, so this doesn't need
+        /// TitleScreenWin95Builder re-run and doesn't touch c.unity -- the builder's own field
+        /// validation (expects exactly Label, Label, NewGameButton, QuitButton) never sees this
+        /// button. WindowBody's VerticalLayoutGroup places it purely by sibling index.
+        /// </summary>
+        private void BuildSettingsButton()
+        {
+            if (NewGameButton == null || QuitButton == null) return;
+
+            GameObject go = Instantiate(NewGameButton.gameObject, NewGameButton.transform.parent);
+            go.name = "SettingsButton";
+            go.transform.SetSiblingIndex(QuitButton.transform.GetSiblingIndex());
+
+            var label = go.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (label != null) label.text = "Settings";
+
+            var button = go.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(SettingsWindowUI.Open);
+        }
+
         private void RefreshContinueButton()
         {
             bool hasSave = SaveGameManager.HasSave;
