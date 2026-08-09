@@ -291,7 +291,8 @@ GUIDs. They are listed in `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix
 each sprite in the Inspector, then deleting its line from that list. The PCSO one probably wants
 `sheet_char_police_pcso_idle`, which is on disk — *check that before assuming it.*
 
-**Also outstanding — the dodge roll, phase 1.** On `dodge-roll-phase1`, never compiled:
+**Also outstanding — the dodge roll, phase 1.** On `dodge-roll-phase2` (which carries phase 1),
+never compiled:
 
 - **`Health.TakeDamage` now returns `bool`** — true if the hit landed. Nothing in phase 1 reads it;
   it exists so enemy knockback can tell a connected hit from a dodged one. ⚠ **The method is no
@@ -310,8 +311,10 @@ each sprite in the Inspector, then deleting its line from that list. The PCSO on
 - **The DGE button is built at runtime**, fourth in the bottom row. It will not appear in the
   Hierarchy until Play starts — look for `UI/UICanvas/HUDPanel/ActionButtons/DGE`. *Check it is
   reachable with a thumb in the Device Simulator, landscape;* it is invisible in a 16:9 Game view.
-- **No roll animation exists.** `SetAnimatorTrigger("Roll")` no-ops against a controller without
-  the parameter, so the player slides through the roll silently. That is expected until phase 3.
+- **No roll animation exists yet.** `SetAnimatorTrigger("Roll")` no-ops against a controller without
+  the parameter, so the player slides through the roll silently. Phase 3 has landed — the importer
+  knows the `roll` action and the sheets are queue band 10 — so silence is expected only until
+  `sheet_char_player_roll` is delivered and imported.
 - ⚠ **`RollSpeedCurve` integrates to exactly 1 over [0,1]**, and that is the only reason the roll
   travels `RollDistance`. Reshaping it without preserving that decouples the two silently.
 
@@ -333,8 +336,10 @@ the phase 1 branch), never compiled:
 - **0.4 s of recovery i-frames as the slide ends** (`KnockbackRecoveryIFrames`), so two enemies
   cannot chain-stun. *With two knockers in range, check a second hit during the recovery is
   refused — "Dodged!" over the player, no damage.*
-- **No knockback animation exists** — `SetAnimatorTrigger("Knockback")` no-ops until phase 3, and
-  the `Hit` trigger from `OnHealthDamaged` carries the feedback today. Expected, not a bug.
+- **No knockback animation exists yet** — `SetAnimatorTrigger("Knockback")` no-ops on both sides
+  (EnemyAI's calls are now guarded, so no console errors either), and the `Hit` trigger carries
+  the feedback. The importer knows the action and the sheets are in queue band 10, so silence is
+  expected only until those sheets are delivered and imported.
 - **The slide uses the same `MovePosition` sweep as walking** — deliberate asymmetry with the
   enemy-side knockback coming in phase 4, which must capsule-cast because enemies move by
   transform. *If the player ever slides through a wall here, the Rigidbody has been switched to
@@ -363,7 +368,7 @@ the phase 1 branch), never compiled:
   check the corpse does not slide.*
 - **EnemyAI's three `SetTrigger` sites are now guarded** like CombatController's — before this,
   firing an undefined trigger logged an error every call, and no enemy controller defines
-  `Knockback` yet. Expected silence until the phase 3 sheets land.
+  `Knockback` yet. Expected silence until the band 10 sheets are delivered and imported.
 
 → [docs/plans/DODGE_AND_KNOCKBACK_PLAN.md](docs/plans/DODGE_AND_KNOCKBACK_PLAN.md) §12 for the routes.
 

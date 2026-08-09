@@ -1,6 +1,12 @@
 # Dodge/Roll + Knockback — implementation plan
 
-Status: **plan only — nothing implemented yet.** Revision 2, written against `main` as of 2026-08-08.
+Status: **implemented — all four phases committed on `dodge-roll-phase2`, never compiled, never
+playtested.** Revision 2, written against `main` as of 2026-08-08. The verification ledger in
+CLAUDE.md §5 carries one entry per phase with the in-editor checks; delete each as it is
+confirmed. Two deliberate deviations from this text, both recorded in the commit messages and the
+ledger: the knockback slide duration is a `const` (0.22 s) rather than an Inspector field, and
+`EnemyAI`'s agent resync skips dead enemies because `SnapToNavMesh` would re-enable a corpse's
+agent (`TryStep` also gained an `out bool slid` to preserve `TryCollideMove`'s facing behaviour).
 Revision 1 was reviewed against the real code; the corrections it produced are folded in below and
 listed in §2 so the deltas are auditable rather than silently absorbed.
 
@@ -562,25 +568,25 @@ Ranked by how quietly it fails.
 
 ## 11. Cross-cutting checklist
 
-* [ ] **No save-key changes.** No `ItemID`, `ChunkName`, `EntryID` or `PerkId` value is renamed.
-* [ ] **Two enums appended, never inserted or reordered:** `HUDActionButton.ActionKind` (`Dodge = 5`)
+* [x] **No save-key changes.** No `ItemID`, `ChunkName`, `EntryID` or `PerkId` value is renamed.
+* [x] **Two enums appended, never inserted or reordered:** `HUDActionButton.ActionKind` (`Dodge = 5`)
   and `PerkEffectType` (`MeleeKnockback = 9`). Both carry their own APPEND ONLY warning; keep it.
-* [ ] **New serialized fields are new names** — no `[FormerlySerializedAs]` needed. `EnemyAI.KnockbackDistance`
+* [x] **New serialized fields are new names** — no `[FormerlySerializedAs]` needed. `EnemyAI.KnockbackDistance`
   defaults to 0 so no prefab changes behaviour.
-* [ ] **No new script files**, therefore no new `.meta` — and if that changes, the `.meta` ships
+* [x] **No new script files**, therefore no new `.meta` — and if that changes, the `.meta` ships
   with the script in the same commit.
-* [ ] ⚠ **No scene edit.** Revision 1 called for one; the action cluster is built at runtime by
+* [x] ⚠ **No scene edit.** Revision 1 called for one; the action cluster is built at runtime by
   `UIManager.BuildActionButtons` (UIManager.cs:551). `Assets/c.unity` must be untouched by every
   commit in this plan — check `git status` before each.
-* [ ] `SetAnimatorTrigger` guards mean controllers without `Roll`/`Knockback` keep working. ⚠ That
+* [x] `SetAnimatorTrigger` guards mean controllers without `Roll`/`Knockback` keep working. ⚠ That
   guard exists on `CombatController` only — **`EnemyAI` calls `SetTrigger` unguarded** and needs one
   before Phase 4 fires `"Knockback"`.
-* [ ] Death mid-roll / mid-knockback: `OnHealthDeath` clears `_isRolling`, `_isKnockedBack` and
+* [x] Death mid-roll / mid-knockback: `OnHealthDeath` clears `_isRolling`, `_isKnockedBack` and
   `_invulnerableUntil`, **and** `RollRoutine`/`KnockbackRoutine` check `_isDead` each step and bail —
   clearing the flag alone does not stop a running coroutine, and a corpse would keep sliding.
-* [ ] Pause: `PauseManager` zeroes `timeScale`, so `FixedUpdate` stops and both routines freeze and
+* [x] Pause: `PauseManager` zeroes `timeScale`, so `FixedUpdate` stops and both routines freeze and
   resume. Input is already gated at CombatController.cs:158.
-* [ ] `python Tools/asset_reachability.py --check-dangling` before and after Phase 3.
+* [x] `python Tools/asset_reachability.py --check-dangling` before and after Phase 3.
 
 ***
 
@@ -639,6 +645,13 @@ than hedging it.
 ***
 
 ## 13. Open questions — recommendations, but the owner's call
+
+**Decisions recorded, 2026-08-09:** 1 — dedicated button (implemented, Phase 1). 2 — **flat "no"**:
+`_meleeInRecovery` was dropped, `PerformDodge` gates on `_isAttacking` alone. 3 — shipped as
+recommended (0.05/0.25); both are Inspector fields now, so this remains a slider question. 4 —
+**`Enemy_OG` and `Enemy_Tainted` at 2 m, police at 0**, folded into one Inspector session with the
+`Level: 3` and `IsPolice` prefab passes (still owed, in the editor). 5 — flat distance
+(implemented, Phase 4). The original text below is kept as the reasoning behind each.
 
 1. **Dodge input on mobile.** *Recommend a dedicated button.* It costs one `CreateActionButton`
    call, it is discoverable, and it cannot misfire. Double-tapping the joystick means adding
