@@ -46,6 +46,7 @@ namespace ExiledAlvaston.Combat
         private Transform _target;
         private float _nextAttackTime;
         private bool _isAttacking;
+        private bool _isKnockedBack;
         private readonly RaycastHit[] _losHits = new RaycastHit[8];
 
         /// <summary>May legitimately be null — a hand-built enemy need not carry a nameplate.</summary>
@@ -112,14 +113,30 @@ namespace ExiledAlvaston.Combat
 
         private void OnDamaged(int amount)
         {
-            if (Animator != null)
-                Animator.SetTrigger("Hit");
+            SetAnimatorTrigger("Hit");
         }
 
         private void OnDied()
         {
-            if (Animator != null)
-                Animator.SetTrigger("Death");
+            SetAnimatorTrigger("Death");
+        }
+
+        /// <summary>
+        /// SetTrigger on a controller that lacks the parameter logs an error every call — the same
+        /// guard CombatController has, and for the same reason: enemy controllers are authored per
+        /// prefab and may not define every trigger (Knockback exists on none of them yet).
+        /// </summary>
+        private void SetAnimatorTrigger(string trigger)
+        {
+            if (Animator == null) return;
+            foreach (var p in Animator.parameters)
+            {
+                if (p.type == AnimatorControllerParameterType.Trigger && p.name == trigger)
+                {
+                    Animator.SetTrigger(trigger);
+                    return;
+                }
+            }
         }
 
         private void Update()
@@ -127,7 +144,7 @@ namespace ExiledAlvaston.Combat
             if (Animator != null)
                 Animator.SetFloat("Speed", _agent != null ? _agent.velocity.magnitude / Mathf.Max(0.01f, MoveSpeed) : 0f);
 
-            if (_target == null || _isAttacking) return;
+            if (_target == null || _isAttacking || _isKnockedBack) return;
             ChaseAndAttack();
         }
 
@@ -332,6 +349,28 @@ namespace ExiledAlvaston.Combat
             if (dir.sqrMagnitude < 0.001f) return;
 
             float step = MoveSpeed * Time.deltaTime;
+            // Facing follows the intent, not the slide — and a wall-slide deliberately turns
+            // nothing, exactly as before the cast was factored out.
+            if (!TryStep(dir, step, out bool slid) || slid) return;
+
+            Quaternion look = Quaternion.LookRotation(dir, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, look, Time.deltaTime * TurnSpeed);
+            if (_visual != null)
+                _visual.SetFacing(dir);
+        }
+
+        /// <summary>
+        /// Moves the transform up to <paramref name="step"/> metres along <paramref name="dir"/>,
+        /// capsule-casting first because an enemy is NOT moved by a Rigidbody — a bare
+        /// transform.position += punches straight through geometry. Returns false only when even
+        /// the wall-slide was blocked. ⚠ This is the one place in the knockback work where the
+        /// capsule cast is essential; the PLAYER's knockback deliberately uses MovePosition
+        /// instead, because that Rigidbody is non-kinematic and sweeps for free. The asymmetry is
+        /// intentional, not drift.
+        /// </summary>
+        private bool TryStep(Vector3 dir, float step, out bool slid)
+        {
+            slid = false;
             Vector3 origin = transform.position + Vector3.up * 0.5f;
             if (Physics.CapsuleCast(origin + Vector3.up * 0.2f, origin + Vector3.up * 0.9f, 0.25f, dir, out RaycastHit hit, step + 0.05f))
             {
@@ -343,19 +382,15 @@ namespace ExiledAlvaston.Combat
                         !Physics.CapsuleCast(origin + Vector3.up * 0.2f, origin + Vector3.up * 0.9f, 0.25f, slide, step))
                     {
                         transform.position += slide * step;
+                        slid = true;
+                        return true;
                     }
-                    return;
+                    return false;
                 }
             }
 
             transform.position += dir * step;
-            if (dir.sqrMagnitude > 0.001f)
-            {
-                Quaternion look = Quaternion.LookRotation(dir, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, look, Time.deltaTime * TurnSpeed);
-                if (_visual != null)
-                    _visual.SetFacing(dir);
-            }
+            return true;
         }
 
         private void PerformAttack()
@@ -363,8 +398,7 @@ namespace ExiledAlvaston.Combat
             _nextAttackTime = Time.time + AttackCooldown;
             _isAttacking = true;
 
-            if (Animator != null)
-                Animator.SetTrigger("MeleeAttack");
+            SetAnimatorTrigger("MeleeAttack");
 
             if (_visual != null)
                 _visual.PlayMeleeSwing();
@@ -417,6 +451,90 @@ namespace ExiledAlvaston.Combat
             if (KnockbackDistance <= 0f || toTarget.sqrMagnitude <= 0.001f) return;
             var cc = _target.GetComponentInParent<CombatController>();
             if (cc != null) cc.ApplyKnockback(toTarget.normalized, KnockbackDistance);
+        }
+
+        /// <summary>Seconds the slide lasts — mirrors the player's fixed feel value.</summary>
+        private const float KnockbackSlideDuration = 0.22f;
+
+        /// <summary>
+        /// Shoves this enemy <paramref name="distance"/> metres along <paramref name="dir"/>. Called
+        /// by the player's melee site only when the hit landed AND the enemy is still alive —
+        /// Health.Die has already disabled this component on a kill, and sliding a corpse would
+        /// fight the destroy delay.
+        ///
+        /// ⚠ The agent is never disabled (agent.enabled stays true throughout): if the enemy dies
+        /// mid-slide, Health.Die disables this whole component, and whether a stopped coroutine's
+        /// finally runs is not something this repo can verify — a disabled agent could be left on a
+        /// corpse forever. updatePosition = false achieves the same "stop fighting the transform"
+        /// without that hazard.
+        /// </summary>
+        public void ApplyKnockback(Vector3 dir, float distance)
+        {
+            if (_selfHealth != null && _selfHealth.IsDead) return;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f || distance <= 0f) return;
+            StartCoroutine(KnockbackRoutine(dir.normalized, distance));
+        }
+
+        private IEnumerator KnockbackRoutine(Vector3 dir, float distance)
+        {
+            _isKnockedBack = true;   // Update is gated on this, so ChaseAndAttack cannot repath
+                                     // against the slide every frame and fight it.
+            try
+            {
+                // Guarded, unlike the raw SetTrigger calls this class used to make: no enemy
+                // controller defines Knockback yet (Phase 3 art), and an undefined trigger logs
+                // an error every call.
+                SetAnimatorTrigger("Knockback");
+
+                if (_agent != null)
+                {
+                    if (_agent.isOnNavMesh)
+                    {
+                        _agent.isStopped = true;
+                        _agent.ResetPath();
+                    }
+                    _agent.updatePosition = false;
+                }
+
+                float elapsed = 0f;
+                while (elapsed < KnockbackSlideDuration)
+                {
+                    // Death mid-slide bails here; the finally still resyncs the agent.
+                    if (_selfHealth != null && _selfHealth.IsDead) yield break;
+
+                    // Same fast-out/slow-in shape as the player's slide — integral 1 over [0,1],
+                    // so the slide covers exactly the distance it was given.
+                    float speed = distance / KnockbackSlideDuration *
+                                  (1.5f - elapsed / KnockbackSlideDuration);
+
+                    // Per FRAME (yield null), not per physics step: an enemy moves by transform,
+                    // not Rigidbody — the same convention TryCollideMove uses. And it moves
+                    // through TryStep's capsule cast, because transform.position += would punch
+                    // straight through walls. The player's knockback does the exact opposite on
+                    // purpose; see the comment on CombatController.KnockbackRoutine.
+                    TryStep(dir, speed * Time.deltaTime, out _);
+
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+            }
+            finally
+            {
+                // Only a LIVING enemy gets its agent back. If the slide was cut short by death,
+                // Health.Die has already disabled the agent and this component on purpose — and
+                // SnapToNavMesh re-enables the agent, so running it here would resurrect a
+                // corpse's navigation.
+                if (_agent != null && (_selfHealth == null || !_selfHealth.IsDead))
+                {
+                    _agent.updatePosition = true;
+                    // Resync the agent's internal position to where the slide left the body...
+                    _agent.Warp(transform.position);
+                    // ...then re-snap in case the slide ended off the mesh.
+                    SnapToNavMesh();
+                }
+                _isKnockedBack = false;
+            }
         }
 
         private void OnDrawGizmosSelected()
