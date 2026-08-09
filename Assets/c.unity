@@ -121924,7 +121924,7 @@ MonoBehaviour:
     PreviewFps: 6
     GameplayReady: 0
   - Class: 4
-    Controller: {fileID: 0}
+    Controller: {fileID: 9100000, guid: 5988d49b0abd8824f98d20ae9e0ded31, type: 2}
     RestingSprite: {fileID: 0}
     IdlePreviewFrames: []
     PreviewFps: 6
