@@ -26,6 +26,12 @@ namespace ExiledAlvaston.Combat
         [Tooltip("If true, this enemy is law enforcement. Killing the player triggers arrest instead of death.")]
         public bool IsPolice = false;
 
+        [Header("Knockback")]
+        [Tooltip("Metres the target is shoved when this enemy's hit lands. 0 = no knockback. " +
+                 "Defaults to 0 so every existing prefab behaves exactly as before — which enemies " +
+                 "shove is an Inspector pass, not a code change.")]
+        public float KnockbackDistance = 0f;
+
         [Header("Movement")]
         public float MoveSpeed = 3.6f;
         public float TurnSpeed = 10f;
@@ -386,14 +392,17 @@ namespace ExiledAlvaston.Combat
                     Health playerHp = _target.GetComponentInParent<Health>();
                     if (playerHp != null)
                     {
-                        if (!playerHp.IsDead)
-                            playerHp.TakeDamage(Damage, foe, "you", gameObject);
+                        // Both branches gate the shove on the hit LANDING. TakeDamage returns false
+                        // when the player is in i-frames, which is the whole point of the return
+                        // value: without it a dodged hit still knocks the player back.
+                        if (!playerHp.IsDead && playerHp.TakeDamage(Damage, foe, "you", gameObject))
+                            TryKnockback(toTarget);
                     }
                     else
                     {
                         var combat = _target.GetComponent<CombatController>();
-                        if (combat != null)
-                            combat.TakeDamage(Damage);
+                        if (combat != null && combat.TakeDamage(Damage))
+                            TryKnockback(toTarget);
                     }
                 }
             }
@@ -401,6 +410,13 @@ namespace ExiledAlvaston.Combat
             // Brief follow-through before the enemy can move again
             yield return new WaitForSeconds(0.15f);
             _isAttacking = false;
+        }
+
+        private void TryKnockback(Vector3 toTarget)
+        {
+            if (KnockbackDistance <= 0f || toTarget.sqrMagnitude <= 0.001f) return;
+            var cc = _target.GetComponentInParent<CombatController>();
+            if (cc != null) cc.ApplyKnockback(toTarget.normalized, KnockbackDistance);
         }
 
         private void OnDrawGizmosSelected()
