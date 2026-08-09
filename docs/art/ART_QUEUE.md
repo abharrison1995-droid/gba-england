@@ -48,7 +48,7 @@ the bands win.
 | `og` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `pharmacist` | talker | Y |  |  |  |  |  | Y | Roaming Pharmacist | walk |
 | `player` | player | Y | Y | Y | Y | Y | Y | Y | - | - |
-| `player_bundabasher` | player |  |  |  |  |  |  |  | - | idle, walk, attack, cast, hurt, death |
+| `player_bundabasher` | player |  |  |  |  |  |  | Y | - | idle, walk, attack, cast, hurt, death |
 | `player_butterknife` | hostile |  |  | Y |  |  |  | Y | - | idle, walk, hurt, death |
 | `player_dynamo` | player | Y | Y | Y | Y | Y |  | Y | - | death |
 | `player_mrhood` | player | Y |  |  |  |  |  | Y | - | walk, attack, cast, hurt, death |
@@ -533,17 +533,35 @@ knockback slide shipped in code first, guarded animator calls, so they play sile
 land. **Never ahead of a subject's six core sheets** — a roll for a class whose `attack` does not
 exist yet is worth nothing. In this order:
 
+**Both actions are shape-changing** (ART_PIPELINE.md §3): the figure leaves the ground and does not
+fill ~90% of the cell in every frame, so they are exempt from the standing height and baseline
+checks. The **width** check still applies — the tumble must be the same character drawn at the same
+scale as their `idle`, not a smaller figure fitted inside the cell.
+
 1. **`sheet_char_player_roll`** — 6 frames, 6×1, 512 px cells, 14 fps, no loop. The money sheet:
-   a tucked dive, ~2.4 m of travel in 0.40 s, fast out and trailing into recovery. Same baseline
-   and cell fill as the existing `player` sheets.
-2. **`sheet_char_player_knockback`** — 3 frames, 3×1, 12 fps, no loop. A stagger driven backward,
-   feet trailing — a *standing* pose throughout (the importer runs the full idle-comparison suite
-   on this one; a figure that crumples like `death` will fail it).
-3. **`roll` for the four other class subjects** — only once that class's six core sheets are
-   accepted. Match the class's own `idle`, same as every other class action.
+   a tucked dive, ~2.4 m of travel in 0.40 s, fast out and trailing into recovery. Same cell fill
+   as the existing `player` sheets at the extremes; a tucked mid-roll is expected to sit lower.
+2. **`sheet_char_player_knockback`** — 6 frames, 6×1, 512 px cells, 12 fps, no loop. Launched off
+   the feet, over the back or shoulders, planted, and up into a recovery. The clip is 0.50 s
+   against a 0.22 s physical slide, on purpose: the shove ends and the character is still getting
+   up (`CombatController.KnockbackSlideDuration` carries the reasoning).
+3. **`roll` and `knockback` for the four other class subjects** — only once that class's six core
+   sheets are accepted. Match the class's own `idle`, same as every other class action. **A class
+   with roll and knockback but an incomplete core six is still not used in gameplay** — the whole
+   Young Driller profile stands in until `idle`, `walk`, `attack`, `hurt`, `death` and `cast` all
+   exist, and these two bonus actions do not shorten that list.
 4. **`knockback` for hostile subjects that can be knocked back** — the owner picks the list;
    start with `roadman`, `neek`, `spicehead`. Until a subject has one, its `hurt` clip carries the
    feedback, which is why this is last.
+
+**Delivered and imported 2026-08-09:** `roll` and `knockback` for all five player-class subjects
+(10 sheets, all 6×1 of 512 px, reduced to 444×74). All five class controllers now hold a `Roll`
+and a `Knockback` state. The roll has been seen playing; the knockback has not, because nothing
+sets `EnemyAI.KnockbackDistance` yet. `player_bundabasher` had no `idle` to compare against, so its
+two sheets imported with the width check skipped, and it remains a Young Driller fallback in
+gameplay — these two actions do not count toward the six that release a class.
+
+Still outstanding in this band: item 4 below, knockback for hostile subjects.
 
 ### Cancelled and not requested
 

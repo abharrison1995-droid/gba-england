@@ -219,7 +219,10 @@ confirmed, rather than leaving it hedged.
    `UIManager` and everything the pounds rename touched. **It proves they compile, nothing more:
    none of their behaviour has been exercised.** The creator tool was run again later the same
    day, after `CharacterCreatorUI`, `PlayerSession`, `SaveGameManager` and `CharacterCreatorSetup`
-   changed, so those compile too.
+   changed, so those compile too. **The project compiled again on 2026-08-09**, when
+   `Tools → GBH → Art → Import Generated Art` ran successfully — that clears everything changed
+   between those two dates, including `CombatController`, `ArtImportTool` and the whole mobile
+   performance pass. Again: it proves they compile and nothing else.
 2. **`UIManager.EnsureDedicatedTrack`** — wraps a bar fill in its own parent when the scene did not
    give it one, fixing the concealment readout overlapping the mana bar. *Check the readouts no
    longer overlap, and that the concealment bar snaps back to wherever it was actually authored* —
@@ -242,11 +245,11 @@ confirmed, rather than leaving it hedged.
 7. **`murtaugh_Controller` is hand-authored YAML**, verified only structurally. *Check Murtaugh
    animates while roaming instead of sliding.* If Unity rejects it, re-stage the walk pair from
    `art_incoming/processed/` and re-run the importer.
-8. ⚠️ **The pounds rename relies on `[FormerlySerializedAs]` doing its job.** 25 `Preset_*.asset`
-   files still hold the old `…Gold` keys on disk. *Open any robbable
-   preset (e.g. `Preset_Villager`) in the Inspector and check Pickpocket Min/Max Pounds read
-   **5 and 25**, not 0.* If they read 0 the remap did not take and the values are gone — restore
-   from git rather than retyping 25 assets.
+8. **The pounds rename works.** `Preset_Stabmeister.asset` was rewritten by Unity on 2026-08-09
+   and came out holding `PickpocketMinPounds: 5` / `PickpocketMaxPounds: 25` — the
+   `[FormerlySerializedAs]` remap carried the values across intact. The remaining 24
+   `Preset_*.asset` files still hold the old `…Gold` keys on disk and will convert the same way
+   the first time each is touched. Nothing to do; no longer a risk.
 9. **£ may not be in the TMP font atlas.** `EKVibe.FormatPounds` emits U+00A3, and TMP's default
    static atlases are often ASCII-only, which renders it as a missing-glyph box. *Check the bag's
    money readout and the pickpocket toast.* Fix is on the font asset (Project → the TMP font →
@@ -311,10 +314,8 @@ never compiled:
 - **The DGE button is built at runtime**, fourth in the bottom row. It will not appear in the
   Hierarchy until Play starts — look for `UI/UICanvas/HUDPanel/ActionButtons/DGE`. *Check it is
   reachable with a thumb in the Device Simulator, landscape;* it is invisible in a 16:9 Game view.
-- **No roll animation exists yet.** `SetAnimatorTrigger("Roll")` no-ops against a controller without
-  the parameter, so the player slides through the roll silently. Phase 3 has landed — the importer
-  knows the `roll` action and the sheets are queue band 10 — so silence is expected only until
-  `sheet_char_player_roll` is delivered and imported.
+- **The roll animation landed 2026-08-09 and plays.** `player_Controller` holds a `Roll` state on
+  a 6-frame clip, and the other four class controllers do too.
 - ⚠ **`RollSpeedCurve` integrates to exactly 1 over [0,1]**, and that is the only reason the roll
   travels `RollDistance`. Reshaping it without preserving that decouples the two silently.
 
@@ -336,10 +337,10 @@ the phase 1 branch), never compiled:
 - **0.4 s of recovery i-frames as the slide ends** (`KnockbackRecoveryIFrames`), so two enemies
   cannot chain-stun. *With two knockers in range, check a second hit during the recovery is
   refused — "Dodged!" over the player, no damage.*
-- **No knockback animation exists yet** — `SetAnimatorTrigger("Knockback")` no-ops on both sides
-  (EnemyAI's calls are now guarded, so no console errors either), and the `Hit` trigger carries
-  the feedback. The importer knows the action and the sheets are in queue band 10, so silence is
-  expected only until those sheets are delivered and imported.
+- **The player's knockback animation landed 2026-08-09** and is wired into all five class
+  controllers, but has never been seen play because nothing sets `KnockbackDistance`. **No enemy
+  subject has a knockback sheet**, so `EnemyAI`'s own `SetAnimatorTrigger("Knockback")` still
+  no-ops — guarded, so no console errors — and the `Hit` trigger carries the feedback there.
 - **The slide uses the same `MovePosition` sweep as walking** — deliberate asymmetry with the
   enemy-side knockback coming in phase 4, which must capsule-cast because enemies move by
   transform. *If the player ever slides through a wall here, the Rigidbody has been switched to
@@ -450,6 +451,42 @@ code-reviewed against its plan, never compiled:
   backfill path in `ContinueFromSave` is the one most likely to be wrong.
 - **Three new save fields** (`Equipment`, `VisitedChunks`, `UnlockedWikiEntries`). *Load a
   pre-equipment save and check it arrives with an empty doll and a blank map instead of failing.*
+
+**Also outstanding — roll and knockback, imported 2026-08-09, only half exercised.**
+
+The import ran and accepted all ten sheets, so `Assembly-CSharp` compiled and the importer's own
+checks passed on real art. **The roll has been seen playing and is good.** What that does *not*
+cover is below:
+
+- **The knockback has never been seen play.** It needs an enemy with `KnockbackDistance` set,
+  which no prefab has — see the phase 2 entry above. *Stamp `Enemy_OG`, set Knockback Distance = 2
+  outside Play mode, and take a hit.*
+- **`ApplyKnockback` clears the `Hit` trigger before setting `Knockback`.** Both were being set in
+  the same frame, since a knockback only ever follows a landed hit, and the Animator would take
+  whichever Any State transition it evaluated first while holding the other for the next frame.
+  Compiles; never run. *Check the tumble plays whole rather than flickering through a Hurt frame.*
+- **The knockback clip is 0.50 s against a 0.22 s slide, deliberately.** *Check the player can move
+  ~0.28 s before the tumble finishes drawing, and that walking during that window keeps the tumble
+  on screen until it ends.* That is the exit-time return, not a defect.
+- ⚠️ **Reimport idempotency is unproven.** The second run reported nothing waiting, which proves
+  the archive step worked and nothing more. *Move one pair back from `art_incoming/processed/`,
+  re-run the import, and check the Animator window shows no new transitions and the report says
+  `0 duplicate transition(s) removed`.*
+- ⚠️ **`knockback` is now a shape-changing action** alongside `death`, `cycle` and `roll` — exempt
+  from the standing height and baseline checks in both `ArtImportTool` and `Tools/precheck_sheets.py`,
+  and its contract is now 6 frames at 12 fps, was 3. The delivered art is an airborne tumble, not
+  the standing stagger the action was first specified as. Feet moved 90–134 px between frames on
+  these sheets and were correctly not flagged. **Width is still checked.** *If a stagger-style
+  knockback is ever wanted instead, this is the line that changed.*
+- **`player_bundabasher` has no `idle`**, so its two sheets imported with the width comparison
+  skipped, and the class is still a Young Driller fallback — roll and knockback do not count toward
+  the six core actions that release a class into gameplay. Its controller now exists holding only
+  those two states.
+- **`Tools/precheck_sheets.py` compares width as a fraction of the cell**, not in raw pixels. Three
+  class idles are drawn on 1024 px cells against these sheets' 512, which was reporting correct art
+  as "2× narrower".
+
+→ [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) for the wiring.
 
 **Also outstanding — the mobile performance pass, none of it exercised.** Landed on `main`, never
 compiled:
