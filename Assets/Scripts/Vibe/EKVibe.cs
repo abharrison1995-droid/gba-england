@@ -30,6 +30,10 @@ namespace ExiledAlvaston.Vibe
         // --- HUD / combat ---
         public static readonly Color HealthBar = new Color(0.75f, 0.15f, 0.12f, 1f);
         public static readonly Color ManaBar = new Color(0.2f, 0.35f, 0.75f, 1f);
+        /// <summary>Amber, for the stamina bar. Deliberately its own constant rather than a reuse
+        /// of <see cref="XpBar"/>, which it currently matches — the two answer to different things
+        /// and must be free to diverge without one silently dragging the other.</summary>
+        public static readonly Color StaminaBar = new Color(0.85f, 0.7f, 0.15f, 1f);
         public static readonly Color XpBar = new Color(0.85f, 0.7f, 0.15f, 1f);
         public static readonly Color LevelBadge = new Color(0.9f, 0.75f, 0.2f, 1f);
         public static readonly Color DamageFloat = new Color(0.95f, 0.2f, 0.15f, 1f);

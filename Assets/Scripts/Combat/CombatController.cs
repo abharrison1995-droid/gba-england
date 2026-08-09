@@ -299,6 +299,7 @@ namespace ExiledAlvaston.Combat
 
             UIManager.Instance.UpdatePlayerHealth(hp, hpMax);
             UIManager.Instance.UpdatePlayerMana(CurrentMana, PlayerData != null ? PlayerData.MaxManaStamina : 50);
+            UIManager.Instance.UpdatePlayerStamina(CurrentStamina, PlayerData != null ? PlayerData.MaxManaStamina : 50);
         }
 
         private void HandleInput()

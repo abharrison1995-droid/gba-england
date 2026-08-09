@@ -27,10 +27,13 @@ namespace ExiledAlvaston.UI
         public Image PlayerHealthFill;
         public Image PlayerManaFill;
         public Image PlayerConcealmentFill;
+        [Tooltip("Built at runtime by EnsureStaminaBar — there is nothing to wire in the scene.")]
+        public Image PlayerStaminaFill;
         [Tooltip("Numeric \"current / max\" readouts drawn over the bars. Auto-built at runtime if left empty.")]
         public TextMeshProUGUI PlayerHealthText;
         public TextMeshProUGUI PlayerManaText;
         public TextMeshProUGUI PlayerConcealmentText;
+        public TextMeshProUGUI PlayerStaminaText;
         public TextMeshProUGUI LevelText;
         public TextMeshProUGUI LocationTimeText;
         public TextMeshProUGUI WantedKnivesText;
@@ -75,6 +78,7 @@ namespace ExiledAlvaston.UI
         private void Start()
         {
             EnsureJournalButton();
+            EnsureStaminaBar();
             BuildActionButtons();
             RestyleSceneHudButtons();
             ScaleHudCluster();
@@ -207,6 +211,127 @@ namespace ExiledAlvaston.UI
                 PlayerManaText.text = $"{Mathf.Max(0, current)} / {(int)_playerMpMax}";
         }
 
+        /// <summary>The stamina last painted, and the max it was painted against; -1 until first
+        /// paint. ⚠ The int compare is the point, exactly as for <see cref="_shownLevel"/>: this is
+        /// called from CombatController's Update every frame, and the interpolated string below
+        /// allocates. Stamina only moves when a roll is spent or the regen carry rolls over, so
+        /// most frames do nothing at all.</summary>
+        private int _shownStamina = -1;
+        private int _shownStaminaMax = -1;
+
+        public void UpdatePlayerStamina(int current, int max)
+        {
+            if (PlayerStaminaFill == null) return;
+            if (current == _shownStamina && max == _shownStaminaMax) return;
+
+            _shownStamina = current;
+            _shownStaminaMax = max;
+
+            float safeMax = Mathf.Max(1, max);
+            SetBarFill(PlayerStaminaFill, current / safeMax);
+
+            if (PlayerStaminaText != null)
+                PlayerStaminaText.text = $"{Mathf.Max(0, current)} / {(int)safeMax}";
+        }
+
+        /// <summary>
+        /// Builds the stamina bar under the mana bar at runtime, so no scene wiring is needed and
+        /// the bar cannot go missing on a scene that predates it.
+        ///
+        /// ⚠ The fill gets a track of its own that holds nothing else, and the readout is built
+        /// here and assigned rather than left to <see cref="EnsureBarLabel"/>. That is deliberate:
+        /// <see cref="EnsureDedicatedTrack"/> decides a fill needs wrapping by testing
+        /// `parent.childCount == 1`, and a label added beside the fill takes that count to 2 — at
+        /// which point the fill gets wrapped in a track sized to whatever fraction it was showing
+        /// at the time, and the bar can never grow past it again. Structuring it this way means
+        /// the wrapper returns at its first check, forever. (The same shape bites HPFill and
+        /// MPFill today — see the note in <see cref="EnsureDedicatedTrack"/>.)
+        /// </summary>
+        private void EnsureStaminaBar()
+        {
+            if (PlayerStaminaFill != null) return;          // idempotent
+
+            if (PlayerManaFill == null || PlayerManaFill.transform.parent == null)
+            {
+                Debug.LogWarning("UIManager: no PlayerManaFill to place the stamina bar against — " +
+                                 "the stamina bar was not built.");
+                return;
+            }
+
+            var mpTrack = PlayerManaFill.transform.parent as RectTransform;
+            var cluster = mpTrack != null ? mpTrack.parent as RectTransform : null;
+            if (mpTrack == null || cluster == null) return;
+
+            // Two authored bar heights below the mana bar. The cluster's authored pitch is 28 — HP
+            // at y -22, MP at -58, the concealment bar at -86, MP and concealment contiguous — so
+            // -56 leaves the concealment slot empty and puts stamina directly beneath it. The gap
+            // is visible while stealth is sidelined; closing it is a change to this one number.
+            const float BarPitch = 28f;
+
+            var track = new GameObject("StaminaTrack", typeof(RectTransform), typeof(Image));
+            var trackRt = (RectTransform)track.transform;
+            trackRt.SetParent(cluster, false);
+            trackRt.SetSiblingIndex(mpTrack.GetSiblingIndex() + 1);
+            trackRt.anchorMin = mpTrack.anchorMin;
+            trackRt.anchorMax = mpTrack.anchorMax;
+            trackRt.pivot = mpTrack.pivot;
+            trackRt.sizeDelta = mpTrack.sizeDelta;
+            trackRt.anchoredPosition = mpTrack.anchoredPosition + new Vector2(0f, -BarPitch * 2f);
+
+            var trackImage = track.GetComponent<Image>();
+            // The empty channel behind the fill: the same amber darkened, alpha kept at 1 — a plain
+            // Color multiply would scale alpha too and leave the track see-through.
+            Color amber = EKVibe.StaminaBar;
+            trackImage.color = new Color(amber.r * 0.3f, amber.g * 0.3f, amber.b * 0.3f, 1f);
+            trackImage.raycastTarget = false;
+
+            // The fill's own parent, which will only ever hold the fill — see the summary above.
+            var fillTrack = new GameObject("StaminaFillTrack", typeof(RectTransform));
+            var fillTrackRt = (RectTransform)fillTrack.transform;
+            fillTrackRt.SetParent(trackRt, false);
+            StretchToParent(fillTrackRt);
+
+            var fill = new GameObject("StaminaFill", typeof(RectTransform), typeof(Image));
+            var fillRt = (RectTransform)fill.transform;
+            fillRt.SetParent(fillTrackRt, false);
+            StretchToParent(fillRt);
+
+            var fillImage = fill.GetComponent<Image>();
+            fillImage.color = EKVibe.StaminaBar;
+            fillImage.raycastTarget = false;
+            PlayerStaminaFill = fillImage;
+
+            // Added after the fill track, so it renders over the bar rather than under it.
+            var labelGo = new GameObject("SPText", typeof(RectTransform));
+            var labelRt = (RectTransform)labelGo.transform;
+            labelRt.SetParent(trackRt, false);
+            StretchToParent(labelRt);
+
+            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.enableAutoSizing = false;
+            tmp.fontSize = 18;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.color = EKVibe.TextLight;
+            tmp.raycastTarget = false;
+            tmp.enableWordWrapping = false;
+            tmp.overflowMode = TextOverflowModes.Overflow;
+            PlayerStaminaText = tmp;
+
+            // The cluster has to grow or the new bar hangs outside its panel — and the safe-area
+            // fitter and the 1.6x scale both work from this rect.
+            if (TopLeftPortraitPanel != null)
+                TopLeftPortraitPanel.sizeDelta += new Vector2(0f, BarPitch);
+        }
+
+        private static void StretchToParent(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
         public void UpdatePlayerConcealment(float current, float max)
         {
             _playerConcealmentMax = Mathf.Max(1, max);
@@ -257,6 +382,17 @@ namespace ExiledAlvaston.UI
         /// Wrapping rather than fixing the scene keeps this correct for any bar wired later, and
         /// costs nothing when the scene is already right. It is self-limiting: after wrapping, the
         /// fill is an only child, so every later call returns at the first check.
+        ///
+        /// ⚠ **Known defect, not fixed here.** The `childCount == 1` test is also true of a track
+        /// that holds the fill and nothing else *yet*. <see cref="EnsureBarLabel"/> then adds the
+        /// readout beside the fill, taking the count to 2, so the NEXT call wraps a fill that
+        /// never needed wrapping — and the new track inherits the anchors the fill is currently
+        /// showing, which is its fill fraction. If that first paint was not full, the bar is
+        /// permanently capped at that fraction and can never grow back. HPFill and MPFill both
+        /// take this path; it is invisible in the common case because the first paint is a full
+        /// bar (anchorMax.x = 1), and it would show as "the health bar tops out at a third" after
+        /// loading a save at low health. Fixing it means changing two working bars and belongs in
+        /// its own pass. <see cref="EnsureStaminaBar"/> is built so it cannot be reached.
         /// </summary>
         private static void EnsureDedicatedTrack(Image fill)
         {
