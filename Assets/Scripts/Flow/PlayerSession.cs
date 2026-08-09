@@ -346,7 +346,8 @@ namespace ExiledAlvaston.Flow
         /// <summary>Registered with CombatController.SetSpeedMultiplier, never written to MovementSpeed.</summary>
         public float MoveSpeedMultiplier { get; private set; } = 1f;
 
-        /// <summary>Scales the authored mana/stamina regen rates. 1 = unmodified.</summary>
+        /// <summary>Scales the authored STAMINA regen rate. 1 = unmodified. Mana has no regen rate
+        /// to scale — it is replenished by items, the pub and heal spells only.</summary>
         public float ResourceRegenMultiplier { get; private set; } = 1f;
 
         /// <summary>Extra rolls a loot container makes on top of its band's own count.</summary>

@@ -66,8 +66,11 @@ namespace ExiledAlvaston.Combat
         public float KnockbackRecoveryIFrames = 0.4f;
 
         [Header("Regen")]
-        [Tooltip("Mana restored per second — slow, spells should feel budgeted.")]
-        public float ManaRegenPerSecond = 2.5f;
+        // ⚠ Mana does NOT regenerate. There is deliberately no ManaRegenPerSecond field: mana comes
+        // back only through items, the pub's full restore, or a heal spell once one exists. The
+        // old 2.5/s field is retired, and its orphan key in c.unity is ignored on load and dropped
+        // on the scene's next save. If mana regen ever returns it must be a new design decision,
+        // not a quiet resurrection of the stale value.
         [Tooltip("Stamina restored per second — fast, physical skills cycle often.")]
         public float StaminaRegenPerSecond = 7f;
 
@@ -85,11 +88,9 @@ namespace ExiledAlvaston.Combat
         private bool _isDead;
         private readonly Collider[] _hitResults = new Collider[10];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
-        private float _manaRegenCarry;
         private float _staminaRegenCarry;
-        // Authored regen rates, remembered at Awake. The perk multiplier is applied to THESE, never
-        // to the current values — multiplying the live field would compound on every recompute.
-        private float _baseManaRegen;
+        // Authored regen rate, remembered at Awake. The perk multiplier is applied to THIS, never
+        // to the current value — multiplying the live field would compound on every recompute.
         private float _baseStaminaRegen;
         /// <summary>Last non-zero move direction — melee aims this way while idle.</summary>
         private Vector3 _facingDir = Vector3.forward;
@@ -120,7 +121,6 @@ namespace ExiledAlvaston.Combat
             _bar = GetComponent<PlayerHealthBar>();
             _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
-            _baseManaRegen = ManaRegenPerSecond;
             _baseStaminaRegen = StaminaRegenPerSecond;
 
             if (PlayerData != null)
@@ -215,17 +215,15 @@ namespace ExiledAlvaston.Combat
                 HandleMovement();
         }
 
+        /// <summary>
+        /// Stamina only. ⚠ Mana is deliberately absent and must stay absent — it is replenished by
+        /// items, the pub's full restore and (once one exists) a heal spell, never by a tick. That
+        /// is the whole point of the survival-pressure pass; re-adding a mana tick here silently
+        /// undoes it.
+        /// </summary>
         private void RegenResources()
         {
             int max = PlayerData != null ? PlayerData.MaxManaStamina : 50;
-
-            _manaRegenCarry += ManaRegenPerSecond * Time.deltaTime;
-            if (_manaRegenCarry >= 1f)
-            {
-                int whole = Mathf.FloorToInt(_manaRegenCarry);
-                _manaRegenCarry -= whole;
-                CurrentMana = Mathf.Min(max, CurrentMana + whole);
-            }
 
             _staminaRegenCarry += StaminaRegenPerSecond * Time.deltaTime;
             if (_staminaRegenCarry >= 1f)
@@ -272,7 +270,6 @@ namespace ExiledAlvaston.Combat
                 CurrentStamina = Mathf.Min(CurrentStamina, stats.MaxManaStamina);
             }
 
-            ManaRegenPerSecond = _baseManaRegen * session.ResourceRegenMultiplier;
             StaminaRegenPerSecond = _baseStaminaRegen * session.ResourceRegenMultiplier;
 
             // ⚠ Through the modifier system, never by writing MovementSpeed — that field is the
