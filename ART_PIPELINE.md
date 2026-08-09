@@ -340,6 +340,8 @@ height, feet near the bottom, facing camera-right. `worldHeight` **1.55** for ad
 | `cast` | 6 | 6 | 1 | 12 | no |
 | `hurt` | 3 | 3 | 1 | 12 | no |
 | `death` | 6 | 6 | 1 | 10 | no |
+| `roll` | 6 | 6 | 1 | 14 | no |
+| `knockback` | 3 | 3 | 1 | 12 | no |
 
 Frame counts are deliberately low. Every extra frame is another chance for the figure to drift in
 scale or angle, and at 65 px the difference between a 4-frame and an 8-frame walk is barely
