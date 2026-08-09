@@ -587,8 +587,15 @@ namespace ExiledAlvaston.Combat
                     // Four-argument overload: passing gameObject is what sets Health.LastAttacker
                     // to the player. Without it the player is invisible to anything that asks who
                     // landed the killing blow — no error, just an attribution that never matches.
-                    targetHealth.TakeDamage(damage, "you", foeName, gameObject);
-                    _bar?.Ping();
+                    if (targetHealth.TakeDamage(damage, "you", foeName, gameObject))
+                    {
+                        _bar?.Ping();
+                        // The knockback perk, gated on the hit LANDING and the enemy still being
+                        // alive: Health.Die has already disabled the agent and the AI by now, and
+                        // shoving a corpse would fight the destroy delay.
+                        if (session != null && session.MeleeKnockbackDistance > 0f && !targetHealth.IsDead)
+                            targetHealth.GetComponent<EnemyAI>()?.ApplyKnockback(facing, session.MeleeKnockbackDistance);
+                    }
                 }
 
                 yield return new WaitForSeconds(attackDuration);
