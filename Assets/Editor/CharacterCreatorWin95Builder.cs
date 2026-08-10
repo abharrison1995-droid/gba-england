@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using ExiledAlvaston.Data;
 using ExiledAlvaston.Flow;
@@ -19,8 +18,11 @@ namespace ExiledAlvaston.EditorTools
     /// bar reading "Pick your Brit", grey raised face, sunken white name field, a row of five
     /// raised class tabs, a black name box over the class readouts, the intro copy on a grey
     /// panel, and the class sprite against a cornflower-blue block like the paper doll.
-    /// The pixelated countryside plate shows around the window; the Union Jack baked into it
-    /// stays visible along the bottom edge.
+    /// The window floats on the same flat teal Win95 desktop as the title screen, taskbar
+    /// included; the pixelated countryside plate (and the Union Jack baked into it) is no
+    /// longer referenced. Creator_Background_Pixel.png stays on disk, unreferenced, so the
+    /// swap can be reviewed before the file is retired; CharacterCreatorSetup's rollback path
+    /// uses the non-pixel Creator_Background.png and is unaffected.
     ///
     /// Same safety pattern as CharacterCreatorSetup: only the children of the preserved
     /// CreatorRoot are replaced; the root, Canvas, title, HUD and GameFlow references are
@@ -32,7 +34,6 @@ namespace ExiledAlvaston.EditorTools
     {
         private const string ScenePath = "Assets/c.unity";
         private const string GeneratedRootName = "GeneratedCharacterCreator";
-        private const string BackgroundPath = "Assets/Textures/UI/Title/Creator_Background_Pixel.png";
 
         /// <summary>
         /// The owner's intro copy, carried over verbatim from CharacterCreatorSetup (supplied
@@ -81,32 +82,12 @@ namespace ExiledAlvaston.EditorTools
                 return;
             }
 
-            if (!File.Exists(BackgroundPath))
-            {
-                EditorUtility.DisplayDialog("Rebuild Character Creator (Win95)",
-                    "The pixelated creator background is missing:\n" + BackgroundPath, "OK");
-                return;
-            }
-
             if (!ValidateChildren(creatorRoot.transform, out string summary)) return;
             if (!EditorUtility.DisplayDialog("Rebuild Character Creator (Win95)",
                     "This replaces these CharacterCreator children:\n\n" + summary +
                     "\n\nThe root, Canvas, title, HUD, and GameFlow references are preserved. Undo is supported.",
                     "Apply", "Cancel")) return;
 
-            try
-            {
-                ConfigureSprite();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                EditorUtility.DisplayDialog("Rebuild Character Creator (Win95)",
-                    "Sprite import failed; the scene was not changed.\n\n" + ex.Message, "OK");
-                return;
-            }
-
-            Sprite background = LoadSprite(BackgroundPath);
             GameObject originalTitle = flow.TitleRoot;
             GameObject originalCreator = flow.CreatorRoot;
             GameObject originalHud = flow.HudRoot;
@@ -133,7 +114,7 @@ namespace ExiledAlvaston.EditorTools
 
                 RectTransform generated = CreateRect(GeneratedRootName, creatorRoot.transform);
                 Stretch(generated);
-                BuildBackground(generated, background);
+                BuildDesktop(generated);
                 CreatorReferences refs = BuildContent(generated);
 
                 PlayerClassVisualLibrary library = flow.GetComponent<PlayerClassVisualLibrary>();
@@ -210,48 +191,20 @@ namespace ExiledAlvaston.EditorTools
             return validLegacy;
         }
 
-        private static void ConfigureSprite()
+        /// <summary>
+        /// Flat Win95 desktop: teal field edge to edge plus the shared taskbar chrome along
+        /// the bottom — the same desktop the title screen stands on. Solid uGUI colour, no
+        /// texture; the countryside plate is gone for good.
+        /// </summary>
+        private static void BuildDesktop(RectTransform parent)
         {
-            AssetDatabase.ImportAsset(BackgroundPath, ImportAssetOptions.ForceSynchronousImport);
-            TextureImporter importer = AssetImporter.GetAtPath(BackgroundPath) as TextureImporter;
-            if (importer == null) throw new InvalidOperationException("No TextureImporter for " + BackgroundPath);
-            importer.textureType = TextureImporterType.Sprite;
-            importer.spriteImportMode = SpriteImportMode.Single;
-            importer.spritePixelsPerUnit = 100f;
-            importer.mipmapEnabled = false;
-            importer.alphaSource = TextureImporterAlphaSource.None;
-            importer.alphaIsTransparency = false;
-            importer.sRGBTexture = true;
-            // Bilinear on purpose: the fat pixels are baked into the plate itself, and a
-            // point filter would shimmer when the canvas scales to a phone resolution.
-            importer.filterMode = FilterMode.Bilinear;
-            importer.wrapMode = TextureWrapMode.Clamp;
-            importer.npotScale = TextureImporterNPOTScale.None;
-            importer.maxTextureSize = 2048;
-            importer.textureCompression = TextureImporterCompression.CompressedHQ;
-            importer.spriteBorder = Vector4.zero;
-            importer.SaveAndReimport();
-        }
+            RectTransform desktop = CreateRect("Desktop", parent);
+            Stretch(desktop);
+            Image field = desktop.gameObject.AddComponent<Image>();
+            field.color = Win95Skin.Desktop;
+            field.raycastTarget = false;
 
-        private static Sprite LoadSprite(string path)
-        {
-            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-            if (sprite == null)
-                throw new InvalidOperationException("Sprite failed to import: " + path);
-            return sprite;
-        }
-
-        /// <summary>No dark veil: the pixelation and blur baked into the plate do the dimming.</summary>
-        private static void BuildBackground(RectTransform parent, Sprite sprite)
-        {
-            RectTransform rect = CreateRect("Background", parent);
-            Stretch(rect);
-            Image image = rect.gameObject.AddComponent<Image>();
-            image.sprite = sprite;
-            image.raycastTarget = false;
-            AspectRatioFitter fitter = rect.gameObject.AddComponent<AspectRatioFitter>();
-            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
-            fitter.aspectRatio = sprite.rect.width / sprite.rect.height;
+            Win95Skin.AddTaskbar(desktop);
         }
 
         private static CreatorReferences BuildContent(RectTransform parent)
@@ -260,17 +213,16 @@ namespace ExiledAlvaston.EditorTools
             Stretch(safe);
             safe.gameObject.AddComponent<SafeAreaFitter>();
 
-            // The window stops at y 0.15 so the Union Jack baked into the plate's bottom
-            // edge stays visible below it, and insets on the sides so the pixelated
-            // countryside frames it — the way the game world frames the inventory window.
+            // The window floats on the teal desktop with a margin on all four sides; the
+            // bottom inset clears the 44 px taskbar (~4% at 1080) with a sliver to spare.
             RectTransform window = CreateRect("CreatorWindow", safe);
-            SetAnchors(window, new Vector2(0.04f, 0.15f), new Vector2(0.96f, 0.95f));
+            SetAnchors(window, new Vector2(0.04f, 0.06f), new Vector2(0.96f, 0.95f));
             Image face = window.gameObject.AddComponent<Image>();
             Win95Skin.StyleWindow(face);
             Win95Skin.AddTitleBar(window, "Pick your Brit", 36f);
 
             // Everything below is anchored inside the window. The 36 px title bar over a
-            // ~610 px window eats roughly the top 7%, so content runs 0.02–0.90.
+            // ~960 px window eats roughly the top 4%, so content runs 0.02–0.90.
             TMP_InputField nameInput = CreateNameInput(window);
             SetAnchors(nameInput.GetComponent<RectTransform>(), new Vector2(0.28f, 0.835f), new Vector2(0.72f, 0.90f));
 
