@@ -1,10 +1,13 @@
 # Chunk world
 
 ```
-Last verified against: ccfa9c9
+Last verified against: working tree, 2026-08-09
 Verification scope:    code (read line by line); chunk prefabs and MapChunkData assets (tracked
                        YAML). Edge-crossing behaviour was play-tested in an earlier editor
                        session. The 2026-08-04 height and EnemyAI changes are UNVERIFIED.
+                       The portal-marker, mounted-refusal and MapChunkRegistry sections landed
+                       2026-08-09 and have NEVER been compiled or run. "No DungeonPortal is
+                       placed anywhere" was checked by GUID scan and git log -S on this date.
 ```
 
 Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is live at a time.
@@ -19,10 +22,33 @@ Movement is on the X/Z plane; chunk edges are `pos.x` / `pos.z`.
 **Adjacency is authored by reference, not computed from `Coordinates`.** `Coordinates` is only a
 dictionary key for city lockout timers. It is **not** a save key — `ChunkName` is.
 
-Six chunks: `Home_London` (0,0 — the hub, `IsCity: 1`), `North_Wasteland`, `South_Slums`,
-`East_RetailPark`, `West_Canal`, and `Manor_Cellars` (-1,-1 — the tutorial dungeon, reached by
-`InstanceDoor`, never by an edge). Outer chunks link back to Home only; their other three
-directions are null.
+**Six overworld chunks:** `Home_London` (0,0 — the hub, `IsCity: 1`), `North_Wasteland`,
+`South_Slums`, `East_RetailPark`, `West_Canal`, and `Manor_Cellars` (-1,-1 — the tutorial dungeon,
+reached by `InstanceDoor`, never by an edge). Outer chunks link back to Home only; their other
+three directions are null.
+
+**Six interior shells,** added 2026-08-09 and **empty apart from their shell**. Five are the named
+London locations from [ART_QUEUE.md](../art/ART_QUEUE.md) band 6; `The_Winchester` is the sixth, and
+is not in that list.
+
+| Chunk | Coords | Floor | What it is |
+|---|---|---|---|
+| `Quidland` | (-2,-1) | 24×16 | Pound shop that sells weapons |
+| `FU_Sports` | (-2,-2) | 26×18 | Sports shop that sells armour |
+| `City_Hall` | (-2,-3) | 34×24 | Mayor Swalls and Councillor Mosley |
+| `Police_Station` | (-2,-4) | 30×22 | Commissioner Spencer, Riggs, Murtaugh |
+| `Gang_Hideout` | (-2,-5) | 18×14 | Ralph and Sanjeet — Sanjeet's mum's house |
+| `The_Winchester` | (-2,-6) | 20×14 | The pub |
+
+Each is a floor, four walls at 3.2 m, a `RuntimeNavMeshBaker` on the root and one id-less
+`PlayerSpawn`. All four adjacency slots are null and none carries a `ChunkEdge` — the only way in is
+a portal, and **none is wired yet**. Their off-grid `Coordinates` are cosmetic: `Coordinates` is
+only a key for city lockout timers, and those are gated on `IsCity`, which is 0 on all six.
+
+⚠️ **`The_Winchester` interior does not replace the pub as it works today.** `PubInteractable`
+(`Pub_TheWinchester.prefab`, not currently placed in any chunk) clears the wanted level, heals and
+saves from a single USE. Putting it behind a door is a design change nobody has made — the shell
+exists, the decision does not.
 
 ## Seven runtime paths instantiate a chunk
 
@@ -52,9 +78,65 @@ Two editor tools also instantiate chunks: `DevZoneJump` and `DiscoverEnglandSetu
 `TravelRoutine`, which does the same full lifecycle as an edge crossing — so it is a second
 canonical path, not a shortcut, and the closest thing to a working model for a building door.
 
-⚠️ **`Home_London_Prefab` contains a `Portal_Home_London` whose `TargetChunk` is
-`Home_London_Data` itself** (both resolve to guid `5a35b572…`). Using it reloads and resets Home.
-It is an authoring trap, not an example to copy.
+**No `DungeonPortal` is placed anywhere in the project.** Not in any chunk prefab, not in
+`c.unity`. A GUID scan for `1208538c…` across `Assets/` returns nothing, and `git log -S` says the
+last one — the self-targeting `Portal_Home_London` that earlier revisions of this document warned
+about — was removed in `8bd1520` on 2026-08-05. The runtime path is therefore **entirely
+unexercised**: it compiles and is wired, and nothing has ever pressed USE on it.
+
+`Preset_PortaltoManorCellars.asset` is the one portal the palette can stamp, and it has never been
+stamped.
+
+## Portal travel: named markers
+
+`DungeonPortal` has two ways to say where the player lands, and only one of them is worth
+authoring:
+
+| Field | Behaviour |
+|---|---|
+| `TargetSpawnPointId` | Resolves a `PlayerSpawnPoint` **by exact id** inside the newly instantiated destination, and takes its rotation as arrival facing. |
+| `SpawnPosition` | A raw `Vector3`. Used only when `TargetSpawnPointId` is empty. |
+
+A marker moves with the geometry it belongs to; a raw coordinate stops matching the building the
+moment the building is nudged, and nothing says so. `TargetSpawnPointId` is the field to fill in.
+
+⚠️ **A non-empty `TargetSpawnPointId` that does not resolve aborts the journey.** It does not fall
+back to `SpawnPosition` — falling back is how a typo delivers the player into a wall in silence.
+`ChunkManager.TravelRoutine` instantiates the destination, resolves the marker, and **commits
+nothing until it has one**: wanted state, `CurrentChunkData`, the visited list, the encyclopedia
+toast and the autosave all happen after the check, and the candidate instance is destroyed again on
+failure. The player stays exactly where they were, with a `Debug.LogWarning` naming the chunk and
+the id.
+
+This is why the lookup is `PlayerSpawnPoint.FindExact` and not `PlayerSpawnPoint.Find` — `Find`
+falls back to the id-less default point and then to the first point in the chunk, which is right
+for "put the player somewhere sensible" and wrong for a named door.
+
+Arrival facing is applied through `CombatController.FaceTowards`, not by writing
+`transform.rotation`: the controller keeps its own facing vector and the billboarded sprite is
+flipped from that, so a rotation set behind its back turns nothing and is reverted by the next
+input.
+
+⚠️ **A portal refuses while the player is mounted** — "Get off the vehicle first." The vehicle is a
+separate root that would be stranded in a chunk about to be destroyed, and the obvious workaround
+(hiding or disabling it) is the one thing that must never be done to a vehicle root.
+
+## Resolving a chunk by name
+
+`ChunkManager.FindChunkByName` consults two sources, in order:
+
+1. **`ChunkManager.AllChunks`** — the array on the ChunkManager in `c.unity`. Authoritative for
+   everything already authored there.
+2. **`MapChunkRegistry`** (`Assets/Resources/MapChunkRegistry.asset`) — a `ScriptableObject` list
+   loaded by `Resources.Load`.
+
+The registry exists because `AllChunks` can only be edited with `c.unity` open, and interiors are
+authored from Prefab Mode where it is not. `ChunkManager.EnsureKnownChunk` patches `AllChunks` at
+runtime on arrival, but **only for that run** — a save made inside a chunk that reached the list
+that way cannot be loaded after a restart. The registry is what closes that.
+
+`Tools → GBH → Place → Portal Placement` adds both ends of a link to it automatically, and creates
+the asset if it is missing.
 
 ## To react to a chunk change, poll — do not hook
 

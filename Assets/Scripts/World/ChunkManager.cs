@@ -201,10 +201,29 @@ namespace ExiledAlvaston.World
         public void TravelTo(MapChunkData targetChunk, Vector3 spawnPosition)
         {
             if (_isTransitioning) return;
-            StartCoroutine(TravelRoutine(targetChunk, spawnPosition));
+            StartCoroutine(TravelRoutine(targetChunk, null, spawnPosition));
         }
 
-        private IEnumerator TravelRoutine(MapChunkData targetChunk, Vector3 spawnPosition)
+        /// <summary>
+        /// Portal travel that arrives at a named <see cref="PlayerSpawnPoint"/> inside the target
+        /// chunk, taking its facing as well as its position.
+        ///
+        /// A marker is what makes a linked door pair authorable: both ends move with the geometry
+        /// they belong to, instead of being two hand-typed world coordinates that quietly stop
+        /// matching the building the moment it is nudged.
+        ///
+        /// ⚠ A non-empty <paramref name="spawnPointId"/> that does not resolve **aborts the
+        /// journey** rather than falling back to <paramref name="fallbackPosition"/>. Silently
+        /// landing at a raw coordinate is how a typo'd id turns into a player standing inside a
+        /// wall with nothing logged. An empty id is the legacy path and uses the position.
+        /// </summary>
+        public void TravelTo(MapChunkData targetChunk, string spawnPointId, Vector3 fallbackPosition)
+        {
+            if (_isTransitioning) return;
+            StartCoroutine(TravelRoutine(targetChunk, spawnPointId, fallbackPosition));
+        }
+
+        private IEnumerator TravelRoutine(MapChunkData targetChunk, string spawnPointId, Vector3 fallbackPosition)
         {
             if (targetChunk == null || targetChunk.ChunkPrefab == null)
             {
@@ -235,35 +254,79 @@ namespace ExiledAlvaston.World
             {
                 yield return new WaitForSecondsRealtime(0.15f);
 
-                ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(CurrentChunkData, targetChunk);
-
+                // The destination is built first and inspected before anything is committed. Every
+                // observable change below — wanted state, CurrentChunkData, the visited list, the
+                // encyclopedia toast, the autosave — happens only once we know the player has
+                // somewhere real to land, so a broken marker id leaves the world exactly as it was.
+                //
+                // The cost is that an aborted journey still instantiates the whole destination for
+                // a frame before destroying it again. Reading the marker off targetChunk.ChunkPrefab
+                // instead would avoid that, but would then be validating something other than the
+                // instance the player actually lands in — and an abort only happens on an authoring
+                // error the validator already reports, so the rare path is the one paying.
                 GameObject previousInstance = CurrentChunkInstance;
-                CurrentChunkData = targetChunk;
-                ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
-                // Toast: portal travel is a live arrival — a first visit is a discovery.
-                ExiledAlvaston.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
-                CurrentChunkInstance = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
-                CurrentChunkInstance.name = targetChunk.ChunkPrefab.name;
+                GameObject candidate = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
+                candidate.name = targetChunk.ChunkPrefab.name;
 
-                // Portal travel is given an explicit arrival position by the caller (DungeonPortal) —
-                // honor it directly. Deferring to the chunk's generic PlayerSpawnPoint here would
-                // send every portal into a chunk to the same single default marker, ignoring
-                // whatever position was actually configured on this specific portal.
-                TeleportPlayer(spawnPosition);
+                Vector3 arrivalPos = fallbackPosition;
+                Quaternion? arrivalFacing = null;
+                bool aborted = false;
 
-                var camFollow = FindObjectOfType<IsometricCameraFollow>();
-                if (camFollow != null)
-                    camFollow.SnapToTarget();
+                if (!string.IsNullOrEmpty(spawnPointId))
+                {
+                    // Strict lookup on purpose — see the TravelTo overload's remarks.
+                    PlayerSpawnPoint marker = PlayerSpawnPoint.FindExact(candidate, spawnPointId);
+                    if (marker == null)
+                    {
+                        Debug.LogWarning(
+                            $"ChunkManager: '{targetChunk.ChunkName}' has no PlayerSpawnPoint with Id " +
+                            $"'{spawnPointId}' — travel aborted, staying in " +
+                            $"'{(CurrentChunkData != null ? CurrentChunkData.ChunkName : "nowhere")}'. " +
+                            "Check the marker exists in the chunk's PREFAB (not just the scene) and that " +
+                            "the id matches exactly, then re-run Tools > GBH > Place > Portal Placement " +
+                            "> Validate All Location Links.");
+                        Destroy(candidate);
+                        aborted = true;
+                    }
+                    else
+                    {
+                        arrivalPos = marker.transform.position;
+                        arrivalFacing = marker.transform.rotation;
+                    }
+                }
 
-                if (previousInstance != null)
-                    Destroy(previousInstance);
+                if (!aborted)
+                {
+                    // Read before CurrentChunkData is reassigned — it wants the pair, from and to.
+                    ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(CurrentChunkData, targetChunk);
 
-                _nextEdgeTriggerAllowedAt = Time.unscaledTime + EdgeTriggerGrace;
+                    CurrentChunkData = targetChunk;
+                    ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
+                    // Toast: portal travel is a live arrival — a first visit is a discovery.
+                    ExiledAlvaston.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
+                    CurrentChunkInstance = candidate;
 
-                // Save inside the new chunk must be loadable later, so the chunk has to be
-                // findable by name even if the scene's AllChunks list predates it.
-                EnsureKnownChunk(targetChunk);
-                ExiledAlvaston.Flow.SaveGameManager.Save();
+                    // Portal travel is given its arrival by the caller (DungeonPortal) — either a
+                    // named marker resolved above, or an explicit position. Deferring to the chunk's
+                    // generic PlayerSpawnPoint here would send every portal into a chunk to the same
+                    // single default marker, ignoring what this specific portal was configured with.
+                    TeleportPlayer(arrivalPos, arrivalFacing);
+
+                    var camFollow = FindObjectOfType<IsometricCameraFollow>();
+                    if (camFollow != null)
+                        camFollow.SnapToTarget();
+
+                    if (previousInstance != null)
+                        Destroy(previousInstance);
+
+                    _nextEdgeTriggerAllowedAt = Time.unscaledTime + EdgeTriggerGrace;
+
+                    // Save inside the new chunk must be loadable later, so the chunk has to be
+                    // findable by name even if the scene's AllChunks list predates it. This only
+                    // lasts the run — MapChunkRegistry is what makes it survive a restart.
+                    EnsureKnownChunk(targetChunk);
+                    ExiledAlvaston.Flow.SaveGameManager.Save();
+                }
             }
             finally
             {
@@ -295,12 +358,27 @@ namespace ExiledAlvaston.World
             AllChunks = grown;
         }
 
+        /// <summary>
+        /// Resolves a saved <see cref="MapChunkData.ChunkName"/> back to its asset.
+        ///
+        /// The scene's own <see cref="AllChunks"/> is consulted first so nothing already authored
+        /// there changes meaning. <see cref="MapChunkRegistry"/> is the fallback, and is what lets
+        /// a save made inside an interior load after the app has been closed: interiors are
+        /// authored from Prefab Mode, where the scene ChunkManager is not even loaded, and
+        /// <see cref="EnsureKnownChunk"/> only patches the list for the current run.
+        /// </summary>
         public MapChunkData FindChunkByName(string chunkName)
         {
-            if (AllChunks == null || string.IsNullOrEmpty(chunkName)) return null;
-            foreach (MapChunkData c in AllChunks)
-                if (c != null && c.ChunkName == chunkName) return c;
-            return null;
+            if (string.IsNullOrEmpty(chunkName)) return null;
+
+            if (AllChunks != null)
+            {
+                foreach (MapChunkData c in AllChunks)
+                    if (c != null && c.ChunkName == chunkName) return c;
+            }
+
+            MapChunkRegistry registry = MapChunkRegistry.Load();
+            return registry != null ? registry.Find(chunkName) : null;
         }
 
         private MapChunkData GetAdjacentChunkData(Direction dir)
@@ -419,8 +497,16 @@ namespace ExiledAlvaston.World
             TeleportPlayer(pos);
         }
 
-        /// <summary>Moves the player, keeping the Rigidbody in sync to avoid interpolation ghosting.</summary>
-        public void TeleportPlayer(Vector3 position)
+        /// <summary>
+        /// Moves the player, keeping the Rigidbody in sync to avoid interpolation ghosting.
+        ///
+        /// <paramref name="facing"/> is optional and is routed through
+        /// <see cref="ExiledAlvaston.Combat.CombatController.FaceTowards"/> rather than written
+        /// straight onto the transform: the controller keeps its own facing vector, and the sprite
+        /// is flipped from that, so a rotation set behind its back would be reverted by the next
+        /// input and would never turn the sprite at all.
+        /// </summary>
+        public void TeleportPlayer(Vector3 position, Quaternion? facing = null)
         {
             if (PlayerTransform == null) return;
 
@@ -429,8 +515,27 @@ namespace ExiledAlvaston.World
             {
                 rb.position = position;
                 rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
             }
             PlayerTransform.position = position;
+
+            if (!facing.HasValue) return;
+
+            Vector3 forward = facing.Value * Vector3.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.0001f) return; // marker aimed straight up or down
+
+            var combat = PlayerTransform.GetComponent<ExiledAlvaston.Combat.CombatController>();
+            if (combat != null)
+            {
+                combat.FaceTowards(forward);
+            }
+            else
+            {
+                Quaternion rot = Quaternion.LookRotation(forward.normalized, Vector3.up);
+                if (rb != null) rb.rotation = rot;
+                PlayerTransform.rotation = rot;
+            }
         }
 
         private void ShowWarning(string message)
