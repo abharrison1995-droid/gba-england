@@ -309,9 +309,9 @@ namespace ExiledAlvaston.UI
             if (session == null) return;
 
             ItemData sword = ItemDatabase.Find("test_sword");
-            ItemData shield = ItemDatabase.Find("test_shield");
+            ItemData ring = ItemDatabase.Find("test_ring");
             if (sword != null) session.AddItem(sword, 1);
-            if (shield != null) session.AddItem(shield, 1);
+            if (ring != null) session.AddItem(ring, 1);
         }
 
         public bool IsOpen => InventoryUIPanel != null && InventoryUIPanel.activeSelf;
