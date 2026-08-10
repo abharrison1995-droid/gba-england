@@ -68,6 +68,8 @@ namespace ExiledAlvaston.UI
         /// </summary>
         private Image _crouchButtonImage;
         private TextMeshProUGUI _crouchButtonLabel;
+        private Sprite _shownPlayerPortrait;
+        private bool _playerPortraitPainted;
 
         private void Awake()
         {
@@ -81,6 +83,8 @@ namespace ExiledAlvaston.UI
             EnsureStaminaBar();
             BuildActionButtons();
             RestyleSceneHudButtons();
+            PreparePlayerPortraitFrame();
+            RefreshPlayerPortrait();
             ScaleHudCluster();
             EnsureHudSafeArea();
         }
@@ -173,6 +177,7 @@ namespace ExiledAlvaston.UI
         private void Update()
         {
             RefreshSpellSlots();
+            RefreshPlayerPortrait();
 
             var session = Flow.PlayerSession.Instance;
             if (session != null && session.Level != _shownLevel)
@@ -189,6 +194,43 @@ namespace ExiledAlvaston.UI
                     QuestJournalUI.Toggle();
             }
 #endif
+        }
+
+        /// <summary>
+        /// Turns the scene's old brown placeholder into the same sunken grey slot used by the
+        /// Win95 inventory and dialogue windows. The bevel stays visible over the eventual image.
+        /// </summary>
+        private void PreparePlayerPortraitFrame()
+        {
+            if (PlayerPortrait == null) return;
+            PlayerPortrait.preserveAspect = true;
+            PlayerPortrait.raycastTarget = false;
+            Win95Skin.StyleSunken(PlayerPortrait);
+        }
+
+        /// <summary>
+        /// PlayerSession can appear after this HUD's Start (title screen -> creator -> game), so
+        /// portrait binding is a cheap reference poll rather than an Awake-order dependency.
+        /// No per-frame allocation: the Image is only repainted when its Sprite reference changes.
+        /// </summary>
+        private void RefreshPlayerPortrait()
+        {
+            if (PlayerPortrait == null) return;
+
+            CharacterData data = Flow.PlayerSession.Instance != null
+                ? Flow.PlayerSession.Instance.RuntimeStats
+                : (Combat.CombatController.Instance != null
+                    ? Combat.CombatController.Instance.PlayerData
+                    : null);
+            Sprite portrait = data != null ? data.Portrait : null;
+            if (_playerPortraitPainted && portrait == _shownPlayerPortrait) return;
+
+            _playerPortraitPainted = true;
+            _shownPlayerPortrait = portrait;
+            PlayerPortrait.sprite = portrait;
+            PlayerPortrait.color = portrait != null ? Color.white : Win95Skin.SlotFill;
+            PlayerPortrait.preserveAspect = true;
+            PlayerPortrait.enabled = true;
         }
 
         public void UpdatePlayerHealth(int current, int max)

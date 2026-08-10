@@ -15,7 +15,7 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: 7ecdf820a5f82a741ba23c11efc22a09, type: 2}
     DialogueText: Thirty-one years on this beat and it gets worse every one of them.
       I'm too old for this shit..
     Choices: []

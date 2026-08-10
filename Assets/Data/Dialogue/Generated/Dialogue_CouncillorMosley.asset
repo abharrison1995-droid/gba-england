@@ -15,6 +15,6 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
     DialogueText: Christ.. what have I done? You! no.. no.. leave me be...
     Choices: []

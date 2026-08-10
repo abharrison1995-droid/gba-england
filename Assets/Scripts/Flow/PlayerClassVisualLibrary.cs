@@ -16,6 +16,7 @@ namespace ExiledAlvaston.Flow
         public Sprite[] IdlePreviewFrames;
         public float PreviewFps = 6f;
         public bool GameplayReady;
+        public Sprite Portrait;
     }
 
     /// <summary>Serialized class-to-art mapping shared by character preview and gameplay.</summary>
@@ -56,6 +57,14 @@ namespace ExiledAlvaston.Flow
                 Debug.LogWarning("PlayerClassVisualLibrary has no Young Driller fallback profile.");
                 return;
             }
+
+            // Gameplay may fall back to the complete Young Driller animation set while a class is
+            // still waiting on sheets, but the HUD should continue to show the class the player
+            // actually chose. Only fall back for the portrait when that class has none of its own.
+            if (combat.PlayerData != null)
+                combat.PlayerData.Portrait = requested != null && requested.Portrait != null
+                    ? requested.Portrait
+                    : effective.Portrait;
 
             WorldActorVisual visual = combat.GetComponent<WorldActorVisual>();
             if (visual == null)

@@ -15,7 +15,7 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: 3d703e95846332542ac0956b9b0efe75, type: 2}
     DialogueText: We're the Croydon Spartans. My mum's house is the hideout, so keep
       your voice down.
     Choices: []

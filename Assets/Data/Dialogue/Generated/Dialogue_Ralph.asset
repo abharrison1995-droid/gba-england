@@ -15,6 +15,6 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: 7a920169f1a83414d9ddb301afe9aa43, type: 2}
     DialogueText: Croydon Spartans, that's us. You've heard of us. You have.
     Choices: []

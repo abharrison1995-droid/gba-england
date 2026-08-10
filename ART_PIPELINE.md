@@ -214,6 +214,12 @@ importer warns when a sheet deviates from it. Copy from the table, not from this
 folder. `frameCount` may be fewer than `columns × rows` if the last row is partly empty — say so.
 Add `"question": "..."` if a request was ambiguous.
 
+Inventory icons are UI singles. Name them `spr_ui_item_<item_id>.png`, set `category` to `ui`, and
+set `pixelSize` to `72` instead of `worldHeight`. The `<item_id>` must exactly match the stable
+`ItemData.ItemID` save key. The importer also accepts the older `spr_item_<item_id>` filename, but
+new deliveries use the canonical `spr_ui_item_` form. Generate each icon separately; a multi-item
+contact sheet may be supplied for review, but it is not an import artifact.
+
 Two optional fields, both usually omitted:
 
 - `"subject"` — groups sheets into one animator. Defaults to `name` minus the `_<action>` suffix,

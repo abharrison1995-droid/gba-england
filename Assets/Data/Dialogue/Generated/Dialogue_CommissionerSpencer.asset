@@ -15,7 +15,7 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: 7e99a8ae2e15b004f8308cccde44d116, type: 2}
     DialogueText: Do you know how many medals I'm wearing? Neither do I, there's
       too many. Now MOVE.
     Choices: []

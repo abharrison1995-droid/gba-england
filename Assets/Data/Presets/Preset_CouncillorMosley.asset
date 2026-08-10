@@ -42,10 +42,13 @@ MonoBehaviour:
   NpcHeight: 0
   Roams: 0
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
   AmbientLine: Christ.. what have I done? You! no.. no.. leave me be...
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 1
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId: 

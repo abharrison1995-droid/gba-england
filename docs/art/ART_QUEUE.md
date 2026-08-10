@@ -96,6 +96,7 @@ not when they have been delivered.
 |---|---|---|---|
 | ~~1~~ | ~~The three refused player sheets~~ **DONE** | 3 sheets | Nothing else is drawn until the player is right — every other character is matched against them. |
 | **1b** | **The four remaining player classes** | 24 sheets (4 subjects x 6) | **The character creator is built and previews the chosen class's idle live**, so four of the five classes show the wrong character today. Highest-value art in the queue. See *Player class visual sets*. |
+| **1c** | **Alex, the starter companion** | 8 sheets | Owner-supplied likeness and the first reusable companion visual. See *Alex companion visual set*. |
 | **2** | The tutorial cast | 8 sheets | The opening quest is the only scripted content that exists; it currently runs with placeholder capsules. |
 | **3** | World props | 21 singles | Four of the six chunks are **completely empty** — ground, edges and nothing else. This is the band that unblocks world-building. |
 | **4** | The ambient cast | 20 sheets | Civilians, roamers and the named London cast. Needed before the consequence layer means anything, since Nosey Parkers are civilians. |
@@ -103,8 +104,30 @@ not when they have been delivered.
 | **6** | The London buildings | 5 models | **3D, not sprites — outside this pipeline.** Read the section before starting one. |
 | **7** | Item icons | 8 singles | Inventory icons. Cheap, and the inventory overhaul needs them. |
 | **8** | Per-weapon attack sheets | 5 sheets | One player attack sheet per weapon. Last on purpose: each is a redraw of a pose that is already solved, and it is worth nothing until the weapons exist in code. |
-| **9** | NPC portraits | 13 singles | The dialogue window reserves a portrait slot top-left; it stays an empty grey frame until these land. Order them after the cast sheets they must match. |
+| **9** | Dialogue portraits | 17 NPC singles + 5 player singles | Dialogue and HUD portrait slots, matched against each accepted cast sheet. |
 | **10** | Roll and knockback sheets | 2 sheets, then more | The dodge roll and knockback mechanics are already in code and fully playable silently — these sheets are pure feedback. Player first, classes and hostiles only after. |
+
+### Band 1c — Alex companion visual set
+
+**Requested 2026-08-09. Nothing is accepted or imported yet.** The full eight-sheet set — `idle`,
+`walk`, `attack`, `cast`, `hurt`, `death`, `roll` and `knockback` — is staged in `art_incoming/`
+and passes the local pre-check, but the queue does not count staging as delivery.
+Subject id `alex`; actions:
+`idle`, `walk`, `attack`, `cast`, `hurt`, `death`, `roll`, `knockback`. Follow the canonical frame
+counts in `ART_PIPELINE.md` and the single-frame workflow in `SHEET_WORKFLOW.md`.
+
+Alex is the owner's supplied likeness and an intentional exception to the fictional-person default.
+Use the two owner-provided external PNGs as identity, wardrobe, tattoo and attack-choreography
+references; do not copy those source files into the repository. Closely preserve the brown mullet,
+moustache, face, build and tattoo placement. Outfit: white T-shirt, navy graphic shorts, and dark
+navy or black **unbranded Croc-style clogs** instead of the bare feet in the references.
+
+Alex is an early paid companion and unarmed boxer. `attack` is a straight-punch combination;
+`cast` is a healing spell directed toward an ally; `death` is drawn as a non-lethal knockout;
+`roll` is an infrequent defensive dodge. All sheets use `worldHeight: 1.55`, camera-right
+three-quarter view and the same figure scale. `cycle` is not requested.
+
+The full gameplay and save design is routed from `docs/plans/ALEX_COMPANION_PLAN.md`.
 
 ### Band 2 — the tutorial cast
 
@@ -319,10 +342,11 @@ Inventory icons for the eight items the inventory and loot overhaul introduces. 
 sheets** — no grid, no baseline, no frame count, same as the the world props band props.
 
 These go through the normal pipeline (magenta backdrop, `art_incoming/`, PNG + JSON), with one
-difference worth being explicit about: an inventory icon has no world size, but the importer only
-knows how to reduce by `worldHeight × 48 px`. So `worldHeight` here is **a way of asking for a pixel
-height, not a claim about how big the object is** — `1.5` gives a 72 px icon, which is the number to
-use for all eight so the set is uniform.
+difference worth being explicit about: an inventory icon has no world size. Use `category: "ui"`
+and `pixelSize: 72` for all eight so the set is uniform. Each filename ends in the exact stable
+`ItemData.ItemID`; the importer uses that key to assign `ItemData.Icon` automatically. Generate
+the icons individually. A combined contact sheet is useful for review, but is not delivered to
+the importer.
 
 > **For the Unity side, not the art agent:** 72 px is chosen to sit inside the existing bag slots,
 > but those slots (`BagSlot0..19`) are authored in `c.unity` and their size has not been measured.
@@ -334,14 +358,14 @@ these are icons in a menu, not things standing in the world.
 
 | File | Slot | Notes |
 |---|---|---|
-| `spr_item_butter_knife.png` | Weapon — sharp | A butter knife. Domestic, blunt-tipped, entirely unsuitable. Played straight. |
-| `spr_item_rock_in_a_sock.png` | Weapon — blunt | A rock in a white sports sock, the sock stretched by the weight. |
-| `spr_item_broom_shiv.png` | Weapon — stab | A broom handle sharpened to a point, tape wrapped round the grip. |
-| `spr_item_slingshot.png` | Weapon — ranged | Y-frame catapult, perished rubber, wooden fork. |
-| `spr_item_ski_mask.png` | Armour — head | Black balaclava, laid flat. |
-| `spr_item_protect_hoodie.png` | Armour — top | Grey hoodie, own-brand, front on. |
-| `spr_item_protect_bottoms.png` | Armour — legs | Matching grey joggers. |
-| `spr_item_max69_trainers.png` | Armour — feet | A pair of chunky white trainers, knock-off branding — **no real brand names or logos**. |
+| `spr_ui_item_butter_knife.png` | Weapon — sharp | A butter knife. Domestic, blunt-tipped, entirely unsuitable. Played straight. |
+| `spr_ui_item_rock_in_a_sock.png` | Weapon — blunt | A rock in a white sports sock, the sock stretched by the weight. |
+| `spr_ui_item_broom_shiv.png` | Weapon — stab | A broom handle sharpened to a point, tape wrapped round the grip. |
+| `spr_ui_item_slingshot.png` | Weapon — ranged | Y-frame catapult, perished rubber, wooden fork. |
+| `spr_ui_item_ski_mask.png` | Armour — head | Black balaclava, laid flat. |
+| `spr_ui_item_protect_hoodie.png` | Armour — top | Grey hoodie, own-brand, front on. |
+| `spr_ui_item_protect_bottoms.png` | Armour — legs | Matching grey joggers. |
+| `spr_ui_item_max69_trainers.png` | Armour — feet | A pair of chunky white trainers, knock-off branding — **no real brand names or logos**. |
 
 ### Band 8 — per-weapon player attack sheets
 
@@ -485,16 +509,17 @@ UI reserves top-left as a 110×110 sunken frame (inner ~100 px). **Singles, not 
 grid, no baseline, no frame count, same delivery as props and item icons: magenta backdrop,
 `art_incoming/`, PNG + JSON.
 
-Like item icons, a portrait has no world size, so `worldHeight` is again **a way of asking for a
-pixel height**: use `2.0` for all thirteen, which lands a 96 px portrait that fills the frame.
+Like item icons, a portrait has no world size: use `category: "ui"` and `pixelSize: 96`, which
+fills the frame.
 
 **Drawn straight-on, head and shoulders, facing the camera** — not the isometric projection the
 props use; these are faces in a menu, not bodies in the world. **Match the subject's delivered
 `idle` sheet exactly** — same face, same hair, same clothes. A portrait that disagrees with the
 sprite standing in front of the player is worse than the empty frame.
 
-Only characters who actually hold a conversation get one — the thirteen with a
-`CharacterData`/`DialogueData` behind them. Generic villagers have no dialogue, so no portrait.
+Only characters who actually hold a conversation get one. Four generic villager presets now have
+generated ambient conversations, so they require portraits too; the female villager still has no
+conversation and remains outside this band.
 
 | File | Who | Match against |
 |---|---|---|
@@ -511,20 +536,21 @@ Only characters who actually hold a conversation get one — the thirteen with a
 | `spr_portrait_ralph.png` | Ralph — raggedy knock-off tracksuit, hood up | `sheet_char_ralph_idle` |
 | `spr_portrait_sanjeet.png` | Sanjeet — different-coloured tracksuit, hood down | `sheet_char_sanjeet_idle` |
 | `spr_portrait_pharmacist.png` | Roaming pharmacist — white coat, name badge, deadpan | `sheet_char_pharmacist_idle` |
+| `spr_portrait_villager.png` | Villager — bald man in patterned short-sleeve shirt | `sheet_char_villager_idle` |
+| `spr_portrait_villager_black.png` | Villager (Black) — green jacket, cream T-shirt | `sheet_char_villager_black_idle` |
+| `spr_portrait_villager_child.png` | Villager (Child) — teal hoodie, orange T-shirt | `sheet_char_villager_child_idle` |
+| `spr_portrait_villager_chinese.png` | Villager (Chinese) — glasses, red quilted vest | `sheet_char_villager_chinese_idle` |
 
 > **For the Unity side, not the art agent:** the importer reduces the PNG like any single and now
 > assigns it to `CharacterData.Portrait` — the field `DialogueManager.DisplayNode` reads and
 > enables. It routes `spr_portrait_<subject>` → the `PlacementPreset` whose `ArtSubject` is that
 > subject → that preset's `Speaker` CharacterData, and re-runs from disk via
-> `Tools → GBH → Content → Wire Presets From Imported Art`. The one prerequisite is the preset's
-> `Speaker` field: it is empty on every preset today, so until a `CharacterData` is assigned there
-> the importer reports the portrait as skipped rather than assigning it. The player gets no
-> portrait — `Speaker` in dialogue data is always the NPC.
->
-> ⚠ **Contradiction to resolve, 2026-08-09:** five `spr_portrait_player_*` singles have been
-> delivered anyway (player + all four classes), against the line above. Either the importer's
-> portrait routing needs to accept player-class subjects, or the five files are surplus — the
-> owner's call; the queue text and the delivery currently disagree.
+> `Tools → GBH → Content → Wire Presets From Imported Art`. If the preset has no speaker, the
+> importer adopts a unique existing `CharacterData` with the same `CharacterName`, or creates one
+> beside the dialogue assets. It then fills only blank `DialogueNode.Speaker` references; authored
+> non-null speakers are preserved for multi-speaker conversations. The five
+> `spr_portrait_player*` singles route separately into `PlayerClassVisualLibrary`; the selected
+> class portrait is copied to the session's `CharacterData.Portrait` and displayed by the HUD.
 
 ### Band 10 — roll and knockback
 

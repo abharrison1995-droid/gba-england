@@ -42,11 +42,14 @@ MonoBehaviour:
   NpcHeight: 1.55
   Roams: 0
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: e5457864e4d21824d9d5f48c6bab1182, type: 2}
   AmbientLine: Two for one on the hoodies, mate. Stab-proof? Couldn't tell you, but
     they're two for one.
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 1
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId: 

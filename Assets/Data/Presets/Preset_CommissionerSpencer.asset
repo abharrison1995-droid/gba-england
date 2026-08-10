@@ -42,11 +42,14 @@ MonoBehaviour:
   NpcHeight: 1.55
   Roams: 0
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: 7e99a8ae2e15b004f8308cccde44d116, type: 2}
   AmbientLine: Do you know how many medals I'm wearing? Neither do I, there's too
     many. Now MOVE.
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 1
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId: 

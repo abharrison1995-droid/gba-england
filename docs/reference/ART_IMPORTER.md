@@ -49,8 +49,37 @@ transparent margin the atlas then carries. Deliver square art if you want a squa
 
 `pixelSize` is appended to the manifest and optional. Absent or `0` reads back as `0`, which means
 "size from `worldHeight`" — exactly what every sheet delivered so far was imported with. It is
-ignored for sheets and for every category other than `ui`. `ART_PIPELINE.md` does not yet describe
-it to the art agent.
+ignored for sheets and for every category other than `ui`.
+
+Inventory icons use this path: `spr_ui_item_<item_id>.png`, `type: "single"`, `category: "ui"`,
+and `pixelSize: 72`. After import, the tool matches `<item_id>` case-insensitively against the
+stable `ItemData.ItemID` save key and assigns `ItemData.Icon`. The older
+`spr_item_<item_id>.png` spelling remains accepted for the first queued batch. An orphan icon,
+duplicate icon filename, or duplicate `ItemID` is reported and left unwired rather than guessed.
+The re-wiring menu rescans item icons as well as character presets and portraits.
+
+NPC portraits use `spr_portrait_<subject>.png`, `type: "single"`, `category: "ui"`, and
+`pixelSize: 96`. The subject resolves through `PlacementPreset.ArtSubject`. A blank preset
+`Speaker` first adopts a unique `CharacterData` whose `CharacterName` matches the preset label;
+if none exists, the importer creates `Assets/Data/Dialogue/NPC_<preset>.asset`. It assigns the
+portrait to that speaker and fills only null `DialogueNode.Speaker` fields in the preset's
+conversation. Existing node speakers are never overwritten, so authored multi-speaker graphs
+keep their ownership.
+
+The NPC scan explicitly skips all five player-class subjects even though they share the
+`spr_portrait_` prefix. Without that separation, four profiles report false missing-preset errors
+and Stabmeister is accidentally treated as an NPC only because a same-subject preset exists.
+
+`MagicTutorial` owns Daniel Pauls' and the Tracksuit Geezer's branching conversations in code, so
+those nodes are not part of a preset conversation for the importer to edit. Their temporary
+speaker records copy the portrait from the same preset speaker at runtime while preserving the
+tutorial's authored display names and lines.
+
+Player portraits use `spr_portrait_player.png` for Young Driller and
+`spr_portrait_player_<class-subject>.png` for the other four classes. The same rescan menu writes
+them into `PlayerClassVisualLibrary`; runtime class binding copies the selected class portrait to
+the session `CharacterData`, which is what the top-left HUD reads. This is intentionally separate
+from NPC `DialogueNode.Speaker` wiring.
 
 ## Things learned the hard way, encoded in the tool
 

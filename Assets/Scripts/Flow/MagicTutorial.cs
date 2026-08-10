@@ -126,10 +126,8 @@ namespace ExiledAlvaston.Flow
 
         private void BuildData()
         {
-            _danielData = ScriptableObject.CreateInstance<CharacterData>();
-            _danielData.CharacterName = "Daniel Pauls";
-            _underHousedData = ScriptableObject.CreateInstance<CharacterData>();
-            _underHousedData.CharacterName = "Under Housed";
+            _danielData = TutorialSpeaker(DanielPresetKey, "Daniel Pauls");
+            _underHousedData = TutorialSpeaker(GeezerPresetKey, "Under Housed");
 
             _intro = Tree(Node(_danielData,
                 "Oi— hold up. You've got a right glow comin' off you, mate. A proper aura. You not feel that?",
@@ -157,6 +155,24 @@ namespace ExiledAlvaston.Flow
                     Node(_underHousedData, "I don't— I don't know what you're on about. Back off. I'm tellin' you, BACK OFF—")),
                 Choice("Someone's been zappin' folk round here. That you, mate?",
                     Node(_underHousedData, "Nnnh— you shouldn't've said that. You shouldn't've—"))));
+        }
+
+        /// <summary>
+        /// The tutorial owns its branching dialogue and therefore builds temporary speaker data,
+        /// while portrait assignment lives on the same preset used to build the visible NPC. Copy
+        /// that one presentation field across without replacing the tutorial's authored display
+        /// name or coupling its dialogue to the preset's ambient conversation.
+        /// </summary>
+        private static CharacterData TutorialSpeaker(string presetKey, string displayName)
+        {
+            var data = ScriptableObject.CreateInstance<CharacterData>();
+            data.CharacterName = displayName;
+
+            PlacementPreset preset = PlacementPresetLibrary.Get(presetKey);
+            if (preset != null && preset.Speaker != null)
+                data.Portrait = preset.Speaker.Portrait;
+
+            return data;
         }
 
         private DialogueData Tree(DialogueNode start)

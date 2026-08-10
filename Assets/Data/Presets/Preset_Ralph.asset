@@ -42,10 +42,13 @@ MonoBehaviour:
   NpcHeight: 1.55
   Roams: 0
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: 7a920169f1a83414d9ddb301afe9aa43, type: 2}
   AmbientLine: Croydon Spartans, that's us. You've heard of us. You have.
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 1
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId: 
