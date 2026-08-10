@@ -1,0 +1,12 @@
+{
+  "name": "ground_roadside_pavement_grey_tile",
+  "type": "texture",
+  "category": "materials",
+  "width": 256,
+  "height": 256,
+  "tileable": true,
+  "colorSpace": "sRGB",
+  "intendedUnityFolder": "Assets/3DModels/assorted textures",
+  "description": "Simple seamless British roadside pavement with cool-grey rectangular concrete slabs, narrow joints and restrained everyday wear.",
+  "question": "Manual Unity-side texture handoff: move this PNG into the intended folder and import it as a repeating Default texture, not through the generated sprite-art importer."
+}
