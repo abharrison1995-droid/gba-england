@@ -79,7 +79,7 @@ public static class ArtImportTool
     private static readonly Dictionary<string, ActionSpec> ActionContract = new Dictionary<string, ActionSpec>
     {
         { "idle",   new ActionSpec { Frames = 4, Fps = 6f,  Loop = true  } },
-        { "walk",   new ActionSpec { Frames = 4, Fps = 8f,  Loop = true  } },
+        { "walk",   new ActionSpec { Frames = 6, Fps = 8f,  Loop = true  } },
         { "attack", new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
         { "cast",   new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
         { "hurt",   new ActionSpec { Frames = 3, Fps = 12f, Loop = false } },
@@ -321,6 +321,7 @@ public static class ArtImportTool
         // pipeline no longer asks for that filename (ART_PIPELINE.md §7.2).
         AssignVehicleSprite("spr_vehicle_ebike", report, problems);
         AssignPlayerController(PlayerSubject, report, problems);
+        AssignItemIcons(report, problems);
 
         bool classArtInBatch = clipsBySubject.Keys.Any(IsPlayerClassSubject);
         RefreshPlayerClassVisualLibrary(report, problems, classArtInBatch);
@@ -340,6 +341,116 @@ public static class ArtImportTool
         }
 
         AssignNpcPortraits(report, problems);
+    }
+
+    private const string CanonicalItemIconPrefix = "spr_ui_item_";
+    private const string LegacyItemIconPrefix = "spr_item_";
+
+    /// <summary>
+    /// Assigns an imported inventory single to ItemData.Icon by the stable ItemID save key.
+    /// New art uses spr_ui_item_&lt;ItemID&gt;; spr_item_&lt;ItemID&gt; remains accepted for the
+    /// original queued filenames. Duplicate save keys and orphan icons are never guessed.
+    /// </summary>
+    private static int AssignItemIcons(List<string> report, List<string> problems)
+    {
+        if (!AssetDatabase.IsValidFolder(ArtRoot)) return 0;
+
+        var itemsById = new Dictionary<string, List<ExiledAlvaston.Data.ItemData>>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (string guid in AssetDatabase.FindAssets("t:ItemData"))
+        {
+            var item = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.ItemData>(
+                AssetDatabase.GUIDToAssetPath(guid));
+            if (item == null || string.IsNullOrWhiteSpace(item.ItemID)) continue;
+
+            string itemId = item.ItemID.Trim();
+            if (!itemsById.TryGetValue(itemId, out var matches))
+            {
+                matches = new List<ExiledAlvaston.Data.ItemData>();
+                itemsById[itemId] = matches;
+            }
+            matches.Add(item);
+        }
+
+        var iconsById = new Dictionary<string, List<(string Path, Sprite Sprite)>>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = Path.GetFileNameWithoutExtension(path);
+            string itemId = ItemIdFromIconFilename(file);
+            if (string.IsNullOrEmpty(itemId)) continue;
+
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite == null) continue;
+
+            if (!iconsById.TryGetValue(itemId, out var icons))
+            {
+                icons = new List<(string Path, Sprite Sprite)>();
+                iconsById[itemId] = icons;
+            }
+            icons.Add((path, sprite));
+        }
+
+        int wired = 0;
+        foreach (var entry in iconsById)
+        {
+            string itemId = entry.Key;
+            List<(string Path, Sprite Sprite)> icons = entry.Value;
+
+            if (icons.Count > 1)
+            {
+                problems.Add($"item icon '{itemId}' is ambiguous: " +
+                             $"{string.Join(", ", icons.Select(i => i.Path))}. " +
+                             "Keep one imported icon filename for each ItemID.");
+                continue;
+            }
+
+            if (!itemsById.TryGetValue(itemId, out var items) || items.Count == 0)
+            {
+                // TestSword predates the ItemID filename rule (its file omits the underscore) but
+                // is already assigned correctly. Preserve such a legacy manual
+                // binding without making its non-canonical filename a second matching scheme.
+                bool alreadyAssigned = itemsById.Values
+                    .SelectMany(group => group)
+                    .Any(item => item.Icon == icons[0].Sprite);
+                if (alreadyAssigned) continue;
+
+                problems.Add($"{Path.GetFileNameWithoutExtension(icons[0].Path)}: imported, but no " +
+                             $"ItemData has ItemID '{itemId}'. Create the item definition or correct " +
+                             "the icon filename, then re-run the wiring command.");
+                continue;
+            }
+
+            if (items.Count > 1)
+            {
+                problems.Add($"item icon '{itemId}' was not assigned because {items.Count} ItemData " +
+                             "assets share that save key. ItemID values must be unique.");
+                continue;
+            }
+
+            var item = items[0];
+            Sprite icon = icons[0].Sprite;
+            if (item.Icon == icon) continue;
+
+            Undo.RecordObject(item, "Assign generated item icon");
+            item.Icon = icon;
+            EditorUtility.SetDirty(item);
+            report.Add($"    {item.name}.Icon <- {Path.GetFileNameWithoutExtension(icons[0].Path)} " +
+                       $"(ItemID '{itemId}')");
+            wired++;
+        }
+
+        return wired;
+    }
+
+    private static string ItemIdFromIconFilename(string file)
+    {
+        if (file.StartsWith(CanonicalItemIconPrefix, StringComparison.OrdinalIgnoreCase))
+            return file.Substring(CanonicalItemIconPrefix.Length);
+        if (file.StartsWith(LegacyItemIconPrefix, StringComparison.OrdinalIgnoreCase))
+            return file.Substring(LegacyItemIconPrefix.Length);
+        return null;
     }
 
     private static Sprite FindImported(string baseName)
@@ -619,10 +730,9 @@ public static class ArtImportTool
     /// idempotent and re-runnable from the "Wire Presets" menu. Overwrites outright, matching the
     /// asymmetry of the preset wiring: the portrait is derived from the art, so a fresh import wins.
     ///
-    /// Reports a problem, never silence, when a portrait has nowhere to go — no preset for its
-    /// subject, or presets that exist but have no Speaker CharacterData wired yet (currently every
-    /// one of them). That gap is the owner's to close by assigning a CharacterData to each talking
-    /// preset's Speaker field; this only stops the portrait being lost when they do.
+    /// Reports a problem, never silence, when a portrait has no matching preset or when a unique
+    /// speaker cannot be resolved or created. Blank preset speakers and dialogue-node speakers are
+    /// filled automatically by <see cref="EnsurePortraitSpeaker"/>.
     /// </summary>
     private static void AssignNpcPortraits(List<string> report, List<string> problems)
     {
@@ -639,6 +749,12 @@ public static class ArtImportTool
 
             string subject = file.Substring(PortraitPrefix.Length);
 
+            // Player portraits use the same filename family but have a different owner:
+            // PopulatePlayerClassVisualLibrary writes them into the five class profiles. Treating
+            // them as NPC portraits produces false "no PlacementPreset" errors for four classes
+            // and cross-wires Stabmeister only because that class also exists as an NPC.
+            if (IsPlayerClassSubject(subject)) continue;
+
             // Distinct Speaker assets across every preset on this subject — one CharacterData may be
             // shared by several presets, and it must not be reported (or recorded) twice.
             var speakers = new List<ExiledAlvaston.Data.CharacterData>();
@@ -646,14 +762,15 @@ public static class ArtImportTool
 
             foreach (string presetGuid in AssetDatabase.FindAssets("t:PlacementPreset"))
             {
+                string presetPath = AssetDatabase.GUIDToAssetPath(presetGuid);
                 var preset = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.PlacementPreset>(
-                    AssetDatabase.GUIDToAssetPath(presetGuid));
+                    presetPath);
                 if (preset == null) continue;
                 if (!string.Equals(preset.ArtSubject, subject, StringComparison.OrdinalIgnoreCase)) continue;
 
                 matchedAnyPreset = true;
-                if (preset.Speaker != null && !speakers.Contains(preset.Speaker))
-                    speakers.Add(preset.Speaker);
+                var speaker = EnsurePortraitSpeaker(preset, presetPath, report, problems);
+                if (speaker != null && !speakers.Contains(speaker)) speakers.Add(speaker);
             }
 
             if (!matchedAnyPreset)
@@ -665,10 +782,8 @@ public static class ArtImportTool
 
             if (speakers.Count == 0)
             {
-                problems.Add($"{file}: imported, but no preset for '{subject}' has a Speaker " +
-                             "CharacterData, so the dialogue window has nothing to assign it to. " +
-                             "Set the Speaker field on that character's preset and re-run " +
-                             "Tools → GBH → Content → Wire Presets From Imported Art.");
+                problems.Add($"{file}: no usable dialogue speaker could be resolved or created " +
+                             $"for subject '{subject}'. See the preceding portrait wiring error.");
                 continue;
             }
 
@@ -682,6 +797,113 @@ public static class ArtImportTool
                 report.Add($"    {speaker.name}.Portrait ← {file}");
             }
         }
+    }
+
+    /// <summary>
+    /// Gives a portrait-bearing preset a CharacterData and fills blank speaker references in its
+    /// existing conversation. Portrait generation must not depend on a hand-authored Inspector
+    /// drag: most ambient conversations predate PlacementPreset.Speaker and currently serialize
+    /// their one node with Speaker null.
+    ///
+    /// Existing CharacterData is preferred by exact CharacterName, which adopts NPC_Mosley and
+    /// NPC_NeigelFromage. A missing speaker is created beside those assets using the preset asset
+    /// name. Existing non-null dialogue-node speakers are never overwritten, preserving authored
+    /// multi-speaker conversations.
+    /// </summary>
+    private static ExiledAlvaston.Data.CharacterData EnsurePortraitSpeaker(
+        ExiledAlvaston.Data.PlacementPreset preset, string presetPath,
+        List<string> report, List<string> problems)
+    {
+        if (preset == null) return null;
+
+        ExiledAlvaston.Data.CharacterData speaker = preset.Speaker;
+        if (speaker == null)
+        {
+            var matches = new List<ExiledAlvaston.Data.CharacterData>();
+            foreach (string guid in AssetDatabase.FindAssets(
+                         "t:CharacterData", new[] { "Assets/Data/Dialogue" }))
+            {
+                var candidate = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.CharacterData>(
+                    AssetDatabase.GUIDToAssetPath(guid));
+                if (candidate != null && string.Equals(candidate.CharacterName, preset.Label,
+                        StringComparison.OrdinalIgnoreCase))
+                    matches.Add(candidate);
+            }
+
+            if (matches.Count > 1)
+            {
+                problems.Add($"{Path.GetFileNameWithoutExtension(presetPath)}: cannot create portrait " +
+                             $"speaker because {matches.Count} CharacterData assets are named " +
+                             $"'{preset.Label}'. Resolve the duplicate first.");
+                return null;
+            }
+
+            if (matches.Count == 1)
+            {
+                speaker = matches[0];
+            }
+            else
+            {
+                string presetName = Path.GetFileNameWithoutExtension(presetPath);
+                string suffix = presetName.StartsWith("Preset_", StringComparison.Ordinal)
+                    ? presetName.Substring("Preset_".Length)
+                    : presetName;
+                string speakerPath = $"Assets/Data/Dialogue/NPC_{suffix}.asset";
+
+                speaker = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.CharacterData>(speakerPath);
+                if (speaker == null && AssetDatabase.LoadMainAssetAtPath(speakerPath) != null)
+                {
+                    problems.Add($"{presetName}: {speakerPath} exists but is not CharacterData.");
+                    return null;
+                }
+
+                if (speaker == null)
+                {
+                    speaker = ScriptableObject.CreateInstance<ExiledAlvaston.Data.CharacterData>();
+                    speaker.CharacterName = preset.Label;
+                    speaker.MaxHealth = 20;
+                    speaker.MaxManaStamina = 10;
+                    speaker.BaseTraits = new ExiledAlvaston.Data.CoreTraits();
+                    speaker.BaseResistances = new ExiledAlvaston.Data.Resistances();
+                    AssetDatabase.CreateAsset(speaker, speakerPath);
+                    report.Add($"    created {speakerPath} for portrait/dialogue speaker");
+                }
+            }
+
+            Undo.RecordObject(preset, "Assign portrait dialogue speaker");
+            preset.Speaker = speaker;
+            EditorUtility.SetDirty(preset);
+            report.Add($"    {preset.name}.Speaker <- {speaker.name}");
+        }
+
+        WireSpeakerIntoConversation(preset, speaker, report);
+        return speaker;
+    }
+
+    private static void WireSpeakerIntoConversation(ExiledAlvaston.Data.PlacementPreset preset,
+        ExiledAlvaston.Data.CharacterData speaker, List<string> report)
+    {
+        if (preset == null || speaker == null || preset.Conversation == null ||
+            preset.Conversation.Nodes == null) return;
+
+        int filled = 0;
+        bool undoRecorded = false;
+        foreach (var node in preset.Conversation.Nodes)
+        {
+            if (node == null || node.Speaker != null) continue;
+            if (!undoRecorded)
+            {
+                Undo.RecordObject(preset.Conversation, "Assign portrait dialogue speaker");
+                undoRecorded = true;
+            }
+            node.Speaker = speaker;
+            filled++;
+        }
+
+        if (filled == 0) return;
+
+        EditorUtility.SetDirty(preset.Conversation);
+        report.Add($"    {preset.Conversation.name}: filled {filled} blank speaker node(s)");
     }
 
     /// <summary>
@@ -746,7 +968,8 @@ public static class ArtImportTool
                 RestingSprite = idleFrames.FirstOrDefault(),
                 IdlePreviewFrames = idleFrames,
                 PreviewFps = 6f,
-                GameplayReady = complete
+                GameplayReady = complete,
+                Portrait = FindImported($"spr_portrait_{PlayerClassSubjects[i]}")
             };
         }
 
@@ -834,34 +1057,39 @@ public static class ArtImportTool
     [MenuItem("Tools/GBH/Content/Wire Presets From Imported Art")]
     public static void WirePresetsFromImportedArt()
     {
-        if (!AssetDatabase.IsValidFolder(AnimRoot))
+        if (!AssetDatabase.IsValidFolder(ArtRoot))
         {
             EditorUtility.DisplayDialog("Wire Presets From Imported Art",
-                $"No {AnimRoot} folder, so no art has been imported yet.", "OK");
+                $"No {ArtRoot} folder, so no art has been imported yet.", "OK");
             return;
         }
 
         var report = new List<string>();
         int subjects = 0;
 
-        foreach (string guid in AssetDatabase.FindAssets("t:AnimatorController", new[] { AnimRoot }))
+        if (AssetDatabase.IsValidFolder(AnimRoot))
         {
-            string file = Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid));
-            if (!file.EndsWith(ControllerSuffix, StringComparison.Ordinal)) continue;
+            foreach (string guid in AssetDatabase.FindAssets("t:AnimatorController", new[] { AnimRoot }))
+            {
+                string file = Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid));
+                if (!file.EndsWith(ControllerSuffix, StringComparison.Ordinal)) continue;
 
-            string subject = file.Substring(0, file.Length - ControllerSuffix.Length);
-            // Only the player is skipped — a scene object, never palette-stamped. A preset that
-            // explicitly claims a player-CLASS subject (Preset_Stabmeister does) gets wired like
-            // any NPC's; without this the class presets stay unwired no matter how often this runs.
-            if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
+                string subject = file.Substring(0, file.Length - ControllerSuffix.Length);
+                // Only the player is skipped — a scene object, never palette-stamped. A preset that
+                // explicitly claims a player-CLASS subject (Preset_Stabmeister does) gets wired like
+                // any NPC's; without this the class presets stay unwired no matter how often this runs.
+                if (string.Equals(subject, PlayerSubject, StringComparison.OrdinalIgnoreCase)) continue;
 
-            if (WirePresetsForSubject(subject, 0f, report) > 0) subjects++;
+                if (WirePresetsForSubject(subject, 0f, report) > 0) subjects++;
+            }
         }
 
         // Portraits are singles, not driven by a controller, so the controller sweep above never
         // reaches them — assign them from disk here on the same terms.
         var portraitProblems = new List<string>();
         AssignNpcPortraits(report, portraitProblems);
+        int itemIcons = AssignItemIcons(report, portraitProblems);
+        RefreshPlayerClassVisualLibrary(report, portraitProblems, requiredForBatch: true);
         foreach (string p in portraitProblems) report.Add($"    (skipped) {p}");
 
         AssetDatabase.SaveAssets();
@@ -876,7 +1104,8 @@ public static class ArtImportTool
         EditorUtility.DisplayDialog("Wire Presets From Imported Art",
             report.Count == 0
                 ? "Every preset already matches its art. Nothing changed."
-                : $"{report.Count} preset(s) wired across {subjects} subject(s).\n\n" +
+                : $"Imported art wiring updated ({subjects} character subject(s), " +
+                  $"{itemIcons} item icon(s)).\n\n" +
                   "Heights are left alone here — only an import knows a subject's worldHeight.\n\n" +
                   "Detail in the Console.", "OK");
     }

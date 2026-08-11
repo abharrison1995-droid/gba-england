@@ -15,7 +15,7 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: f1688881a59c0d24e8d3c4bb49741f0c, type: 2}
     DialogueText: I'm the Mayor of London, I've four committees before lunch, and
       you are not on the agenda.
     Choices: []

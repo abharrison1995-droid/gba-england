@@ -99,7 +99,7 @@ Three smaller facts that shape specific decisions:
    trap in Phase 3 — §3.1 and §9 row 2.
 6. **Only one `ItemData` asset in the whole repo has non-zero `Armor`.** Seven assets reference
    `ItemData.cs` (guid `7fc51ae09f9646d48896705b87b1ac3f`), all under `Assets/Resources/Items/`;
-   `TestShield.asset:23` reads `Armor: 4` and the other six read `Armor: 0`. The armour balance
+   `TestRing.asset:23` reads `Armor: 4` and the other six read `Armor: 0`. The armour balance
    migration is therefore one row, not a re-authoring pass — §4.3.
 7. **`SpriteContainer` rolls its band in `Awake`**, not on open (`SpriteContainer.cs:150, 158`). An
    extra-loot-roll perk taken mid-run affects only containers instantiated *after* it is taken.
@@ -267,7 +267,7 @@ Against a level-1 Roadman (`Damage: 7`, `Enemy_Roadman.prefab:124`) and an Occul
 | Effective armour | Old: dmg from 7 | New: dmg from 7 | Old: dmg from 30 | New: dmg from 30 | New reduction |
 |---|---|---|---|---|---|
 | 0 | 7 | 7 | 30 | 30 | 0% |
-| **4** (TestShield today) | **3** | **6** | 26 | 25 | 16.7% |
+| **4** (TestRing today) | **3** | **6** | 26 | 25 | 16.7% |
 | 8 | 0 — **whiff** | 5 | 22 | 21 | 28.6% |
 | 12 | 0 — whiff | 4 | 18 | 19 | 37.5% |
 | 20 | 0 — whiff | 4 | 10 | 15 | 50.0% |
@@ -281,15 +281,15 @@ smoothing it.
 ### 4.3 Which assets need re-authoring, and by whom
 
 **None.** Verified: seven `ItemData` assets exist in the repo, all under
-`Assets/Resources/Items/`; `TestShield.asset:23` is the only one with `Armor` above 0, at 4. Under
+`Assets/Resources/Items/`; `TestRing.asset:23` is the only one with `Armor` above 0, at 4. Under
 `ArmourSoftCap = 20` a 4 still reads as a meaningful 16.7% reduction, so no asset edit is required
 for the change to land coherently.
 
 `ArmourSoftCap = 20` was chosen **specifically** so that no asset needs re-authoring. The
 alternative worth naming: a softer cap (50) gives more integer headroom for future gear tiers but
-makes TestShield's 4 worth 7.4%, at which point the owner would want it re-authored upward. That is
+makes TestRing's 4 worth 7.4%, at which point the owner would want it re-authored upward. That is
 a balance call, not a code one — **the owner's, not the implementer's.** If the owner picks 50, the
-single required edit is Project, `Assets/Resources/Items/TestShield.asset`, Inspector,
+single required edit is Project, `Assets/Resources/Items/TestRing.asset`, Inspector,
 **Armor** 4 to 12, with Play mode stopped.
 
 **Authoring guidance to record for future gear** (at soft cap 20): a light piece ~3-5, a heavy
@@ -538,7 +538,7 @@ i.e. on even levels — otherwise every level-up claims a point that odd levels 
 | 5 | `PlayerClassInfo.LevelGrowth` + `GrowthPerLevel` | new `[Serializable]` class, code-only | none | none | None — no asset or prefab stores it. |
 | 6 | `PlayerSession`: `_baselineResistances`, `_spentPerkIds`, the cached multipliers, `OnStatsChanged`, `OnPerksChanged` | new fields/events on a MonoBehaviour | **nowhere** | none | None. `PlayerSession` has no scene or prefab instance — `GameFlowController.EnsureSession` creates it with `new GameObject(...).AddComponent` (`GameFlowController.cs:69-73`), so its fields come from C# initialisers every run. |
 | 7 | `EKVibe.ArmourSoftCap`, `ArmourMaxReduction`, `ArmourReduction`, `PerkPointsAtLevel` | `const` / `static` | none | none | None — compile-time. But `ArmourSoftCap` is a **balance** constant: changing it retunes every piece of gear at once. |
-| 8 | `ItemData.Armor` | **unchanged field, changed meaning** | 7 `Resources/Items/*.asset` | `TestShield.asset:23` = 4; the other six = 0 | Not a serialization risk — a **balance** one. The number is reinterpreted from "flat points removed" to "input to a curve". §4.2 is the mapping; §4.3 says no asset needs editing at soft cap 20. |
+| 8 | `ItemData.Armor` | **unchanged field, changed meaning** | 7 `Resources/Items/*.asset` | `TestRing.asset:23` = 4; the other six = 0 | Not a serialization risk — a **balance** one. The number is reinterpreted from "flat points removed" to "input to a curve". §4.2 is the mapping; §4.3 says no asset needs editing at soft cap 20. |
 | 9 | `CharacterData.BaseResistances.Physical` | **unchanged field, newly load-bearing** | `RuntimeStats` is a runtime-only `CreateInstance` (`PlayerSession.cs:161`); no `.asset` on disk carries a non-zero one | none | Becomes real damage reduction (§4). Any `CharacterData` asset an author later gives a Physical value now changes combat, not just a readout. Worth a tooltip on the field. |
 | 10 | `MapChunkData.ChunkName`, `ItemData.ItemID`, `WikiEntryData.EntryID`, `SaveData.TotalXP` | **untouched** | — | — | Explicitly out of scope. If a diff touches any of these, it is out of plan. |
 

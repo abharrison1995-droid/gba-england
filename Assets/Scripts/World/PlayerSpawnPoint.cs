@@ -19,6 +19,25 @@ namespace ExiledAlvaston.World
         [Tooltip("Optional label so one chunk can have several arrival points. Empty = the default spawn.")]
         public string Id = "";
 
+        /// <summary>
+        /// Strict lookup: the point whose <see cref="Id"/> matches exactly, or null.
+        ///
+        /// Deliberately separate from <see cref="Find"/>, which falls back to the default point
+        /// and then to the first point in the chunk. That fallback is right for "put the player
+        /// somewhere sensible in this chunk" and wrong for a portal naming a specific marker: a
+        /// typo'd or deleted id would silently deliver the player to some other door instead of
+        /// reporting the authoring error. Callers that name a marker want this one.
+        /// </summary>
+        public static PlayerSpawnPoint FindExact(GameObject chunkRoot, string id)
+        {
+            if (chunkRoot == null || string.IsNullOrEmpty(id)) return null;
+
+            var points = chunkRoot.GetComponentsInChildren<PlayerSpawnPoint>(true);
+            foreach (var p in points)
+                if (p.Id == id) return p;
+            return null;
+        }
+
         /// <summary>Finds the matching spawn point inside an instantiated chunk (null if none).</summary>
         public static PlayerSpawnPoint Find(GameObject chunkRoot, string id = null)
         {

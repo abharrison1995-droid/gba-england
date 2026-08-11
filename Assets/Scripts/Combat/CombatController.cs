@@ -428,6 +428,17 @@ namespace ExiledAlvaston.Combat
             }
         }
 
+        /// <summary>
+        /// Turns the player to face a world direction, sprite included. For anything that places
+        /// the player without them having walked there — arriving at a portal's spawn marker, a
+        /// scripted beat — where writing <c>transform.rotation</c> directly would be reverted by
+        /// the next input and would not flip the billboarded sprite at all.
+        /// </summary>
+        public void FaceTowards(Vector3 worldDirection)
+        {
+            SetFacing(worldDirection);
+        }
+
         private void SetFacing(Vector3 dir)
         {
             dir.y = 0f;

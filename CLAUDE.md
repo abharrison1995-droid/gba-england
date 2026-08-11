@@ -525,6 +525,80 @@ cover is below:
 
 → [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) for the wiring.
 
+**Also outstanding — linked location portals, none of it exercised.** Committed 2026-08-09, never
+compiled, and **no linked pair and no `DungeonPortal` exists anywhere in the project** — a GUID
+scan of `Assets/` finds none, and `git log -S` says the last one went in `8bd1520`. Every route
+below therefore needs content authoring before it can even be attempted:
+
+- ⚠️ **`ChunkManager.TravelRoutine` was reordered so nothing commits until the arrival marker
+  resolves.** The destination is instantiated, the marker looked up, and only then are wanted
+  state, `CurrentChunkData`, the visited list, the wiki toast and the autosave touched. *Point a
+  portal at a marker id that does not exist, press USE, and check the player stays put with a
+  warning naming the chunk and the id — not a black screen, not a half-loaded chunk.* This is the
+  one behavioural change to a path that already worked.
+- **`DungeonPortal.TargetSpawnPointId` is appended** and takes the marker's rotation as arrival
+  facing, via a new `CombatController.FaceTowards`. Empty keeps the old raw-`SpawnPosition`
+  behaviour. *Check the player arrives facing the marker's blue arrow and that the sprite faces
+  that way too, rather than only the invisible transform.*
+- **A portal refuses while mounted** — "Get off the vehicle first." *Ride a moped to a door and
+  check it refuses and the vehicle is untouched.*
+- **`DungeonPortal.Awake` no longer overwrites an authored `Interactable.InteractRange`**; it only
+  sets 3 on a component it created itself. *Set a range of 6 in the Inspector and check the prompt
+  appears from further away.*
+- **`Assets/Resources/MapChunkRegistry.asset` and its `.meta` were hand-authored** with fresh
+  GUIDs, holding all six existing chunks — no Unity was available. *Confirm on first open that
+  Unity accepts them rather than minting new ones, and that the asset's Inspector shows six
+  chunks.* `FindChunkByName` consults `AllChunks` first and this second.
+- **`Tools → GBH → Place → Portal Placement` is a rewritten window** — linked pairs, an interior
+  bundle creator, and `Validate All Location Links`. *Open it once and check it draws without
+  console errors before trusting any of it.* It refuses to create while Prefab Mode is open, by
+  design.
+- ⚠️ **The validator has never run against real content.** With no portal in the project it can
+  only report chunk-name and registry findings. The plan this came from expected it to catch a
+  self-targeting `Portal_Home_London` in `Home_London_Prefab`; **that object no longer exists**, so
+  that check is unproven. *Author one deliberately broken pair and confirm each rule fires.*
+- **Interiors are inferred, not flagged** — a chunk with no N/S/E/W adjacency that some portal
+  targets. Nothing on `MapChunkData` declares it, deliberately, to avoid a serialized field for
+  something derivable.
+- **Scoped out on purpose:** `TravelRoutine` still destroys and re-instantiates, so returning
+  outside rebuilds the exterior and resets unsaved NPC, enemy and chest state. Exact preservation
+  belongs to [docs/plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md](docs/plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md).
+  **Do not ship reward-bearing interiors until that lands.**
+
+→ [docs/reference/CHUNK_WORLD.md](docs/reference/CHUNK_WORLD.md) and
+[docs/reference/WORLD_AUTHORING_AND_NPCS.md](docs/reference/WORLD_AUTHORING_AND_NPCS.md).
+
+**Also outstanding — six empty interior shells, hand-authored YAML.** Committed 2026-08-09.
+`Quidland`, `FU_Sports`, `City_Hall`, `Police_Station`, `Gang_Hideout` and `The_Winchester` — each a
+`MapChunkData` plus a chunk prefab holding a floor, four walls, a `RuntimeNavMeshBaker` and one
+id-less `PlayerSpawn`. All six are in `MapChunkRegistry`, which now lists twelve chunks.
+
+- ⚠️ **Twelve `.asset`/`.prefab` files and their twelve `.meta` files were written by hand** — no
+  Unity was available, so every GUID and every `fileID` was assigned by a script rather than by the
+  editor. *Open each prefab once and confirm Unity accepts it rather than reimporting it into
+  something different:* the root should be one object with a `RuntimeNavMeshBaker`, six children, a
+  lit floor and four walls, and no console error. `--check-dangling` resolves every reference in
+  them, which proves the GUIDs point at real assets and **nothing about whether the YAML parses**.
+- ⚠️ **The six `ChunkName` values are save keys from the moment a save is made inside one.**
+  Changing one later orphans those saves in silence. Nothing has saved in any of them yet, so this
+  is still the free moment.
+- **They have no doors.** Nothing points at them and they point at nothing. Wiring one is a run of
+  `Tools → GBH → Place → Portal Placement` against `Home_London_Data` — which is also the first
+  real exercise of that tool, and of the marker travel path above.
+- ⚠️ **None of the five exterior building models exists.** [docs/art/ART_QUEUE.md](docs/art/ART_QUEUE.md)
+  band 6 owes City Hall, Quidland, F.U. Sports, Police Station and Gang Hideout as 3D shells, and
+  says the delivery route is **not decided**. Until they land, a door wired to any of these hangs in
+  open air. Not a blocker for the interiors; it is the blocker for a satisfying test.
+- **`The_Winchester` is the odd one out.** It is not in band 6, and `PubInteractable` already does
+  the whole pint-clears-wanted-heals-saves flow from one USE on `Pub_TheWinchester.prefab` — which
+  is **not placed in any chunk**. The shell exists; whether the pub should go behind a door at all
+  is an open design question, not a decision this made.
+- **Each is a bare box.** `mat_dungeon_wall` and `mat_dungeon_floor` are placeholders, not a view on
+  how a pound shop should look.
+- **Downstream, not done:** arrest still teleports to Manor Cellars (`GameFlowController.ArrestRoutine`),
+  not the police station. `WantedManager`'s own comment already calls rerouting the arrest path a
+  separate job.
+
 **Also outstanding — the mobile performance pass, none of it exercised.** Landed on `main`, never
 compiled:
 

@@ -42,10 +42,13 @@ MonoBehaviour:
   NpcHeight: 1.55
   Roams: 1
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: 71059417f307f4d4285a201980170982, type: 2}
   AmbientLine: MOVE! I'm gonna shit.
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 0
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId: 

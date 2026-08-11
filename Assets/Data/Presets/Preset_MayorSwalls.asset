@@ -42,11 +42,14 @@ MonoBehaviour:
   NpcHeight: 1.55
   Roams: 0
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: f1688881a59c0d24e8d3c4bb49741f0c, type: 2}
   AmbientLine: I'm the Mayor of London, I've four committees before lunch, and you
     are not on the agenda.
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 1
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId: 

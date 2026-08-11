@@ -15,7 +15,7 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: e5457864e4d21824d9d5f48c6bab1182, type: 2}
     DialogueText: Two for one on the hoodies, mate. Stab-proof? Couldn't tell you,
       but they're two for one.
     Choices: []

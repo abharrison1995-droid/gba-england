@@ -13,10 +13,16 @@ using ExiledAlvaston.UI;
 namespace ExiledAlvaston.EditorTools
 {
     /// <summary>
-    /// Rebuilds the title screen as a Win95 window over the pixelated countryside plate:
-    /// the GBH: England wordmark stays at the top, the Union Jack stays baked into the
-    /// backdrop at the bottom, and Continue / New Game / Quit become raised grey bevel
-    /// buttons inside a navy-title-barred grey window.
+    /// Rebuilds the title screen as a Win95 desktop: flat teal field edge to edge, a grey
+    /// taskbar with Start button and clock tray along the bottom, the GBH: England wordmark
+    /// at the top, a framed St George's Cross poster on the desktop, and Continue / New Game /
+    /// Quit as raised grey bevel buttons inside a navy-title-barred grey window layered over
+    /// the flag's centre.
+    ///
+    /// The pixelated countryside plate (Big Ben towers, Union Jack baked in) is no longer
+    /// referenced. Title_Background_Pixel.png stays on disk, unreferenced, so the swap can be
+    /// reviewed before the file is retired; TitleScreenSetup's rollback path uses the non-pixel
+    /// Title_Background.png and is unaffected.
     ///
     /// Same safety pattern as TitleScreenSetup: only the children of the preserved TitleRoot
     /// are replaced, the root itself, GameFlowController and TitleScreenUI are untouched,
@@ -29,12 +35,13 @@ namespace ExiledAlvaston.EditorTools
     {
         private const string ScenePath = "Assets/c.unity";
         private const string GeneratedRootName = "GeneratedTitleLayout";
-        private const string BackgroundPath = "Assets/Textures/UI/Title/Title_Background_Pixel.png";
         private const string LogoPath = "Assets/Textures/UI/Title/Title_Logo.png";
+
+        // St George red (#CE1124). The flag is uGUI strips, not a texture, so it scales clean.
+        private static readonly Color FlagRed = new Color(0.808f, 0.067f, 0.141f);
 
         private static readonly string[] AssetPaths =
         {
-            BackgroundPath,
             LogoPath
         };
 
@@ -112,7 +119,6 @@ namespace ExiledAlvaston.EditorTools
                 return;
             }
 
-            Sprite background = LoadSprite(BackgroundPath);
             Sprite logo = LoadSprite(LogoPath);
 
             GameObject originalTitleRoot = flow.TitleRoot;
@@ -143,7 +149,7 @@ namespace ExiledAlvaston.EditorTools
                 RectTransform generatedRoot = CreateRect(GeneratedRootName, titleRoot.transform);
                 Stretch(generatedRoot);
 
-                BuildBackground(generatedRoot, background);
+                BuildDesktop(generatedRoot);
                 BuildSafeContent(generatedRoot, logo, out Button continueButton, out Button newGameButton, out Button quitButton);
 
                 SerializedObject serializedUi = new SerializedObject(titleUi);
@@ -212,18 +218,15 @@ namespace ExiledAlvaston.EditorTools
                 if (importer == null)
                     throw new InvalidOperationException("No TextureImporter for " + path);
 
-                bool isBackground = path == BackgroundPath;
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = 100f;
                 importer.mipmapEnabled = false;
-                importer.alphaIsTransparency = !isBackground;
-                importer.alphaSource = isBackground
-                    ? TextureImporterAlphaSource.None
-                    : TextureImporterAlphaSource.FromInput;
+                importer.alphaIsTransparency = true;
+                importer.alphaSource = TextureImporterAlphaSource.FromInput;
                 importer.sRGBTexture = true;
-                // Bilinear on purpose: the fat pixels are baked into the plate itself, and a
-                // point filter would shimmer when the canvas scales to a phone resolution.
+                // Bilinear on purpose: a point filter would shimmer when the canvas scales
+                // to a phone resolution.
                 importer.filterMode = FilterMode.Bilinear;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.npotScale = TextureImporterNPOTScale.None;
@@ -242,25 +245,33 @@ namespace ExiledAlvaston.EditorTools
             return sprite;
         }
 
-        private static void BuildBackground(RectTransform parent, Sprite sprite)
+        /// <summary>
+        /// Flat Win95 desktop: teal field edge to edge plus the taskbar chrome along the
+        /// bottom. Solid uGUI colour, no texture — the countryside plate is gone for good.
+        /// </summary>
+        private static void BuildDesktop(RectTransform parent)
         {
-            RectTransform rect = CreateRect("Background", parent);
-            Stretch(rect);
-            Image image = rect.gameObject.AddComponent<Image>();
-            image.sprite = sprite;
-            image.color = Color.white;
-            image.raycastTarget = false;
+            RectTransform desktop = CreateRect("Desktop", parent);
+            Stretch(desktop);
+            Image field = desktop.gameObject.AddComponent<Image>();
+            field.color = Win95Skin.Desktop;
+            field.raycastTarget = false;
 
-            AspectRatioFitter fitter = rect.gameObject.AddComponent<AspectRatioFitter>();
-            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
-            fitter.aspectRatio = sprite.rect.width / sprite.rect.height;
+            BuildTaskbar(desktop);
+        }
+
+        // The taskbar chrome itself lives in Win95Skin.AddTaskbar, shared with the
+        // character creator's desktop so both screens draw an identical bar.
+        private static void BuildTaskbar(RectTransform parent)
+        {
+            Win95Skin.AddTaskbar(parent);
         }
 
         /// <summary>
         /// Same column geometry as TitleScreenSetup so the wordmark keeps its marked slot.
-        /// The three buttons move off the column stack into the grey window that hangs
-        /// below the logo; the Union Jack stays visible under everything, baked into the
-        /// pixelated plate.
+        /// The St George poster is created before the column so the logo and the grey menu
+        /// window draw over it — the window sits on the flag's centre like a window over a
+        /// poster pinned to the desktop.
         /// </summary>
         private static void BuildSafeContent(
             RectTransform parent,
@@ -272,6 +283,8 @@ namespace ExiledAlvaston.EditorTools
             RectTransform safeArea = CreateRect("SafeArea", parent);
             Stretch(safeArea);
             safeArea.gameObject.AddComponent<SafeAreaFitter>();
+
+            BuildFlag(safeArea);
 
             RectTransform column = CreateRect("CenterColumn", safeArea);
             column.anchorMin = new Vector2(0.5f, 0.5f);
@@ -297,6 +310,48 @@ namespace ExiledAlvaston.EditorTools
             LayoutElement windowElement = window.gameObject.AddComponent<LayoutElement>();
             windowElement.preferredWidth = 470f;
             windowElement.preferredHeight = 330f;
+        }
+
+        /// <summary>
+        /// St George's Cross at 5:3, built from uGUI strips so it stays crisp at any phone
+        /// resolution — no texture asset. Centre-anchored in the band the markup marked:
+        /// its top edge just clears the wordmark slot (column top is +450, logo ends +210)
+        /// and its bottom stays well clear of the taskbar. Cross-arm thickness is one fifth
+        /// of the flag height, per the flag spec. Raised bevel frame so it reads as a poster
+        /// sitting on the desktop; the menu window layers over its middle.
+        /// </summary>
+        private static void BuildFlag(RectTransform parent)
+        {
+            RectTransform flag = CreateRect("StGeorgeFlag", parent);
+            flag.anchorMin = new Vector2(0.5f, 0.5f);
+            flag.anchorMax = new Vector2(0.5f, 0.5f);
+            flag.pivot = new Vector2(0.5f, 0.5f);
+            flag.sizeDelta = new Vector2(800f, 480f);
+            flag.anchoredPosition = new Vector2(0f, -30f);
+
+            Image field = flag.gameObject.AddComponent<Image>();
+            field.color = Color.white;
+            field.raycastTarget = false;
+
+            RectTransform vertical = CreateRect("CrossVertical", flag);
+            vertical.anchorMin = new Vector2(0.44f, 0f);
+            vertical.anchorMax = new Vector2(0.56f, 1f);
+            vertical.offsetMin = Vector2.zero;
+            vertical.offsetMax = Vector2.zero;
+            Image verticalImage = vertical.gameObject.AddComponent<Image>();
+            verticalImage.color = FlagRed;
+            verticalImage.raycastTarget = false;
+
+            RectTransform horizontal = CreateRect("CrossHorizontal", flag);
+            horizontal.anchorMin = new Vector2(0f, 0.4f);
+            horizontal.anchorMax = new Vector2(1f, 0.6f);
+            horizontal.offsetMin = Vector2.zero;
+            horizontal.offsetMax = Vector2.zero;
+            Image horizontalImage = horizontal.gameObject.AddComponent<Image>();
+            horizontalImage.color = FlagRed;
+            horizontalImage.raycastTarget = false;
+
+            Win95Skin.AddBevel(flag, sunken: false);
         }
 
         private static RectTransform CreateWindow(

@@ -42,10 +42,13 @@ MonoBehaviour:
   NpcHeight: 0
   Roams: 1
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: 8a08364fd8dc89f409f4cdc482354ea6, type: 2}
   AmbientLine: Don't even ask if i'll do you it on tick mate.
   Pickpocketable: 0
-  PickpocketMinGold: 5
-  PickpocketMaxGold: 25
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
   PickpocketCatchChance: 0.3
   Region: 0
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId: 

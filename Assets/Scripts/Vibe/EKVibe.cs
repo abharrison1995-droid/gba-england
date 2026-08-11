@@ -157,7 +157,7 @@ namespace ExiledAlvaston.Vibe
         /// <see cref="Data.ItemData.Armor"/> value is an input to the curve rather than a number of
         /// points removed.
         ///
-        /// 20 was chosen so the only armour value authored today (TestShield's 4) still reads as a
+        /// 20 was chosen so the only armour value authored today (TestRing's 4) still reads as a
         /// meaningful 16.7% reduction and no existing asset needs re-authoring. Authoring guidance
         /// at this cap: a light piece ~3-5, a heavy piece ~8-12, a full endgame doll around 40-60
         /// effective, i.e. 67-75%.

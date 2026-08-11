@@ -10,8 +10,8 @@ namespace ExiledAlvaston.UI
     /// (Editor/InventoryWin95Builder, TitleScreenWin95Builder, CharacterCreatorWin95Builder)
     /// and the buttons built at runtime, so every window draws the same skin.
     ///
-    /// EKVibe keeps the parchment palette for the rest of the game; this skin covers the
-    /// inventory, title screen and character creator windows.
+    /// EKVibe keeps the parchment palette for the remaining legacy surfaces; this skin covers the
+    /// inventory, title screen, character creator, dialogue window and portrait frames.
     /// </summary>
     public static class Win95Skin
     {
@@ -21,6 +21,7 @@ namespace ExiledAlvaston.UI
         public static readonly Color Shadow = Hex("808080");
         public static readonly Color TitleBar = Hex("000080");
         public static readonly Color TitleText = Color.white;
+        public static readonly Color Desktop = Hex("008080");
         public static readonly Color SlotFill = Hex("9C9C9C");
         public static readonly Color HeaderYellow = Hex("FFF100");
         public static readonly Color FieldText = Color.black;
@@ -138,6 +139,122 @@ namespace ExiledAlvaston.UI
             labelRt.offsetMax = Vector2.zero;
 
             StyleButtonWithLabel(btn);
+        }
+
+        /// <summary>
+        /// Taskbar chrome along the parent's bottom edge: grey raised bar with an inert Start
+        /// button on the left and a sunken clock tray on the right. No listeners — decoration
+        /// only, like the title-bar buttons. Idempotent — children are found by name on re-run.
+        /// Shared by the title screen and character creator desktop rebuilds.
+        /// </summary>
+        public static void AddTaskbar(RectTransform parent, float barHeight = 44f)
+        {
+            if (parent == null) return;
+
+            Transform existing = parent.Find("Taskbar");
+            RectTransform bar;
+            if (existing != null)
+            {
+                bar = (RectTransform)existing;
+            }
+            else
+            {
+                var go = new GameObject("Taskbar", typeof(RectTransform));
+                bar = (RectTransform)go.transform;
+                bar.SetParent(parent, false);
+            }
+
+            bar.anchorMin = Vector2.zero;
+            bar.anchorMax = new Vector2(1f, 0f);
+            bar.pivot = new Vector2(0.5f, 0f);
+            bar.offsetMin = Vector2.zero;
+            bar.offsetMax = new Vector2(0f, barHeight);
+
+            Image face = bar.GetComponent<Image>();
+            if (face == null) face = bar.gameObject.AddComponent<Image>();
+            StyleWindow(face);
+
+            StartButton(bar, barHeight);
+            ClockTray(bar, barHeight);
+        }
+
+        /// <summary>Inert raised Start button pinned to the taskbar's left end.</summary>
+        private static void StartButton(RectTransform bar, float barHeight)
+        {
+            Transform existing = bar.Find("StartButton");
+            RectTransform rt;
+            Button btn;
+            if (existing != null)
+            {
+                rt = (RectTransform)existing;
+                btn = rt.GetComponent<Button>();
+            }
+            else
+            {
+                var go = new GameObject("StartButton", typeof(RectTransform));
+                rt = (RectTransform)go.transform;
+                rt.SetParent(bar, false);
+                go.AddComponent<Image>();
+                btn = go.AddComponent<Button>();
+            }
+
+            rt.anchorMin = new Vector2(0f, 0.5f);
+            rt.anchorMax = new Vector2(0f, 0.5f);
+            rt.pivot = new Vector2(0f, 0.5f);
+            rt.sizeDelta = new Vector2(110f, Mathf.Max(24f, barHeight - 12f));
+            rt.anchoredPosition = new Vector2(6f, 0f);
+
+            TextMeshProUGUI label = FindOrCreateTmp(rt, "Label");
+            label.text = "Start";
+            label.fontStyle = FontStyles.Bold;
+            label.fontSize = 22f;
+            label.alignment = TextAlignmentOptions.Center;
+            RectTransform labelRt = (RectTransform)label.transform;
+            labelRt.anchorMin = Vector2.zero;
+            labelRt.anchorMax = Vector2.one;
+            labelRt.offsetMin = Vector2.zero;
+            labelRt.offsetMax = Vector2.zero;
+
+            StyleButtonWithLabel(btn);
+        }
+
+        /// <summary>Sunken clock tray pinned to the taskbar's right end. Static text.</summary>
+        private static void ClockTray(RectTransform bar, float barHeight)
+        {
+            Transform existing = bar.Find("ClockTray");
+            RectTransform rt;
+            if (existing != null)
+            {
+                rt = (RectTransform)existing;
+            }
+            else
+            {
+                var go = new GameObject("ClockTray", typeof(RectTransform));
+                rt = (RectTransform)go.transform;
+                rt.SetParent(bar, false);
+            }
+
+            rt.anchorMin = new Vector2(1f, 0.5f);
+            rt.anchorMax = new Vector2(1f, 0.5f);
+            rt.pivot = new Vector2(1f, 0.5f);
+            rt.sizeDelta = new Vector2(110f, Mathf.Max(24f, barHeight - 12f));
+            rt.anchoredPosition = new Vector2(-6f, 0f);
+
+            Image face = rt.GetComponent<Image>();
+            if (face == null) face = rt.gameObject.AddComponent<Image>();
+            StyleSunken(face);
+            face.color = Face;
+
+            TextMeshProUGUI clock = FindOrCreateTmp(rt, "ClockLabel");
+            clock.text = "12:00";
+            clock.fontSize = 20f;
+            clock.alignment = TextAlignmentOptions.Center;
+            RectTransform clockRt = (RectTransform)clock.transform;
+            clockRt.anchorMin = Vector2.zero;
+            clockRt.anchorMax = Vector2.one;
+            clockRt.offsetMin = Vector2.zero;
+            clockRt.offsetMax = Vector2.zero;
+            StyleLabel(clock);
         }
 
         private static TextMeshProUGUI FindOrCreateTmp(Transform parent, string name)

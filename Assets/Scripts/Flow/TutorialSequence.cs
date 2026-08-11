@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using ExiledAlvaston.Combat;
+using ExiledAlvaston.Data;
 using ExiledAlvaston.Quests;
 using ExiledAlvaston.UI;
 using ExiledAlvaston.Vibe;
@@ -281,8 +282,8 @@ namespace ExiledAlvaston.Flow
 
     /// <summary>
     /// Chest spawned by TutorialSequence — the Interact button opens the lid and a loot
-    /// menu. Taking the draught heals; closing the menu after taking it advances the
-    /// tutorial. Closing empty-handed leaves the chest usable.
+    /// menu. Taking the cigarette adds it to inventory; closing the menu after taking it
+    /// advances the tutorial. Closing empty-handed leaves the chest usable.
     /// </summary>
     public class TutorialChest : MonoBehaviour
     {
@@ -311,13 +312,21 @@ namespace ExiledAlvaston.Flow
 
             if (_loot == null)
             {
+                ItemData cigarette = ItemDatabase.Find("snarlborough_cig");
+                if (cigarette == null)
+                {
+                    Debug.LogError("TutorialChest: required item 'snarlborough_cig' is missing.", this);
+                    return;
+                }
+
                 _loot = new System.Collections.Generic.List<UI.LootEntry>
                 {
                     new UI.LootEntry
                     {
-                        Name = "Healing Draught",
-                        Description = "A stoppered vial of bitter red liquid. Restores 20 health.",
-                        OnTaken = TakeHealingDraught
+                        Name = cigarette.ItemName,
+                        Description = cigarette.Description,
+                        Icon = cigarette.Icon,
+                        OnTaken = () => TakeTutorialCigarette(cigarette)
                     }
                 };
             }
@@ -325,23 +334,21 @@ namespace ExiledAlvaston.Flow
             UI.LootMenuUI.Show("Supply Chest", _loot, OnLootMenuClosed);
         }
 
-        private void TakeHealingDraught()
+        private void TakeTutorialCigarette(ItemData cigarette)
         {
-            _looted = true;
-
-            var player = CombatController.Instance;
-            if (player != null)
+            var session = PlayerSession.Instance;
+            if (session == null)
             {
-                Health hp = player.GetComponent<Health>();
-                if (hp != null)
-                {
-                    hp.Heal(20);
-                    player.CurrentHealth = hp.CurrentHealth;
-                }
+                Debug.LogError(
+                    "TutorialChest: PlayerSession is missing; tutorial loot was not granted.", this);
+                return;
             }
 
+            session.AddItem(cigarette, 1);
+            _looted = true;
+
             if (UIManager.Instance != null)
-                UIManager.Instance.LogCombat("You drink the healing draught. (+20 health)");
+                UIManager.Instance.LogCombat($"{cigarette.ItemName} added to inventory.");
         }
 
         private void OnLootMenuClosed()

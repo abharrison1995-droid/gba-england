@@ -42,7 +42,7 @@ MonoBehaviour:
   NpcHeight: 1.35
   Roams: 0
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: 9930da77bd409404f80e10319be85d50, type: 2}
   AmbientLine: 
   Pickpocketable: 0
   PickpocketMinPounds: 5
@@ -51,3 +51,4 @@ MonoBehaviour:
   Region: 0
   PickpocketBand: {fileID: 0}
   EnemyLevel: 0
+  PortalTargetSpawnPointId: 

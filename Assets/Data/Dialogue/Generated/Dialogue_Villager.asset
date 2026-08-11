@@ -15,6 +15,6 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: b960baf5bf36ea84ca4e7c5dd6dd0711, type: 2}
     DialogueText: '*burps*'
     Choices: []

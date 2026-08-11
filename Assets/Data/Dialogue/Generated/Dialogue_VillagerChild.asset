@@ -15,7 +15,7 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: a6cb16d2eb41a4847baa459f1db3426c, type: 2}
     DialogueText: Mums new boyfriend lets me take his knives to school. Irresponsible
       really.
     Choices: []

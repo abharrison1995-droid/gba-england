@@ -234,6 +234,9 @@ public static class PlacementBuilders
         portal.SpawnPosition = preset.PortalSpawnPosition;
         portal.Prompt = preset.PortalPrompt;
         portal.RequireTutorialComplete = preset.RequireTutorialComplete;
+        // Empty on every preset authored before the field existed, which keeps them on the raw
+        // PortalSpawnPosition above.
+        portal.TargetSpawnPointId = preset.PortalTargetSpawnPointId ?? "";
 
         // DungeonPortal.Awake adds this at runtime; adding it now lets Prompt and InteractRange be
         // tuned in the Inspector.

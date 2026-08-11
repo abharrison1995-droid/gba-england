@@ -223,5 +223,20 @@ namespace ExiledAlvaston.Data
                  "Override Health 100 with a level of 5 is 240 HP in play, and the Inspector on the " +
                  "placed enemy still reads 100 — the scale happens at runtime, not at placement.")]
         public int EnemyLevel = 0;
+
+        // ── Portal — arrival marker ──────────────────────────────────────────────────────────
+        // Appended at the very end rather than beside the Portal block above it, per §7. Sitting
+        // next to PortalSpawnPosition would read better and would also insert a field into the
+        // middle of the serialized layout, which is the one thing that is not safe. No preset
+        // already authored carries a value for it, so they all read empty — which means "use the
+        // raw PortalSpawnPosition", i.e. exactly what they place today.
+        [Header("Portal — arrival marker")]
+        [Tooltip("PlayerSpawnPoint.Id the portal arrives at inside the target chunk, copied into " +
+                 "DungeonPortal.TargetSpawnPointId. Set this in preference to Portal Spawn " +
+                 "Position: a marker moves with the geometry it belongs to.\n\n" +
+                 "Empty keeps the raw Portal Spawn Position behaviour. Note that a non-empty id " +
+                 "which does not resolve aborts the journey rather than falling back, so this is " +
+                 "only worth setting on a preset stamped into chunks that all carry that marker.")]
+        public string PortalTargetSpawnPointId = "";
     }
 }

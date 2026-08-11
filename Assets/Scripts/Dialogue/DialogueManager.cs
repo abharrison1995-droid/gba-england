@@ -239,10 +239,15 @@ namespace ExiledAlvaston.Dialogue
             }
 
             TextMeshProUGUI btnText = btnObj.GetComponentInChildren<TextMeshProUGUI>();
-            if (btnText != null) btnText.text = text;
+            if (btnText != null)
+            {
+                btnText.text = text;
+                UI.Win95Skin.StyleLabel(btnText);
+            }
 
             Button btn = btnObj.GetComponent<Button>();
             btn.interactable = selectable;
+            UI.Win95Skin.StyleButton(btn);
             btn.onClick.AddListener(() => OnChoiceSelected(nextNodeId, choice));
         }
 
@@ -323,7 +328,10 @@ namespace ExiledAlvaston.Dialogue
         private void EnsureUI()
         {
             if (DialoguePanel != null && MainDialogueText != null && ChoicesContainer != null)
+            {
+                RestyleWiredUI();
                 return;
+            }
 
             var canvasGO = new GameObject("DialogueCanvas");
             canvasGO.transform.SetParent(transform, false);
@@ -406,6 +414,94 @@ namespace ExiledAlvaston.Dialogue
 
             DialoguePanel = panel;
             DialoguePanel.SetActive(false);
+        }
+
+        /// <summary>
+        /// The gameplay scene still wires the original brown EK-style overlay, which makes the
+        /// Win95 builder above unreachable. Adapt that existing hierarchy in place: no scene asset
+        /// is rebuilt, and its serialized manager references and layout remain authoritative.
+        /// </summary>
+        private void RestyleWiredUI()
+        {
+            Image panelImage = DialoguePanel.GetComponent<Image>();
+            if (panelImage != null) UI.Win95Skin.StyleWindow(panelImage);
+
+            RectTransform panelRect = DialoguePanel.GetComponent<RectTransform>();
+            RectTransform titleBar = UI.Win95Skin.AddTitleBar(panelRect, "", 36f);
+            if (titleBar != null)
+            {
+                Transform title = titleBar.Find("TitleText");
+                SpeakerNameText = title != null ? title.GetComponent<TextMeshProUGUI>() : null;
+                if (SpeakerNameText != null) SpeakerNameText.fontSize = 22f;
+            }
+
+            Transform portraitFrameTransform = DialoguePanel.transform.Find("SpeakerPortrait");
+            if (portraitFrameTransform != null)
+            {
+                var frameRect = portraitFrameTransform as RectTransform;
+                var frameImage = portraitFrameTransform.GetComponent<Image>();
+                if (frameImage != null) UI.Win95Skin.StyleSunken(frameImage);
+                if (frameRect != null)
+                {
+                    frameRect.anchorMin = new Vector2(0f, 0f);
+                    frameRect.anchorMax = new Vector2(0.18f, 1f);
+                    frameRect.offsetMin = new Vector2(8f, 8f);
+                    frameRect.offsetMax = new Vector2(-4f, -44f);
+                }
+
+                Transform existingPortrait = portraitFrameTransform.Find("Portrait");
+                GameObject portraitObject = existingPortrait != null
+                    ? existingPortrait.gameObject
+                    : CreateImage("Portrait", portraitFrameTransform, Color.white);
+                var portraitRect = portraitObject.GetComponent<RectTransform>();
+                portraitRect.anchorMin = Vector2.zero;
+                portraitRect.anchorMax = Vector2.one;
+                portraitRect.offsetMin = new Vector2(5f, 5f);
+                portraitRect.offsetMax = new Vector2(-5f, -5f);
+                PortraitImage = portraitObject.GetComponent<Image>();
+                PortraitImage.preserveAspect = true;
+                PortraitImage.raycastTarget = false;
+                PortraitImage.enabled = false;
+            }
+
+            if (MainDialogueText != null)
+            {
+                MainDialogueText.color = UI.Win95Skin.FieldText;
+                RectTransform textRect = MainDialogueText.rectTransform;
+
+                Transform existingField = DialoguePanel.transform.Find("TextFieldBackground");
+                GameObject field;
+                if (existingField == null)
+                {
+                    // One-time conversion of the authored rect. Reapplying these offsets on every
+                    // conversation would slowly squeeze the text field inward.
+                    textRect.offsetMax = new Vector2(textRect.offsetMax.x, -44f);
+                    field = CreateImage("TextFieldBackground", DialoguePanel.transform, Color.white);
+                    RectTransform newFieldRect = field.GetComponent<RectTransform>();
+                    CopyRect(textRect, newFieldRect);
+                    newFieldRect.SetSiblingIndex(textRect.GetSiblingIndex());
+
+                    // Padding belongs on the text rather than the background so the bevel never
+                    // clips a glyph. The copied background keeps the scene-authored footprint.
+                    textRect.offsetMin += new Vector2(10f, 8f);
+                    textRect.offsetMax += new Vector2(-10f, -8f);
+                }
+                else
+                {
+                    field = existingField.gameObject;
+                }
+                RectTransform fieldRect = field.GetComponent<RectTransform>();
+                UI.Win95Skin.AddBevel(fieldRect, sunken: true);
+            }
+        }
+
+        private static void CopyRect(RectTransform source, RectTransform target)
+        {
+            target.anchorMin = source.anchorMin;
+            target.anchorMax = source.anchorMax;
+            target.pivot = source.pivot;
+            target.anchoredPosition = source.anchoredPosition;
+            target.sizeDelta = source.sizeDelta;
         }
 
         private GameObject BuildRuntimeChoiceButton()

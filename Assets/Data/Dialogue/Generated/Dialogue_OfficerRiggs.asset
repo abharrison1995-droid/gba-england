@@ -15,7 +15,7 @@ MonoBehaviour:
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 0}
+    Speaker: {fileID: 11400000, guid: d4eddb1f361e2344699fb83792440aff, type: 2}
     DialogueText: Stay out of trouble and we'll get on famously. Get into trouble
       and, well... we'll see.
     Choices: []

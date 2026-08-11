@@ -1,0 +1,12 @@
+{
+  "name": "ground_woodland_dirty_leafmould_tile",
+  "type": "texture",
+  "category": "materials",
+  "width": 256,
+  "height": 256,
+  "tileable": true,
+  "colorSpace": "sRGB",
+  "intendedUnityFolder": "Assets/3DModels/assorted textures",
+  "description": "Simple seamless compacted woodland path with neutral brown soil, fine grit and subtle decomposed leaf-mould fragments.",
+  "question": "Manual Unity-side texture handoff: move this PNG into the intended folder and import it as a repeating Default texture, not through the generated sprite-art importer."
+}

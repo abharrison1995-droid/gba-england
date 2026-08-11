@@ -9,6 +9,8 @@ Verification scope:    code; tracked preset/prefab YAML (32 presets read). The v
                        preset count, the "no preset has Prefab assigned" claim and the enemy-level
                        path below are from reading code and tracked YAML; nothing here has been
                        reopened in the editor, and no enemy has been placed with a level.
+                       The Portal Placement section landed 2026-08-09 describing a rewritten tool
+                       that has NEVER been compiled, opened or run, and no linked pair exists.
 ```
 
 ## The World Palette
@@ -59,6 +61,85 @@ It sits directly at `Tools/GBH/World Palette`, uncategorised — the one deliber
 
 The five `Place/…` windows still exist and still work. They have not been removed because none has
 been checked for anything the palette cannot yet do.
+
+## Portal Placement — linked location pairs
+
+`Tools → GBH → Place → Portal Placement` (`Editor/PortalPlacementTool.cs`) no longer drops a single
+portal. It authors **both ends of a door at once**: the entrance in the exterior chunk, the exit in
+the interior chunk, and the arrival marker each one lands at.
+
+A single portal is half a door. Authored one end at a time, its partner has to be remembered, its
+return position typed as a raw coordinate, and its target chunk registered somewhere the save
+system can find it — and every one of those fails quietly, either stranding the player inside a
+building or producing a save that will not load after a restart.
+
+### What it writes
+
+For link id `police_station_front`, into each chunk **prefab**:
+
+```
+Exterior prefab                              Interior prefab
+  LocationLinks/                               LocationLinks/
+    police_station_front/                        police_station_front/
+      Portal_Enter                                 Portal_Exit
+      PlayerSpawn_police_station_front_outside     PlayerSpawn_police_station_front_inside
+```
+
+`Portal_Enter` targets the interior chunk and the `…_inside` marker; `Portal_Exit` targets the
+exterior chunk and the `…_outside` marker. Each portal gets a `DungeonPortal` and an `Interactable`
+(`Reusable = true`, the authored range). Both chunks are added to `MapChunkRegistry`.
+
+**No door visual is added.** Most entrances already have geometry; the interaction point is
+invisible and is drawn by `DungeonPortal`'s own amber gizmo, which also draws the interact radius
+and an arrow for the way through.
+
+### The rules it works under
+
+- **Capture poses in Prefab Mode, create outside it.** Poses are stored relative to the chunk
+  prefab root, which is the space the runtime uses — chunks are always instantiated at the origin.
+  Creating is **disabled while any prefab stage is open**, because closed prefabs are edited
+  through `LoadPrefabContents` and doing that to a prefab simultaneously open in a stage fights the
+  stage's copy.
+- **Re-running with the same link id updates.** Objects are found by name under
+  `LocationLinks/<linkId>/`, so a second run edits what the first made. Nothing is deleted and
+  re-created, so no `.meta` and no GUID changes. *Overwrite Poses On Update* can be turned off to
+  change only prompts, targets or range and keep a door that has since been nudged by hand.
+- **It refuses rather than guesses**: an empty or non-plain link id, a missing `ChunkPrefab`, an
+  empty `ChunkName`, a `ChunkName` already used by another asset, the same chunk on both sides, or
+  a `ChunkPrefab` pointing at a child instead of the prefab root.
+- ⚠️ **`OnInteract` is deliberately not wired.** `DungeonPortal.Awake` adds its own listener at
+  runtime; a persistent editor-time call alongside it would mean one press, two journeys.
+- **A half-written pair is reported loudly.** If the exterior write succeeds and the interior write
+  fails, the log says so explicitly — that state is a building you can enter and not leave.
+
+### Create Empty Interior Bundle
+
+Creates an empty `MapChunkData` and an empty chunk prefab for a new interior, and registers them.
+It never overwrites an existing asset and does not decorate the interior. ⚠️ **The prefab it makes
+has no floor** — give it geometry with a collider before wiring a door to it, or the player falls
+through and `ChunkManager`'s void catcher returns them to the spawn point to fall again.
+
+### Validate All Location Links
+
+`Editor/LocationLinkValidator.cs`. Read-only — it reports and **never repairs**, because several of
+the things it looks at are save keys and a tool that helpfully rewrote one would orphan saves in
+silence. It checks empty and duplicate chunk names, missing prefabs, duplicate marker ids within a
+prefab, broken `TargetSpawnPointId`s, portals targeting their own chunk, non-reciprocal pairs, link
+ids used by more or fewer than two prefabs, arrival markers under 3.5 m from the door back out, and
+chunks absent from the registry.
+
+For chunks it infers to be **interiors** — no N/S/E/W adjacency, but targeted by some portal — it
+also flags `ChunkEdge` triggers (which can only ever say "There's nothing that way"), a total
+absence of colliders (no floor), and `NavMeshAgent`s with no `RuntimeNavMeshBaker` (chunks are
+instantiated at runtime, so a scene-baked NavMesh does not cover them).
+
+### The palette's portal path
+
+`PlacementPreset.PortalTargetSpawnPointId` is appended at the end of the class and copied into
+`DungeonPortal.TargetSpawnPointId` by `PlacementBuilders.BuildPortal`. Every preset on disk carries
+no key for it, so they all read empty and keep the raw `PortalSpawnPosition` behaviour they have
+always had. It is only worth setting on a preset stamped into chunks that all carry that marker —
+an unresolved id aborts travel rather than falling back.
 
 ### Enemy levels
 
