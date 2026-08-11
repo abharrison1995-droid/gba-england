@@ -97,7 +97,7 @@ These are repeated here on purpose. A reference that was never opened cannot pre
 **There is no C# compiler, no Unity and no test framework in the agent environment.**
 
 ```bash
-python Tools/asset_reachability.py --check-dangling   # reference integrity; 17-GUID baseline
+python Tools/asset_reachability.py --check-dangling   # reference integrity; fails on anything not in KNOWN_DANGLING
 python Tools/art_status.py                            # what art exists and what is still owed
 ```
 
