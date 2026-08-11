@@ -17,7 +17,7 @@ namespace ExiledAlvaston.Vibe
         // --- Camera (fixed isometric, never free-look) ---
         public const float CameraPitch = 30f;
         public const float CameraYaw = -45f;
-        public const float CameraOrthoSize = 7f;
+        public const float CameraOrthoSize = 4f;
         public const float CameraDistance = 18f;
         public const float IsometricMoveOffset = 45f;
 
