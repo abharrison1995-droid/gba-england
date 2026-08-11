@@ -31,7 +31,7 @@ public static class DialogueValidator
 
     // ═══════════════════════════════════════════════════════════════════════════════════════
 
-    [MenuItem("Tools/GBH/Content/Validate Dialogue")]
+    [MenuItem("Tools/Content/Validate Dialogue")]
     private static void ValidateAllAssets()
     {
         string[] guids = AssetDatabase.FindAssets("t:DialogueData");

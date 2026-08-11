@@ -15,18 +15,18 @@ Verification scope:    code; tracked preset/prefab YAML (32 presets read). The v
 
 ## The World Palette
 
-`Tools → GBH → World Palette` (`Editor/WorldPaletteWindow.cs`). Arm a preset, click in the Scene
+`Tools → World Palette` (`Editor/WorldPaletteWindow.cs`). Arm a preset, click in the Scene
 view, Shift to keep stamping, Esc to disarm.
 
-It sits directly at `Tools/GBH/World Palette`, uncategorised — the one deliberate exception to the
-`Tools/GBH/<Category>/` rule, because it is the entry point rather than one tool among many.
+It sits directly at `Tools/World Palette`, uncategorised — the one deliberate exception to the
+`Tools/<Category>/` rule, because it is the entry point rather than one tool among many.
 
 | Piece | File | What it does |
 |---|---|---|
 | The thing to place | `Data/PlacementPreset` | Label, category, region, icon, and either a `Prefab` or the recipe fields. |
 | How to build it | `Editor/PlacementBuilders` | Each old window's `Create…()` body, taking a position and a parent. |
 | Where to build it | `Editor/WorldPaletteWindow` | Grid, arming, SceneView raycast, ghost, parenting. |
-| A starting set | `Editor/StarterPresetGenerator` | `Tools → GBH → Content → Create Starter Presets`. Skips what exists; never overwrites. |
+| A starting set | `Editor/StarterPresetGenerator` | `Tools → Content → Create Starter Presets`. Skips what exists; never overwrites. |
 
 ### Things that will catch you out
 
@@ -56,7 +56,7 @@ It sits directly at `Tools/GBH/World Palette`, uncategorised — the one deliber
   with the rest of the snitch mechanic (see
   [CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md)). No preset **currently on disk** has
   `Prefab` assigned, so this path is unexercised until someone runs
-  `Tools → GBH → Content → Build Container Prefabs`, whose `Preset_Container_*` presets are
+  `Tools → Content → Build Container Prefabs`, whose `Preset_Container_*` presets are
   `Prop` pointing at a container prefab.
 
 The five `Place/…` windows still exist and still work. They have not been removed because none has
@@ -64,7 +64,7 @@ been checked for anything the palette cannot yet do.
 
 ## Portal Placement — linked location pairs
 
-`Tools → GBH → Place → Portal Placement` (`Editor/PortalPlacementTool.cs`) no longer drops a single
+`Tools → Place → Portal Placement` (`Editor/PortalPlacementTool.cs`) no longer drops a single
 portal. It authors **both ends of a door at once**: the entrance in the exterior chunk, the exit in
 the interior chunk, and the arrival marker each one lands at.
 
@@ -166,7 +166,7 @@ runtime from `Health.Awake`. So a preset with `OverrideHealth = 100` and a level
 enemy whose Inspector reads **100** and which has **240 HP in play**. That is not a bug to fix —
 scaling first and overriding second would make the override silently cancel the level, invisibly.
 
-`Tools → GBH → Place → Enemy Placement` has the same **Level** field, on the same rules, so the two
+`Tools → Place → Enemy Placement` has the same **Level** field, on the same rules, so the two
 placement paths agree.
 
 ---
@@ -180,9 +180,9 @@ Two clicks in Unity and no code:
 2. Create a `PlacementPreset`: `Label`, `Category: NPC`, `Region`, `ArtSubject`, `AmbientLine` or
    a `Conversation`, `Roams` if it should wander, `Pickpocketable` if they should be robbable
    instead of talkable.
-3. `Tools → GBH → Art → Import Generated Art`. Sheets slice, clips build, a controller builds, and
+3. `Tools → Art → Import Generated Art`. Sheets slice, clips build, a controller builds, and
    **the preset wires itself** — controller, resting sprite, palette icon, height.
-4. `Tools → GBH → World Palette`: arm it, click it into a chunk prefab.
+4. `Tools → World Palette`: arm it, click it into a chunk prefab.
 
 | Piece | File | What it owns |
 |---|---|---|
@@ -209,7 +209,7 @@ Two clicks in Unity and no code:
 - **The importer always wins on controller and sprite, never on height.** Those two are derived
   from the art, so a fresh import replaces placeholder wiring with no manual step; height is
   tunable, so a hand-set value survives.
-- **`Wire Presets From Imported Art`** (`Tools/GBH/Content/`) exists because an import only knows
+- **`Wire Presets From Imported Art`** (`Tools/Content/`) exists because an import only knows
   the batch in front of it, and a clean batch is archived out of staging immediately. Art imported
   months ago, or a preset written after its subject arrived, is only reachable this way.
 - **`NPCWander` is deliberately NavMesh-free.** `EKNavMeshBaker` bakes one mesh from whichever
@@ -256,7 +256,7 @@ wired to `<subject>_Controller`, `EnemyAI.Animator` set, `Health`, Rigidbody/Col
 Enemy-category preset pointing at it.
 
 Six exist — Neek, OG, Roadman, Spicehead, Tainted, Tortured Neek — built by
-`Tools > GBH > Content > Build Enemies From Generated Art`. **None has been seen in play.**
+`Tools > Content > Build Enemies From Generated Art`. **None has been seen in play.**
 
 ⚠️ **None of them is placed anywhere.** A GUID scan of all six `.prefab.meta` GUIDs across
 `Assets/Prefabs/Chunks/*.prefab` and `Assets/c.unity` returns zero hits: the only `EnemyAI` in the

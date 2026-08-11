@@ -18,7 +18,7 @@ public static class DiscoverEnglandSetup
     const string DataFolder = "Assets/Data/Chunks";
     const string PrefabFolder = "Assets/Prefabs/Chunks";
 
-    [MenuItem("Tools/GBH/Danger Zone/Discover England Bootstrap (rebuilds scene + prefabs!)")]
+    [MenuItem("Tools/Danger Zone/Discover England Bootstrap (rebuilds scene + prefabs!)")]
     public static void SetupAll()
     {
         string manorPrefabPath = PrefabFolder + "/Manor_Cellars_Prefab.prefab";

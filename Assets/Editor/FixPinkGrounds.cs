@@ -11,7 +11,7 @@ public static class FixPinkGrounds
     const string ArtFolder = "Assets/Art/Placeholders";
     const string PrefabFolder = "Assets/Prefabs/Chunks";
 
-    [MenuItem("Tools/GBH/Repair/Fix Pink Grounds")]
+    [MenuItem("Tools/Repair/Fix Pink Grounds")]
     public static void FixAll()
     {
         // Regenerate textures + materials first (Unlit/Texture — hard to break)

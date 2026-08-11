@@ -28,7 +28,7 @@ namespace ExiledAlvaston.Data
         public const string ResourcePath = "MapChunkRegistry";
 
         [Tooltip("Every loadable chunk, including interiors that are not part of the overworld grid. " +
-                 "Maintained by Tools > GBH > Place > Portal Placement; safe to add to by hand.")]
+                 "Maintained by Tools > Place > Portal Placement; safe to add to by hand.")]
         public List<MapChunkData> Chunks = new List<MapChunkData>();
 
         // Only successful loads are cached. A miss must stay retryable: the editor tool can create

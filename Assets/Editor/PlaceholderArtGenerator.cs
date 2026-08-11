@@ -6,7 +6,7 @@ using ExiledAlvaston.Vibe;
 /// <summary>
 /// Generates muted EK-style placeholder textures + sprites under Assets/Art/Placeholders.
 ///
-/// Run via: Tools → GBH → Danger Zone → Generate Placeholder Art
+/// Run via: Tools → Danger Zone → Generate Placeholder Art
 ///
 /// Superseded for characters and props by the generated-art pipeline (ART_PIPELINE.md), which
 /// writes to Assets/Art/Generated instead. It is kept — rather than retired — because the editor
@@ -21,7 +21,7 @@ public static class PlaceholderArtGenerator
 {
     public const string ArtFolder = "Assets/Art/Placeholders";
 
-    [MenuItem("Tools/GBH/Danger Zone/Generate Placeholder Art")]
+    [MenuItem("Tools/Danger Zone/Generate Placeholder Art")]
     public static void GenerateAll()
     {
         if (AssetDatabase.IsValidFolder(ArtFolder))
@@ -33,7 +33,7 @@ public static class PlaceholderArtGenerator
                 "freshly generated placeholder. Any hand-edited or replacement art sitting under " +
                 "those names is lost.\n\n" +
                 "Character and prop art now comes from the generated-art pipeline instead " +
-                "(Tools → GBH → Art → Import Generated Art), which writes to Assets/Art/Generated " +
+                "(Tools → Art → Import Generated Art), which writes to Assets/Art/Generated " +
                 "and is not affected.\n\nContinue?",
                 "Yes, overwrite the placeholders",
                 "Cancel");

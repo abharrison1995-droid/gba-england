@@ -283,7 +283,7 @@ namespace ExiledAlvaston.World
                             $"'{spawnPointId}' — travel aborted, staying in " +
                             $"'{(CurrentChunkData != null ? CurrentChunkData.ChunkName : "nowhere")}'. " +
                             "Check the marker exists in the chunk's PREFAB (not just the scene) and that " +
-                            "the id matches exactly, then re-run Tools > GBH > Place > Portal Placement " +
+                            "the id matches exactly, then re-run Tools > Place > Portal Placement " +
                             "> Validate All Location Links.");
                         Destroy(candidate);
                         aborted = true;

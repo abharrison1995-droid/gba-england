@@ -53,7 +53,7 @@ public static class CharacterCreatorSetup
     private static readonly Color SpriteBackdropFill = new Color(0.70f, 0.63f, 0.48f, 0.96f);
     private static readonly Color SpriteBackdropTrim = new Color(0.33f, 0.23f, 0.14f, 1f);
 
-    [MenuItem("Tools/GBH/Danger Zone/Apply New Character Creator")]
+    [MenuItem("Tools/Danger Zone/Apply New Character Creator")]
     public static void ApplyNewCharacterCreator()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)

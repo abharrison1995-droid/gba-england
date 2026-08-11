@@ -258,7 +258,7 @@ same filename** — do not create `_v2`.
 
 ## 6. Importing (Claude Code's side)
 
-`Tools → GBH → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
+`Tools → Art → Import Generated Art` reads `art_incoming/`, and for each pair:
 
 1. Keys out the backdrop, trims (singles only), and area-averages the image down to 48 px per
    world unit, writing the result to `Assets/Art/Generated/<category>/`.

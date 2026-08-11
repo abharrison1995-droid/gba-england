@@ -36,7 +36,7 @@ namespace ExiledAlvaston.EditorTools
         private const float SurfaceHeight = 0.04f;
         private const float DecalHeight = 0.06f;
 
-        [MenuItem("Tools/GBH/Content/Create Blank Shape Kit")]
+        [MenuItem("Tools/Content/Create Blank Shape Kit")]
         public static void CreateKit()
         {
             EnsureFolder(PrefabFolder);

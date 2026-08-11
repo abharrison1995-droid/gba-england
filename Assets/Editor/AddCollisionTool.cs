@@ -9,12 +9,12 @@ using ExiledAlvaston.World;
 /// through. This adds a BoxCollider (sized to the mesh bounds) + EnvironmentBlocker to every
 /// renderer under the selection that doesn't already have a Collider, matching how the
 /// hand-built walls elsewhere (e.g. Manor Cellars) are already set up. Re-bake the chunk's
-/// NavMesh afterward (Tools > GBH > World > Bake Navigation Mesh) so enemy
+/// NavMesh afterward (Tools > World > Bake Navigation Mesh) so enemy
 /// pathing actually routes around the new solid geometry too.
 /// </summary>
 public static class AddCollisionTool
 {
-    [MenuItem("Tools/GBH/World/Add Collision To Selection")]
+    [MenuItem("Tools/World/Add Collision To Selection")]
     public static void Run()
     {
         GameObject[] selection = Selection.gameObjects;
@@ -55,7 +55,7 @@ public static class AddCollisionTool
             EditorSceneManager.MarkSceneDirty(root.scene.IsValid() ? root.scene : EditorSceneManager.GetActiveScene());
 
         Debug.Log($"AddCollisionTool: added BoxCollider + EnvironmentBlocker to {added} object(s). " +
-                  "Now re-bake this chunk's NavMesh (Tools > GBH > World > Bake Navigation Mesh) " +
+                  "Now re-bake this chunk's NavMesh (Tools > World > Bake Navigation Mesh) " +
                   "so enemies path around it too, then save.");
     }
 }

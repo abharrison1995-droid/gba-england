@@ -20,7 +20,7 @@ menu — without touching gameplay code or the chunk-lifecycle constraints in CL
 1. **Deleted `retro_house_pack`** (36 MB) and the four `Assets/Materials/RetroHouses/*.mat` that
    pointed into it. Confirmed 0/59 reachable before deletion, `--check-dangling` clean before and
    after. `docs/reference/REPO_HYGIENE.md` corrected — it previously said 6/69 used.
-2. **`Tools/GBH/Art/Apply Mobile Texture Settings`** (`Assets/Editor/MobileTextureSettingsTool.cs`)
+2. **`Tools/Art/Apply Mobile Texture Settings`** (`Assets/Editor/MobileTextureSettingsTool.cs`)
    — sets Android + iPhone platform texture overrides (ASTC 6×6, capped max size, mipmaps per
    folder). Deliberately skips `Assets/Art/Generated/` and `Assets/Art/Placeholders/` — that's
    `ArtImportTool`'s territory, and its `npotScale: None` is load-bearing for sprite-sheet slicing.
@@ -60,7 +60,7 @@ menu — without touching gameplay code or the chunk-lifecycle constraints in CL
    and one new editor script (`MobileTextureSettingsTool`) — none has been near a compiler.
    `.cs.meta` files for all three were hand-authored with fresh GUIDs (no Unity available to
    generate them); confirm on first open that Unity accepts them rather than minting new ones.
-2. **The texture tool has never been run.** `Tools → GBH → Art → Apply Mobile Texture Settings
+2. **The texture tool has never been run.** `Tools → Art → Apply Mobile Texture Settings
    (Dry Run)` first, read the Console summary — confirm nothing under `Assets/Art/Generated/`
    appears in the applied list. Then run the real pass; expect ~50-60 `.meta` files to change.
    If any character sheet shows compression artifacts or wrong slicing afterward, revert its

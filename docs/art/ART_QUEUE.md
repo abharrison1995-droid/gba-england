@@ -545,7 +545,7 @@ conversation and remains outside this band.
 > assigns it to `CharacterData.Portrait` — the field `DialogueManager.DisplayNode` reads and
 > enables. It routes `spr_portrait_<subject>` → the `PlacementPreset` whose `ArtSubject` is that
 > subject → that preset's `Speaker` CharacterData, and re-runs from disk via
-> `Tools → GBH → Content → Wire Presets From Imported Art`. If the preset has no speaker, the
+> `Tools → Content → Wire Presets From Imported Art`. If the preset has no speaker, the
 > importer adopts a unique existing `CharacterData` with the same `CharacterName`, or creates one
 > beside the dialogue assets. It then fills only blank `DialogueNode.Speaker` references; authored
 > non-null speakers are preserved for multi-speaker conversations. The five

@@ -8,7 +8,7 @@ using ExiledAlvaston.World;
 /// <summary>
 /// Builds the searchable-container prefabs and their palette presets.
 ///
-/// Run via: Tools → GBH → Content → Build Container Prefabs
+/// Run via: Tools → Content → Build Container Prefabs
 ///
 /// **Content, not Danger Zone.** It creates and never overwrites: a prefab, controller or preset
 /// that already exists is left completely alone and reported as skipped. That is what keeps it out
@@ -56,7 +56,7 @@ public static class ContainerSetup
         },
     };
 
-    [MenuItem("Tools/GBH/Content/Build Container Prefabs")]
+    [MenuItem("Tools/Content/Build Container Prefabs")]
     public static void Run()
     {
         EnsureFolder(PrefabFolder);

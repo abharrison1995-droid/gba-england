@@ -23,7 +23,7 @@ namespace ExiledAlvaston.EditorTools
     /// </summary>
     public static class InventoryWin95Builder
     {
-        [MenuItem("Tools/GBH/UI/Rebuild Inventory Panel (Win95)")]
+        [MenuItem("Tools/UI/Rebuild Inventory Panel (Win95)")]
         public static void Rebuild()
         {
             InventoryController controller = FindController();

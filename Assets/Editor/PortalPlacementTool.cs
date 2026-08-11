@@ -62,7 +62,7 @@ public class PortalPlacementTool : EditorWindow
     private Vector2 _reportScroll;
     private Vector2 _windowScroll;
 
-    [MenuItem("Tools/GBH/Place/Portal Placement")]
+    [MenuItem("Tools/Place/Portal Placement")]
     public static void Open()
     {
         GetWindow<PortalPlacementTool>("Portal Placement");

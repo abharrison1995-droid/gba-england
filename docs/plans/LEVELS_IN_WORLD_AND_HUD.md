@@ -243,7 +243,7 @@ Plain `AddComponent`, not `Undo.AddComponent`, matching the `LootOnDeath` line i
 
 #### 5.1.4 `Assets/Editor/EnemyPlacementTool.cs` — parity
 
-The legacy `Tools/GBH/Place/Enemy Placement` window duplicates the recipe by hand (`:111-127`). Add a
+The legacy `Tools/Place/Enemy Placement` window duplicates the recipe by hand (`:111-127`). Add a
 `_level` int beside the health/damage overrides and the same `GetComponent ?? AddComponent` block
 after `:120`. Six lines. Without it the two placement paths disagree, which is the kind of thing
 found six months later by someone wondering why their enemy is level 1.

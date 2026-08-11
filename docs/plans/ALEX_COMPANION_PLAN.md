@@ -139,7 +139,7 @@ must not charge £25 again.
 3. Implement definition, manager, AI, hire, knockout and HUD in small single-concern changes.
 4. Build Alex's prefab/preset in place through Unity editor tooling; choose the home building and
    author its anchor separately.
-5. Import art with `Tools -> GBH -> Art -> Import Generated Art`, then wire the preset/prefab.
+5. Import art with `Tools -> Art -> Import Generated Art`, then wire the preset/prefab.
 6. Run `python Tools/asset_reachability.py --check-dangling` and `python Tools/art_status.py`.
 
 Unity verification must cover: insufficient funds, exactly £25, dismissal, knockout, rehire,

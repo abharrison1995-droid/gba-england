@@ -623,7 +623,7 @@ Everything else needs a human in the editor. Routes, with preconditions:
   CRO button pops back out, and walk speed returns to normal.
 * **Knockback (Phase 2).** ⚠ **No enemy prefab is placed in any chunk or in `c.unity`** — the
   CLAUDE.md ledger is explicit about this — so knockback cannot be tested without first stamping
-  one. Route: `Tools → GBH → World Palette`, stamp `Enemy_OG`, then in the Hierarchy select it,
+  one. Route: `Tools → World Palette`, stamp `Enemy_OG`, then in the Hierarchy select it,
   Inspector → Enemy AI → Knockback → **Knockback Distance = 2**. ⚠ **Exit Play mode before
   setting it** — Inspector changes made during Play are discarded.
 * **Dodging a knockback hit.** Same enemy: roll into its swing. Check the player is *not* shoved.

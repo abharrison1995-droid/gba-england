@@ -58,7 +58,7 @@ Confirmed against live code:
 | `WikiDatabase` is the Resources-lookup precedent to copy | `Assets/Scripts/Data/WikiDatabase.cs:45-61` |
 | `PlayerSession.OnLevelUp` exists and has **no consumer** | `Assets/Scripts/Flow/PlayerSession.cs:72`; grep across `Assets/Scripts` finds only the declaration and the raise |
 | The bag's right rail is genuinely full — backpack occupies y 0.34–0.948, top rail slot is 0.245–0.305 | `Assets/Editor/InventoryWin95Builder.cs:390, 448, 462`; `InventoryController.cs:187-188` |
-| The rebuild tool's menu path | `Assets/Editor/InventoryWin95Builder.cs:26` — `Tools/GBH/UI/Rebuild Inventory Panel (Win95)` |
+| The rebuild tool's menu path | `Assets/Editor/InventoryWin95Builder.cs:26` — `Tools/UI/Rebuild Inventory Panel (Win95)` |
 | Speed modifiers compose by source and are cached, not walked per frame | `Assets/Scripts/Combat/CombatController.cs:219-249` |
 
 New facts, checked here, that change the work:
@@ -504,7 +504,7 @@ Free band: **local y 0.115 to 0.16**. Proposed `PerksButton` anchors, parented t
 **This needs the owner's eye** (§10.3, check 6). If it reads cramped, the fix is in the editor tool
 — raise `Resistances` to `(0.08, 0.20)-(0.92, 0.38)` (`InventoryWin95Builder.cs:185`) and widen
 PERKS to 0.118-0.19 — and then the owner must run
-**`Tools > GBH > UI > Rebuild Inventory Panel (Win95)`** with Play mode stopped.
+**`Tools > UI > Rebuild Inventory Panel (Win95)`** with Play mode stopped.
 
 **No editor step is required for the button to exist**, because it is runtime-built (fact 4). The
 tool never deletes unknown children — it uses `FindOrCreate` throughout — so a runtime button and a
@@ -662,7 +662,7 @@ is legible at 39 px; that the derivation survives a real save round-trip.
 6. **The button's height.** Look at the PERKS button specifically. It is about 39 px tall against
    about 65 px for the right-rail buttons (§6.2) and may read cramped or clipped. If it does, the
    fix is `Assets/Editor/InventoryWin95Builder.cs:185` (raise `Resistances` to 0.20) plus the
-   button's own anchors, followed by **`Tools > GBH > UI > Rebuild Inventory Panel (Win95)`** with
+   button's own anchors, followed by **`Tools > UI > Rebuild Inventory Panel (Win95)`** with
    Play stopped. **This is the one layout number in the plan that was reasoned about rather than
    seen.**
 7. **Author one perk and spend a point.** Exit Play. Project panel, right-click `Assets/Resources/`,

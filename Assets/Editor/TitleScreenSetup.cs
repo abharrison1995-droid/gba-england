@@ -31,7 +31,7 @@ public static class TitleScreenSetup
         LogoPath
     };
 
-    [MenuItem("Tools/GBH/Danger Zone/Apply New Title Screen")]
+    [MenuItem("Tools/Danger Zone/Apply New Title Screen")]
     public static void ApplyNewTitleScreen()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)

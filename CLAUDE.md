@@ -64,10 +64,10 @@ docs/               # everything else — routed from docs/README.md
 - **Tuning constants belong in `EKVibe`** (`Scripts/Vibe/EKVibe.cs`) — colours, sizes, camera,
   `ChunkSize`, `CharacterHeight`. Prefer adding there over new magic numbers.
 - **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
-- **Editor menu path**: `Tools/GBH/<Category>/...` — `Place`, `Art`, `World`, `UI`, `Debug`,
+- **Editor menu path**: `Tools/<Category>/...` — `Place`, `Art`, `World`, `UI`, `Debug`,
   `Repair`, `Content`, plus **`Danger Zone`** for the five tools that overwrite or re-create assets. Each of
   those confirms first and names what it destroys. **Nothing destructive may go anywhere else.**
-  `Tools/GBH/World Palette` is the one deliberate uncategorised exception.
+  `Tools/World Palette` is the one deliberate uncategorised exception.
 - **Mobile-first**: hot paths avoid allocation deliberately (preallocated `Collider[] _hitResults`,
   parallel key lists to avoid dictionary-iteration garbage). Respect this in `Update()` paths.
 - **`Assets/Editor/` is stripped from builds** and there are **no `.asmdef` files**, so it is the
@@ -142,7 +142,7 @@ vehicle cancels its own boost the instant it is mounted. Hide `ParkedModel` inst
 Wiring, presets, quest definitions, conditions and tools are all fair game; the lines an NPC says
 are not. If a task seems to need dialogue, ask for it rather than drafting it.
 
-Note that `Tools > GBH > Content > Create Starter Presets` will generate a `DialogueData` from any
+Note that `Tools > Content > Create Starter Presets` will generate a `DialogueData` from any
 preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLine` blank.
 
 ---
@@ -220,7 +220,7 @@ confirmed, rather than leaving it hedged.
    none of their behaviour has been exercised.** The creator tool was run again later the same
    day, after `CharacterCreatorUI`, `PlayerSession`, `SaveGameManager` and `CharacterCreatorSetup`
    changed, so those compile too. **The project compiled again on 2026-08-09**, when
-   `Tools → GBH → Art → Import Generated Art` ran successfully — that clears everything changed
+   `Tools → Art → Import Generated Art` ran successfully — that clears everything changed
    between those two dates, including `CombatController`, `ArtImportTool` and the whole mobile
    performance pass. Again: it proves they compile and nothing else.
 2. **`UIManager.EnsureDedicatedTrack`** — wraps a bar fill in its own parent when the scene did not
@@ -432,7 +432,7 @@ code-reviewed against its plan, never compiled:
   but it will look wrong until levels are authored.
 - **`SaveData.TotalXP` is appended.** *Load a save made before today and check it arrives at
   level 1 rather than failing.*
-- **The bag readout binds only after** `Tools → GBH → UI → Rebuild Inventory Panel (Win95)` is
+- **The bag readout binds only after** `Tools → UI → Rebuild Inventory Panel (Win95)` is
   run — the scene's `LevelText` is unassigned until then. The HUD badge is already wired.
 
 → [docs/plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md](docs/plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md) §9.3 for the full routes.
@@ -549,7 +549,7 @@ below therefore needs content authoring before it can even be attempted:
   GUIDs, holding all six existing chunks — no Unity was available. *Confirm on first open that
   Unity accepts them rather than minting new ones, and that the asset's Inspector shows six
   chunks.* `FindChunkByName` consults `AllChunks` first and this second.
-- **`Tools → GBH → Place → Portal Placement` is a rewritten window** — linked pairs, an interior
+- **`Tools → Place → Portal Placement` is a rewritten window** — linked pairs, an interior
   bundle creator, and `Validate All Location Links`. *Open it once and check it draws without
   console errors before trusting any of it.* It refuses to create while Prefab Mode is open, by
   design.
@@ -583,7 +583,7 @@ id-less `PlayerSpawn`. All six are in `MapChunkRegistry`, which now lists twelve
   Changing one later orphans those saves in silence. Nothing has saved in any of them yet, so this
   is still the free moment.
 - **They have no doors.** Nothing points at them and they point at nothing. Wiring one is a run of
-  `Tools → GBH → Place → Portal Placement` against `Home_London_Data` — which is also the first
+  `Tools → Place → Portal Placement` against `Home_London_Data` — which is also the first
   real exercise of that tool, and of the marker travel path above.
 - ⚠️ **None of the five exterior building models exists.** [docs/art/ART_QUEUE.md](docs/art/ART_QUEUE.md)
   band 6 owes City Hall, Quidland, F.U. Sports, Police Station and Gang Hideout as 3D shells, and
@@ -606,7 +606,7 @@ compiled:
   with fresh GUIDs — no Unity was available to generate them. *Confirm on first open that Unity
   accepts them rather than minting new ones,* which would silently break nothing yet but is worth
   knowing either way.
-- **`Tools → GBH → Art → Apply Mobile Texture Settings` has never been run.** Creating the tool
+- **`Tools → Art → Apply Mobile Texture Settings` has never been run.** Creating the tool
   changed no texture. Run the Dry Run first and confirm the sprite cast under
   `Assets/Art/Generated/` never appears in the applied list, then run it for real — expect ~50-60
   `.meta` files to change. *Check the Animated Chest afterward in `c.unity` at normal camera

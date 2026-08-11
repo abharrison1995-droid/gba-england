@@ -233,7 +233,7 @@ STAGE F — six commits, in this order (branch `stage-f`)
 VERIFICATION
 There is no test framework. Compile-and-play gates:
 - **[ADD] After R (mandatory play test, not just a compile):** (1) die in Home and
-  confirm respawn lands in Home_London; (2) Tools/GBH dev jump still teleports;
+  confirm respawn lands in Home_London; (2) Tools/Debug dev jump still teleports;
   (3) keep a pre-rename save file, launch, and confirm it loads INTO Home_London
   (migration works); (4) `--check-dangling` clean. Compile alone proves nothing here.
 - After F1 (where a save-format mistake is cheapest to catch): compile, then start a

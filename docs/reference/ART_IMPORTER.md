@@ -18,11 +18,11 @@ delivered and what is outstanding is [`../art/ART_QUEUE.md`](../art/ART_QUEUE.md
 
 ## Where the entry points are
 
-`Tools → GBH → Art → Import Generated Art` (`Editor/ArtImportTool.cs`) keys out the backdrop,
+`Tools → Art → Import Generated Art` (`Editor/ArtImportTool.cs`) keys out the backdrop,
 trims, reduces, sets import settings, slices sheets, builds clips and an `AnimatorController`,
 then assigns known assets to what was waiting for them.
 
-`Tools → GBH → Content → Wire Presets From Imported Art` re-runs only the assignment step, for art
+`Tools → Content → Wire Presets From Imported Art` re-runs only the assignment step, for art
 that landed in an earlier batch.
 
 ## The art direction is a post-process, not a prompt

@@ -45,7 +45,7 @@ namespace ExiledAlvaston.EditorTools
             LogoPath
         };
 
-        [MenuItem("Tools/GBH/UI/Rebuild Title Screen (Win95)")]
+        [MenuItem("Tools/UI/Rebuild Title Screen (Win95)")]
         public static void Rebuild()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)

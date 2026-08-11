@@ -10,7 +10,7 @@ namespace ExiledAlvaston.World
     /// building interior chunk, and one inside that chunk pointing back. Uses the range-based
     /// interact system (walk up, press USE) — no colliders or trigger volumes.
     ///
-    /// Author linked pairs with Tools/GBH/Place/Portal Placement, which creates both ends and
+    /// Author linked pairs with Tools/Place/Portal Placement, which creates both ends and
     /// their arrival markers together. Adding one by hand and filling in the fields still works.
     /// </summary>
     public class DungeonPortal : MonoBehaviour

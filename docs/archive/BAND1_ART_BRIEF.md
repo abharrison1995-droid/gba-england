@@ -123,7 +123,7 @@ Example (`sheet_char_player_cast.json`):
 ## Done means
 
 Three PNG+JSON pairs at the top level of `art_incoming/` with the exact filenames above.
-Claude Code runs the importer (`Tools → GBH → Art → Import Generated Art`), which keys the
+Claude Code runs the importer (`Tools → Art → Import Generated Art`), which keys the
 magenta, slices from your JSON, runs the width/baseline/empty-cell checks described above,
 and archives accepted pairs to `art_incoming/processed/`. Anything it refuses stays in
 `art_incoming/` with the reason in its output.

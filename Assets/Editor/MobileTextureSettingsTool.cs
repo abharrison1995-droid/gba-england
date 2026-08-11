@@ -33,10 +33,10 @@ namespace ExiledAlvaston.EditorTools
             }
         }
 
-        [MenuItem("Tools/GBH/Art/Apply Mobile Texture Settings (Dry Run)")]
+        [MenuItem("Tools/Art/Apply Mobile Texture Settings (Dry Run)")]
         public static void DryRun() => Run(true);
 
-        [MenuItem("Tools/GBH/Art/Apply Mobile Texture Settings")]
+        [MenuItem("Tools/Art/Apply Mobile Texture Settings")]
         public static void Apply() => Run(false);
 
         private static void Run(bool dryRun)

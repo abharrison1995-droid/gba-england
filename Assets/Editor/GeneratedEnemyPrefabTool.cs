@@ -14,7 +14,7 @@ using ExiledAlvaston.Vibe;
 /// cast, plus wiring the art onto Police_PCSO (that one prefab already exists, hand-built, and
 /// is only ever updated, never created).
 ///
-/// Run via: Tools -> GBH -> Content -> Build Enemies From Generated Art
+/// Run via: Tools -> Content -> Build Enemies From Generated Art
 ///
 /// One tool, not two, and it edits in place rather than deleting and re-creating. A pure "create"
 /// tool has exactly one safe run; the moment a subject's missing sheets (torturedneek today) turn
@@ -106,14 +106,14 @@ public static class GeneratedEnemyPrefabTool
         new EnemySpec("police_bobby", "Assets/Prefabs/ModernBritain/Police_Bobby.prefab", null, null, 0, 0, ""),
     };
 
-    [MenuItem("Tools/GBH/Content/Build Enemies From Generated Art")]
+    [MenuItem("Tools/Content/Build Enemies From Generated Art")]
     public static void Run()
     {
         if (!AssetDatabase.IsValidFolder(AnimRoot))
         {
             EditorUtility.DisplayDialog("Build Enemies From Generated Art",
                 $"No {AnimRoot} folder, so no generated art has been imported yet. Run " +
-                "Tools -> GBH -> Art -> Import Generated Art first.", "OK");
+                "Tools -> Art -> Import Generated Art first.", "OK");
             return;
         }
 

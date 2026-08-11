@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// Adds invisible solid walls just outside each chunk's four edge triggers.
 ///
-/// Run via: Tools → GBH → World → Add Chunk Boundary Walls
+/// Run via: Tools → World → Add Chunk Boundary Walls
 ///
 /// The edge triggers sit at ±109 and are only 2 units deep, and the ground plane stops at ±110.
 /// Any crossing ChunkManager declines — a dead end, a city lockout, the tutorial lock, the
@@ -60,7 +60,7 @@ public static class ChunkBoundaryWallTool
         ("BoundaryWall_West",  new Vector3(-WallDistance, WallCentreY, 0f), new Vector3(WallThickness, WallHeight, WallLength)),
     };
 
-    [MenuItem("Tools/GBH/World/Add Chunk Boundary Walls")]
+    [MenuItem("Tools/World/Add Chunk Boundary Walls")]
     public static void Run()
     {
         string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { ChunkPrefabFolder });

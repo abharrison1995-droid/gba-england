@@ -10,7 +10,7 @@ using ExiledAlvaston.Vibe;
 /// </summary>
 public static class BanditPracticeSpawner
 {
-    [MenuItem("Tools/GBH/Debug/Spawn Practice Bandit")]
+    [MenuItem("Tools/Debug/Spawn Practice Bandit")]
     public static void SpawnBandit()
     {
         Sprite banditSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Placeholders/spr_bandit.png");
@@ -32,7 +32,7 @@ public static class BanditPracticeSpawner
         if (NavMesh.SamplePosition(spawnPos, out NavMeshHit navHit, 10f, NavMesh.AllAreas))
             spawnPos = navHit.position;
         else
-            Debug.LogWarning("No NavMesh here — bandit will still spawn, but may not path. Run Tools/GBH/World/Bake Navigation Mesh.");
+            Debug.LogWarning("No NavMesh here — bandit will still spawn, but may not path. Run Tools/World/Bake Navigation Mesh.");
 
         GameObject bandit = new GameObject("Bandit");
         Undo.RegisterCreatedObjectUndo(bandit, "Spawn Practice Bandit");
@@ -69,7 +69,7 @@ public static class BanditPracticeSpawner
         visual.ApplyVisual();
 
         if (banditSprite == null)
-            Debug.LogWarning("Missing Assets/Art/Placeholders/spr_bandit.png — run Tools/GBH/Danger Zone/Generate Placeholder Art.");
+            Debug.LogWarning("Missing Assets/Art/Placeholders/spr_bandit.png — run Tools/Danger Zone/Generate Placeholder Art.");
 
         // Display fallback only, and this bandit carries no EnemyLevel — so 1 is what it actually
         // is. See EnemyNameplate.Level.
@@ -85,7 +85,7 @@ public static class BanditPracticeSpawner
         Debug.Log($"Practice Bandit spawned at {spawnPos}. Enter Play Mode to fight.");
     }
 
-    [MenuItem("Tools/GBH/Debug/Clear All Bandits")]
+    [MenuItem("Tools/Debug/Clear All Bandits")]
     public static void ClearBandits()
     {
         int removed = 0;

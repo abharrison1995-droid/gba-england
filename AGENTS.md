@@ -68,7 +68,7 @@ If a **supported 2D** request is ambiguous, write your question into the asset's
 
 [CLAUDE.md](CLAUDE.md) is your bootloader. This file only tells you where the art handoff lives:
 the art agent drops PNG+JSON pairs into `art_incoming/` (gitignored staging), and
-`Tools → GBH → Art → Import Generated Art` keys out the magenta backdrop, trims, reduces to 48 px
+`Tools → Art → Import Generated Art` keys out the magenta backdrop, trims, reduces to 48 px
 per world unit, slices sheets, builds clips and animator controllers, and archives clean pairs to
 `art_incoming/processed/`. See [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md).
 

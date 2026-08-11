@@ -248,7 +248,7 @@ namespace ExiledAlvaston.UI
         /// rail button. This is the one layout number here that was reasoned about rather than
         /// looked at. If it reads cramped, raise Resistances to (0.08, 0.20)-(0.92, 0.38) in
         /// Assets/Editor/InventoryWin95Builder.cs, widen this button to 0.118-0.19, and re-run
-        /// Tools > GBH > UI > Rebuild Inventory Panel (Win95) with Play mode stopped.
+        /// Tools > UI > Rebuild Inventory Panel (Win95) with Play mode stopped.
         /// </summary>
         private void BuildPerksButton()
         {

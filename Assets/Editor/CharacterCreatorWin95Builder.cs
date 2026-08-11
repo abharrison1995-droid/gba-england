@@ -47,7 +47,7 @@ namespace ExiledAlvaston.EditorTools
         /// <summary>Early-Windows cornflower blue, the same block the inventory paper doll stands on.</summary>
         private static readonly Color PaperDollBlue = new Color(0.392f, 0.584f, 0.929f); // #6495ED
 
-        [MenuItem("Tools/GBH/UI/Rebuild Character Creator (Win95)")]
+        [MenuItem("Tools/UI/Rebuild Character Creator (Win95)")]
         public static void Rebuild()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
