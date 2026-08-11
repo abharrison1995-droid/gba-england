@@ -166,8 +166,8 @@ runtime from `Health.Awake`. So a preset with `OverrideHealth = 100` and a level
 enemy whose Inspector reads **100** and which has **240 HP in play**. That is not a bug to fix —
 scaling first and overriding second would make the override silently cancel the level, invisibly.
 
-`Tools → Place → Enemy Placement` has the same **Level** field, on the same rules, so the two
-placement paths agree.
+The World Palette's per-stamp **Level** field is the sole placement path for this, applied through
+`PlacementBuilders.BuildEnemy` on the same rules as everything above.
 
 ---
 

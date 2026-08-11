@@ -10,7 +10,8 @@ namespace ExiledAlvaston.Combat
     /// Optional death drop for an enemy: on <see cref="Health.OnDeath"/>, shows the same loot
     /// menu chests use (LootMenuUI already covers "chests/corpses"), granting taken entries to
     /// PlayerSession's inventory. No-ops silently if Loot is empty — most enemies won't drop
-    /// anything. Pair with the Enemy Placement editor tool, or add by hand.
+    /// anything. Authored via an enemy `PlacementPreset`'s Loot list (stamped through the World
+    /// Palette), or added by hand.
     /// </summary>
     [RequireComponent(typeof(Health))]
     public class LootOnDeath : MonoBehaviour
