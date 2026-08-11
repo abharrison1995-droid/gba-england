@@ -37,6 +37,13 @@
 *.meta               text
 *.physicMaterial     text
 
+# Exceptions to `*.asset text`: a few Unity `.asset` files are binary blobs, not YAML. Normalising
+# their line endings corrupts them — Unity reports "Invalid serialized file header" and NavMesh
+# agents fail to spawn. These rules come after `*.asset text`, so binary wins for these names.
+# NavMesh.asset is what `Tools/World/Bake Navigation Mesh` writes; LightingData.asset is lightmaps.
+NavMesh.asset        binary
+LightingData.asset   binary
+
 # ── Binary ─────────────────────────────────────────────────────────────────────────────────────
 # A line-ending "fix" applied to any of these is silent corruption, and `text=auto` decides by
 # heuristic. On 226 PNGs and 52 FBXs, a heuristic is not worth relying on.
