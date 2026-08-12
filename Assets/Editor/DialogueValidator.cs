@@ -253,9 +253,12 @@ public static class DialogueValidator
             {
                 problems.Add(new Problem(Severity.Warning,
                     $"Every route out of node '{IdOf(node)}' passes through a choice gated on a " +
-                    "stat or an item. A player who fails those checks has no way to end the " +
-                    "conversation, and gating only gets tighter as it runs — ConsumeRequiredItem " +
-                    "takes items away and nothing hands any back."));
+                    "stat, an item or a quest state. A player who fails those checks has no way to " +
+                    "end the conversation, and gating only gets tighter as it runs — " +
+                    "ConsumeRequiredItem takes items away and nothing hands any back. A quest gate " +
+                    "is the strongest case: the choice is hidden entirely until its quest reaches " +
+                    "the right state, so a node whose only exit is quest-gated is a dead end until " +
+                    "then."));
             }
         }
 
@@ -305,7 +308,8 @@ public static class DialogueValidator
         => node == null ? "<null>" : (string.IsNullOrEmpty(node.Id) ? "<no id>" : node.Id);
 
     private static bool IsUngated(DialogueChoice choice)
-        => string.IsNullOrEmpty(choice.RequiredStat) && choice.RequiredItem == null;
+        => string.IsNullOrEmpty(choice.RequiredStat) && choice.RequiredItem == null
+           && choice.QuestGate == QuestGateType.None;
 
     /// <summary>
     /// Mirrors <c>DialogueManager.CanEscapeFrom</c>. An exit is an empty NextNodeId, an id that
@@ -330,6 +334,11 @@ public static class DialogueValidator
             foreach (DialogueChoice choice in current.Choices)
             {
                 if (choice == null) continue;
+                // A quest-gated choice is NOT skipped here. The hard-error check (ungatedOnly:
+                // false) must treat it as potentially available — the quest state is dynamic and
+                // the player may reach the right state, so a node whose only exit is quest-gated
+                // is not a permanent dead end. Only the ungatedOnly warning treats it as gated,
+                // via IsUngated, which is the correct "not always available" judgement.
                 if (ungatedOnly && !IsUngated(choice)) continue;
 
                 if (string.IsNullOrEmpty(choice.NextNodeId)) return true;

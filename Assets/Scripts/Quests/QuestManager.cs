@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using ExiledAlvaston.Data;
 
 namespace ExiledAlvaston.Quests
 {
@@ -62,14 +63,83 @@ namespace ExiledAlvaston.Quests
             return null;
         }
 
+        /// <summary>
+        /// Every active quest, in list order. The caller owns <paramref name="results"/> and it is
+        /// cleared first, so the list can be reused across rebinds instead of allocating a fresh
+        /// one each time (CLAUDE.md §4). The watcher binds ALL of these, not just the first.
+        /// </summary>
+        public void GetActiveQuests(List<QuestProgress> results)
+        {
+            if (results == null) return;
+            results.Clear();
+            for (int i = 0; i < _quests.Count; i++)
+            {
+                QuestProgress q = _quests[i];
+                if (q != null && q.IsActive && !q.IsComplete)
+                    results.Add(q);
+            }
+        }
+
+        /// <summary>
+        /// The id of the quest the HUD tracker shows. Player-chosen via the journal; a brand-new
+        /// grant auto-focuses it. Null or stale falls back to the first active quest, so the
+        /// tracker always has something to show while any quest is active.
+        /// </summary>
+        public string FocusedQuestId { get; private set; }
+
+        /// <summary>
+        /// The quest the tracker shows: the explicit focus if it is still an active quest,
+        /// otherwise the first active quest (the old single-quest behaviour).
+        /// </summary>
+        public QuestProgress GetFocusedQuest()
+        {
+            if (!string.IsNullOrEmpty(FocusedQuestId))
+            {
+                QuestProgress focused = Find(FocusedQuestId);
+                if (focused != null && focused.IsActive && !focused.IsComplete)
+                    return focused;
+            }
+            return GetActiveQuest();
+        }
+
+        /// <summary>
+        /// Points the tracker at a specific active quest. Refuses quests that aren't active —
+        /// you can't focus a completed or never-started quest. Raises OnQuestsChanged so the
+        /// tracker repaints.
+        /// </summary>
+        public void SetFocusedQuest(string id)
+        {
+            QuestProgress q = Find(id);
+            if (q == null || !q.IsActive || q.IsComplete) return;
+            if (FocusedQuestId == id) return;
+            FocusedQuestId = id;
+            OnQuestsChanged?.Invoke();
+        }
+
         public void StartQuest(string id, string title, string objective, string giver = null, string location = null)
         {
+            // Resolve the definition once so both branches can fall back to it. Null for
+            // definition-less quests (the tutorial's), which keep their bespoke text — the
+            // containment rule.
+            QuestDefinition def = QuestDatabase.Find(id);
+
+            // Landmine fallbacks: the journal reads QuestProgress.Giver/.Location and the HUD
+            // tracker reads Objective. If the granting dialogue left one blank, fall back to the
+            // definition's own fields (QuestDefinition.Title/Giver/Location and
+            // Stages[0].Objective) so the journal and tracker never show an empty line.
+            string resolvedTitle = string.IsNullOrEmpty(title) && def != null ? def.Title : title;
+            string resolvedObjective = string.IsNullOrEmpty(objective) && def != null
+                && def.Stages != null && def.Stages.Count > 0
+                ? def.Stages[0].Objective : objective;
+            string resolvedGiver = string.IsNullOrEmpty(giver) && def != null ? def.Giver : giver;
+            string resolvedLocation = string.IsNullOrEmpty(location) && def != null ? def.Location : location;
+
             var existing = Find(id);
             if (existing != null)
             {
                 if (existing.IsComplete) return;
                 existing.IsActive = true;
-                existing.Title = title;
+                existing.Title = resolvedTitle;
 
                 // Do not rewind the objective of a quest already in flight. DialogueManager
                 // re-shows a conversation's starting node every time, so a GrantQuestId choice
@@ -80,24 +150,28 @@ namespace ExiledAlvaston.Quests
                 // QuestDefinition-driven quest, so the tutorial's re-activation path — which
                 // relies on this refresh — is untouched.
                 if (existing.StageIndex == 0 && existing.StageProgress == 0)
-                    existing.Objective = objective;
+                    existing.Objective = resolvedObjective;
 
-                if (!string.IsNullOrEmpty(giver)) existing.Giver = giver;
-                if (!string.IsNullOrEmpty(location)) existing.Location = location;
+                if (!string.IsNullOrEmpty(resolvedGiver)) existing.Giver = resolvedGiver;
+                if (!string.IsNullOrEmpty(resolvedLocation)) existing.Location = resolvedLocation;
             }
             else
             {
                 var quest = new QuestProgress
                 {
                     Id = id,
-                    Title = title,
-                    Objective = objective,
-                    Giver = giver,
-                    Location = location,
+                    Title = resolvedTitle,
+                    Objective = resolvedObjective,
+                    Giver = resolvedGiver,
+                    Location = resolvedLocation,
                     IsActive = true,
                     IsComplete = false
                 };
                 _quests.Add(quest);
+
+                // A brand-new grant auto-focuses: the tracker switches to it immediately. The
+                // player can re-focus journal-only.
+                FocusedQuestId = id;
 
                 // Brand-new quest only — re-activations (e.g. tutorial restart) stay quiet
                 UI.QuestPopupUI.Show(quest);
@@ -169,6 +243,13 @@ namespace ExiledAlvaston.Quests
             {
                 q.IsComplete = true;
                 q.IsActive = false;
+
+                // If the focused quest just completed, advance the focus to the next active quest
+                // so the tracker doesn't keep pointing at a finished quest. GetActiveQuest returns
+                // the first active one in list order; if none is left, the focus clears and the
+                // tracker hides.
+                if (FocusedQuestId == id)
+                    FocusedQuestId = GetActiveQuest()?.Id;
             }
             OnQuestsChanged?.Invoke();
         }
@@ -190,6 +271,9 @@ namespace ExiledAlvaston.Quests
         public void RestoreQuests(List<QuestProgress> saved)
         {
             _quests.Clear();
+            // Re-set by RestoreFocusedQuest after the list is restored; clearing here keeps a
+            // stale focus from surviving a load that no longer contains its quest.
+            FocusedQuestId = null;
             if (saved != null)
             {
                 foreach (var q in saved)
@@ -201,9 +285,25 @@ namespace ExiledAlvaston.Quests
             OnQuestsChanged?.Invoke();
         }
 
+        /// <summary>
+        /// Restore the focused quest id from a save. Clears it if it no longer points at an
+        /// active quest (a stale or completed focus), so the tracker falls back to the first
+        /// active quest rather than showing nothing. Raises OnQuestsChanged so the tracker
+        /// repaints even when the caller doesn't refresh it explicitly.
+        /// </summary>
+        public void RestoreFocusedQuest(string saved)
+        {
+            FocusedQuestId = saved;
+            QuestProgress q = Find(saved);
+            if (q == null || !q.IsActive || q.IsComplete)
+                FocusedQuestId = null;
+            OnQuestsChanged?.Invoke();
+        }
+
         public void ClearAll()
         {
             _quests.Clear();
+            FocusedQuestId = null;
             OnQuestsChanged?.Invoke();
         }
 

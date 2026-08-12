@@ -88,6 +88,12 @@ namespace ExiledAlvaston.Flow
         // TotalXP, the field name IS the JSON key — JsonUtility knows nothing of
         // [FormerlySerializedAs], so renaming this un-spends every perk every player has taken.
         public List<string> PerkIds = new List<string>();
+
+        // Appended for the quest focus, same append-only rule as every field above: a save
+        // written before the focus existed has no FocusedQuestId key, JsonUtility reads it back
+        // as null, and QuestManager.RestoreFocusedQuest clears a null focus — so the tracker
+        // falls back to the first active quest, exactly the pre-focus behaviour. No migration.
+        public string FocusedQuestId;
     }
 
     /// <summary>
@@ -126,7 +132,10 @@ namespace ExiledAlvaston.Flow
             data.Stamina = player.CurrentStamina;
 
             if (QuestManager.Instance != null)
+            {
                 data.Quests.AddRange(QuestManager.Instance.Quests);
+                data.FocusedQuestId = QuestManager.Instance.FocusedQuestId;
+            }
 
             if (session != null)
             {

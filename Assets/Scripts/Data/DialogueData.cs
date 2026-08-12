@@ -4,6 +4,24 @@ using System.Collections.Generic;
 namespace ExiledAlvaston.Data
 {
     /// <summary>
+    /// When a <see cref="DialogueChoice"/> is shown, keyed on a quest id.
+    ///
+    /// ⚠️ Serialized by integer index — APPEND ONLY (CLAUDE.md §7). Reordering or inserting a
+    /// value silently repoints every choice authored in every existing DialogueData asset.
+    /// </summary>
+    public enum QuestGateType
+    {
+        /// <summary>No gate — the choice always shows (the default).</summary>
+        None = 0,
+        /// <summary>Shown only while the quest has not been started.</summary>
+        NotStarted = 1,
+        /// <summary>Shown only while the quest is active (started and not complete).</summary>
+        Active = 2,
+        /// <summary>Shown only once the quest is complete.</summary>
+        Complete = 3
+    }
+
+    /// <summary>
     /// Optional merchant window opened by a dialogue choice. Serialized by integer index: append
     /// only, exactly like <see cref="QuestGateType"/>.
     /// </summary>
@@ -19,6 +37,13 @@ namespace ExiledAlvaston.Data
     {
         [TextArea] public string ChoiceText;
         public string NextNodeId;
+
+        [Header("Quest Gate (Optional)")]
+        [Tooltip("If set, this choice is only shown while the named quest is in the chosen state. " +
+                 "Lets one conversation branch per quest instead of one asset per state.")]
+        public QuestGateType QuestGate = QuestGateType.None;
+        [Tooltip("The quest id the QuestGate checks. Ignored when QuestGate is None.")]
+        public string QuestGateId;
 
         [Header("Stat Checks (Optional)")]
         public string RequiredStat; // e.g., "Personality", "STR"
@@ -60,6 +85,29 @@ namespace ExiledAlvaston.Data
             if (RequiredStat == "Personality" && playerTraits.Awareness >= RequiredStatLevel) return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// True if this choice's quest gate is satisfied by the current quest state. A choice
+        /// with <see cref="QuestGate"/> None, or a gate whose quest id is empty, is always shown.
+        /// A quest id that resolves to no progress record counts as NotStarted.
+        /// </summary>
+        public bool MeetsQuestGate()
+        {
+            if (QuestGate == QuestGateType.None || string.IsNullOrEmpty(QuestGateId)) return true;
+
+            var mgr = Quests.QuestManager.Instance;
+            bool started = mgr != null && mgr.Find(QuestGateId) != null;
+            bool active = mgr != null && mgr.IsActive(QuestGateId);
+            bool complete = mgr != null && mgr.IsComplete(QuestGateId);
+
+            switch (QuestGate)
+            {
+                case QuestGateType.NotStarted: return !started;
+                case QuestGateType.Active: return active;
+                case QuestGateType.Complete: return complete;
+                default: return true;
+            }
         }
     }
 

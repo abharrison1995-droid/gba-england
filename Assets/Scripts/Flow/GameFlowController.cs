@@ -199,6 +199,9 @@ namespace ExiledAlvaston.Flow
             PlayerSession.Instance.RestoreFromSave(
                 data.CharacterName, (PlayerClass)data.PlayerClass, data.TutorialComplete, templateData);
             QuestManager.Instance.RestoreQuests(data.Quests);
+            // After RestoreQuests: the focus must be validated against the restored list, so a
+            // stale or completed focus clears and the tracker falls back to the first active quest.
+            QuestManager.Instance.RestoreFocusedQuest(data.FocusedQuestId);
             PlayerSession.Instance.RestoreInventory(data.Inventory);
             PlayerSession.Instance.RestoreEquipment(data.Equipment); // null in pre-equipment saves → empty doll
             PlayerSession.Instance.RestorePounds(data.Pounds);

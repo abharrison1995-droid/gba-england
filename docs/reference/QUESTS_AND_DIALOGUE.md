@@ -1,13 +1,18 @@
 # Quests and dialogue
 
 ```
-Last verified against: ccfa9c9
+Last verified against: working tree, 2026-08-12
 Verification scope:    code; tracked dialogue/preset YAML (15 DialogueData assets read). A
                        single-stage Kill quest was exercised in the editor, including reward
                        payment and persistence across an autosave, verified by reading
                        savegame.json. The three quest fixes on main POSTDATE that session.
                        TalkTo, Collect, Reach and Manual have NEVER been exercised, and neither
                        has any multi-stage quest.
+                       Phase 0 (multi-quest watcher, quest focus, quest-gated dialogue choices,
+                       landmine fallbacks) is written and brace-balanced but has NEVER been
+                       compiled or opened in the editor — see docs/plans/QUEST_PIPELINE_PLAN.md.
+                       Merchant data/actions, the Win95 shop and three catalogues are written and
+                       reference-checked but have NEVER been compiled or exercised in the editor.
 ```
 
 ## Current content state
@@ -16,8 +21,9 @@ Verification scope:    code; tracked dialogue/preset YAML (15 DialogueData asset
   The quest system is **inert** until someone authors one.
 - **15 `DialogueData` assets exist**, in `Assets/Data/Dialogue/Generated/`, one per NPC, wired to
   15 of the 34 presets.
-- **Every one of them is a single node with zero choices** — an ambient one-liner. So the cast
-  talks; it does not branch.
+- **Three merchant conversations have choices**: Roaming Pharmacist, F.U. Sports Clerk and
+  Quidland Clerk each keep their one opening node and add Buy, Sell and Leave. The other twelve
+  remain single-node ambient one-liners with zero choices.
 - **No `GrantQuestId` exists anywhere**, so nothing can grant or complete a quest through dialogue.
 - `escape_manor` and `spark_of_talent` run on bespoke tutorial code, not on this system.
 
@@ -100,9 +106,10 @@ would grant the item twice. An authored `Quantity` of 0 warns and *claims*, sinc
   `DialogueManager.IsDialogueOpen`: `OnChoiceSelected` runs grant → complete → *consume the
   handed-over item* in that order, and a reward applied the instant completion landed would fall
   inside a half-finished hand-in.
-- **Only the *first* active quest is watched.** The watcher binds `QuestManager.GetActiveQuest()`.
-  Two quests active at once means the second one's conditions are not watched at all. A real
-  limitation, not a subtlety.
+- **Every active quest is watched.** The watcher binds all of them, each with its own
+  `QuestBinding` holding that quest's stage and per-condition state. The HUD tracker shows only
+  the focused quest, but the watcher advances every active one. (Phase 0 — see
+  `docs/plans/QUEST_PIPELINE_PLAN.md`.)
 - **Every rebind is a full teardown first.** A `Health` subscribed twice counts one death as two.
   Unbinds null-check each entry, because a `Health` destroyed with its chunk is Unity's fake null.
 - **Chunk changes are polled**, against remembered `CurrentChunkData` *and* `CurrentChunkInstance`.
@@ -122,21 +129,24 @@ would grant the item twice. An authored `Quantity` of 0 warns and *claims*, sinc
 
 None of these can corrupt a save.
 
-- ⚠️ **`Stages[0].Objective` is never displayed.** The opening objective comes only from
-  `DialogueChoice.GrantQuestObjective`, which has no empty-string fallback, and nothing reads the
-  first stage's `Objective`. Leave that dialogue field blank and the HUD tracker shows an **empty
-  objective line** until stage 0 completes. `QuestDefinition`'s tooltip claims otherwise and is
-  wrong. **Always fill in `GrantQuestObjective` on the granting choice**, identical to
-  `Stages[0].Objective`.
+- **`Stages[0].Objective` now has a fallback.** `QuestManager.StartQuest` falls back to the
+  definition's `Stages[0].Objective` when `GrantQuestObjective` is blank, so the HUD tracker never
+  shows an empty objective line. (Phase 0.) Still fill in `GrantQuestObjective` on the granting
+  choice — it is what the popup shows — but a blank no longer leaves the tracker empty.
 - ⚠️ **A `TalkTo` final stage completes the quest on the interact, before any choice is picked.**
   `Update` runs while paused, so the advance lands a frame after the dialogue panel opens. If that
   NPC also carries the hand-in, the player walks up, presses Interact, backs out — and keeps the
   item, gets the reward, and hands nothing over. **Author hand-ins as `Collect` last + dialogue
-  completes**, never `TalkTo` last against the hand-in NPC. Nothing warns.
-- **`QuestDefinition.Title` / `Giver` / `Location` are dead fields.** The journal reads
-  `QuestProgress.Giver`/`.Location`, from the dialogue speaker name and `GrantQuestLocation`.
-- **The second active quest is invisible as well as unwatched.** `QuestTrackerUI` uses the same
-  `GetActiveQuest()`, and `_quests` is insertion-ordered and never compacted.
+  completes**, never `TalkTo` last against the hand-in NPC. The watcher now warns when it binds a
+  TalkTo final stage (Phase 0).
+- **`QuestDefinition.Title` / `Giver` / `Location` are fallbacks, not dead fields.** The journal
+  reads `QuestProgress.Giver`/`.Location`, from the dialogue speaker name and
+  `GrantQuestLocation`; `StartQuest` now falls back to the definition's fields when those are
+  blank. (Phase 0.)
+- **The tracker shows the focused quest.** `QuestManager.FocusedQuestId` (appended to the save)
+  names the quest the HUD tracker shows; a brand-new grant auto-focuses it, and the journal's
+  per-row FOCUS button switches it. A stale or completed focus falls back to the first active
+  quest. (Phase 0.)
 - **A kill can be dropped if a rebind lands in the same frame.** `Rebind` runs before
   `ApplyPending`, and `BindKill` re-seeds from `StageProgress`, one frame behind. Rare.
 - **`Assets/Resources/Quests/README.txt` ships in the build** as a `TextAsset`. 16 lines, so the
@@ -145,6 +155,29 @@ None of these can corrupt a save.
 ---
 
 ## Dialogue graphs
+
+### Merchant choices and shops
+
+A dialogue choice can append a merchant action without adding a reply node:
+`DialogueChoice.Merchant` names a `MerchantData` asset and `MerchantAction` selects Buy or Sell.
+Both fields must be set together. Selecting one closes the dialogue first, then opens the
+runtime-built Win95 `MerchantUI`; that ordering transfers the modal pause rather than leaking a
+`PauseManager.Push`.
+
+`MerchantData` owns unlimited stock, optional per-entry shelf-price overrides and the `ItemType`s
+that merchant accepts from the player. There is deliberately no merchant save state yet. Buying
+spends pounds then adds one item; selling removes one carried (not equipped) item then pays
+`floor(ItemData.Value * 30%)`. `ItemData.Value` is the canonical base value and `Tradeable` opts
+development or story-only content out. Quest items are always refused. Equipped items are absent
+from `PlayerSession.Inventory`, so they never appear in the sell list.
+
+`Tools > Content > Validate Merchants` checks catalogues, prices and buy-back loops. Dialogue
+validation also rejects a choice that sets only one half of the Merchant/MerchantAction pair.
+
+The three authored catalogues are `Merchant_RoamingPharmacist`, `Merchant_FUSports` and
+`Merchant_Quidland`. The first two NPCs are placed in Home London. The Quidland clerk has a preset,
+portrait and wired conversation but is not placed in a reachable chunk; placement remains part of
+the interior/portal authoring pass.
 
 **The format is flat.** `DialogueData.Nodes` is a `List<DialogueNode>`; each node carries a string
 `Id`. `DialogueChoice.NextNodeId` names the node a choice leads to. `DialogueData.StartNodeId`
@@ -158,9 +191,9 @@ It used to be a tree stored *by value* — `NextNode` was a nested `DialogueNode
 problems structural: no two choices could converge on the same node, and Unity 2022.3's nested
 serialization depth caps at 7, which a branching conversation burns through in three exchanges.
 
-⚠️ **The authoring surface is NOT exercised.** No `DialogueData` asset has ever been hand-authored
-with choices, convergence and cycles have never run, and the traps below were found by review, not
-by play. Every one of them lands on the first person to write a branching conversation.
+⚠️ **The authoring surface is NOT exercised.** Three merchant assets now have terminal choices,
+but they have not run in the editor. Convergence and cycles have never run, and the traps below
+were found by review, not by play.
 
 ### Authoring traps
 
@@ -187,10 +220,19 @@ by play. Every one of them lands on the first person to write a branching conver
   unconditionally whenever a selectable choice is picked, while `CompleteQuest` early-returns once
   complete. Hand over 5 at a hub, loop back carrying 10, and picking it again destroys 5 more,
   completes nothing, and reports nothing.
-- **The twelve `DialogueChoice` side-effect fields are a save/quest contract** and must not be
+- **The fourteen `DialogueChoice` side-effect fields are a save/quest contract** and must not be
   renamed without the usual serialized-field treatment: `RequiredStat`, `RequiredStatLevel`,
   `RequiredItem`, `RequiredItemQuantity`, `ConsumeRequiredItem`, `GrantQuestId`, `GrantQuestTitle`,
-  `GrantQuestObjective`, `GrantQuestLocation`, `TeachSpark`, `CompleteQuestId`, `ChoiceText`.
+  `GrantQuestObjective`, `GrantQuestLocation`, `TeachSpark`, `CompleteQuestId`, `ChoiceText`,
+  plus the Phase 0 quest gate `QuestGate` / `QuestGateId`.
+- **Quest-gated choices are hidden, not greyed out.** A choice with `QuestGate` set is only shown
+  while the named quest is in the chosen state (`NotStarted` / `Active` / `Complete`), so one
+  conversation can branch per quest instead of one asset per state. The gate is re-evaluated every
+  time the node is displayed. `DialogueManager.CanEscapeFrom` treats a currently-hidden choice as
+  not a route out, so a node whose only exit is quest-gated gets the runtime "End conversation."
+  safety net until its quest reaches the right state. `DialogueValidator` treats a quest-gated
+  choice as *potentially* available for its hard-error check (the quest state is dynamic, so it is
+  not a permanent dead end) but as gated for its "every exit is gated" warning. (Phase 0.)
 
 ### The two safety nets
 

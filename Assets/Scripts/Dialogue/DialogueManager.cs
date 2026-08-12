@@ -117,11 +117,23 @@ namespace ExiledAlvaston.Dialogue
             }
             else
             {
+                // The visible number counts only the choices actually shown. A quest-gated choice
+                // is skipped below, so numbering by the authored index would leave a gap ("1. ...",
+                // "3. ...") that reads as a missing option.
+                int shown = 0;
                 for (int i = 0; i < node.Choices.Count; i++)
                 {
                     DialogueChoice choice = node.Choices[i];
 
-                    string displayText = $"{i + 1}. {choice.ChoiceText}";
+                    // A quest-gated choice is hidden, not greyed out: it belongs to a branch the
+                    // player cannot take yet (quest not started / not active / not complete), and
+                    // showing it disabled would leak the quest's existence. The gate is re-evaluated
+                    // every time the node is displayed, so a choice appears the moment its quest
+                    // reaches the right state.
+                    if (choice != null && !choice.MeetsQuestGate()) continue;
+
+                    shown++;
+                    string displayText = $"{shown}. {choice.ChoiceText}";
 
                     if (!string.IsNullOrEmpty(choice.RequiredStat))
                     {
@@ -208,7 +220,10 @@ namespace ExiledAlvaston.Dialogue
                 for (int i = 0; i < current.Choices.Count; i++)
                 {
                     DialogueChoice choice = current.Choices[i];
-                    if (choice == null || !IsSelectable(choice)) continue;
+                    // A quest-gated choice that is currently hidden is not a route out — the
+                    // player cannot see or press it. Same rule as DisplayNode, so the escape
+                    // search and the buttons can never disagree.
+                    if (choice == null || !choice.MeetsQuestGate() || !IsSelectable(choice)) continue;
 
                     // Both of these end the chat in OnChoiceSelected — the second one loudly.
                     if (string.IsNullOrEmpty(choice.NextNodeId)) return true;
