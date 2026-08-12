@@ -50,6 +50,9 @@ python Tools/art_status.py
 | [plans/MOBILE_PERFORMANCE_PASS.md](plans/MOBILE_PERFORMANCE_PASS.md) | Android/iOS texture compression tool, mobile quality tiers, a persisted graphics settings menu. Landed on `main`; unseen by a compiler or the editor. Its §10.3 is the owner's check list. |
 | [plans/SURVIVAL_PRESSURE_RESOURCES.md](plans/SURVIVAL_PRESSURE_RESOURCES.md) | A stamina bar, a dodge roll priced at half the pool, slow stamina regen and the end of automatic mana regen. Phase 1 implemented; unseen by a compiler or the editor. Its §10.3 is the owner's check list; phases 2 and 3 are staged, not approved. |
 | [plans/ALEX_COMPANION_PLAN.md](plans/ALEX_COMPANION_PLAN.md) | Approved design for the paid starter companion, reusable paid/quest companion framework, save lifecycle and Alex's eight-sheet art contract. Not implemented. |
+| [plans/TRAFFIC_AND_CAR_THEFT_PLAN.md](plans/TRAFFIC_AND_CAR_THEFT_PLAN.md) | Ambient traffic and car theft: chunk-owned cars drive authored routes, the player can stop and hotwire one, and drive off — triggering a police response. Code landed; unseen by a compiler or the editor. Its §10.2 is the owner's check list. |
+| [plans/QUEST_PIPELINE_PLAN.md](plans/QUEST_PIPELINE_PLAN.md) | Plain-text `.quest` authoring + importer, multi-quest watcher, quest focus, quest-gated dialogue choices. Phases 0–1 written; unseen by a compiler or the editor. Its verification gate is the owner's check list before Phase 2. |
+| [plans/COMPANION_PIPELINE_PLAN.md](plans/COMPANION_PIPELINE_PLAN.md) | Data-driven paid/quest companions (Alex first): definition, follower AI, contract lifecycle, knockout, HUD. C0–C3 written, C4/C6 partial, C5/C7/Alex outstanding; unseen by the editor. Its verification section is the owner's check list. |
 
 ## Archive — history only
 

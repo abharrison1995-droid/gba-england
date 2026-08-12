@@ -273,6 +273,19 @@ confirmed, rather than leaving it hedged.
     undone with `python Tools/flip_sheets.py --force <name>`. `player_stabmeister_walk` was flipped
     too but is still in `art_incoming/` and has never been imported.
 
+13. **The ambient traffic and car theft work, none of it exercised.** Four new scripts
+    (`TrafficRoute`, `TrafficCar`, `HotwireMenuUI`, `BuildTrafficCarPrefabTool`) and edits to
+    `EKVibe`, `VehicleData`, `VehicleController` and `WorldActorVisual` — all unseen by a compiler
+    or an editor. The four `.meta` files were hand-authored and then rewritten byte-exact after
+    Unity rejected the first pass. *Check the §10.2 list in
+    [docs/plans/TRAFFIC_AND_CAR_THEFT_PLAN.md](docs/plans/TRAFFIC_AND_CAR_THEFT_PLAN.md):* compile
+    on open; run the builder tool twice (Reliant Robin common, Vauxhall Corsa better); author two
+    routes in `Home_London_Prefab`; cars drive/brake/honk/resume; hotwire success → driver flees,
+    2 knives, two officers, hidden rider; timeout → 1 knife, car drives off; ride across a chunk
+    edge; reload → traffic fresh, stolen car gone. ⚠️ **The FU Sports model is a missing nested
+    prefab in `Home_London_Prefab`** after the model reorganisation — re-point it in Prefab Mode,
+    never by hand-editing the prefab YAML.
+
 **The cast is now uniformly 65 px.** Every character sidecar declares `worldHeight: 1.35`, which
 imports at 65 px cells. `sheet_char_player_mrhood_idle` and `sheet_char_player_stabmeister_idle`
 were the last two still on disk at 74; the importer has re-done them in place, GUIDs intact, and
