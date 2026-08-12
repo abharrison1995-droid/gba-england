@@ -66,6 +66,10 @@ namespace ExiledAlvaston.Combat
         /// <summary>True while this enemy is chasing something.</summary>
         public bool HasAggro => _target != null;
 
+        /// <summary>What this enemy is currently chasing, or null when idle. Lets a companion target only
+        /// hostiles already fighting the player, and nothing else.</summary>
+        public Transform AggroTarget => _target;
+
         private void Awake()
         {
             _selfHealth = GetComponent<Health>();
