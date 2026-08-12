@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a2b5e4c521048a0929eec75f19aad28, type: 3}
+  m_Name: Merchant_Quidland
+  m_EditorClassIdentifier:
+  MerchantName: Quidland
+  Stock:
+  - Item: {fileID: 11400000, guid: 6d1bb6e8940caa441bd4ecb6c405e8a7, type: 2}
+    PriceOverride: 1
+  - Item: {fileID: 11400000, guid: 3995dfab84fc7c74c8d1f0e622164f30, type: 2}
+    PriceOverride: 1
+  - Item: {fileID: 11400000, guid: 65e06f042e389844c8d8162823a5e1ea, type: 2}
+    PriceOverride: 1
+  - Item: {fileID: 11400000, guid: a3ef19f01f594504595d7a682693c5bd, type: 2}
+    PriceOverride: 1
+  AcceptedTypes:
+  - 0
+  - 5

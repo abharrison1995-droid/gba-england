@@ -282,6 +282,19 @@ namespace ExiledAlvaston.Dialogue
             if (choice != null && choice.TeachSpark)
                 _teachSparkOnClose = true;
 
+            // A shop owns its own modal pause. Close the conversation first so its pause token is
+            // released, then let the merchant window acquire one; doing this in the other order
+            // leaves the world one Push ahead when the shop closes.
+            if (choice != null && choice.Merchant != null
+                && choice.MerchantAction != MerchantActionType.None)
+            {
+                MerchantData merchant = choice.Merchant;
+                MerchantActionType action = choice.MerchantAction;
+                EndDialogue();
+                UI.MerchantUI.Show(merchant, action);
+                return;
+            }
+
             if (string.IsNullOrEmpty(nextNodeId))
             {
                 EndDialogue();

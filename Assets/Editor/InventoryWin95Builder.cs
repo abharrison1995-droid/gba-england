@@ -207,7 +207,7 @@ namespace ExiledAlvaston.EditorTools
         /// <summary>Early-Windows cornflower blue for the character backdrop, per the owner's mock.</summary>
         private static readonly Color PaperDollBlue = new Color(0.392f, 0.584f, 0.929f); // #6495ED
 
-        /// <summary>The 7 equippable ItemTypes as mock-colored slots flanking the doll.</summary>
+        /// <summary>The 8 visible equippable ItemTypes as mock-colored slots flanking the doll.</summary>
         private struct EquipSlotSpec
         {
             public int SlotIndex;   // EquipSlotN in the scene; its ItemType is EquipmentSlotMap.SlotOrder[SlotIndex]
@@ -219,15 +219,16 @@ namespace ExiledAlvaston.EditorTools
         private static EquipSlotSpec[] EquipLayout =>
             new[]
             {
-                // Left column: Head, Chest, Boots — blue / purple / lime
-                new EquipSlotSpec { SlotIndex = 0, Frame = Html("2E7CE6"), X0 = 0.04f, Y0 = 0.70f, X1 = 0.28f, Y1 = 0.92f },
-                new EquipSlotSpec { SlotIndex = 1, Frame = Html("A040C0"), X0 = 0.04f, Y0 = 0.40f, X1 = 0.28f, Y1 = 0.62f },
-                new EquipSlotSpec { SlotIndex = 2, Frame = Html("B8D900"), X0 = 0.04f, Y0 = 0.10f, X1 = 0.28f, Y1 = 0.32f },
-                // Right column: Weapon, Shield, Cloak, Ring — cyan / red / pink / dark red
-                new EquipSlotSpec { SlotIndex = 3, Frame = Html("29B7D3"), X0 = 0.71f, Y0 = 0.745f, X1 = 0.95f, Y1 = 0.945f },
-                new EquipSlotSpec { SlotIndex = 4, Frame = Html("D32F2F"), X0 = 0.71f, Y0 = 0.505f, X1 = 0.95f, Y1 = 0.705f },
-                new EquipSlotSpec { SlotIndex = 5, Frame = Html("F48FB1"), X0 = 0.71f, Y0 = 0.265f, X1 = 0.95f, Y1 = 0.465f },
-                new EquipSlotSpec { SlotIndex = 6, Frame = Html("8B1A1A"), X0 = 0.71f, Y0 = 0.025f, X1 = 0.95f, Y1 = 0.225f },
+                // Left column: Head, Chest, Legs, Boots.
+                new EquipSlotSpec { SlotIndex = 0, Frame = Html("2E7CE6"), X0 = 0.04f, Y0 = 0.76f, X1 = 0.28f, Y1 = 0.94f },
+                new EquipSlotSpec { SlotIndex = 1, Frame = Html("A040C0"), X0 = 0.04f, Y0 = 0.52f, X1 = 0.28f, Y1 = 0.70f },
+                new EquipSlotSpec { SlotIndex = 2, Frame = Html("B8D900"), X0 = 0.04f, Y0 = 0.28f, X1 = 0.28f, Y1 = 0.46f },
+                new EquipSlotSpec { SlotIndex = 3, Frame = Html("D32F2F"), X0 = 0.04f, Y0 = 0.04f, X1 = 0.28f, Y1 = 0.22f },
+                // Right column: Weapon, Cloak, Belt, Ring.
+                new EquipSlotSpec { SlotIndex = 4, Frame = Html("29B7D3"), X0 = 0.71f, Y0 = 0.76f, X1 = 0.95f, Y1 = 0.94f },
+                new EquipSlotSpec { SlotIndex = 5, Frame = Html("F48FB1"), X0 = 0.71f, Y0 = 0.52f, X1 = 0.95f, Y1 = 0.70f },
+                new EquipSlotSpec { SlotIndex = 6, Frame = Html("C08040"), X0 = 0.71f, Y0 = 0.28f, X1 = 0.95f, Y1 = 0.46f },
+                new EquipSlotSpec { SlotIndex = 7, Frame = Html("8B1A1A"), X0 = 0.71f, Y0 = 0.04f, X1 = 0.95f, Y1 = 0.22f },
             };
 
         private static Color Html(string hex)
@@ -282,7 +283,7 @@ namespace ExiledAlvaston.EditorTools
                 }
             }
 
-            // 7 mock-colored slots for the 7 equippable ItemTypes; the 5 leftover slots
+            // 8 mock-colored slots for the visible equippable ItemTypes; the 4 leftover slots
             // from the old 12-slot cross are deactivated, not deleted.
             foreach (EquipSlotSpec spec in EquipLayout)
             {
@@ -294,7 +295,7 @@ namespace ExiledAlvaston.EditorTools
                 if (img != null) Win95Skin.StyleSunken(img);
                 Win95Skin.AddColorFrame((RectTransform)slot, spec.Frame);
             }
-            for (int i = 7; i < 12; i++)
+            for (int i = 8; i < 12; i++)
             {
                 Transform slot = center.Find($"EquipSlot{i}");
                 if (slot != null) slot.gameObject.SetActive(false);

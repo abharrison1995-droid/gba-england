@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a2b5e4c521048a0929eec75f19aad28, type: 3}
+  m_Name: Merchant_FUSports
+  m_EditorClassIdentifier:
+  MerchantName: F.U. Sports
+  Stock:
+  - Item: {fileID: 11400000, guid: 7eef3d91e3152c1439f6891901621dc5, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: cecddd9b0751b664b95d9b1a46567f96, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: 2d25cdd38aa526243912ab9f074371a4, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: cbf037f5fa93ab549bd3b0cf7f12deb8, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: fe0ad5e73c7071e409ec21958ab17933, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: c93e22e48eb07dd44a664afee8ff6789, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: b970313928d30e148b011b3ab7ef06f9, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: f4d622b2cc38533438934c57afd935e0, type: 2}
+    PriceOverride: 0
+  AcceptedTypes:
+  - 2
+  - 3
+  - 6
+  - 9
+  - 10

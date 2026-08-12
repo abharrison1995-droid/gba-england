@@ -3,6 +3,17 @@ using System.Collections.Generic;
 
 namespace ExiledAlvaston.Data
 {
+    /// <summary>
+    /// Optional merchant window opened by a dialogue choice. Serialized by integer index: append
+    /// only, exactly like <see cref="QuestGateType"/>.
+    /// </summary>
+    public enum MerchantActionType
+    {
+        None = 0,
+        Buy = 1,
+        Sell = 2
+    }
+
     [System.Serializable]
     public class DialogueChoice
     {
@@ -33,6 +44,11 @@ namespace ExiledAlvaston.Data
         public bool TeachSpark;
         [Tooltip("Picking this choice marks the given quest id complete.")]
         public string CompleteQuestId;
+
+        [Header("Merchant (Optional)")]
+        [Tooltip("Shop opened after this choice closes the conversation.")]
+        public MerchantData Merchant;
+        public MerchantActionType MerchantAction = MerchantActionType.None;
 
         public bool MeetsRequirement(CoreTraits playerTraits)
         {

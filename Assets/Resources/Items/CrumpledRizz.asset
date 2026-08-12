@@ -18,7 +18,8 @@ MonoBehaviour:
   Icon: {fileID: 0}
   Type: 7
   AllowedClasses: 
-  Value: 0
+  Value: 1
+  Tradeable: 1
   Damage: 0
   Armor: 0
   Stackable: 1

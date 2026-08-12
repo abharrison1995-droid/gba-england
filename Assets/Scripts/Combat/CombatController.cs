@@ -572,6 +572,7 @@ namespace ExiledAlvaston.Combat
                 var session = Flow.PlayerSession.Instance;
                 Data.ItemData weapon = session != null ? session.EquippedWeapon() : null;
                 if (weapon != null) damage += weapon.Damage;
+                if (session != null) damage += session.TotalAttackBonus();
 
                 // After the weapon, so a perk multiplies the whole swing rather than the bare
                 // Strength roll. A cached float, never a walk over the perk list — this is a hot

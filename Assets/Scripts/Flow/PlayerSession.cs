@@ -789,6 +789,28 @@ namespace ExiledAlvaston.Flow
             return total;
         }
 
+        /// <summary>Flat melee attack supplied by all equipped items.</summary>
+        public int TotalAttackBonus()
+        {
+            int total = 0;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.AttackBonus;
+            return total;
+        }
+
+        /// <summary>Poison resistance supplied by all equipped items.</summary>
+        public int TotalPoisonResistance()
+        {
+            int total = 0;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.PoisonResistance;
+            return total;
+        }
+
+        /// <summary>Base/perk poison resistance plus the live equipment contribution.</summary>
+        public int EffectivePoisonResistance() =>
+            TotalPoisonResistance() + (RuntimeStats != null ? RuntimeStats.BaseResistances.Poison : 0);
+
         /// <summary>
         /// Worn armour plus derived Physical resistance — the single number the mitigation curve
         /// reads (<see cref="EKVibe.ArmourReduction"/>).

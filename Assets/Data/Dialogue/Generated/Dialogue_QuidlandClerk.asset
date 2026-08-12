@@ -18,4 +18,16 @@ MonoBehaviour:
     Speaker: {fileID: 11400000, guid: 8b8435f4d974e2049998ef3ce0c37ba3, type: 2}
     DialogueText: Everything in here's a quid. The knives are a quid. Don't ask me
       how.
-    Choices: []
+    Choices:
+    - ChoiceText: Let me see what you've got.
+      NextNodeId:
+      Merchant: {fileID: 11400000, guid: 014ce830fb754e5d82e2242260950b22, type: 2}
+      MerchantAction: 1
+    - ChoiceText: Want to buy anything?
+      NextNodeId:
+      Merchant: {fileID: 11400000, guid: 014ce830fb754e5d82e2242260950b22, type: 2}
+      MerchantAction: 2
+    - ChoiceText: Leave.
+      NextNodeId:
+      Merchant: {fileID: 0}
+      MerchantAction: 0

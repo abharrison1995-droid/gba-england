@@ -200,6 +200,26 @@ public static class DialogueValidator
             }
         }
 
+        // ---- merchant actions ----------------------------------------------------------
+
+        foreach (DialogueNode node in data.Nodes)
+        {
+            if (node?.Choices == null) continue;
+            for (int c = 0; c < node.Choices.Count; c++)
+            {
+                DialogueChoice choice = node.Choices[c];
+                if (choice == null) continue;
+
+                bool hasMerchant = choice.Merchant != null;
+                bool hasAction = choice.MerchantAction != MerchantActionType.None;
+                if (hasMerchant == hasAction) continue;
+
+                problems.Add(new Problem(Severity.Error,
+                    $"Node '{IdOf(node)}' choice {c} must set both Merchant and MerchantAction, " +
+                    "or neither. As authored, selecting it cannot open a usable shop."));
+            }
+        }
+
         // ---- reachability ---------------------------------------------------------------
 
         HashSet<DialogueNode> reachable = ReachableFrom(data, start);
