@@ -282,9 +282,10 @@ confirmed, rather than leaving it hedged.
     on open; run the builder tool twice (Reliant Robin common, Vauxhall Corsa better); author two
     routes in `Home_London_Prefab`; cars drive/brake/honk/resume; hotwire success → driver flees,
     2 knives, two officers, hidden rider; timeout → 1 knife, car drives off; ride across a chunk
-    edge; reload → traffic fresh, stolen car gone. ⚠️ **The FU Sports model is a missing nested
-    prefab in `Home_London_Prefab`** after the model reorganisation — re-point it in Prefab Mode,
-    never by hand-editing the prefab YAML.
+    edge; reload → traffic fresh, stolen car gone. **The FU Sports nested prefab in
+    `Home_London_Prefab` was re-pointed** to its post-reorganisation `Shops/` path (committed
+    2026-08-12) — but that edit has never been opened in an editor, so *confirm on first open that
+    the FU Sports building resolves rather than showing as a missing prefab.*
 
 **The cast is now uniformly 65 px.** Every character sidecar declares `worldHeight: 1.35`, which
 imports at 65 px cells. `sheet_char_player_mrhood_idle` and `sheet_char_player_stabmeister_idle`
@@ -639,6 +640,69 @@ compiled:
 
 → [docs/plans/MOBILE_PERFORMANCE_PASS.md](docs/plans/MOBILE_PERFORMANCE_PASS.md) §10.3 for the full
 check list.
+
+**Also outstanding — merchant stores and the equipment thread, none of it exercised.** Committed
+2026-08-12 on `codex/merchant-store-screens`, not yet pushed, never compiled:
+
+- **Three merchants** (Roaming Pharmacist, F.U. Sports, Quidland) with Buy/Sell catalogues, a Win95
+  shop window (`MerchantUI`) and a `MerchantValidator`. A `DialogueChoice` now carries an optional
+  `Merchant` + `MerchantAction`; picking it closes the conversation and opens the shop. ⚠️ **The
+  shop's pause is released before the merchant window takes its own** — closing the conversation
+  first, then `MerchantUI.Show` — so a wrong order leaves the world one `PauseManager.Push` ahead
+  when the shop closes. *Open a clerk conversation, pick Buy, and check the shop opens and closes
+  without freezing the game.*
+- **Fifteen new tradeable items with icons.** Existing items gained `Value`/`Tradeable`. *Buy one
+  and check pounds drop and it enters the bag; try to sell a `Tradeable: 0` item and check it
+  cannot be listed.* £ glyph caveat (§5 item 9) applies to the price readouts.
+- **The equipment/paper-doll thread the store needs rode in on the same commit** (no separate
+  equipment commit). `ItemData` gained flat equip bonuses (`MeleeBonus`, poison resistance) and
+  `IsEquippable`; `PlayerSession` sums equipped contributions; `CombatController` adds
+  `TotalAttackBonus()` to the swing; the paper-doll slots were rebuilt
+  (`InventoryWin95Builder`/`EquipmentSlotMap`/`InventoryController`); loot rows now show the item
+  icon (`LootMenuUI`/`SpriteContainer`). *Equip a weapon and check the melee number rises by its
+  bonus; equip armour and check incoming hits drop.*
+- **The exercise rig is the all-items test container** (`Container_AllItems_Test`, placed in
+  `Home_London_Prefab`) — see the art/tooling commit. Nothing has been placed or played yet.
+
+**Also outstanding — the quest pipeline, Phase 0 and Phase 1, none of it exercised.** Committed
+2026-08-12 on `codex/merchant-store-screens`, not yet pushed, never compiled:
+
+- **Phase 0 (own commit): the multi-quest foundation.** `QuestConditionWatcher` now binds EVERY
+  active quest, each with its own `QuestBinding`, instead of only the first; `QuestManager` gained
+  a player-chosen `FocusedQuestId` (auto-focused on a new grant; stale/none falls back to the first
+  active quest), the tracker shows it and the journal has a per-row FOCUS button. *Grant two quests
+  and check both advance while only the focused one shows in the tracker, and that the journal's
+  FOCUS button switches it.*
+- ⚠️ **`FocusedQuestId` is appended to `SaveData`** (append-only, no migration — a pre-focus save
+  reads it back as null and the tracker falls back to the first active quest). *Load a save made
+  before today and check it arrives with no error and a sensible tracker.* `GameFlowController`
+  restores and revalidates the focus after `RestoreQuests`.
+- **Quest-gated dialogue choices.** `DialogueChoice.QuestGate` + `MeetsQuestGate` hide (not grey) a
+  choice whose quest is not in the chosen state, so a gated branch never leaks a quest's existence;
+  `DialogueManager` renumbers the shown choices and keeps the escape search in step. *Author a
+  gated choice and check it appears only once its quest reaches the right state.*
+- **Phase 1: the plain-text `.quest` pipeline.** `QuestTextImporter` turns a `.quest` file into a
+  `QuestDefinition`; `QuestContentValidator` checks it; `QUEST_TEXT_FORMAT.md` and `_template.quest`
+  are the contract. *Run the importer on `_template.quest` from the menu and check it produces a
+  `QuestDefinition` without errors.* Editor tooling — it has generated nothing yet.
+- **`Tools/check_quest_phase0.py` passes its brace-balance scan.** That is NOT a compile (§5) — it
+  only rules out a truncated edit. No `.quest` has been imported and no `QuestDefinition` exists to
+  exercise the watcher or focus.
+
+**Also outstanding — the companion system C0–C3 plus HUD, none of it exercised.** Committed
+2026-08-12 on `codex/merchant-store-screens`, not yet pushed, never compiled:
+
+- **Data-driven companions.** `CompanionDefinition`/`CompanionDatabase` describe them;
+  `CompanionAI` is the runtime follower/combatant; `CompanionManager` and `CompanionHomePresence`
+  own the lifecycle; `CompanionHUDUI` draws the bar. `EnemyAI` now exposes `AggroTarget` so a
+  companion targets only hostiles already fighting the player, and nothing else.
+- **No `CompanionDefinition` asset exists and no companion has been recruited**, so none of this has
+  run. Covers phases C0–C3; C4/C6 are partial and C5/C7/Alex are outstanding per the plan. *Author
+  a `CompanionDefinition`, recruit one, and check the follower keeps up, engages only your
+  aggressor, and the HUD shows its bar.*
+
+→ [docs/plans/QUEST_PIPELINE_PLAN.md](docs/plans/QUEST_PIPELINE_PLAN.md) and
+[docs/plans/COMPANION_PIPELINE_PLAN.md](docs/plans/COMPANION_PIPELINE_PLAN.md) for the phase gates.
 
 ---
 
