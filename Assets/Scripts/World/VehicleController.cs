@@ -30,6 +30,11 @@ namespace ExiledAlvaston.World
                  "edge, door, portal, load or death — and it turns up back where it started.")]
         public bool ReturnsHomeOnChunkChange = true;
 
+        [Tooltip("For a 3D car: keep the model visible while mounted and hide the rider's sprite " +
+                 "instead. The e-bike layers a sprite over the rider, so it stays false. Never " +
+                 "deactivates the vehicle root — see the SetActive(false) rule.")]
+        public bool KeepModelVisibleWhileMounted = false;
+
         private Interactable _interactable;
         private string _parkedPrompt;
 
@@ -91,6 +96,7 @@ namespace ExiledAlvaston.World
             VehicleName     = string.IsNullOrEmpty(data.VehicleName) ? VehicleName : data.VehicleName;
             SpeedMultiplier = data.SpeedMultiplier;
             IsOwnedByNPC    = data.IsNickable;
+            KeepModelVisibleWhileMounted = data.KeepModelVisibleWhileMounted;
 
             if (data.VehicleSprite != null)
             {
@@ -188,10 +194,21 @@ namespace ExiledAlvaston.World
             // Resolved before the model is hidden, so the ridden sprite always matches the parked one.
             Sprite ridden = ResolveVehicleSprite();
 
-            // Hide the parked model only. Never SetActive the root: that fires OnDisable below,
-            // and the vehicle would cancel its own boost the instant it was mounted.
-            if (ParkedModel != null)
-                ParkedModel.SetActive(false);
+            if (KeepModelVisibleWhileMounted)
+            {
+                // A 3D car: the model is the bodywork, so it stays up and the rider's billboard is
+                // hidden instead. Never SetActive the root — that fires OnDisable below, and the
+                // vehicle would cancel its own boost the instant it was mounted.
+                if (player != null)
+                    player.GetComponent<WorldActorVisual>()?.SetRiderHidden(true);
+            }
+            else
+            {
+                // Hide the parked model only. Never SetActive the root: that fires OnDisable below,
+                // and the vehicle would cancel its own boost the instant it was mounted.
+                if (ParkedModel != null)
+                    ParkedModel.SetActive(false);
+            }
 
             if (player != null)
             {
@@ -234,8 +251,16 @@ namespace ExiledAlvaston.World
                 }
             }
 
-            if (ParkedModel != null)
+            if (KeepModelVisibleWhileMounted)
+            {
+                // Bring the rider back — the model never left.
+                if (player != null)
+                    player.GetComponent<WorldActorVisual>()?.SetRiderHidden(false);
+            }
+            else if (ParkedModel != null)
+            {
                 ParkedModel.SetActive(true);
+            }
 
             ApplyPrompt(false);
             UIManager.Instance?.ShowToast($"Hopped off the {VehicleName}.");
@@ -280,6 +305,9 @@ namespace ExiledAlvaston.World
             {
                 player.ClearSpeedMultiplier(this);
                 player.GetComponent<WorldActorVisual>()?.SetMounted(false, null);
+                // A 3D car hides the rider, not the model — so the rider must come back here too,
+                // or a chunk transition would leave the player invisible.
+                player.GetComponent<WorldActorVisual>()?.SetRiderHidden(false);
             }
 
             if (ParkedModel != null)

@@ -119,6 +119,21 @@ namespace ExiledAlvaston.World
         }
 
         /// <summary>
+        /// Hides or shows the actor's own sprite renderer, leaving the rest of the hierarchy alone.
+        /// Used by the 3D-car presentation: a car's bodywork is a real model that stays visible
+        /// while ridden, so the rider's billboard is hidden instead of the vehicle root (which can
+        /// never be deactivated — see VehicleController). The Animator is left running; it drives
+        /// m_Sprite on a disabled renderer, which is harmless and keeps the state in step for when
+        /// the rider is shown again.
+        /// </summary>
+        public void SetRiderHidden(bool hidden)
+        {
+            EnsureHierarchy();
+            if (_sr != null)
+                _sr.enabled = !hidden;
+        }
+
+        /// <summary>
         /// The Animator driving this actor's sprite, or null if it has none. It sits on
         /// <c>ActorVisual/SwingRoot</c> beside the renderer, which is not a path other components
         /// should have to know — EnemyAI wants one for its own field and would otherwise hardcode

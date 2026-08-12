@@ -1,14 +1,17 @@
 # Consequences, police, stealth, mounts and vehicles
 
 ```
-Last verified against: working tree, 2026-08-06
+Last verified against: working tree, 2026-08-12
 Verification scope:    code; tracked prefab YAML. Mounting, dismounting, the boost, the prompt
                        flip and the data-driven spawner were play-tested in an earlier editor
                        session. The IsPolice defect below is read from prefab YAML and has NOT
                        been observed in play. The snitch removal is verified by GUID search and
                        `--check-dangling` only. The pickpocket minigame is code-review only —
                        no compiler and no editor have seen either, and no LootBand asset exists
-                       yet, so the band path has never been taken.
+                       yet, so the band path has never been taken. The traffic and car theft
+                       section below is code-review only — no compiler and no editor have seen
+                       it, and no TrafficCar prefab or VehicleData asset exists yet (the builder
+                       tool creates them).
 ```
 
 The GTA layer. Components live inside the `Prefabs/ModernBritain/` prefabs, whose instances are
@@ -186,3 +189,54 @@ load.
 Fixing it properly is a design call plus real work: a bare `Dismount()` strands a scene-root bike
 at the death spot, and returning it to its authored spot means coordinating with
 `VehicleSpawner`'s instance tracking. Deferred to Stage F.
+
+---
+
+# Traffic and car theft ("Grand Theft Corsa")
+
+Ambient cars drive authored routes through a chunk as a background layer; the player can stop one,
+hotwire it via a minigame, and drive off — which triggers a police response. Scope: `Home_London`
+only. See [plans/TRAFFIC_AND_CAR_THEFT_PLAN.md](../plans/TRAFFIC_AND_CAR_THEFT_PLAN.md) for the
+full spec, phasing and the owner check list.
+
+| Piece | Script | What it does |
+|---|---|---|
+| Route | `World/TrafficRoute` | Lives in the chunk prefab; child transforms are waypoints. Spawns cars as its own children on a jittered timer; cars `Destroy` themselves at the route end. Chunk-owned by construction. |
+| Car | `World/TrafficCar` | Drives waypoints via kinematic `MovePosition`; brakes for the player with a pure-math `InverseTransformPoint` check; offers the hotwire minigame while stopped; converts to a rideable vehicle on success. |
+| Minigame | `UI/HotwireMenuUI` | The tap-the-wires clock, modelled on `PickpocketMenuUI`. Code-built, no pause push, proximity-closes if the player walks off. |
+| Definition | `Data/VehicleData` | Name, ride `SpeedMultiplier`, `TrafficSpeed`, `KeepModelVisibleWhileMounted`, `HotwireWires`/`HotwireSeconds`. |
+| Builder | `Editor/BuildTrafficCarPrefabTool` | `Tools → Place → Build Traffic Car Prefab`: builds the prefab + VehicleData from a GLB in `Assets/3DModels/Vehicles/`, seeded from the spec table. New files only. |
+
+## How it behaves
+
+- **Cars are chunk-owned.** `TrafficRoute` lives in the chunk prefab and spawns cars as its own
+  children, so a chunk transition destroys the whole route at once — none of the seven
+  chunk-instantiation paths needed to change.
+- **Stopping.** The car brakes when the player is ahead of it and inside `LaneHalfWidth`, honks on
+  a rate limit, and resumes after `TrafficResumeDelay`. The check is pure math
+  (`InverseTransformPoint`), no physics queries, no per-frame allocation.
+- **The theft.** While stopped and interactable, the car opens `HotwireMenuUI`. The car is frozen
+  for the whole attempt (`_hotwiring`); the menu closes if the player walks out of
+  `PickpocketRange` or the car is destroyed. Success converts the car into a normal rideable
+  vehicle and auto-mounts it; timeout spikes one knife and hotwire-locks the car for
+  `HotwireRetryLockoutSeconds`.
+- **The police response.** Success spikes **two** knives (two officers — PCSO then Bobby). The
+  stolen car is then exactly the nicked e-bike: it unparents on mount, rejoins the chunk on
+  dismount, and "Nicking does not persist" stands.
+- **A fleeing driver.** On success a random villager from `TrafficRoute.DriverPresets` (built via
+  `NpcFactory`) hops out the side of the car and wanders off.
+- **3D presentation.** Cars use `KeepModelVisibleWhileMounted`: the model stays visible while
+  ridden and the rider's sprite is hidden via `WorldActorVisual.SetRiderHidden` — never
+  `SetActive(false)` on the vehicle root.
+
+## Things that will catch you out
+
+- **The builder tool's authored `OnInteract → VehicleController.Toggle` call is dead wiring.**
+  `TrafficCar.Awake` calls `RemoveAllListeners()` and subscribes `TryHotwire` while driving,
+  swapping back to `Toggle` on conversion. The authored call is a sensible Inspector default only.
+- **Don't hand-edit chunk-prefab YAML to fix a missing nested prefab.** A missing building model
+  (e.g. the FU Sports model after the reorganisation) is an editor task: open the chunk prefab in
+  Prefab Mode and re-point the "Missing Prefab" object to the surviving GLB.
+- **The two cars differ only through `VehicleData`.** Reliant Robin (common): 3.0× / 7 m/s / 3
+  wires / 6 s, weight 3. Vauxhall Corsa (better): 3.75× / 8.5 m/s / 4 wires / 5 s, weight 1.
+- **Death-while-mounted on a stolen car** inherits the same deferred Stage F issue as the e-bike.
