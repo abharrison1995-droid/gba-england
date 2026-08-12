@@ -408,9 +408,8 @@ public static class ArtImportTool
 
             if (!itemsById.TryGetValue(itemId, out var items) || items.Count == 0)
             {
-                // TestSword predates the ItemID filename rule (its file omits the underscore) but
-                // is already assigned correctly. Preserve such a legacy manual
-                // binding without making its non-canonical filename a second matching scheme.
+                // Preserve a legacy manual binding without making its non-canonical filename a
+                // second matching scheme.
                 bool alreadyAssigned = itemsById.Values
                     .SelectMany(group => group)
                     .Any(item => item.Icon == icons[0].Sprite);
@@ -1057,6 +1056,12 @@ public static class ArtImportTool
     [MenuItem("Tools/Content/Wire Presets From Imported Art")]
     public static void WirePresetsFromImportedArt()
     {
+        // Definitions may have been written outside Unity immediately before this command runs.
+        // Force their import to finish before FindAssets takes its type-filtered snapshot; without
+        // this, fresh ItemData YAML can already have a .meta on disk yet remain invisible to
+        // FindAssets("t:ItemData") for this run.
+        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+
         if (!AssetDatabase.IsValidFolder(ArtRoot))
         {
             EditorUtility.DisplayDialog("Wire Presets From Imported Art",
