@@ -85,6 +85,8 @@ public static class QuestTextImporter
         public bool ConsumeRequiredItem;
         public QuestGateType QuestGate;
         public string QuestGateId;
+        public int QuestGateStage;
+        public bool TeachSpark;
         public string RequiredStat;
         public int RequiredStatLevel;
         public bool HasNext; // a choice with no "-> id" ends the conversation
@@ -387,6 +389,13 @@ public static class QuestTextImporter
                     ParseGate(Value(line), currentChoice, errors, lineNo);
                     break;
 
+                // No colon — a flag, like CLEARSWANTED. Teaches the first spell and opens the
+                // naming popup once the conversation closes (DialogueManager.EndDialogue).
+                case "TEACHSPARK":
+                    if (currentChoice == null) { Err("TEACHSPARK outside a CHOICE"); break; }
+                    currentChoice.TeachSpark = true;
+                    break;
+
                 case "STAT:":
                     if (currentChoice == null) { Err("STAT outside a CHOICE"); break; }
                     ParseStat(Value(line), currentChoice, errors, lineNo);
@@ -491,6 +500,24 @@ public static class QuestTextImporter
             case "not-started": choice.QuestGate = QuestGateType.NotStarted; break;
             case "active": choice.QuestGate = QuestGateType.Active; break;
             case "complete": choice.QuestGate = QuestGateType.Complete; break;
+            case "stage":
+                // GATE: stage <questId> <index> — active AND sitting on that stage.
+                if (t.Length < 3)
+                {
+                    errors.Add($"line {lineNo}: GATE stage needs <questId> <stageIndex>");
+                    return;
+                }
+                // Refused rather than defaulted, exactly like STAT and the REACH radius: a
+                // mistyped index that silently became 0 would gate the wrong beat and look like
+                // a content bug rather than a typo.
+                if (!int.TryParse(t[2], out int stageIndex) || stageIndex < 0)
+                {
+                    errors.Add($"line {lineNo}: GATE stage index '{t[2]}' is not a non-negative integer");
+                    return;
+                }
+                choice.QuestGate = QuestGateType.ActiveAtStage;
+                choice.QuestGateStage = stageIndex;
+                break;
             default: errors.Add($"line {lineNo}: unknown GATE state '{t[0]}'"); return;
         }
         choice.QuestGateId = t[1];
@@ -626,6 +653,8 @@ public static class QuestTextImporter
                     ConsumeRequiredItem = pc.ConsumeRequiredItem,
                     QuestGate = pc.QuestGate,
                     QuestGateId = pc.QuestGateId,
+                    QuestGateStage = pc.QuestGateStage,
+                    TeachSpark = pc.TeachSpark,
                     RequiredStat = pc.RequiredStat,
                     RequiredStatLevel = pc.RequiredStatLevel
                 };

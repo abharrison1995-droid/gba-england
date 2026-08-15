@@ -117,7 +117,19 @@ logged — wire it by hand.
 | `COMPLETE: <questId>` | Picking the choice completes this quest. |
 | `ITEM: <itemId> x<qty> [consume]` | Requires the item (greys until carried); `consume` removes it on pick. |
 | `GATE: <state> <questId>` | Shows the choice only while the quest is `not-started` / `active` / `complete`. |
+| `GATE: stage <questId> <index>` | Shows the choice only while the quest is active **and** sitting on stage `<index>` (0-based). |
 | `STAT: <name> <level>` | Requires the trait (STR / INT / Personality) at or above `level`. |
+| `TEACHSPARK` | No colon. Teaches the first spell and opens the naming popup once the chat closes. |
+
+`GATE: stage` exists because `active` cannot tell one beat of a multi-stage quest from another —
+a "go find him" nudge and a "you did it" payoff are both `active`. It is the only way one
+conversation can offer a different branch per stage. A non-integer or negative index is refused
+with a line number rather than defaulting to 0, and the validator errors on an index past the
+quest's last stage.
+
+⚠️ **Gate a `TEACHSPARK` choice.** `DialogueManager.EndDialogue` opens the naming popup every time
+a conversation closes on one, and `LearnSpark` is idempotent — so an ungated one stays pickable and
+reopens the popup forever. The validator warns.
 
 `GRANT:` and `GATE:` are the two ways one conversation branches per quest: a grant starts a
 quest, and a gate hides a choice until that quest is in the right state.

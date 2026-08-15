@@ -99,7 +99,18 @@ public static class QuestContentValidator
         int stageIndex = -1;
         int stageCount = 0;
         bool collectLast = false;      // the last stage is Collect
+        bool manualLast = false;       // the last stage is Manual
         bool anyComplete = false;      // some choice COMPLETEs THIS quest
+
+        // Per-choice, flushed at the next CHOICE/NODE and at end of file: a TEACHSPARK choice with
+        // no gate can be re-picked forever, and SpellNamingUI.Show is called unconditionally when
+        // the conversation closes, so the naming popup would reopen every time.
+        bool choiceTeachSpark = false;
+        bool choiceGated = false;
+
+        // Stage indices referenced by "GATE: stage <thisQuestId> <n>", checked against the real
+        // stage count once the whole file has been read.
+        var gateStageRefs = new List<int>();
 
         // Dialogue context, mirroring the importer: a GRANT:/COMPLETE: only means something inside
         // a CHOICE, and a floating one is the kind of typo this validator is meant to catch.
@@ -118,6 +129,8 @@ public static class QuestContentValidator
                 case "QUEST":
                     info.QuestId = Rest(line, 5);
                     stageIndex = -1; stageCount = 0; collectLast = false; anyComplete = false;
+                    manualLast = false; gateStageRefs.Clear();
+                    choiceTeachSpark = false; choiceGated = false;
                     inDialogue = false; inChoice = false;
                     break;
 
@@ -132,14 +145,33 @@ public static class QuestContentValidator
                     stageIndex++;
                     stageCount++;
                     collectLast = (upper.StartsWith("STAGE COLLECT", StringComparison.Ordinal));
+                    manualLast = (upper.StartsWith("STAGE MANUAL", StringComparison.Ordinal));
                     break;
 
                 case "NODE":
+                    FlushChoice(path, info.QuestId, ref choiceTeachSpark, ref choiceGated, problems);
                     inChoice = false;
                     break;
 
                 case "CHOICE":
+                    FlushChoice(path, info.QuestId, ref choiceTeachSpark, ref choiceGated, problems);
                     inChoice = true;
+                    break;
+
+                case "TEACHSPARK":
+                    if (info.QuestId == null) break;
+                    if (!inDialogue || !inChoice)
+                    {
+                        problems.Add(new Problem(Severity.Error, $"{path}: TEACHSPARK outside a CHOICE - the importer rejects it."));
+                        break;
+                    }
+                    choiceTeachSpark = true;
+                    break;
+
+                case "GATE:":
+                    if (info.QuestId == null) break;
+                    choiceGated = true;
+                    ParseGateStageRef(Value(line), info.QuestId, gateStageRefs);
                     break;
 
                 case "OBJECTIVE:":
@@ -175,6 +207,8 @@ public static class QuestContentValidator
             }
         }
 
+        FlushChoice(path, info.QuestId, ref choiceTeachSpark, ref choiceGated, problems);
+
         if (info.QuestId == null) { problems.Add(new Problem(Severity.Error, path + ": no QUEST block")); return; }
 
         // Registered for the cross-file pass so a GRANT can be checked against every quest.
@@ -187,6 +221,48 @@ public static class QuestContentValidator
         // Collect stage must be last AND have a complete route.
         if (collectLast && !anyComplete)
             problems.Add(new Problem(Severity.Error, $"{path}: quest '{info.QuestId}' ends in a Collect stage but no dialogue COMPLETEs it - it can never finish."));
+
+        // Same trap, different condition: nothing watches a Manual stage, so if it is last and no
+        // dialogue completes the quest, it can never finish either.
+        if (manualLast && !anyComplete)
+            problems.Add(new Problem(Severity.Error, $"{path}: quest '{info.QuestId}' ends in a Manual stage but no dialogue COMPLETEs it - it can never finish."));
+
+        // A stage gate pointing past the end gates a beat that can never be reached.
+        foreach (int idx in gateStageRefs)
+        {
+            if (idx >= stageCount)
+                problems.Add(new Problem(Severity.Error,
+                    $"{path}: GATE stage {idx} for quest '{info.QuestId}', which has only {stageCount} stage(s) (0-{stageCount - 1}) - that choice can never show."));
+        }
+    }
+
+    /// <summary>
+    /// Closes off the choice just parsed. A TEACHSPARK choice with no gate stays pickable after
+    /// the spell has been learnt, and DialogueManager.EndDialogue opens the naming popup every
+    /// time the conversation closes on one — so the popup would reappear indefinitely.
+    /// </summary>
+    private static void FlushChoice(string path, string questId, ref bool teachSpark, ref bool gated,
+                                    List<Problem> problems)
+    {
+        if (teachSpark && !gated)
+            problems.Add(new Problem(Severity.Warning,
+                $"{path}: a TEACHSPARK choice in '{questId}' has no GATE, so it stays pickable after the spell is learnt and reopens the naming popup each time."));
+        teachSpark = false;
+        gated = false;
+    }
+
+    /// <summary>
+    /// Records the stage index from a "GATE: stage &lt;questId&gt; &lt;index&gt;" line, but only when it
+    /// names the quest this file defines — a gate on another file's quest cannot be range-checked
+    /// here. Malformed values are left to the importer, which refuses them with a line number.
+    /// </summary>
+    private static void ParseGateStageRef(string value, string questId, List<int> into)
+    {
+        string[] t = value.Split(new[] { ' ', (char)9 }, StringSplitOptions.RemoveEmptyEntries);
+        if (t.Length < 3) return;
+        if (!string.Equals(t[0], "stage", StringComparison.OrdinalIgnoreCase)) return;
+        if (t[1] != questId) return;
+        if (int.TryParse(t[2], out int idx) && idx >= 0) into.Add(idx);
     }
 
     // Cross-file pass: match every GRANT id against every QUEST id, flag orphan quests and

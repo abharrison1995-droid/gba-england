@@ -54,6 +54,11 @@ CHOICE [TODO: goodbye]
 #   GATE: not-started <questId>    - before the quest starts
 #   GATE: active <questId>         - while it is in flight
 #   GATE: complete <questId>       - after it is done
+#   GATE: stage <questId> <index>  - active AND on that stage (0-based), for telling one beat
+#                                    of a multi-stage quest from another
+#
+# TEACHSPARK (no colon) on a choice teaches the first spell and opens the naming popup when the
+# chat closes. Always gate it, or it stays pickable and reopens the popup every time.
 NODE offer
 SPEAKER: <npc_id>
 SPEAK: [TODO: offer the quest]
