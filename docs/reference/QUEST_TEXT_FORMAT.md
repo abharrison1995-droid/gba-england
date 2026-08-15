@@ -5,11 +5,13 @@ Last verified against: working tree, 2026-08-15
 Verification scope:    code + format. The importer (Assets/Editor/QuestTextImporter.cs) and
                        validator (Assets/Editor/QuestContentValidator.cs) are written and
                        brace-balanced but have NEVER been compiled or opened in the editor. Real
-                       .quest files now exist under quests/ — three quests plus two quests/dialogue/
+                       .quest files now exist under quests/ — five quests plus two quests/dialogue/
                        conversations — but nothing in this pipeline has been imported, so the parser
-                       and validator have never run against them. The validator's cross-file pass
-                       (GRANT:/COMPLETE: gathered across quests/ and quests/dialogue/) was corrected
-                       on 2026-08-15 and traced by hand, not run.
+                       and validator have never run against them. On 2026-08-15, traced by hand not
+                       run: the validator's cross-file pass (GRANT:/COMPLETE: gathered across quests/
+                       and quests/dialogue/) was corrected, and multi-item COLLECT (a STAGE COLLECT
+                       carrying several item pairs) was added to the importer, QuestStage and the
+                       watcher.
                        See docs/plans/QUEST_PIPELINE_PLAN.md.
 ```
 
@@ -106,7 +108,7 @@ NODE <nodeId>
 |---|---|
 | `STAGE TALKTO <key>` | Interact with the `QuestActor` keyed `<key>`. |
 | `STAGE KILL <key> x<count>` | Kill `<count>` `QuestActor`s keyed `<key>`. |
-| `STAGE COLLECT <itemId> x<qty>` | Carry `<qty>` of the item. Reports only — the hand-in is dialogue. |
+| `STAGE COLLECT <itemId> x<qty> [<itemId> x<qty> ...]` | Carry `<qty>` of the item. Extra `<itemId> x<qty>` pairs make it a "gather A, B and C" stage — the objective flips to `WHENMET:` only once **all** of them are carried. Reports only — the hand-in is dialogue. |
 | `STAGE REACH <key> [r<radius>]` | Stand within `radius` (default 3) of the keyed `SceneMarker`. |
 | `STAGE MANUAL` | Nothing watches it; bespoke code completes the quest. |
 

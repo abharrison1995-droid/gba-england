@@ -544,10 +544,21 @@ namespace ExiledAlvaston.Quests
         {
             b.CollectDirty = true; // Evaluate once on bind, so arriving already-carrying reads right.
 
-            if (stage.Item == null)
+            bool hasAnyItem = stage.Item != null
+                              || (stage.AlsoCollect != null && stage.AlsoCollect.Count > 0);
+            if (!hasAnyItem)
             {
                 Debug.LogWarning($"QuestConditionWatcher: Collect stage {b.StageIndex} of " +
                                  $"'{def.name}' has no Item, so it will never read as met.", def);
+            }
+            else if (stage.Item == null)
+            {
+                // ApplyCollectObjective's `met` begins with the primary Item check, so AlsoCollect
+                // items with no primary Item can never read as met. The importer always fills Item
+                // first, so this only fires on a hand-authored asset.
+                Debug.LogWarning($"QuestConditionWatcher: Collect stage {b.StageIndex} of " +
+                                 $"'{def.name}' has AlsoCollect items but no primary Item, so it " +
+                                 "can never read as met — put one of the items in Item.", def);
             }
 
             if (def.Stages != null && b.StageIndex < def.Stages.Count - 1)
@@ -579,6 +590,23 @@ namespace ExiledAlvaston.Quests
             bool met = b.Stage.Item != null
                        && PlayerSession.Instance != null
                        && PlayerSession.Instance.HasItem(b.Stage.Item, Mathf.Max(1, b.Stage.Quantity));
+
+            // Multi-item collect: the stage is met only when the primary Item AND every AlsoCollect
+            // entry is carried. A single-item collect has an empty list and skips this loop
+            // untouched. Indexed for over a concrete List allocates nothing (CLAUDE.md §4).
+            if (met && b.Stage.AlsoCollect != null)
+            {
+                for (int i = 0; i < b.Stage.AlsoCollect.Count; i++)
+                {
+                    QuestCollectItem extra = b.Stage.AlsoCollect[i];
+                    if (extra == null || extra.Item == null) continue;
+                    if (!PlayerSession.Instance.HasItem(extra.Item, Mathf.Max(1, extra.Quantity)))
+                    {
+                        met = false;
+                        break;
+                    }
+                }
+            }
 
             string desired = met && !string.IsNullOrEmpty(b.Stage.ObjectiveWhenMet)
                 ? b.Stage.ObjectiveWhenMet

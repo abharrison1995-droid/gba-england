@@ -1,13 +1,14 @@
 # Quests and dialogue
 
 ```
-Last verified against: working tree, 2026-08-14
+Last verified against: working tree, 2026-08-15
 Verification scope:    code; tracked dialogue/preset YAML (15 DialogueData assets read). A
                        single-stage Kill quest was exercised in the editor, including reward
                        payment and persistence across an autosave, verified by reading
                        savegame.json. The three quest fixes on main POSTDATE that session.
                        TalkTo, Collect, Reach and Manual have NEVER been exercised, and neither
-                       has any multi-stage quest.
+                       has any multi-stage quest. Multi-item Collect (QuestStage.AlsoCollect) was
+                       added 2026-08-15 and has NEVER been compiled — traced by hand only.
                        Phase 0 (multi-quest watcher, quest focus, quest-gated dialogue choices,
                        landmine fallbacks) is written and brace-balanced but has NEVER been
                        compiled or opened in the editor — see docs/plans/QUEST_PIPELINE_PLAN.md.
@@ -74,6 +75,15 @@ A `Collect` stage never completes the quest, consumes the item, advances the sta
 reward. It swaps `Objective` for `ObjectiveWhenMet` once the player is carrying enough — and swaps
 it back if they drop or sell it, which is why the text is *derived from the inventory every time*
 rather than toggled once.
+
+**A `Collect` stage can require several items at once.** `QuestStage.AlsoCollect` holds extra
+`(Item, Quantity)` pairs alongside the primary `Item`; `ApplyCollectObjective` reads the stage as
+met only when the player carries the primary **and** every extra — a "gather A, B and C, then take
+them back" objective. The list is appended to `QuestStage`, so a stage authored before it reads
+back empty and behaves as the single-item collect it always was. In a `.quest` file it is the
+second and later pairs on the line: `STAGE COLLECT blueberries x2 fungus x2 barnacles x2`. The
+hand-in is still one dialogue choice with `CompleteQuestId`; a dialogue choice's `RequiredItem` is
+single, so the multi-item enforcement lives in the stage, not the hand-in.
 
 The hand-in is `DialogueChoice.RequiredItem` + `RequiredItemQuantity` (greys the choice out),
 `ConsumeRequiredItem` (takes the stack) and `CompleteQuestId` (ends the quest).

@@ -53,6 +53,15 @@ public static class QuestTextImporter
         public float ReachRadius = 3f;
         public string Objective;
         public string ObjectiveWhenMet;
+        // Extra items for a multi-item COLLECT: the second and later (itemId x<qty>) pairs on the
+        // STAGE line. The first pair is ItemId/Quantity above.
+        public readonly List<ParsedCollectItem> AlsoCollect = new List<ParsedCollectItem>();
+    }
+
+    private sealed class ParsedCollectItem
+    {
+        public string ItemId;
+        public int Quantity = 1;
     }
 
     private sealed class ParsedReward
@@ -492,10 +501,17 @@ public static class QuestTextImporter
                 stage.Count = ParseCount(t[2], lineNo, errors);
                 break;
             case "COLLECT":
-                if (t.Length < 3) { errors.Add($"line {lineNo}: COLLECT needs <itemId> x<qty>"); return; }
+                if (t.Length < 3) { errors.Add($"line {lineNo}: COLLECT needs <itemId> x<qty> [<itemId> x<qty> ...]"); return; }
                 stage.ConditionType = QuestConditionType.Collect;
                 stage.ItemId = t[1];
                 stage.Quantity = ParseCount(t[2], lineNo, errors);
+                // Additional (itemId x<qty>) pairs make this a multi-item "gather A, B and C" stage.
+                // Each item needs a quantity: a dangling item with none is a typo, flagged rather
+                // than dropped — the same stance the REACH radius and GATE index take.
+                if ((t.Length - 1) % 2 != 0)
+                    errors.Add($"line {lineNo}: COLLECT has an item with no 'x<qty>' — every item needs a quantity");
+                for (int k = 3; k + 1 < t.Length; k += 2)
+                    stage.AlsoCollect.Add(new ParsedCollectItem { ItemId = t[k], Quantity = ParseCount(t[k + 1], lineNo, errors) });
                 break;
             case "REACH":
                 if (t.Length < 2) { errors.Add($"line {lineNo}: REACH needs a key"); return; }
@@ -647,11 +663,25 @@ public static class QuestTextImporter
             ObjectiveWhenMet = ps.ObjectiveWhenMet
         };
 
-        if (ps.ConditionType == QuestConditionType.Collect && !string.IsNullOrEmpty(ps.ItemId))
+        if (ps.ConditionType == QuestConditionType.Collect)
         {
-            stage.Item = ItemDatabase.Find(ps.ItemId);
-            if (stage.Item == null)
-                errors.Add($"Collect item '{ps.ItemId}' not found in Resources/Items");
+            if (!string.IsNullOrEmpty(ps.ItemId))
+            {
+                stage.Item = ItemDatabase.Find(ps.ItemId);
+                if (stage.Item == null)
+                    errors.Add($"Collect item '{ps.ItemId}' not found in Resources/Items");
+            }
+
+            foreach (ParsedCollectItem extra in ps.AlsoCollect)
+            {
+                ItemData item = ItemDatabase.Find(extra.ItemId);
+                if (item == null)
+                {
+                    errors.Add($"Collect item '{extra.ItemId}' not found in Resources/Items");
+                    continue;
+                }
+                stage.AlsoCollect.Add(new QuestCollectItem { Item = item, Quantity = extra.Quantity });
+            }
         }
 
         return stage;

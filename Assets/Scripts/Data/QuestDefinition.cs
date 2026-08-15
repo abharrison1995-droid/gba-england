@@ -25,6 +25,18 @@ namespace ExiledAlvaston.Data
         Manual = 4
     }
 
+    /// <summary>
+    /// One item a multi-item <see cref="QuestConditionType.Collect"/> stage requires, alongside the
+    /// stage's primary <see cref="QuestStage.Item"/>. Lets a "gather A, B and C" objective read as
+    /// met only once the player carries every one.
+    /// </summary>
+    [Serializable]
+    public class QuestCollectItem
+    {
+        public ItemData Item;
+        public int Quantity = 1;
+    }
+
     /// <summary>One step of a quest: what the player is told to do, and how the game notices they did.</summary>
     [Serializable]
     public class QuestStage
@@ -57,6 +69,15 @@ namespace ExiledAlvaston.Data
         [Header("Reach")]
         [Tooltip("How close (horizontally) counts as arrived, in world units. Reach only.")]
         public float ReachRadius = 3f;
+
+        // Appended after every existing field (CLAUDE.md §3): a stage authored before multi-item
+        // Collect existed reads this back as an empty list, which is exactly the single-item
+        // behaviour it had before.
+        [Header("Collect (extra items)")]
+        [Tooltip("Optional. A Collect stage reads 'met' only when the player carries Item AND every " +
+                 "one of these too — a 'gather A, B and C' objective. Leave empty for a single-item " +
+                 "collect. The hand-in dialogue still completes the quest as usual.")]
+        public List<QuestCollectItem> AlsoCollect = new List<QuestCollectItem>();
     }
 
     /// <summary>What the player gets for finishing a quest.</summary>
