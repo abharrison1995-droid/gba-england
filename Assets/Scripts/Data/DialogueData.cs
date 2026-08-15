@@ -18,7 +18,14 @@ namespace ExiledAlvaston.Data
         /// <summary>Shown only while the quest is active (started and not complete).</summary>
         Active = 2,
         /// <summary>Shown only once the quest is complete.</summary>
-        Complete = 3
+        Complete = 3,
+        /// <summary>
+        /// Shown only while the quest is active AND sitting on a specific stage index, given by
+        /// <see cref="DialogueChoice.QuestGateStage"/>. Exists because <see cref="Active"/> cannot
+        /// tell one beat of a multi-stage quest from another — a "go find him" nudge and a "you
+        /// did it" payoff are both Active, and one conversation has to offer them separately.
+        /// </summary>
+        ActiveAtStage = 4
     }
 
     /// <summary>
@@ -56,6 +63,10 @@ namespace ExiledAlvaston.Data
         public QuestGateType QuestGate = QuestGateType.None;
         [Tooltip("The quest id the QuestGate checks. Ignored when QuestGate is None.")]
         public string QuestGateId;
+        [Tooltip("Stage index the quest must be sitting on. Only read when QuestGate is " +
+                 "ActiveAtStage; ignored by every other gate, and 0 in every asset authored " +
+                 "before this field existed.")]
+        public int QuestGateStage;
 
         [Header("Stat Checks (Optional)")]
         public string RequiredStat; // e.g., "Personality", "STR"
@@ -130,6 +141,15 @@ namespace ExiledAlvaston.Data
                 case QuestGateType.NotStarted: return !started;
                 case QuestGateType.Active: return active;
                 case QuestGateType.Complete: return complete;
+                case QuestGateType.ActiveAtStage:
+                {
+                    // Must be active AND on the named stage. A completed quest reports the last
+                    // stage index, so the active test is what stops a payoff branch reappearing
+                    // forever once the quest is over.
+                    if (!active) return false;
+                    var progress = mgr.Find(QuestGateId);
+                    return progress != null && progress.StageIndex == QuestGateStage;
+                }
                 default: return true;
             }
         }
