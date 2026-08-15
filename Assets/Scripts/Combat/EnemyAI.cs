@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System.Collections.Generic;
 using ExiledAlvaston.UI;
 using ExiledAlvaston.World;
 
@@ -52,6 +53,10 @@ namespace ExiledAlvaston.Combat
         private bool _isAttacking;
         private bool _isKnockedBack;
         private readonly RaycastHit[] _losHits = new RaycastHit[8];
+        private readonly Dictionary<Object, float> _speedModifiers = new Dictionary<Object, float>();
+        private float _speedProduct = 1f;
+
+        public float EffectiveMoveSpeed => MoveSpeed * _speedProduct;
 
         /// <summary>May legitimately be null — a hand-built enemy need not carry a nameplate.</summary>
         private EnemyNameplate _plate;
@@ -82,7 +87,7 @@ namespace ExiledAlvaston.Combat
                 _selfHealth.OnDeath.AddListener(OnDied);
             }
 
-            _agent.speed = MoveSpeed;
+            _agent.speed = EffectiveMoveSpeed;
             _agent.angularSpeed = 360f;
             _agent.acceleration = 12f;
             _agent.stoppingDistance = Mathf.Max(0.05f, AttackRange * 0.85f);
@@ -117,6 +122,29 @@ namespace ExiledAlvaston.Combat
                 _selfHealth.OnTakeDamage.RemoveListener(OnDamaged);
                 _selfHealth.OnDeath.RemoveListener(OnDied);
             }
+            _speedModifiers.Clear();
+        }
+
+        /// <summary>Register or replace a temporary movement multiplier, keyed by its owner.</summary>
+        public void SetSpeedMultiplier(Object source, float multiplier)
+        {
+            if (source == null) return;
+            _speedModifiers[source] = Mathf.Max(0.05f, multiplier);
+            RecomputeSpeedProduct();
+        }
+
+        public void ClearSpeedMultiplier(Object source)
+        {
+            if (source == null) return;
+            if (_speedModifiers.Remove(source)) RecomputeSpeedProduct();
+        }
+
+        private void RecomputeSpeedProduct()
+        {
+            float product = 1f;
+            foreach (var kv in _speedModifiers) product *= kv.Value;
+            _speedProduct = Mathf.Max(0.05f, product);
+            if (_agent != null) _agent.speed = EffectiveMoveSpeed;
         }
 
         private void OnDamaged(int amount)
@@ -150,7 +178,9 @@ namespace ExiledAlvaston.Combat
         private void Update()
         {
             if (Animator != null)
-                Animator.SetFloat("Speed", _agent != null ? _agent.velocity.magnitude / Mathf.Max(0.01f, MoveSpeed) : 0f);
+                Animator.SetFloat("Speed", _agent != null
+                    ? _agent.velocity.magnitude / Mathf.Max(0.01f, EffectiveMoveSpeed)
+                    : 0f);
 
             if (_target == null || _isAttacking || _isKnockedBack) return;
             ChaseAndAttack();
@@ -339,7 +369,7 @@ namespace ExiledAlvaston.Combat
             if (_agent != null && _agent.isOnNavMesh)
             {
                 _agent.isStopped = false;
-                _agent.speed = MoveSpeed;
+                _agent.speed = EffectiveMoveSpeed;
                 if (!_agent.hasPath || (_agent.destination - _target.position).sqrMagnitude > 0.5f)
                     _agent.SetDestination(_target.position);
                 if (_visual != null && _agent.velocity.sqrMagnitude > 0.01f)
@@ -356,7 +386,7 @@ namespace ExiledAlvaston.Combat
         {
             if (dir.sqrMagnitude < 0.001f) return;
 
-            float step = MoveSpeed * Time.deltaTime;
+            float step = EffectiveMoveSpeed * Time.deltaTime;
             // Facing follows the intent, not the slide — and a wall-slide deliberately turns
             // nothing, exactly as before the cast was factored out.
             if (!TryStep(dir, step, out bool slid) || slid) return;
