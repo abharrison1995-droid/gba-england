@@ -1318,6 +1318,15 @@ public static class ArtImportTool
         m != null && !string.IsNullOrEmpty(m.category) &&
         m.category.Trim().ToLowerInvariant() == "ui";
 
+    /// <summary>
+    /// Actor-shape validation only makes sense for character art. FX sheets intentionally change
+    /// silhouette, footprint and contact point between frames (and between effect/impact/puddle),
+    /// so treating their lowest opaque pixel as a pair of feet rejects valid spell animation.
+    /// </summary>
+    private static bool IsCharacterCategory(ArtManifest m) =>
+        m != null && !string.IsNullOrEmpty(m.category) &&
+        m.category.Trim().ToLowerInvariant() == "characters";
+
     // ═══════════════════════════════════════════════════════════════════════════════════════
     //  REDUCTION
     //  Sources arrive photoreal and large. The look comes from crushing them down here, not
@@ -1360,7 +1369,8 @@ public static class ArtImportTool
             if (trimNote != null) report.Add("    " + trimNote);
         }
 
-        if (isSheet) CheckFrameAlignment(src, m, baseName, report, problems);
+        if (isSheet && IsCharacterCategory(m))
+            CheckFrameAlignment(src, m, baseName, report, problems);
 
         if (!HasUsableAlpha(src))
         {
@@ -1457,16 +1467,34 @@ public static class ArtImportTool
         if (px[0].a < 8 && px[w - 1].a < 8 && px[(h - 1) * w].a < 8 && px[h * w - 1].a < 8)
             return true;
 
-        // Average the border, then check the border actually is one flat colour. A gradient
-        // backdrop is not safely keyable and is better reported than half-removed.
+        // Prefer the border's magenta majority rather than averaging every border pixel. Portraits
+        // legitimately reach the lower edge, and a horizontal bolt reaches the side edges; folding
+        // those subject colours into the average made an otherwise exact #FF00FF backdrop look
+        // non-flat. Requiring a strong majority still refuses gradients and accidental magenta
+        // details on a differently coloured background.
+        const float keySeedRadius = 90f;
+        const int minimumKeyBorderPercent = 60;
         long sr = 0, sg = 0, sb = 0;
-        int count = 0;
-        foreach (int i in BorderIndices(w, h)) { sr += px[i].r; sg += px[i].g; sb += px[i].b; count++; }
-        var seed = new Color32((byte)(sr / count), (byte)(sg / count), (byte)(sb / count), 255);
+        long keySr = 0, keySg = 0, keySb = 0;
+        int count = 0, keyCount = 0;
+        foreach (int i in BorderIndices(w, h))
+        {
+            Color32 c = px[i];
+            sr += c.r; sg += c.g; sb += c.b; count++;
+            if (Distance(c, KeyColour) > keySeedRadius) continue;
+            keySr += c.r; keySg += c.g; keySb += c.b; keyCount++;
+        }
+
+        bool hasKeyMajority = keyCount * 100 >= count * minimumKeyBorderPercent;
+        var seed = hasKeyMajority
+            ? new Color32((byte)(keySr / keyCount), (byte)(keySg / keyCount),
+                          (byte)(keySb / keyCount), 255)
+            : new Color32((byte)(sr / count), (byte)(sg / count), (byte)(sb / count), 255);
 
         float worst = 0f;
-        foreach (int i in BorderIndices(w, h)) worst = Mathf.Max(worst, Distance(px[i], seed));
-        if (worst > 90f)
+        if (!hasKeyMajority)
+            foreach (int i in BorderIndices(w, h)) worst = Mathf.Max(worst, Distance(px[i], seed));
+        if (!hasKeyMajority && worst > 90f)
         {
             report.Add($"    background is not flat (border varies by {worst:0}) — not keyed, expect a backdrop");
             return true;

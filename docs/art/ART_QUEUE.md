@@ -48,7 +48,7 @@ the bands win.
 | `og` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `pharmacist` | talker | Y |  |  |  |  |  | Y | Roaming Pharmacist | walk |
 | `player` | player | Y | Y | Y | Y | Y | Y | Y | - | - |
-| `player_bundabasher` | player |  |  |  |  |  |  | Y | - | idle, walk, attack, cast, hurt, death |
+| `player_bundabasher` | player | Y | Y | Y | Y | Y | Y | Y | - | - |
 | `player_butterknife` | hostile |  |  | Y |  |  |  | Y | - | idle, walk, hurt, death |
 | `player_dynamo` | player | Y | Y | Y | Y | Y |  | Y | - | death |
 | `player_mrhood` | player | Y |  |  |  |  |  | Y | - | walk, attack, cast, hurt, death |
@@ -63,7 +63,6 @@ the bands win.
 | `sanjeet` | talker | Y |  |  |  |  |  | Y | Sanjeet | - |
 | `spencer` | talker | Y |  |  |  |  |  | Y | Commissioner Spencer | - |
 | `spicehead` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
-| `squirrel` | talker |  |  |  |  |  |  |  | Angry Squirrel | idle, walk |
 | `tainted` | hostile | Y | Y | Y |  | Y | Y | Y | - | - |
 | `torturedneek` | hostile | Y |  |  |  |  |  | Y | - | walk, attack, hurt, death |
 | `underhoused` | hostile | Y | Y | Y | Y | Y | Y | Y | Tracksuit Geezer | - |
@@ -74,9 +73,9 @@ the bands win.
 | `villager_female` | talker | Y | Y |  |  |  |  | Y | Villager (Female) | - |
 
 **A subject with no `walk` sheet slides along the ground when it moves**, so a roaming character
-needs one and a standing one does not. Three presets currently roam without a usable walk:
-Officer Murtaugh (the sheet exists; his controller ignores it), the roaming pharmacist (no sheet)
-and the angry squirrel (no art at all).
+needs one and a standing one does not. Two presets currently roam without a usable walk:
+Officer Murtaugh (the sheet exists; his controller ignores it) and the roaming pharmacist (the
+replacement walk sheet is staged in `art_incoming/`, not imported yet).
 
 ## What is not in the matrix
 
@@ -242,10 +241,6 @@ distinct from the villager** — this is a gameplay signal, not decoration; the 
 to spot one across a street. Suggested read: middle-aged, arms folded or phone already in hand,
 net-curtain energy, a hi-vis "community watch" tabard if that helps them stand out.
 
-**Angry squirrel** — `sheet_char_squirrel_<action>.png`, actions: `idle`, `walk`, `attack`,
-`hurt`, `death`. **`worldHeight` 0.45** — it finishes around 22 px, so source cells of 256×256 are
-plenty rather than the usual 512. A genuinely furious grey squirrel. Comic menace, not cute.
-
 #### 7.7a The named London cast
 
 Eight characters who stand in specific places in `Home_London` and are spoken to. All eight already
@@ -369,8 +364,11 @@ these are icons in a menu, not things standing in the world.
 
 ### Band 8 — per-weapon player attack sheets
 
-**Not yet — this band is after the whole cast has landed**, and after the weapons exist in code. It
-is written down now so the four weapons in the matrix0 are drawn knowing their swing is coming.
+**In progress.** Butter Knife and Slingshot are imported. Rock in a Sock and Broom Shiv attack
+sheets are staged in `art_incoming/`. The aspirational base `player_ranged` sheet is deliberately
+deferred: `PerkData.cs` records that no player ranged attack exists yet, and the imported Slingshot
+sheet already contains its complete firing sequence. Do not create duplicate art until the ranged
+mechanic establishes a distinct consumer.
 
 Each of the four weapons gets **its own player attack sheet**, so a butter knife stab does not read
 as a cricket-bat swing. Plus one base `ranged` attack for the slingshot.
@@ -423,7 +421,7 @@ the complete Young Driller visual until all six actions for that class exist.
 | `player_dynamo` | Dynamo | ~~idle, walk, attack, hurt, cast~~ delivered; **death** | **next — owner's call, 2026-08-05** |
 | `player_stabmeister` | Stabmeister | **all six — delivered 2026-08-09** | |
 | `player_mrhood` | Mr Hood | ~~idle~~ delivered; walk, attack, hurt, death, cast | |
-| `player_bundabasher` | Bunda Basher | idle, walk, attack, hurt, death, cast | |
+| `player_bundabasher` | The Tudor | idle, walk, attack, hurt, death, cast | |
 
 **Dynamo** — `sheet_char_player_dynamo_<action>.png`, actions: `idle`, `walk`, `attack`, `hurt`,
 `death`, `cast`. Do `idle` first. The owner's line, 2026-08-05:
@@ -462,22 +460,39 @@ parts of the backdrop read as subject. Normalising them to a uniform 1024x1024 c
 a shared baseline is what made them importable. **Ask for flat magenta and a bottom margin** on the
 remaining five actions and none of that is needed again.
 
-**Bunda Basher** — `sheet_char_player_bundabasher_<action>.png`, actions: `idle`, `walk`,
+**The Tudor** — `sheet_char_player_bundabasher_<action>.png`, actions: `idle`, `walk`,
 `attack`, `hurt`, `death`, `cast`. Do `idle` first, after Dynamo. Her tagline:
 
 > If there's a bunda about, it's getting bashed.
 
-The owner's visual, 2026-08-05: **a very pasty white lady, sweet-looking, in a cat jumper.**
+The owner's visual, revised 2026-08-14: **a very pasty white lady, sweet-looking, dressed entirely
+in full late-Tudor court garb with a prominent Tudor/Jacobean pleated ruff.** Her established idle
+uses a dark burgundy dress with a hem immediately below the knees, structured embroidered bodice,
+cream undersleeves, dark oversleeves, plain dark stockings and low black period shoes. The shorter
+hem is an intentional gameplay adaptation: knees, shins, ankles and feet must remain readable in
+every animation. No floor-length skirt, cat jumper, jeans, trainers or other modern clothing. The
+player-facing class name is **The Tudor**;
+`PlayerClass.BundaBasher = 4` and the art subject `player_bundabasher` are legacy stable keys and
+must not be renamed.
 
 ⚠️ **The gap between how she looks and what she does is the joke — do not close it.** She is the
 roster's tank: Endurance 10, the only double figure in the game and three clear of the next
 highest, with 160 HP against Stabmeister's 120. **None of that should show in the drawing.** No
-scowl, no bulk, no fighting stance. Sweet, pasty, cat jumper. The `attack`, `hurt` and `death`
-sheets are where the contrast pays off, so keep her mild in `idle` and `walk`.
+scowl, no bulk, no fighting stance. Sweet, pasty, full Tudor court dress. The `attack`, `hurt` and
+`death` sheets are where the contrast pays off, so keep her mild in `idle` and `walk` and keep the
+same below-knee dress, bodice, undersleeves, oversleeves, stockings, shoes and ruff across every
+action. Never lengthen the hem enough to hide her lower-leg movement.
+
+Her replacement full-Tudor portrait is staged in `art_incoming/`; it supersedes the imported
+cat-jumper portrait without changing the stable `player_bundabasher` subject key.
+
+Owner direction, 2026-08-14: **her attack is a high kick, not the earlier shoulder/body bash.**
+Use a straight camera-right kick with chamber, high extension, retract and planted recovery; never
+turn it into a spinning roundhouse or change her facing.
 
 ⚠️ **The visual description of each class is the owner's to write and is not in this file. Ask
 before drawing any of them.** All five now have a tagline in `PlayerClass.cs`, real traits, HP,
-resource and a specialism label as of 2026-08-05, and Dynamo and Bunda Basher have the visuals
+resource and a specialism label as of 2026-08-05, and Dynamo and The Tudor have the visuals
 above. **Mr Hood has a delivered idle but no written visual; Stabmeister's full set is now
 delivered, also with no written visual** — match their existing sheets rather than inventing.
 
@@ -486,8 +501,9 @@ classes that disagree with each other are worse than five that agree.
 
 **Do the remaining `idle` sheets first** was the rule, and the deliveries have overtaken it:
 **Stabmeister's full six are done and Dynamo is five of six, owing only `death`** — one sheet
-short of gameplay switching over from Young Driller. **Mr Hood still owes five, Bunda Basher all
-six.** Gameplay keeps the Young Driller visual for a class until all six of its actions exist, so
+short of gameplay switching over from Young Driller. **Mr Hood still owes five; The Tudor's full
+six-sheet core set is imported, with a replacement high-kick attack staged.** Gameplay keeps the Young Driller visual
+for a class until all six of its actions exist, so
 Dynamo's `death` is the single sheet that flips a second class live.
 
 #### What this needs on the Unity side
@@ -588,6 +604,41 @@ two sheets imported with the width check skipped, and it remains a Young Driller
 gameplay — these two actions do not count toward the six that release a class.
 
 Still outstanding in this band: item 4 below, knockback for hostile subjects.
+
+### Band 11 — spell effects
+
+Owner-requested spell VFX use **8 frames each** and a photographed practical-effects style rather
+than illustrated or vector magic. The sheets are category `fx`; their `effect` action deliberately
+imports as a clip without being attached to a character AnimatorController. Runtime playback and
+the six spell mechanics are now implemented; Spark flight alone still uses the procedural fallback
+until its staged sheet is imported.
+
+- **Fireball** — `sheet_fx_fireball_effect`, 8 frames at 12 fps, looping while the projectile is in
+  flight. A compact real-flame charge with a white-yellow core, short camera-left tail and embers.
+  Its separate `sheet_fx_fireball_impact` is 8 frames at 16 fps, non-looping: contact flash, rapid
+  practical-flame bloom, breakup, embers and residual sparks. **Both imported and wired.**
+- **Healing Aura** — `sheet_fx_healing_aura_effect`, 8 frames at 12 fps, non-looping. An empty
+  adult-height column of photographed warm golden-white light forms from a base bloom, peaks with
+  rising motes and dissolves upward. **Imported and wired.**
+- **Iron Skin** — `sheet_fx_iron_skin_effect`, 8 frames at 12 fps, non-looping. An empty adult-height
+  aura of cool steel-grey haze and sparse hard-edged polished-metal flecks rises, locks into a
+  restrained industrial shimmer, then separates and fades. **Imported and wired.**
+- **Spark overhaul** — `sheet_fx_spark_effect`, 8 frames at 32 fps, non-looping. A thin full-width
+  photographed blue-white high-voltage arc connects fixed endpoints, peaks through rapidly changing
+  fine branches and fades to a violet-blue after-arc. Its separate `sheet_fx_spark_impact` is 8
+  frames at 32 fps, non-looping: pin-point contact, compact branching corona, re-strike and fading
+  residual arcs. The impact is **imported and wired**. The flight sheet remains staged in
+  `art_incoming/`; Spark uses the procedural `LightningBolt` until it is imported and rewired.
+- **Sludge Bolt** — `sheet_fx_sludge_bolt_effect`, 8 frames at 12 fps, looping in flight;
+  `sheet_fx_sludge_bolt_impact`, 8 frames at 16 fps, non-looping; and
+  `sheet_fx_sludge_bolt_puddle`, 8 frames at 8 fps, looping. The dense photographed black-brown
+  tar glob wobbles in flight, erupts into a ropey wet splash on contact, then leaves a fixed-footprint
+  glossy puddle with subtle bubbles and ripples. **All three are imported and wired, including the
+  six-second lingering slow.**
+- **Light Feet** — `sheet_fx_light_feet_effect`, 8 frames at 12 fps, non-looping. Photographed
+  near-white and faint-cyan wind trails gather low around an unseen figure's fixed ankle positions,
+  carry a little dust and one small leaf through their peak, then stretch and disperse. **Imported
+  and wired to the timed speed buff.**
 
 ### Cancelled and not requested
 
