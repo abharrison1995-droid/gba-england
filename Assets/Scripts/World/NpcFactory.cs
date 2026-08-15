@@ -159,8 +159,8 @@ namespace ExiledAlvaston.World
         /// World height to build an actor at. <see cref="PlacementPreset.NpcHeight"/> of 0 means
         /// inherit: the art importer writes the subject's own <c>worldHeight</c> there when its
         /// sheets land, and the shared character height stands in until they do. Anything above 0
-        /// was set deliberately and wins. An angry squirrel is 0.45 units against a councillor's
-        /// 1.55, so this is the difference between a squirrel and a man in a squirrel suit.
+        /// was set deliberately and wins. This preserves deliberately short or tall authored
+        /// characters instead of forcing every NPC to the shared adult height.
         /// </summary>
         public static float HeightFor(PlacementPreset preset) =>
             preset != null && preset.NpcHeight > 0f ? preset.NpcHeight : EKVibe.CharacterHeight;

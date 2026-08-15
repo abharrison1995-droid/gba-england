@@ -141,7 +141,6 @@ public static class StarterPresetGenerator
         // marker in the chunk prefab and expects to find him there.
         new NpcSpec("Daniel Pauls",       "Daniel Pauls",       "danielpauls", false),
         new NpcSpec("Tracksuit Geezer",   "Tracksuit Geezer",   "underhoused", false),
-        new NpcSpec("Angry Squirrel",     "Angry Squirrel",     "squirrel",    true),
         new NpcSpec("Roaming Pharmacist", "Roaming Pharmacist", "pharmacist",  true),
     };
 
