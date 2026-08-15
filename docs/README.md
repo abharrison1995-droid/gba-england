@@ -20,6 +20,7 @@ reads, so anything perishable in it would rot faster than anywhere else. Current
 | Wanted level, police, stealth, pickpocketing, pubs, arrest, mounts, vehicles, movement speed | [reference/CONSEQUENCES_AND_MOUNTS.md](reference/CONSEQUENCES_AND_MOUNTS.md) |
 | Placing content, the World Palette, `PlacementPreset`, building an NPC or an enemy prefab | [reference/WORLD_AUTHORING_AND_NPCS.md](reference/WORLD_AUTHORING_AND_NPCS.md) |
 | Quests, quest conditions, dialogue graphs, dialogue authoring or validation | [reference/QUESTS_AND_DIALOGUE.md](reference/QUESTS_AND_DIALOGUE.md) |
+| Spells, spell tuning, spellbook persistence, spell VFX or debug spell grants | [reference/SPELLS.md](reference/SPELLS.md) |
 | The Unity-side art importer, sprite sizing, animator controllers, `WorldActorVisual` | [reference/ART_IMPORTER.md](reference/ART_IMPORTER.md) |
 | Git hygiene, asset pruning, `.gitattributes`, reference integrity | [reference/REPO_HYGIENE.md](reference/REPO_HYGIENE.md) |
 

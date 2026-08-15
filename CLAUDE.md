@@ -90,6 +90,8 @@ logs, the data is gone:
   `Manor_Cellars_Data` uses `"Manor Cellars"` **with a space**. Do not normalise it.
 - **`ItemData.ItemID`** — inventory is saved as `ItemID` + `Quantity` and resolved through
   `Resources/Items`. A changed id is read, fails to resolve, and is dropped in silence.
+- **`AbilityData.AbilityID`** — learned and equipped spells are saved as ids and resolved through
+  `Resources/Abilities`. Never rename a shipped spell id.
 - **`WikiEntryData.EntryID`** — unlocked encyclopedia entries are saved as a list of these.
 - **`PerkData.PerkId`** — spent perks are saved as a list of these and resolved through
   `Resources/Perks`. A changed id is read, fails to resolve, and the perk's effects quietly stop
@@ -104,7 +106,7 @@ PlayerPrefs. Five call sites write it.
 
 - **Renaming a public serialized field drops its value everywhere** unless you add
   `[FormerlySerializedAs]`. Appending a field is safe; inserting is not.
-- **Enums are serialized by integer index. Always append.** Fifteen are live.
+- **Enums are serialized by integer index. Always append.** Twenty-one are live.
 - **Commit a script's `.meta` with the script.** The GUID inside it is what binds prefabs and the
   scene to the class. This has gone wrong twice, and it fails silently on a fresh clone.
 - ⚠️ **Never rebuild an existing prefab by deleting and re-saving it.** That takes the `.meta` with
@@ -156,6 +158,7 @@ preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLi
 | Wanted level, police, stealth, pickpocketing, mounts, movement speed | [docs/reference/CONSEQUENCES_AND_MOUNTS.md](docs/reference/CONSEQUENCES_AND_MOUNTS.md) |
 | World Palette, presets, NPCs, enemy prefabs | [docs/reference/WORLD_AUTHORING_AND_NPCS.md](docs/reference/WORLD_AUTHORING_AND_NPCS.md) |
 | Quests, quest conditions, dialogue graphs | [docs/reference/QUESTS_AND_DIALOGUE.md](docs/reference/QUESTS_AND_DIALOGUE.md) |
+| Spells, spell tuning, spellbook persistence and spell VFX | [docs/reference/SPELLS.md](docs/reference/SPELLS.md) |
 | The art importer, sprite sizing, animator controllers | [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) |
 | Title screen, character creator, their layout and art | the two `Assets/Editor/*ScreenSetup.cs` / `*CreatorSetup.cs` builders — no reference doc; the anchors and the reasons for them are commented at each call site, because they are only true of the code that writes them |
 | Git, asset pruning, `.gitattributes`, project naming | [docs/reference/REPO_HYGIENE.md](docs/reference/REPO_HYGIENE.md) |

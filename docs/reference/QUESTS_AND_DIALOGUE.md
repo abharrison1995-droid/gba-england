@@ -1,7 +1,7 @@
 # Quests and dialogue
 
 ```
-Last verified against: working tree, 2026-08-12
+Last verified against: working tree, 2026-08-14
 Verification scope:    code; tracked dialogue/preset YAML (15 DialogueData assets read). A
                        single-stage Kill quest was exercised in the editor, including reward
                        payment and persistence across an autosave, verified by reading
@@ -11,7 +11,7 @@ Verification scope:    code; tracked dialogue/preset YAML (15 DialogueData asset
                        Phase 0 (multi-quest watcher, quest focus, quest-gated dialogue choices,
                        landmine fallbacks) is written and brace-balanced but has NEVER been
                        compiled or opened in the editor — see docs/plans/QUEST_PIPELINE_PLAN.md.
-                       Merchant data/actions, the Win95 shop and three catalogues are written and
+                       Merchant data/actions, the Win95 shop and four catalogues are written and
                        reference-checked but have NEVER been compiled or exercised in the editor.
 ```
 
@@ -19,11 +19,11 @@ Verification scope:    code; tracked dialogue/preset YAML (15 DialogueData asset
 
 - **There are zero `QuestDefinition` assets.** `Assets/Resources/Quests/` holds only a README.
   The quest system is **inert** until someone authors one.
-- **15 `DialogueData` assets exist**, in `Assets/Data/Dialogue/Generated/`, one per NPC, wired to
-  15 of the 34 presets.
-- **Three merchant conversations have choices**: Roaming Pharmacist, F.U. Sports Clerk and
-  Quidland Clerk each keep their one opening node and add Buy, Sell and Leave. The other twelve
-  remain single-node ambient one-liners with zero choices.
+- **16 `DialogueData` assets exist**, in `Assets/Data/Dialogue/Generated/`, one per NPC, wired to
+  16 presets.
+- **Four merchant conversations have choices**: Roaming Pharmacist, F.U. Sports Clerk and
+  Quidland Clerk expose their shops, while the Scrapman exposes Sell and Leave with a separate
+  farewell node. The other twelve remain single-node ambient one-liners with zero choices.
 - **No `GrantQuestId` exists anywhere**, so nothing can grant or complete a quest through dialogue.
 - `escape_manor` and `spark_of_talent` run on bespoke tutorial code, not on this system.
 
@@ -166,18 +166,27 @@ runtime-built Win95 `MerchantUI`; that ordering transfers the modal pause rather
 
 `MerchantData` owns unlimited stock, optional per-entry shelf-price overrides and the `ItemType`s
 that merchant accepts from the player. There is deliberately no merchant save state yet. Buying
-spends pounds then adds one item; selling removes one carried (not equipped) item then pays
-`floor(ItemData.Value * 30%)`. `ItemData.Value` is the canonical base value and `Tradeable` opts
-development or story-only content out. Quest items are always refused. Equipped items are absent
-from `PlayerSession.Inventory`, so they never appear in the sell list.
+spends pounds then adds one item; ordinary selling removes one carried (not equipped) item then
+pays `floor(ItemData.Value * 30%)`. Per-item purchase rules can override that with a fixed price or
+an inclusive random range and tiered result messages. A merchant can also be sell-only, which
+opens directly onto the sell list and hides BUY. `ItemData.Value` is the canonical base value and
+`Tradeable` opts development or story-only content out. Quest items are always refused. Equipped
+items are absent from `PlayerSession.Inventory`, so they never appear in the sell list.
 
 `Tools > Content > Validate Merchants` checks catalogues, prices and buy-back loops. Dialogue
 validation also rejects a choice that sets only one half of the Merchant/MerchantAction pair.
 
-The three authored catalogues are `Merchant_RoamingPharmacist`, `Merchant_FUSports` and
-`Merchant_Quidland`. The first two NPCs are placed in Home London. The Quidland clerk has a preset,
-portrait and wired conversation but is not placed in a reachable chunk; placement remains part of
-the interior/portal authoring pass.
+The authored catalogues are `Merchant_RoamingPharmacist`, `Merchant_FUSports`,
+`Merchant_Quidland` and the sell-only `Merchant_Scrapman`. The Scrapman buys only the eleven
+salvage items named in his purchase rules: the original four plus seven heavier grades of scrap.
+The pharmacist sells healing consumables and buys only the ten paraphernalia items named in its
+purchase rules. Used Baggies pay a random £1-£10 with a tiered result line; every other specialist
+purchase has a fixed payout. `Cuban Lip Pillow` restores 25 HP but removes 5 mana through the
+appended `ItemData.ManaDamage` field; old consumables deserialize that field as zero. The first two
+original NPCs are placed in Home London. The Quidland clerk has a preset, portrait and wired
+conversation but is not placed in a reachable chunk; the Scrapman is also deliberately unplaced
+until his van area and introduction quest are authored. No quest id currently exists to gate him
+without inventing save-bearing content.
 
 **The format is flat.** `DialogueData.Nodes` is a `List<DialogueNode>`; each node carries a string
 `Id`. `DialogueChoice.NextNodeId` names the node a choice leads to. `DialogueData.StartNodeId`
