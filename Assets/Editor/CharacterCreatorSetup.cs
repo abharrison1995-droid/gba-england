@@ -298,7 +298,7 @@ public static class CharacterCreatorSetup
 
         // Narrowed from 0.04-0.96 to sit inside the backdrop's brown box (0.167-0.848), which the
         // outer two tabs used to overhang onto the countryside. Each tab drops from ~344 units
-        // wide to ~246; the labels auto-size, and "Bunda Basher" is the longest at 12 characters.
+        // wide to ~246; the labels auto-size, and "Young Driller" is the longest at 13 characters.
         RectTransform tabs = CreateRect("ClassTabs", safe);
         SetAnchors(tabs, new Vector2(0.175f, 0.68f), new Vector2(0.84f, 0.765f));
         HorizontalLayoutGroup tabLayout = tabs.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -307,7 +307,7 @@ public static class CharacterCreatorSetup
         tabLayout.childControlHeight = true;
         tabLayout.childForceExpandWidth = true;
         tabLayout.childForceExpandHeight = true;
-        string[] names = { "Young Driller", "Stabmeister", "Mr Hood", "Dynamo", "Bunda Basher" };
+        string[] names = { "Young Driller", "Stabmeister", "Mr Hood", "Dynamo", "The Tudor" };
         Button[] classButtons = names.Select((label, i) => CreateButton("Class" + i, label, tabs, frame, 26f)).ToArray();
 
         // Details and Preview are anchored to SafeArea directly instead of sharing a

@@ -234,7 +234,7 @@ namespace ExiledAlvaston.EditorTools
             tabLayout.childControlHeight = true;
             tabLayout.childForceExpandWidth = true;
             tabLayout.childForceExpandHeight = true;
-            string[] names = { "Young Driller", "Stabmeister", "Mr Hood", "Dynamo", "Bunda Basher" };
+            string[] names = { "Young Driller", "Stabmeister", "Mr Hood", "Dynamo", "The Tudor" };
             Button[] classButtons = names.Select((label, i) => CreateButton("Class" + i, label, tabs, 22f)).ToArray();
 
             // Details panel — the inventory left column's counterpart: black name box on top,

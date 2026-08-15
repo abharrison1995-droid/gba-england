@@ -14,7 +14,7 @@ namespace ExiledAlvaston.Data
                           // straight into Stabmeister. Never renumber this enum.
         MrHood = 2,       // Ranged
         Dynamo = 3,       // Magic
-        BundaBasher = 4   // Bash
+        BundaBasher = 4   // The Tudor (legacy identifier kept for save compatibility)
     }
 
     public static class PlayerClassInfo
@@ -27,7 +27,7 @@ namespace ExiledAlvaston.Data
                 case PlayerClass.Stabmeister: return "Stabmeister";
                 case PlayerClass.MrHood: return "Mr Hood";
                 case PlayerClass.Dynamo: return "Dynamo";
-                case PlayerClass.BundaBasher: return "Bunda Basher";
+                case PlayerClass.BundaBasher: return "The Tudor";
                 default: return c.ToString();
             }
         }
@@ -52,7 +52,7 @@ namespace ExiledAlvaston.Data
         /// </summary>
         /// <remarks>
         /// ⚠️ Owner-editable copy. Ranged and Stab come straight from their class's own tagline,
-        /// and Bash from Bunda Basher's. Two are inferred rather than stated: Blade, read off
+        /// and Bash from The Tudor's legacy tagline. Two are inferred rather than stated: Blade, read off
         /// Young Driller's "good with a ZK", and Magic, which was stated by Dynamo's previous
         /// tagline before it was replaced on 2026-08-05 — his current line names no discipline.
         /// </remarks>
@@ -112,7 +112,7 @@ namespace ExiledAlvaston.Data
         /// <summary>
         /// Automatic per-level growth, applied as <c>(Level - 1) * growth</c> by
         /// <c>PlayerSession.RecalculateDerivedStats</c>. At the cap of 25 this takes, for example,
-        /// Bunda Basher from 160 HP to 376 and Dynamo from 80 resource to 200.
+        /// The Tudor from 160 HP to 376 and Dynamo from 80 resource to 200.
         /// </summary>
         /// <remarks>
         /// ⚠️ Traits deliberately do not grow. Melee damage is <c>Strength * 2 + 5</c>, so even
