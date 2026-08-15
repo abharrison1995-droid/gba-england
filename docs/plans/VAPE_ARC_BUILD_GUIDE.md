@@ -95,20 +95,28 @@ exist yet; his full sheet set does.
     `Awake` didn't run while the AI was disabled — `HostileAfterDialogue` would need to snap him to
     the NavMesh itself.
 
-## Phase 3 — Place the three missing people
+## Phase 3 — Place the cast (assume nothing is placed)
 
-Mosley, Ralph and Sanjeet are already in `Home_London_Prefab`. Daniel is **only a spawn marker**
-(`DanielPaulsSpawn`); Scrap Man and the geezer aren't there at all. Open `Tools → World Palette` and
-`Home_London_Prefab` in Prefab Mode; arm a preset, click to stamp, save the prefab.
+Treat London as empty of the arc's cast and place each one fresh. A placement is a **copy, not a
+link**, so if an older copy is already standing — Mosley, Ralph and Sanjeet sit in
+`Home_London_Prefab` today — **delete it first**, then stamp a new one so it picks up the current
+preset wiring. Open `Tools → World Palette` and `Home_London_Prefab` in Prefab Mode; arm a preset,
+click to stamp, save the prefab.
 
-- [ ] **Daniel Pauls** at the `DanielPaulsSpawn` marker. He carries `QuestKey = danielpauls` and his
-  Conversation, so the whole Daniel thread and Serendipity! light up. He is the linchpin.
-- [ ] **Scrap Man** by the authored flatbed van / scrap props. Carries `QuestKey = scrapman`, his
-  sell shop, his conversation. No separate chunk needed for him to function.
-- [ ] **The geezer** just north of Daniel's spot. Needs an Enemy preset pointing at
-  `Enemy_UnderHoused` to stamp from the palette — create `Preset_UnderHoused` (Category **Enemy**,
-  **EnemyPrefab** = `Enemy_UnderHoused`) if none exists, or drag the prefab in by hand. Leave the
-  palette **Level** at 0 (scripted one-off, not a scaled mob).
+- [ ] **Councillor Mosley** — the vape-quest giver. Delete any existing `NPC_Councillor Mosley`,
+  then stamp `Preset_CouncillorMosley`. His conversation is wired by the Phase 1 import.
+- [ ] **Daniel Pauls** at the `DanielPaulsSpawn` marker location. Carries `QuestKey = danielpauls`
+  and his Conversation, so the whole Daniel thread and Serendipity! light up. The linchpin — nothing
+  in the arc works without him.
+- [ ] **Scrap Man** by the flatbed van / scrap props. Carries `QuestKey = scrapman`, his sell shop
+  and his conversation. No separate chunk needed for him to function.
+- [ ] **The geezer** (`Enemy_UnderHoused`) just north of Daniel. Needs an Enemy preset pointing at
+  the prefab — create `Preset_UnderHoused` (Category **Enemy**, **EnemyPrefab** = `Enemy_UnderHoused`)
+  if none exists, or drag the prefab in by hand. Leave the palette **Level** at 0.
+- [ ] **Relocate Ralph & Sanjeet to their base house.** Delete `NPC_Ralph` and `NPC_Sanjeet` from
+  `Home_London_Prefab` and stamp them inside their base-house prefab — the gang's trap house (the
+  `Gang_Hideout` interior is the shell that fits), near the abandoned bus station. Not needed to play
+  the current arc (Quest 6 is unwritten), but it puts them where the story wants them.
 
 ## Phase 4 — Build the locations & wire the doors
 
