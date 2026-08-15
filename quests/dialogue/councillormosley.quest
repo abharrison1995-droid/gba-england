@@ -13,8 +13,8 @@
 #   mosley_vape_quest_one  - quests/mosley_vape_quest_one.quest  (granted and completed here)
 #   daniel_pauls_quest_one - quests/daniel_pauls_quest_one.quest (granted here at nag_two;
 #                            completed in quests/dialogue/danielpauls.quest)
-#   wtf_mosley             - quests/wtf_mosley.quest             (completed here; granted by the
-#                            Quest 4 report in quests/dialogue/danielpauls.quest, not yet authored)
+#   wtf_mosley             - quests/wtf_mosley.quest             (completed here; granted by Daniel's
+#                            Quest 4 report, quests/dialogue/danielpauls.quest node dbb_chat)
 #
 # ⚠ TWO PLAYER LINES ARE THE OWNER'S TO WRITE, both marked  [TODO: ]  :
 #   NODE start    - the choice that opens the wtf_mosley branch (Mosley greets first: "Ey up, lad.")

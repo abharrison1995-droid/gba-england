@@ -1,0 +1,48 @@
+# investigate_weird_vape — "Investigate the Weird Vape" (Quest 4, part 1 of 2)
+#
+# The owner's "Quest 4" is two engine quests, because a dialogue choice cannot hand over an item —
+# only a quest REWARD can. Daniel's Big Blue is that reward, so the brewing arc ends HERE and the
+# delivery is deliver_the_big_blue.quest.
+#
+# GRANTED BY: Daniel Pauls at the end of Check Out the Church (quests/dialogue/danielpauls.quest,
+# node cotc_scrapman).
+# COMPLETED BY: Daniel's brew choice (danielpauls.quest, node iwv_deliver), which also grants
+# deliver_the_big_blue. The reward — the Big Blue — is paid on that completion.
+#
+# ⚠ NEW ITEM IDS the owner is building. Each ItemData.ItemID must match exactly or the import
+# errors: blueberries, vending_machine_fungus, bus_station_barnacles, big_blue (reward), and
+# makeshift_vape (carried in from Quest 3, shown to Scrap Man).
+# ⚠ NEW KEYS: scrapman (QuestActor + Preset_Scrapman ✓), bus_station_neek (Kill targets in the old
+# bus station chunk — author them in ONE chunk, per QUESTS_AND_DIALOGUE.md).
+
+QUEST investigate_weird_vape
+TITLE: Investigate the Weird Vape
+GIVER: Daniel Pauls
+LOCATION: Scrap Man's place, southeast of London.
+
+# Stage 0 — Scrap Man eyes the makeshift vape and asks for a "Big Blue". Intermediate TalkTo:
+# advances on the interact, which is fine — it is not the final stage and carries no hand-in.
+STAGE TALKTO scrapman
+OBJECTIVE: Take the makeshift vape to Scrap Man, southeast of London.
+
+# Stage 1 — Daniel hears the price and sends you to the old bus station for the ingredients.
+STAGE TALKTO danielpauls
+OBJECTIVE: Scrap Man wants a "Big Blue". Ask Daniel Paul about it.
+
+# Stage 2 — clear the bus station first. Kill targets must live in one chunk (respawns re-arm the
+# count on a crossing — QUESTS_AND_DIALOGUE.md).
+STAGE KILL bus_station_neek x3
+OBJECTIVE: Clear the Neeks out of the old bus station.
+
+# Stage 3 (last) — the multi-item gather. The objective flips to WHENMET only once ALL THREE are
+# carried (QuestStage.AlsoCollect). The hand-in is Daniel's dialogue; a Collect stage never
+# completes the quest itself.
+STAGE COLLECT blueberries x2 vending_machine_fungus x2 bus_station_barnacles x2
+OBJECTIVE: Gather the goods from the old bus station: 2 blueberries, 2 vending machine fungus and 2 bus station barnacles.
+WHENMET: Head back to Daniel Paul to combine them.
+
+# The reward IS the Big Blue — Daniel brews it and it lands in the bag on completion. The three
+# ingredients are NOT consumed (a dialogue choice can only consume one item); Daniel combines them
+# narratively. Change this if they should vanish.
+REWARD
+ITEM: big_blue x1

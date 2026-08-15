@@ -1,0 +1,35 @@
+# deliver_the_big_blue — "Investigate the Weird Vape" (Quest 4, part 2 of 2)
+#
+# The delivery half of the owner's "Quest 4". Split from investigate_weird_vape because the Big
+# Blue could only enter the bag as that quest's reward (dialogue cannot hand over an item). Take
+# the Big Blue to Scrap Man, hear what he knows, report back to Daniel.
+#
+# GRANTED BY: Daniel's brew choice at the end of investigate_weird_vape
+# (quests/dialogue/danielpauls.quest, node iwv_deliver).
+# COMPLETED BY: Daniel's report choice (danielpauls.quest, node dbb_chat), which also grants Quest
+# 5 (wtf_mosley).
+#
+# After this quest completes, Scrap Man's Sell shop unlocks — a MERCHANT choice on his NODE start
+# gated  GATE: complete deliver_the_big_blue  (quests/dialogue/scrapman.quest).
+
+QUEST deliver_the_big_blue
+TITLE: Investigate the Weird Vape
+GIVER: Daniel Pauls
+LOCATION: Scrap Man's place, southeast of London.
+
+# Stage 0 — deliver the Big Blue. Scrap Man's dialogue consumes it and reveals what he knows.
+# Intermediate TalkTo: it advances on the interact, so the report stage below only opens after you
+# have been to Scrap Man. (If the player interacts without the Big Blue, the reveal branch greys
+# but the stage still advances — a minor gap, not a soft-lock; big_blue is a quest item.)
+STAGE TALKTO scrapman
+OBJECTIVE: Take the Big Blue to Scrap Man.
+
+# Stage 1 (last) — MANUAL, completed by Daniel's report dialogue. Not TalkTo: a TalkTo last stage
+# completes on the interact, before Daniel says a word.
+STAGE MANUAL
+OBJECTIVE: Get back to Daniel Paul with what Scrap Man said.
+
+# "Here's your cash, sorted for the info." — owner's chosen payout.
+REWARD
+POUNDS: 30
+XP: 60

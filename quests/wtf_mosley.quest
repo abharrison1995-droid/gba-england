@@ -5,10 +5,8 @@
 # complete on the interact, before Mosley says a word, and skip the confession (see
 # daniel_pauls_quest_one for the same reasoning).
 #
-# GRANTED BY: the final Daniel report at the end of the Quest 4 arc (his "have a chat with him"
-# line). That report lives in quests/dialogue/danielpauls.quest and is part of the Quest 4 arc,
-# which is NOT authored yet — so until it is, Validate Quests will warn that wtf_mosley "has no
-# GRANT: anywhere". Expected; it resolves when the Quest 4 report is written.
+# GRANTED BY: Daniel's report at the end of the Quest 4 arc — quests/dialogue/danielpauls.quest,
+# node dbb_chat, whose choice completes deliver_the_big_blue and grants this quest.
 #
 # COMPLETED BY: Mosley's closing choice in quests/dialogue/councillormosley.quest, gated active
 # wtf_mosley.

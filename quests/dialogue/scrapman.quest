@@ -1,0 +1,93 @@
+# scrapman — Scrap Man's entire conversation, every quest he appears in.
+#
+# A quests/dialogue/ file: DIALOGUE blocks and NO QUEST block. See docs/reference/QUEST_TEXT_FORMAT.md.
+#
+# ⚠ THIS FILE OWNS SCRAP MAN'S CONVERSATION. Importing it REGENERATES Dialogue_Scrapman.asset
+# wholesale. His old, always-on merchant Sell is deliberately GONE, replaced by the Sell choice on
+# NODE start gated  GATE: complete deliver_the_big_blue  — so his shop unlocks only after the player
+# finishes the Big Blue arc. This is the owner's decision (2026-08-15). The catalogue itself is
+# unchanged: MERCHANT: scrapman sell opens the existing sell-only Merchant_Scrapman.
+#
+# ⚠ NEW ITEM IDS the owner is building — the import errors until each ItemData.ItemID matches:
+# makeshift_vape (shown, then consumed here) and big_blue (delivered, consumed here).
+#
+# The quests whose beats live in this file:
+#   investigate_weird_vape - quests/investigate_weird_vape.quest (stage 0: inspect the vape, name
+#                            his price)
+#   deliver_the_big_blue   - quests/deliver_the_big_blue.quest   (stage 0: take the Big Blue, reveal
+#                            what he knows)
+#
+# ⚠ PLAYER LINES THE OWNER MUST WRITE, all marked  [TODO: ]  . The script gives every Scrap Man line
+# but not these player clicks:
+#   NODE start      - the click that hands over the Big Blue; the click that opens his shop; and the
+#                     leave line (3 choices)
+#   NODE dbb_react / dbb_reveal1 / dbb_reveal2 - the three "[Next]" clicks through his reveal
+
+DIALOGUE scrapman
+
+NODE start
+SPEAKER: scrapman
+SPEAK: Easy, what you doing 'ere?
+# investigate_weird_vape, stage 0 — first meeting. Requires the makeshift vape carried in from
+# Check Out the Church, and consumes it: Scrap Man keeps it to look into.
+CHOICE Daniel Paul sent me. Can you check this out for him? -> iwv_inspect
+GATE: stage investigate_weird_vape 0
+ITEM: makeshift_vape x1 consume
+# deliver_the_big_blue, stage 0 — bring back the Big Blue. Consumed on delivery. [TODO: ] is the
+# owner's: Scrap Man speaks first ("Ah, yes, buzzing.").
+CHOICE [TODO: ] -> dbb_react
+GATE: stage deliver_the_big_blue 0
+ITEM: big_blue x1 consume
+# The Sell shop — unlocked only once the whole Big Blue arc (deliver_the_big_blue) is complete.
+# A MERCHANT choice ends the conversation and opens the shop, so it has no  -> . [TODO: ] is the
+# owner's: the line that opens his shop.
+CHOICE [TODO: ]
+GATE: complete deliver_the_big_blue
+MERCHANT: scrapman sell
+# The always-available way out. [TODO: ] is the owner's leave line.
+CHOICE [TODO: ]
+
+# ----------------------------------------------------------------------------------------
+# investigate_weird_vape, stage 0 — Scrap Man eyes the vape and names his price.
+
+NODE iwv_inspect
+SPEAKER: scrapman
+SPEAK: *Scrap Man inspects the vape.*
+CHOICE I found it on a pretty frenzied Neek at the old church. -> iwv_scratch
+
+NODE iwv_scratch
+SPEAKER: scrapman
+SPEAK: I can help you out, but this back needs scratching first.
+CHOICE Go on. -> iwv_bigblue_ask
+
+NODE iwv_bigblue_ask
+SPEAKER: scrapman
+SPEAK: Big date coming up. Ask Daniel Paul to sort us out a Big Blue.
+# Ends the conversation. Stage 0 (TalkTo scrapman) advances to stage 1 on the interact, so the
+# objective becomes "ask Daniel about the Big Blue" as the chat closes.
+CHOICE Okay.
+
+# ----------------------------------------------------------------------------------------
+# deliver_the_big_blue, stage 0 — Scrap Man takes the Big Blue and reveals what he knows.
+
+NODE dbb_react
+SPEAKER: scrapman
+SPEAK: Ah, yes, buzzing. Can't believe it. You are an absolute legend. Right then... yep, I'll let you know what's going on.
+CHOICE [TODO: ] -> dbb_reveal1
+
+NODE dbb_reveal1
+SPEAKER: scrapman
+SPEAK: So, Councillor Mosley's been doing a few dodgy dealings. I saw him talking to Ralph and Sanjeet from the Spartans, and he was buying a box of these weird looking vapes.
+CHOICE [TODO: ] -> dbb_reveal2
+
+NODE dbb_reveal2
+SPEAKER: scrapman
+SPEAK: The boxes had these weird Chinese letters on. Shanghai and all that jazz. So I assume it's some sort of weird import. I'm guessing that's got something to do with the vapes, because I ain't seen them anywhere else before, and they're the only characters shady enough to get involved with the Chinese at the minute.
+CHOICE [TODO: ] -> dbb_reveal3
+
+NODE dbb_reveal3
+SPEAKER: scrapman
+SPEAK: You should hit up that little trap house out in the north. You might get some answers from them, but I dunno. They ain't always there.
+# Ends the conversation. Stage 0 (TalkTo scrapman) advances to stage 1 (the report to Daniel) on
+# the interact.
+CHOICE Yeah, okay. Right, whatever. Sound. I'll go speak to Daniel Paul's.

@@ -13,16 +13,24 @@
 #   spark_of_talent        - quests/spark_of_talent.quest        (granted and completed here)
 #   daniel_pauls_quest_one - quests/daniel_pauls_quest_one.quest (completed here; granted by
 #                            Councillor Mosley, quests/dialogue/councillormosley.quest)
-#   check_out_the_church   - quests/check_out_the_church.quest   (granted here at dpq1_speed;
-#                            completed here at cotc_scrapman)
+#   check_out_the_church   - quests/check_out_the_church.quest   (granted at dpq1_speed; completed
+#                            at cotc_scrapman, which also grants Quest 4)
+#   investigate_weird_vape - quests/investigate_weird_vape.quest (Quest 4 pt 1: Daniel's stage-1 and
+#                            stage-3 beats; completed at iwv_deliver, which grants part 2)
+#   deliver_the_big_blue   - quests/deliver_the_big_blue.quest   (Quest 4 pt 2: Daniel's report;
+#                            completed at dbb_chat, which also grants Quest 5)
 #
 # The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
 # add a new gated choice on NODE start rather than rewriting his farewell.
 #
-# ⚠ TWO PLAYER LINES ARE THE OWNER'S TO WRITE, both marked  [TODO: ]  :
-#   NODE start     - the choice that opens the check_out_the_church branch
-#   NODE cotc_show - the click that advances after "What is this contraption?" (script: says nothing)
-# The script gives Daniel's lines for this beat but not the player's clicks. Nothing here invents them.
+# ⚠ PLAYER LINES THE OWNER MUST WRITE, all marked  [TODO: ]  . The script gives every NPC line but
+# not these player clicks - each is either a branch opener (Daniel speaks first) or a
+# "[Next]"/says-nothing beat. Nothing here invents them:
+#   NODE start     - openers for the check_out_the_church, investigate_weird_vape (stage 1 and
+#                    stage 3) and deliver_the_big_blue branches (4 choices)
+#   NODE cotc_show - the click after "What is this contraption?"
+#   NODE iwv_stir  - the "[Next]" after Daniel starts stirring
+#   NODE dbb_chat  - the click that closes the arc after Daniel's "chat with him" line
 #
 # Requires the ActiveAtStage gate and the TEACHSPARK directive — see
 # docs/reference/QUEST_TEXT_FORMAT.md.
@@ -53,6 +61,21 @@ GATE: active daniel_pauls_quest_one
 CHOICE [TODO: ] -> cotc_show
 GATE: active check_out_the_church
 ITEM: makeshift_vape x1
+# investigate_weird_vape, stage 1 — the player is back from Scrap Man with the "Big Blue" price.
+# [TODO: ] is the owner's: Daniel speaks first ("So what's he said?").
+CHOICE [TODO: ] -> iwv_bigblue
+GATE: stage investigate_weird_vape 1
+# investigate_weird_vape, stage 3 — the player is back with the gathered goods. Requires blueberries
+# as a proxy (a choice can require only one item; the full three-item check is the Collect stage's
+# job — its objective only flips to "head back" once all three are carried). [TODO: ] is the
+# owner's: Daniel speaks first ("Oh mate, amazing.").
+CHOICE [TODO: ] -> iwv_brew
+GATE: stage investigate_weird_vape 3
+ITEM: blueberries x2
+# deliver_the_big_blue, stage 1 — the report after Scrap Man's reveal. [TODO: ] is the owner's:
+# Daniel speaks first ("Alright then, so what did you find out?").
+CHOICE [TODO: ] -> dbb_report
+GATE: stage deliver_the_big_blue 1
 CHOICE End Conversation.
 
 NODE offer_open
@@ -155,9 +178,84 @@ CHOICE [TODO: ] -> cotc_scrapman
 NODE cotc_scrapman
 SPEAKER: danielpauls
 SPEAK: Give Scrap Man a shout for me. He might know about this.
-# QUEST 4 GOES HERE. This choice completes Quest 3. Once the Quest 4 arc is authored, its first
-# quest is granted from this same choice - add  GRANT: investigate_weird_vape  on the line below the
-# COMPLETE:, the same shape as dpq1_speed above. Left off for now so no GRANT points at a quest file
-# that does not exist yet.
+# This one choice completes Check Out the Church and grants the Quest 4 arc's first quest,
+# investigate_weird_vape - the same shape as dpq1_speed above.
 CHOICE Alright.
 COMPLETE: check_out_the_church
+GRANT: investigate_weird_vape
+
+# ----------------------------------------------------------------------------------------
+# investigate_weird_vape - "Investigate the Weird Vape" (Quest 4, part 1). Daniel's two beats:
+#   stage 1 (iwv_bigblue) - he hears the "Big Blue" price and lists the ingredients.
+#   stage 3 (iwv_brew)    - he combines the gathered goods, hands over the Big Blue, sends you back
+#                           to Scrap Man. This completes part 1 and grants part 2.
+
+NODE iwv_bigblue
+SPEAKER: danielpauls
+SPEAK: So what's he said?
+CHOICE Make him a Big Blue and he'll talk. -> iwv_bits
+
+NODE iwv_bits
+SPEAKER: danielpauls
+SPEAK: Fuck's sake. Right, I'm gonna need some bits.
+CHOICE Well, you've got legs. -> iwv_guild
+
+NODE iwv_guild
+SPEAKER: danielpauls
+SPEAK: Come on, get him a good box and you're in the guild.
+CHOICE Guild? -> iwv_list
+
+NODE iwv_list
+SPEAKER: danielpauls
+SPEAK: Yeah, guild. Come on. Here's the list. You can grab all of it in the old bus station.
+CHOICE Sounds fun. -> iwv_diary
+
+NODE iwv_diary
+SPEAKER: danielpauls
+SPEAK: Directions in the diary. I'll sort you some cash when you're back too.
+# Ends the conversation. This is stage 1 (TalkTo danielpauls), which advances to stage 2 on the
+# interact, so the objective becomes "clear the Neeks" as the chat closes.
+CHOICE Sigh. Fine. BRB.
+
+NODE iwv_brew
+SPEAKER: danielpauls
+SPEAK: Oh mate, amazing. You are such a lad. Right, I'm gonna make these into a potion now for you to take to Scrap Man. So just wait a second.
+CHOICE Okay. -> iwv_stir
+
+NODE iwv_stir
+SPEAKER: danielpauls
+SPEAK: *He begins to stir and smash in his pestle and mortar vigorously until a weird blue liquid emerges.*
+# [TODO: ] is the owner's - the script's "[Next]" here, the player just clicks on.
+CHOICE [TODO: ] -> iwv_distill
+
+NODE iwv_distill
+SPEAKER: danielpauls
+SPEAK: *He distills the weird blue liquid into a janky looking container and hands it back to you.*
+CHOICE [Grab the suspicious blue container] -> iwv_deliver
+
+NODE iwv_deliver
+SPEAKER: danielpauls
+SPEAK: Right, so get that back to Scrap Man and get back here with what he says. Cheers, lad.
+# Completes part 1 (the reward, the Big Blue, is paid on this) and grants part 2. Ends the chat.
+CHOICE Alright, son. See you.
+COMPLETE: investigate_weird_vape
+GRANT: deliver_the_big_blue
+
+# ----------------------------------------------------------------------------------------
+# deliver_the_big_blue - "Investigate the Weird Vape" (Quest 4, part 2). Daniel's one beat:
+#   stage 1 (dbb_report) - the report after Scrap Man's reveal. Completes part 2, pays the cash,
+#                          and grants Quest 5 (wtf_mosley) - go and confront Mosley.
+
+NODE dbb_report
+SPEAKER: danielpauls
+SPEAK: Alright then, so what did you find out?
+CHOICE Fuck me, Mosley's been buying dodgy vapes off the local gangs, and they've been getting the vapes from the Chinese. I think that's what's been sending the Neeks crazy. -> dbb_chat
+
+NODE dbb_chat
+SPEAKER: danielpauls
+SPEAK: What? The Chinese? Mosley hates the Chinese. Nah, he can't be that desperate. Please, have a chat with him. Here's your cash, sorted for the info. But yeah, chat with him. That can't be right.
+# Ends the chat (no ->), completes part 2 and grants Quest 5. [TODO: ] is the owner's - the script
+# ends the beat here with no player line.
+CHOICE [TODO: ]
+COMPLETE: deliver_the_big_blue
+GRANT: wtf_mosley
