@@ -1,3 +1,4 @@
+using UnityEngine;
 using ExiledAlvaston.Flow;
 using ExiledAlvaston.Vibe;
 
@@ -24,9 +25,18 @@ namespace ExiledAlvaston.Combat
             // routed through an overload that does not attribute.
             if (victim.LastAttacker == null) return;
 
-            // The established player test, the same one Health.TakeDamage uses to decide whose
-            // armour applies. It keeps police-kills-civilian and enemy-kills-enemy from paying out.
-            if (victim.LastAttacker.GetComponent<CombatController>() == null) return;
+            // Who gets the credit. The player's own kills pay full XP; the follower's pay 30% —
+            // Alex does the work, but the player still gets a taste. Anything else (an
+            // environmental death, enemy-kills-enemy, police-kills-civilian) pays nothing. The
+            // player test is the same one Health.TakeDamage uses to decide whose armour applies.
+            float multiplier;
+            if (victim.LastAttacker.GetComponent<CombatController>() != null)
+                multiplier = 1f;
+            else if (Companions.CompanionManager.Instance != null
+                     && victim.LastAttacker == Companions.CompanionManager.Instance.Follower)
+                multiplier = 0.3f;
+            else
+                return;
 
             // Only things with an AI are hostiles. Civilians, props, LootChests and
             // SpriteContainers all carry Health too, and a murdered shopkeeper must not be a
@@ -44,6 +54,7 @@ namespace ExiledAlvaston.Combat
             int amount = level != null
                 ? EKVibe.ScaledKillXP(level.BaseXP, level.Level)
                 : EKVibe.KillXPBase;
+            amount = Mathf.Max(1, Mathf.RoundToInt(amount * multiplier));
 
             PlayerSession.Instance?.GrantXP(amount, victim.DisplayName);
         }

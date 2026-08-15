@@ -1,0 +1,79 @@
+﻿# Template quest - copy this file, rename it <questId>.quest, and fill the [TODO: ...] slots.
+# The owner writes the words; the structure and wiring are what this scaffold provides.
+#
+# See docs/reference/QUEST_TEXT_FORMAT.md for the full format.
+# Import with  Tools -> Content -> Import Quests  (after finishing this file).
+
+QUEST my_quest
+TITLE: [TODO: quest title]
+GIVER: [TODO: who hands it out]
+LOCATION: [TODO: where it sends you]
+
+# One stage per line. Conditions:
+#   STAGE TALKTO <key>            - talk to the QuestActor keyed <key>
+#   STAGE KILL <key> x<count>     - kill <count> QuestActors keyed <key>
+#   STAGE COLLECT <itemId> x<qty> - carry the item (reports only; hand in via dialogue)
+#   STAGE REACH <key> [r<radius>] - stand near the SceneMarker/QuestActor keyed <key>
+#   STAGE MANUAL                  - bespoke code completes the quest
+#
+# <key> must match a QuestActor.Key or SceneMarker.Key placed in a chunk prefab.
+# <itemId> must match an ItemData.ItemID in Resources/Items.
+
+STAGE TALKTO <quest_key_here>
+OBJECTIVE: [TODO: talk to ...]
+
+# A Collect stage is typically the last one, finished by a dialogue hand-in (see DIALOGUE
+# below: a choice carrying COMPLETE: <questId>). A Collect stage that nothing completes
+# can never end.
+#STAGE COLLECT item_<id> x1
+#OBJECTIVE: [TODO: find the item]
+#WHENMET: [TODO: take it back to <giver>]
+
+REWARD
+POUNDS: 0
+XP: 0
+#ITEM: item_<id> x1
+#CLEARSWANTED
+
+# ----------------------------------------------------------------------------------------
+
+DIALOGUE <npc_id>
+# DIALOGUE <npc_id> maps to a PlacementPreset by label or filename (case-insensitive,
+# "Preset_" prefix ignored). The importer wires the conversation into its Conversation
+# field and uses its Speaker for the nodes. If no preset matches, wire it by hand.
+
+NODE start
+SPEAKER: <npc_id>
+SPEAK: [TODO: greeting line]
+
+# A choice ends the conversation when it has no "-> <nodeId>". A grant starts a quest.
+CHOICE [TODO: about the quest] -> offer
+CHOICE [TODO: goodbye]
+
+# Gate a choice so it only appears while a quest is in a certain state:
+#   GATE: not-started <questId>    - before the quest starts
+#   GATE: active <questId>         - while it is in flight
+#   GATE: complete <questId>       - after it is done
+#   GATE: stage <questId> <index>  - active AND on that stage (0-based), for telling one beat
+#                                    of a multi-stage quest from another
+#
+# TEACHSPARK (no colon) on a choice teaches the first spell and opens the naming popup when the
+# chat closes. Always gate it, or it stays pickable and reopens the popup every time.
+NODE offer
+SPEAKER: <npc_id>
+SPEAK: [TODO: offer the quest]
+CHOICE [TODO: take it] -> end
+GRANT: my_quest
+CHOICE [TODO: not now]
+
+# A hand-in: require the item, consume it, and complete the quest.
+#NODE hand_in
+#SPEAKER: <npc_id>
+#SPEAK: [TODO: acknowledge the item]
+#CHOICE [TODO: hand it over]
+#ITEM: item_<id> x1 consume
+#COMPLETE: my_quest
+
+NODE end
+SPEAKER: <npc_id>
+SPEAK: [TODO: farewell]

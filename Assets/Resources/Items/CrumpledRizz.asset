@@ -15,10 +15,10 @@ MonoBehaviour:
   ItemID: crumpled_rizz
   ItemName: Crumpled Rizz
   Description: It'll flatten out.
-  Icon: {fileID: 0}
+  Icon: {fileID: 21300000, guid: 7e9b74505e77bfc4287d4bcb27992c17, type: 3}
   Type: 7
   AllowedClasses: 
-  Value: 0
+  Value: 1
   Damage: 0
   Armor: 0
   Stackable: 1
@@ -26,3 +26,7 @@ MonoBehaviour:
   HealHP: 0
   HealMana: 1
   UseAnimationTrigger: 
+  AttackBonus: 0
+  PoisonResistance: 0
+  Tradeable: 1
+  ManaDamage: 0

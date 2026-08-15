@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5536054808736681591}
   - component: {fileID: 1693948419887378971}
   - component: {fileID: 550701240658802985}
+  - component: {fileID: 880000000000000003}
   m_Layer: 0
   m_Name: Enemy_Spicehead
   m_TagString: Untagged
@@ -22,6 +23,20 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &880000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3416182807255932610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39e1e11c5af1ff943b3ddb89781a2fd1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  Loot: []
+  Band: {fileID: 11400000, guid: 52c025da627e4716ba609ae394b70262, type: 2}
 --- !u!4 &3656602710309840430
 Transform:
   m_ObjectHideFlags: 0

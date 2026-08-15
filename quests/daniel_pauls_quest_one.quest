@@ -1,0 +1,35 @@
+# daniel_pauls_quest_one
+# Granted by Councillor Mosley's hand-in (see mosley_vape_quest_one.quest, node nag_two) once the
+# player returns his vape. A simple "go talk to Daniel Pauls" quest that hooks into a follow-up
+# Daniel Pauls quest, per the owner (not authored yet).
+#
+# STRUCTURE ONLY — Daniel's dialogue is intentionally left as [TODO:]. Do not fill it until the
+# owner dictates his lines in a future session; do not write it yourself.
+#
+# Preset_DanielPauls.QuestKey is currently blank — must be set to "danielpauls" on his placed
+# instance in the Inspector before this can be tested (see docs/reference/QUEST_TEXT_FORMAT.md).
+# A TALKTO stage completes automatically on interacting with the keyed QuestActor — no COMPLETE:
+# directive needed in his dialogue for this stage type.
+
+QUEST daniel_pauls_quest_one
+TITLE: [TODO: quest title]
+GIVER: Daniel Pauls
+LOCATION: [TODO: where this sends the player]
+STAGE TALKTO danielpauls
+OBJECTIVE: [TODO: go talk to Daniel Pauls]
+REWARD
+POUNDS: 0
+XP: 0
+
+# ----------------------------------------------------------------------------------------
+# NO DIALOGUE BLOCK HERE, DELIBERATELY.
+#
+# quests/spark_of_talent.quest owns Daniel Pauls' entire conversation. Only one file may declare
+# DIALOGUE danielpauls: each import regenerates Dialogue_danielpauls.asset wholesale, so a second
+# declaration would silently clobber the first depending on file order.
+#
+# To give Daniel something to say about THIS quest, add nodes to spark_of_talent.quest and gate
+# them on daniel_pauls_quest_one — e.g. a choice on his NODE start carrying
+#   GATE: active daniel_pauls_quest_one
+#
+# The TALKTO stage above still completes on interacting with him, whichever conversation runs.

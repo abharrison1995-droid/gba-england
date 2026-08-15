@@ -107,7 +107,11 @@ namespace ExiledAlvaston.UI
 
         private void OpenInternal()
         {
-            if (IsOpen) return;
+            if (IsOpen)
+            {
+                Refresh();
+                return;
+            }
             _selectedSlot = 0;
             Refresh();
             _root.SetActive(true);

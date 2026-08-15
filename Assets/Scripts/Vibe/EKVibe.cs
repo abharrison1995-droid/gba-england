@@ -252,5 +252,31 @@ namespace ExiledAlvaston.Vibe
         public static int ScaledDamage(int baseDamage, int level) => Scaled(baseDamage, level, EnemyDamagePerLevel);
 
         public static int ScaledKillXP(int baseXp, int level) => Scaled(baseXp, level, EnemyXPPerLevel);
+
+        // --- Traffic and car theft ---
+        // Appended at the very end, per §7. These are the global tuning dials for the ambient
+        // traffic and hotwire systems; per-car values (ride speed, traffic speed, wires, clock)
+        // live on VehicleData so the two cars can differ.
+
+        /// <summary>How far ahead of a car the player must be (in the lane) for it to brake.</summary>
+        public const float TrafficBrakeDistance = 6f;
+
+        /// <summary>Half the lane width. A player inside this and ahead of the car stops it.</summary>
+        public const float TrafficLaneHalfWidth = 1.6f;
+
+        /// <summary>How long a stopped car waits after the player clears before driving on.</summary>
+        public const float TrafficResumeDelay = 1.5f;
+
+        /// <summary>Minimum gap between honk toasts while a car is blocked.</summary>
+        public const float HonkIntervalSeconds = 4f;
+
+        /// <summary>Least taps a single hotwire wire needs to come loose.</summary>
+        public const int HotwireMinTaps = 2;
+
+        /// <summary>Most taps a single hotwire wire needs to come loose.</summary>
+        public const int HotwireMaxTaps = 4;
+
+        /// <summary>How long a car stays hotwire-locked after a failed attempt, in seconds.</summary>
+        public const float HotwireRetryLockoutSeconds = 30f;
     }
 }

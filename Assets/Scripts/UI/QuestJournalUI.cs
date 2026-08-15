@@ -302,7 +302,10 @@ namespace ExiledAlvaston.UI
                 TextAlignmentOptions.TopLeft, resolved ? FontStyles.Strikethrough | FontStyles.Bold : FontStyles.Bold);
             QuestUIBuilder.Stretch(titleTmp.gameObject, Vector2.zero, Vector2.one);
             titleTmp.rectTransform.offsetMin = new Vector2(16, 66);
-            titleTmp.rectTransform.offsetMax = new Vector2(-52, -6);
+            // Active rows carry a FOCUS button in the top-right corner (spans -6 to -102), so the
+            // title stops short of it to avoid wrapping underneath. Resolved rows have no button
+            // and keep the full width.
+            titleTmp.rectTransform.offsetMax = new Vector2(resolved ? -52 : -110, -6);
             titleTmp.raycastTarget = false;
 
             // Quest giver, right under the name.
@@ -338,7 +341,37 @@ namespace ExiledAlvaston.UI
             crt.anchoredPosition = new Vector2(-6, 0);
             chev.raycastTarget = false;
 
+            // Focus button, only on active quests. The tracker shows the focused quest; the
+            // journal is the only place to switch it. The button sits in the top-right corner,
+            // clear of the chevron (which is vertically centred); the title above stops 110px
+            // short of the right edge to stay clear of it.
+            if (!resolved)
+            {
+                bool isFocused = QuestManager.Instance != null
+                    && QuestManager.Instance.FocusedQuestId == q.Id;
+                string label = isFocused ? "FOCUSED" : "FOCUS";
+                var focusBtn = QuestUIBuilder.CreateButton("FocusButton", row.transform, label,
+                    () => SetFocused(q));
+                var frt = focusBtn.GetComponent<RectTransform>();
+                frt.anchorMin = new Vector2(1, 1);
+                frt.anchorMax = new Vector2(1, 1);
+                frt.pivot = new Vector2(1, 1);
+                frt.anchoredPosition = new Vector2(-6, -6);
+                frt.sizeDelta = new Vector2(96, 30);
+            }
+
             _cursorY += rowH + 10;
+        }
+
+        /// <summary>
+        /// Points the tracker at this quest and repaints the list so the FOCUSED label moves.
+        /// The journal stays open — switching focus is a quick action, not a navigation.
+        /// </summary>
+        private void SetFocused(QuestProgress q)
+        {
+            if (q == null || QuestManager.Instance == null) return;
+            QuestManager.Instance.SetFocusedQuest(q.Id);
+            Populate();
         }
 
         private void BuildUI()

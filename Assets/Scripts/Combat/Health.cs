@@ -101,7 +101,8 @@ namespace ExiledAlvaston.Combat
                 var session = Flow.PlayerSession.Instance;
                 if (session != null)
                     damage = Mathf.Max(1, Mathf.RoundToInt(
-                        damage * (1f - EKVibe.ArmourReduction(session.EffectiveArmour()))));
+                        damage * (1f - EKVibe.ArmourReduction(
+                            session.EffectiveArmour() + _combat.TemporaryArmourBonus))));
             }
 
             LastAttacker = attacker;

@@ -48,7 +48,9 @@ namespace ExiledAlvaston.UI
         {
             EnsureLayout();
 
-            var q = QuestManager.Instance != null ? QuestManager.Instance.GetActiveQuest() : null;
+            // The tracker shows the player's chosen focus, falling back to the first active
+            // quest when none is focused (the old single-quest behaviour).
+            var q = QuestManager.Instance != null ? QuestManager.Instance.GetFocusedQuest() : null;
             bool show = q != null;
 
             if (Root != null && Root != gameObject)

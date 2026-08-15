@@ -141,7 +141,6 @@ public static class StarterPresetGenerator
         // marker in the chunk prefab and expects to find him there.
         new NpcSpec("Daniel Pauls",       "Daniel Pauls",       "danielpauls", false),
         new NpcSpec("Tracksuit Geezer",   "Tracksuit Geezer",   "underhoused", false),
-        new NpcSpec("Angry Squirrel",     "Angry Squirrel",     "squirrel",    true),
         new NpcSpec("Roaming Pharmacist", "Roaming Pharmacist", "pharmacist",  true),
     };
 
@@ -269,8 +268,11 @@ public static class StarterPresetGenerator
         }
 
         bool changed = false;
-        changed |= EnsureLibraryEntry(library, MagicTutorial.DanielPresetKey, "Daniel Pauls", filled, notes);
-        changed |= EnsureLibraryEntry(library, MagicTutorial.GeezerPresetKey, "Tracksuit Geezer", filled, notes);
+        // These were MagicTutorial.DanielPresetKey / .GeezerPresetKey until that class was retired
+        // with the spark_of_talent conversion. The strings are unchanged and are the keys stored in
+        // PlacementPresetLibrary.asset — changing either stops the palette resolving that preset.
+        changed |= EnsureLibraryEntry(library, "DanielPauls", "Daniel Pauls", filled, notes);
+        changed |= EnsureLibraryEntry(library, "TracksuitGeezer", "Tracksuit Geezer", filled, notes);
 
         if (changed) EditorUtility.SetDirty(library);
     }

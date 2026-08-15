@@ -238,5 +238,16 @@ namespace ExiledAlvaston.Data
                  "which does not resolve aborts the journey rather than falling back, so this is " +
                  "only worth setting on a preset stamped into chunks that all carry that marker.")]
         public string PortalTargetSpawnPointId = "";
+
+        // -- Companion - follower conversation ------------------------------------------------
+        // Appended at the very end, per section 7, for the same reason as every block above it: no
+        // preset already authored carries a value for it, so they all read null and keep the
+        // behaviour they have always had.
+        [Header("Companion - follower conversation")]
+        [Tooltip("The conversation shown when the player talks to this companion while it is " +
+                 "FOLLOWING them (combat commands, dismiss). Separate from Conversation, which is " +
+                 "the recruit dialogue at the home presence. Only read when this preset is a " +
+                 "companion's ArtSubject.")]
+        public DialogueData FollowerConversation;
     }
 }

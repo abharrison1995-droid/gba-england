@@ -341,8 +341,16 @@ namespace ExiledAlvaston.Combat
         private readonly Dictionary<Object, float> _speedModifiers = new Dictionary<Object, float>();
         private float _speedProduct = 1f;
 
+        // Temporary armour uses the same source-keyed composition as movement speed. Iron Skin
+        // must never write PlayerSession's permanent equipment/perk values in place.
+        private readonly Dictionary<Object, int> _temporaryArmour = new Dictionary<Object, int>();
+        private int _temporaryArmourTotal;
+
         /// <summary>Base speed with every registered modifier applied.</summary>
         public float EffectiveMovementSpeed => MovementSpeed * _speedProduct;
+
+        /// <summary>Temporary spell armour added to PlayerSession.EffectiveArmour at hit time.</summary>
+        public int TemporaryArmourBonus => _temporaryArmourTotal;
 
         /// <summary>Register or replace <paramref name="source"/>'s speed multiplier.</summary>
         public void SetSpeedMultiplier(Object source, float multiplier)
@@ -360,6 +368,20 @@ namespace ExiledAlvaston.Combat
                 RecomputeSpeedProduct();
         }
 
+        public void SetTemporaryArmour(Object source, int bonus)
+        {
+            if (source == null) return;
+            _temporaryArmour[source] = Mathf.Max(0, bonus);
+            RecomputeTemporaryArmour();
+        }
+
+        public void ClearTemporaryArmour(Object source)
+        {
+            if (source == null) return;
+            if (_temporaryArmour.Remove(source))
+                RecomputeTemporaryArmour();
+        }
+
         // Cached rather than recomputed per FixedUpdate — the dictionary walk would allocate an
         // enumerator every physics step, and this project keeps hot paths allocation-free.
         private void RecomputeSpeedProduct()
@@ -368,6 +390,14 @@ namespace ExiledAlvaston.Combat
             foreach (var kv in _speedModifiers)
                 product *= kv.Value;
             _speedProduct = product;
+        }
+
+        private void RecomputeTemporaryArmour()
+        {
+            int total = 0;
+            foreach (var kv in _temporaryArmour)
+                total += kv.Value;
+            _temporaryArmourTotal = Mathf.Max(0, total);
         }
         #endregion
 
@@ -572,6 +602,7 @@ namespace ExiledAlvaston.Combat
                 var session = Flow.PlayerSession.Instance;
                 Data.ItemData weapon = session != null ? session.EquippedWeapon() : null;
                 if (weapon != null) damage += weapon.Damage;
+                if (session != null) damage += session.TotalAttackBonus();
 
                 // After the weapon, so a perk multiplies the whole swing rather than the bare
                 // Strength roll. A cached float, never a walk over the perk list — this is a hot
@@ -1041,37 +1072,21 @@ namespace ExiledAlvaston.Combat
                 // needs it too.
                 var session = Flow.PlayerSession.Instance;
 
-                // Shout the (player-named) spell overhead as you cast: "Spark Out!"
-                string shout = IsMagic(ability) && session != null
+                // Spark alone owns the player-authored shout. Other spells keep their canonical
+                // names rather than all being called "Spark Out" once the spellbook holds six.
+                string shout = ability.SpellEffect == SpellEffectType.Spark && session != null
                     ? session.SpellName
                     : ability.AbilityName;
                 UI.SpellShoutText.Spawn(transform.position, shout);
 
                 yield return new WaitForSeconds(ability.CastTime);
 
-                // Zap the nearest enemy in range; otherwise the bolt just cracks off into the air.
-                Vector3 origin = transform.position;
-                Health target = FindSpellTarget(ability.Range);
-                if (target != null)
-                {
-                    LightningBolt.Spawn(origin, target.transform.position);
-                    if (ability.BaseDamage > 0)
-                    {
-                        int spellDamage = session != null
-                            ? Mathf.RoundToInt(ability.BaseDamage * session.SpellDamageMultiplier)
-                            : ability.BaseDamage;
-                        // Same reason as the melee site: attribute the spell to the player.
-                        target.TakeDamage(spellDamage, shout, target.DisplayName, gameObject);
-                        _bar?.Ping();
-                    }
-                }
-                else
-                {
-                    LightningBolt.Spawn(origin, origin + FacingDirection * Mathf.Max(2f, ability.Range * 0.6f));
-                }
-
-                if (ability.EffectPrefab != null)
-                    Instantiate(ability.EffectPrefab, origin + FacingDirection * 1.2f, transform.rotation);
+                Health target = ability.SpellEffect == SpellEffectType.Spark
+                                || ability.SpellEffect == SpellEffectType.Fireball
+                                || ability.SpellEffect == SpellEffectType.SludgeBolt
+                    ? FindSpellTarget(ability.Range)
+                    : null;
+                SpellRuntime.Execute(this, ability, target, shout);
             }
             finally
             {
@@ -1118,6 +1133,7 @@ namespace ExiledAlvaston.Combat
             {
                 var h = c.GetComponentInParent<Health>();
                 if (h == null || h == _health || h.IsDead) continue;
+                if (h.GetComponent<EnemyAI>() == null) continue;
                 float sq = (h.transform.position - transform.position).sqrMagnitude;
                 if (sq < bestSq) { bestSq = sq; best = h; }
             }
@@ -1127,8 +1143,7 @@ namespace ExiledAlvaston.Combat
         // ---- Magic: learning the first spell ----
 
         public const int SpellSlots = 4;
-        public bool KnowsSpark => _sparkAbility != null;
-        private AbilityData _sparkAbility;
+        public bool KnowsSpark => HasKnownSpell("spark");
 
         /// <summary>Every spell the player has learned (a superset of the 4 equipped slots).</summary>
         public List<AbilityData> KnownSpells { get; } = new List<AbilityData>();
@@ -1136,20 +1151,15 @@ namespace ExiledAlvaston.Combat
         /// <summary>Grants the Spark spell. Called by the magic tutorial when Daniel teaches it.</summary>
         public void LearnSpark()
         {
-            if (_sparkAbility != null) return;
+            if (KnowsSpark) return;
+            AbilityData spark = SpellDatabase.Find("spark");
+            if (spark == null)
+            {
+                Debug.LogError("LearnSpark: Resources/Abilities has no spell with AbilityID 'spark'.");
+                return;
+            }
 
-            _sparkAbility = ScriptableObject.CreateInstance<AbilityData>();
-            _sparkAbility.AbilityID = "spark";
-            _sparkAbility.AbilityName = "Spark";
-            _sparkAbility.IconGlyph = "⚡"; // ⚡ placeholder
-            _sparkAbility.CooldownTime = 1.25f;
-            _sparkAbility.CastTime = 0.28f;
-            _sparkAbility.Range = 8f;
-            _sparkAbility.ResourceType = AbilityResourceType.Mana;
-            _sparkAbility.ResourceCost = 12;
-            _sparkAbility.BaseDamage = 30;
-
-            LearnAbility(_sparkAbility);
+            LearnAbility(spark);
 
             if (Flow.PlayerSession.Instance != null) Flow.PlayerSession.Instance.KnowsSpark = true;
             if (UIManager.Instance != null)
@@ -1159,13 +1169,18 @@ namespace ExiledAlvaston.Combat
         /// <summary>Adds a spell to the spellbook and drops it into the first open spell slot.</summary>
         public void LearnAbility(AbilityData ability)
         {
-            if (ability == null) return;
+            if (ability == null || string.IsNullOrWhiteSpace(ability.AbilityID)) return;
             EnsureSlots();
-            if (!KnownSpells.Contains(ability)) KnownSpells.Add(ability);
+            AbilityData known = FindKnownSpell(ability.AbilityID);
+            if (known == null)
+            {
+                KnownSpells.Add(ability);
+                known = ability;
+            }
 
-            if (EquippedAbilities.Contains(ability)) return; // already slotted
+            if (EquippedAbilities.Contains(known)) return; // already slotted
             for (int i = 0; i < SpellSlots; i++)
-                if (EquippedAbilities[i] == null) { EquippedAbilities[i] = ability; return; }
+                if (EquippedAbilities[i] == null) { EquippedAbilities[i] = known; return; }
         }
 
         /// <summary>Binds a known spell to a slot (spellbook). Clears it from any other slot first.</summary>
@@ -1175,9 +1190,11 @@ namespace ExiledAlvaston.Combat
             EnsureSlots();
             if (ability != null)
             {
+                AbilityData known = FindKnownSpell(ability.AbilityID);
+                if (known == null) KnownSpells.Add(ability);
+                else ability = known;
                 for (int i = 0; i < SpellSlots; i++)
                     if (EquippedAbilities[i] == ability) EquippedAbilities[i] = null;
-                if (!KnownSpells.Contains(ability)) KnownSpells.Add(ability);
             }
             EquippedAbilities[slot] = ability;
         }
@@ -1187,6 +1204,89 @@ namespace ExiledAlvaston.Combat
             if (slot < 0 || slot >= SpellSlots) return;
             EnsureSlots();
             EquippedAbilities[slot] = null;
+        }
+
+        /// <summary>Learn every definition currently reachable through Resources/Abilities.</summary>
+        public int LearnAllCurrentSpells()
+        {
+            int before = KnownSpells.Count;
+            foreach (string abilityId in SpellDatabase.CurrentSpellIds)
+                LearnAbility(SpellDatabase.Find(abilityId));
+            if (Flow.PlayerSession.Instance != null)
+                Flow.PlayerSession.Instance.KnowsSpark = KnowsSpark;
+            return KnownSpells.Count - before;
+        }
+
+        /// <summary>Clears known spells, slots and cooldowns. Used by New Game and the debug reset.</summary>
+        public void ClearLearnedSpells()
+        {
+            TimedSpellStatus[] activeStatuses = GetComponentsInChildren<TimedSpellStatus>(true);
+            for (int i = 0; i < activeStatuses.Length; i++)
+                activeStatuses[i].Cancel();
+
+            KnownSpells.Clear();
+            EnsureSlots();
+            for (int i = 0; i < EquippedAbilities.Count; i++) EquippedAbilities[i] = null;
+            _abilityCooldowns.Clear();
+            _activeCooldownKeys.Clear();
+            if (Flow.PlayerSession.Instance != null)
+                Flow.PlayerSession.Instance.KnowsSpark = false;
+        }
+
+        /// <summary>Restores stable AbilityID values from savegame.json.</summary>
+        public void RestoreSpellLoadout(IReadOnlyList<string> knownIds, IReadOnlyList<string> equippedIds)
+        {
+            ClearLearnedSpells();
+
+            if (knownIds != null)
+            {
+                foreach (string id in knownIds)
+                {
+                    AbilityData ability = SpellDatabase.Find(id);
+                    if (ability == null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(id))
+                            Debug.LogWarning($"RestoreSpellLoadout: no AbilityData for saved id '{id}'.");
+                        continue;
+                    }
+                    if (!HasKnownSpell(ability.AbilityID)) KnownSpells.Add(ability);
+                }
+            }
+
+            EnsureSlots();
+            bool restoredAnySlot = false;
+            if (equippedIds != null)
+            {
+                int count = Mathf.Min(SpellSlots, equippedIds.Count);
+                for (int i = 0; i < count; i++)
+                {
+                    AbilityData ability = SpellDatabase.Find(equippedIds[i]);
+                    if (ability == null) continue;
+                    if (!HasKnownSpell(ability.AbilityID)) KnownSpells.Add(ability);
+                    EquippedAbilities[i] = ability;
+                    restoredAnySlot = true;
+                }
+            }
+
+            // Defensive migration for a save that knows spells but predates equipped-slot storage.
+            if (!restoredAnySlot)
+                for (int i = 0; i < Mathf.Min(SpellSlots, KnownSpells.Count); i++)
+                    EquippedAbilities[i] = KnownSpells[i];
+
+            if (Flow.PlayerSession.Instance != null)
+                Flow.PlayerSession.Instance.KnowsSpark = KnowsSpark;
+        }
+
+        private bool HasKnownSpell(string abilityId) => FindKnownSpell(abilityId) != null;
+
+        private AbilityData FindKnownSpell(string abilityId)
+        {
+            if (string.IsNullOrWhiteSpace(abilityId)) return null;
+            foreach (AbilityData known in KnownSpells)
+                if (known != null && string.Equals(known.AbilityID, abilityId,
+                    System.StringComparison.OrdinalIgnoreCase))
+                    return known;
+            return null;
         }
 
         private void EnsureSlots()

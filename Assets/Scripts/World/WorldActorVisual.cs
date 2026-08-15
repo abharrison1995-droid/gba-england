@@ -19,6 +19,11 @@ namespace ExiledAlvaston.World
         public float Height = EKVibe.CharacterHeight;
         public float Width = EKVibe.CharacterWidth;
 
+        [Tooltip("Off, the sprite is fitted uniformly from Height and the art's own aspect decides " +
+                 "the width. On, Width is fitted independently of Height - for an actor whose " +
+                 "silhouette is deliberately wider than the art's natural aspect.")]
+        public bool IndependentWidth;
+
         [Tooltip("Nudges the sprite up or down relative to the actor's feet. Sheet cells are not " +
                  "trimmed, so a subject drawn with space below its feet floats, and a vertical " +
                  "billboard sitting exactly on the floor gets its base clipped by the ground mesh.")]
@@ -116,6 +121,21 @@ namespace ExiledAlvaston.World
                 EnsureHierarchy();
                 return _sr;
             }
+        }
+
+        /// <summary>
+        /// Hides or shows the actor's own sprite renderer, leaving the rest of the hierarchy alone.
+        /// Used by the 3D-car presentation: a car's bodywork is a real model that stays visible
+        /// while ridden, so the rider's billboard is hidden instead of the vehicle root (which can
+        /// never be deactivated — see VehicleController). The Animator is left running; it drives
+        /// m_Sprite on a disabled renderer, which is harmless and keeps the state in step for when
+        /// the rider is shown again.
+        /// </summary>
+        public void SetRiderHidden(bool hidden)
+        {
+            EnsureHierarchy();
+            if (_sr != null)
+                _sr.enabled = !hidden;
         }
 
         /// <summary>
@@ -569,8 +589,14 @@ namespace ExiledAlvaston.World
 
             float spriteH = _sr.sprite.bounds.size.y;
             if (spriteH < 0.001f) spriteH = 1f;
-            float scale = Height / spriteH;
-            _swingRoot.localScale = new Vector3(scale, scale, 1f);
+            float scaleY = Height / spriteH;
+            float scaleX = scaleY;
+            if (IndependentWidth && Width > 0f)
+            {
+                float spriteW = _sr.sprite.bounds.size.x;
+                if (spriteW > 0.001f) scaleX = Width / spriteW;
+            }
+            _swingRoot.localScale = new Vector3(scaleX, scaleY, 1f);
             _fittedTo = _sr.sprite;
         }
 

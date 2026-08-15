@@ -34,5 +34,27 @@ namespace ExiledAlvaston.Data
 
         [Tooltip("Height of the parked vehicle in world units. The player is 1.8, an adult NPC 1.55.")]
         public float ParkedHeight = 0.9f;
+
+        // ── Traffic and car theft ────────────────────────────────────────────────────────────
+        // Appended at the very end, per §7. No existing asset carries a value for these, so they
+        // all read the defaults below — which are inert for the parked e-bike, so nothing changes
+        // for anything already authored. The two cars set them via the builder tool.
+
+        [Header("Traffic")]
+        [Tooltip("Keep the 3D model visible while mounted, hiding the rider instead. For cars — " +
+                 "the model is the bodywork, so it must stay up while you drive. The e-bike's " +
+                 "sprite is layered over the rider instead, so it stays false.")]
+        public bool KeepModelVisibleWhileMounted = false;
+
+        [Tooltip("Cruise speed while driving as traffic, in m/s. The ridden speed is " +
+                 "SpeedMultiplier, not this.")]
+        public float TrafficSpeed = 7f;
+
+        [Header("Hotwire")]
+        [Tooltip("Hotwire minigame: number of wires to work loose. More wires = harder.")]
+        public int HotwireWires = 3;
+
+        [Tooltip("Hotwire minigame: seconds on the clock. Less time = harder.")]
+        public float HotwireSeconds = 6f;
     }
 }

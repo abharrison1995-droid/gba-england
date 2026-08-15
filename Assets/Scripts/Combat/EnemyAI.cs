@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System.Collections.Generic;
 using ExiledAlvaston.UI;
 using ExiledAlvaston.World;
 
@@ -52,6 +53,10 @@ namespace ExiledAlvaston.Combat
         private bool _isAttacking;
         private bool _isKnockedBack;
         private readonly RaycastHit[] _losHits = new RaycastHit[8];
+        private readonly Dictionary<Object, float> _speedModifiers = new Dictionary<Object, float>();
+        private float _speedProduct = 1f;
+
+        public float EffectiveMoveSpeed => MoveSpeed * _speedProduct;
 
         /// <summary>May legitimately be null — a hand-built enemy need not carry a nameplate.</summary>
         private EnemyNameplate _plate;
@@ -66,6 +71,10 @@ namespace ExiledAlvaston.Combat
         /// <summary>True while this enemy is chasing something.</summary>
         public bool HasAggro => _target != null;
 
+        /// <summary>What this enemy is currently chasing, or null when idle. Lets a companion target only
+        /// hostiles already fighting the player, and nothing else.</summary>
+        public Transform AggroTarget => _target;
+
         private void Awake()
         {
             _selfHealth = GetComponent<Health>();
@@ -78,7 +87,7 @@ namespace ExiledAlvaston.Combat
                 _selfHealth.OnDeath.AddListener(OnDied);
             }
 
-            _agent.speed = MoveSpeed;
+            _agent.speed = EffectiveMoveSpeed;
             _agent.angularSpeed = 360f;
             _agent.acceleration = 12f;
             _agent.stoppingDistance = Mathf.Max(0.05f, AttackRange * 0.85f);
@@ -113,12 +122,68 @@ namespace ExiledAlvaston.Combat
                 _selfHealth.OnTakeDamage.RemoveListener(OnDamaged);
                 _selfHealth.OnDeath.RemoveListener(OnDied);
             }
+            _speedModifiers.Clear();
+        }
+
+        /// <summary>Register or replace a temporary movement multiplier, keyed by its owner.</summary>
+        public void SetSpeedMultiplier(Object source, float multiplier)
+        {
+            if (source == null) return;
+            _speedModifiers[source] = Mathf.Max(0.05f, multiplier);
+            RecomputeSpeedProduct();
+        }
+
+        public void ClearSpeedMultiplier(Object source)
+        {
+            if (source == null) return;
+            if (_speedModifiers.Remove(source)) RecomputeSpeedProduct();
+        }
+
+        private void RecomputeSpeedProduct()
+        {
+            float product = 1f;
+            foreach (var kv in _speedModifiers) product *= kv.Value;
+            _speedProduct = Mathf.Max(0.05f, product);
+            if (_agent != null) _agent.speed = EffectiveMoveSpeed;
         }
 
         private void OnDamaged(int amount)
         {
             SetAnimatorTrigger("Hit");
+            RetaliateToLastAttacker();
         }
+
+        /// <summary>
+        /// Turns this enemy toward whoever last hurt it. The follower's hits are attributed to the
+        /// player for the law's sake (CompanionAI passes "you"), but the LastAttacker GameObject is
+        /// still the follower — so the enemy correctly turns on ALEX when he lands a blow, which is
+        /// what lets a fight become two-way instead of the enemy ignoring him. An idle enemy hit by
+        /// anyone else (a spell from out of sight) turns on the player, exactly as if it had
+        /// spotted them.
+        /// </summary>
+        private void RetaliateToLastAttacker()
+        {
+            if (_selfHealth == null || _selfHealth.IsDead) return;
+            GameObject attacker = _selfHealth.LastAttacker;
+            if (attacker == null) return;
+
+            var follower = Companions.CompanionManager.Instance != null
+                ? Companions.CompanionManager.Instance.Follower
+                : null;
+            if (follower != null && attacker == follower)
+            {
+                Health fh = follower.GetComponent<Health>();
+                if (fh != null && !fh.IsDead)
+                    _target = follower.transform;
+                return;
+            }
+
+            if (_target != null) return; // already fighting someone; don't bounce mid-fight
+            var player = CombatController.Instance;
+            if (player != null && !player.IsDead)
+                _target = player.transform;
+        }
+
 
         private void OnDied()
         {
@@ -146,7 +211,9 @@ namespace ExiledAlvaston.Combat
         private void Update()
         {
             if (Animator != null)
-                Animator.SetFloat("Speed", _agent != null ? _agent.velocity.magnitude / Mathf.Max(0.01f, MoveSpeed) : 0f);
+                Animator.SetFloat("Speed", _agent != null
+                    ? _agent.velocity.magnitude / Mathf.Max(0.01f, EffectiveMoveSpeed)
+                    : 0f);
 
             if (_target == null || _isAttacking || _isKnockedBack) return;
             ChaseAndAttack();
@@ -194,9 +261,18 @@ namespace ExiledAlvaston.Combat
                     float dist = Vector3.Distance(transform.position, _target.position);
                     bool lostRange = dist > SightRadius * 1.4f;
                     bool blocked = !HasLineOfSight(_target);
-                    bool targetDead = CombatController.Instance != null
+                    // The target can be the player OR the companion; both carry a Health, and a
+                    // knocked-out companion (Health dead, body left posed) must stop being chased
+                    // exactly like a dead player is. The explicit CombatController check stays
+                    // alongside it so the player's death reads exactly as it always did, even if
+                    // his two dead flags ever drift.
+                    Health targetHealth = _target.GetComponentInParent<Health>();
+                    bool targetDead = targetHealth != null && targetHealth.IsDead;
+                    if (!targetDead && CombatController.Instance != null
                         && _target == CombatController.Instance.transform
-                        && CombatController.Instance.IsDead;
+                        && CombatController.Instance.IsDead)
+                        targetDead = true;
+
 
                     // Drop aggro if they die, leave range, or duck fully behind cover
                     if (targetDead || lostRange || (blocked && dist > AttackRange))
@@ -226,19 +302,39 @@ namespace ExiledAlvaston.Combat
         private void TryAcquireTarget()
         {
             var player = CombatController.Instance;
-            if (player == null || player.IsDead) return;
+            if (player != null && !player.IsDead)
+            {
+                float dist = Vector3.Distance(transform.position, player.transform.position);
+                if (dist <= SightRadius)
+                {
+                    // Set before the line-of-sight test on purpose: the nameplate gate is about how
+                    // close the player is, not about whether this enemy can see them round a corner.
+                    _playerInSight = true;
 
-            float dist = Vector3.Distance(transform.position, player.transform.position);
-            if (dist > SightRadius) return;
+                    if (HasLineOfSight(player.transform))
+                    {
+                        _target = player.transform;
+                        return;
+                    }
+                }
+            }
 
-            // Set before the line-of-sight test on purpose: the nameplate gate is about how close
-            // the player is, not about whether this enemy can see them round a corner.
-            _playerInSight = true;
+            // The player's companion is a valid target too: an enemy that cannot reach (or no
+            // longer has) the player turns on the follower standing beside them. This is what
+            // makes a hired companion a participant enemies engage, not a ghost only the player
+            // can be hurt through. The player keeps priority whenever both are in sight.
+            var follower = Companions.CompanionManager.Instance != null
+                ? Companions.CompanionManager.Instance.Follower
+                : null;
+            if (follower == null) return;
+            Health followerHealth = follower.GetComponent<Health>();
+            if (followerHealth == null || followerHealth.IsDead) return;
+            if ((follower.transform.position - transform.position).sqrMagnitude > SightRadius * SightRadius) return;
+            if (!HasLineOfSight(follower.transform)) return;
 
-            if (!HasLineOfSight(player.transform)) return;
-
-            _target = player.transform;
+            _target = follower.transform;
         }
+
 
         /// <summary>
         /// True if nothing with EnvironmentBlocker (walls/buildings) sits between eyes.
@@ -335,7 +431,7 @@ namespace ExiledAlvaston.Combat
             if (_agent != null && _agent.isOnNavMesh)
             {
                 _agent.isStopped = false;
-                _agent.speed = MoveSpeed;
+                _agent.speed = EffectiveMoveSpeed;
                 if (!_agent.hasPath || (_agent.destination - _target.position).sqrMagnitude > 0.5f)
                     _agent.SetDestination(_target.position);
                 if (_visual != null && _agent.velocity.sqrMagnitude > 0.01f)
@@ -352,7 +448,7 @@ namespace ExiledAlvaston.Combat
         {
             if (dir.sqrMagnitude < 0.001f) return;
 
-            float step = MoveSpeed * Time.deltaTime;
+            float step = EffectiveMoveSpeed * Time.deltaTime;
             // Facing follows the intent, not the slide — and a wall-slide deliberately turns
             // nothing, exactly as before the cast was factored out.
             if (!TryStep(dir, step, out bool slid) || slid) return;
@@ -433,7 +529,13 @@ namespace ExiledAlvaston.Combat
                         // Both branches gate the shove on the hit LANDING. TakeDamage returns false
                         // when the player is in i-frames, which is the whole point of the return
                         // value: without it a dodged hit still knocks the player back.
-                        if (!playerHp.IsDead && playerHp.TakeDamage(Damage, foe, "you", gameObject))
+                        // The target can be the player OR the companion; label it "you" only for the
+                        // player, else Health falls back to the target's own name (so a bandit
+                        // hitting Alex reads "Bandit hits Alex", not "Bandit hits you").
+                        string label = CombatController.Instance != null
+                            && playerHp == CombatController.Instance.GetComponent<Health>()
+                            ? "you" : null;
+                        if (!playerHp.IsDead && playerHp.TakeDamage(Damage, foe, label, gameObject))
                             TryKnockback(toTarget);
                     }
                     else

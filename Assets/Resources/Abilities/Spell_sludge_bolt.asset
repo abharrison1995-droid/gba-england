@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f2d2a977b31ac846a94cc1b6509433a, type: 3}
+  m_Name: Spell_sludge_bolt
+  m_EditorClassIdentifier: 
+  AbilityID: sludge_bolt
+  AbilityName: Sludge Bolt
+  Description: Deals 18 damage and slows the victim by 40 percent for 6 seconds.
+  Icon: {fileID: 0}
+  IconGlyph: S
+  CooldownTime: 8
+  CastTime: 0.4
+  Range: 9
+  ResourceType: 0
+  ResourceCost: 16
+  BaseDamage: 18
+  EffectPrefab: {fileID: 0}
+  SpellEffect: 5
+  HealAmount: 0
+  ArmourBonus: 0
+  EffectDuration: 6
+  EffectRadius: 0
+  SpeedMultiplier: 1
+  SlowMultiplier: 0.6
+  ProjectileSpeed: 8
+  CastEffectClip: {fileID: 0}
+  ProjectileClip: {fileID: 7400000, guid: 251e749eb2543b845b4c41783587a3ca, type: 2}
+  ImpactClip: {fileID: 7400000, guid: 35ec86dbcf5837f4c85069697e101bc6, type: 2}
+  LingeringClip: {fileID: 7400000, guid: 7c90ffbd0c8e8d74181aa36532f094bb, type: 2}

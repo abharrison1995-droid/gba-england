@@ -1,14 +1,17 @@
 # The art importer and actor visuals
 
 ```
-Last verified against: working tree, 2026-08-09
+Last verified against: working tree, 2026-08-14
 Verification scope:    code. Player-class profile refresh and creator preview wiring are
                        UNVERIFIED in Unity. The importer has done real round trips (Mosley, the pharmacist, the
                        player's five sheets, the London enemies) and the BuildController fix was
                        play-tested. Sprite sizing at the NEW 1.55/1.8 heights is UNVERIFIED —
                        nothing has been seen rendered since that change. The `roll`/`knockback`
                        wiring described below is UNVERIFIED: no roll or knockback sheet has ever
-                       been through the importer, and no controller yet holds either state.
+                       been through the importer, and no controller yet holds either state. The
+                       character-only baseline/shape validation gate and border-majority chroma-key
+                       estimator are verified by code inspection but have not yet been exercised by
+                       another Unity import.
 ```
 
 This document owns the **Unity side**: what `ArtImportTool` does to a delivered PNG, and how
@@ -70,9 +73,9 @@ The NPC scan explicitly skips all five player-class subjects even though they sh
 `spr_portrait_` prefix. Without that separation, four profiles report false missing-preset errors
 and Stabmeister is accidentally treated as an NPC only because a same-subject preset exists.
 
-`MagicTutorial` owns Daniel Pauls' and the Tracksuit Geezer's branching conversations in code, so
-those nodes are not part of a preset conversation for the importer to edit. Their temporary
-speaker records copy the portrait from the same preset speaker at runtime while preserving the
+Daniel Pauls' and the Tracksuit Geezer's conversations are generated from
+`quests/spark_of_talent.quest` into `Data/Dialogue/Generated/`, and the importer wires Daniel's
+into his preset. They take their speaker (and so their portrait) from that preset, preserving the
 tutorial's authored display names and lines.
 
 Player portraits use `spr_portrait_player.png` for Young Driller and
@@ -90,21 +93,25 @@ Do not undo these to simplify the code. Each cost a wasted generation cycle.
   `#FF00FF`. A threshold alone is not enough: anti-aliased edges are a blend of backdrop and
   subject, and once averaged down they dominate thin structures — a bike arrived with magenta
   spokes. Partial pixels are unmixed via `P = a·S + (1−a)·K`. Keying is **global, not
-  flood-filled from the border**, so backdrop trapped inside the subject goes too.
+  flood-filled from the border**, so backdrop trapped inside the subject goes too. The key colour
+  is estimated from a strong magenta majority on the border rather than the whole-border average,
+  because portraits may touch the lower edge and horizontal bolts legitimately reach both sides.
 - **Trim in the tool, never in the prompt.** Sizing derives from full image height, so untrimmed
   art silently renders small.
 - **Reduction is area-averaged**, not nearest-neighbour — point-sampling a photograph down to
   65 px is aliased noise. Colour is weighted by alpha through the average, or edges get a dark
   halo.
 - **Sheets are never trimmed** — it would shift every cell off the grid.
-- **Sheets are checked for a shared baseline.** A figure that drifts up its cell between frames
-  bobs in motion while looking fine frame by frame. Refused above 2 px at final size. `death`,
+- **Character sheets are checked for a shared baseline.** A figure that drifts up its cell between
+  frames bobs in motion while looking fine frame by frame. Refused above 2 px at final size. `death`,
   `cycle`, `roll` and `knockback` are exempt — the figure is *supposed* to leave the ground —
   and so are exempt from the cross-sheet height comparison. **Width is never exempt** for any
-  action: nothing makes a character half as wide as they stand except drawing them edge-on.
-- **Sheets of one subject are checked against each other.** Each can be internally perfect and
-  still disagree — a walk drawn near edge-on was 47 px wide against the idle sheet's 122. Refused
-  above 1.4× on width or 1.15× on height.
+  character action: nothing makes a character half as wide as they stand except drawing them
+  edge-on. FX sheets do not enter these actor-only checks: an impact, projectile and puddle are
+  expected to have different footprints and lowest opaque pixels.
+- **Character sheets of one subject are checked against each other.** Each can be internally perfect
+  and still disagree — a walk drawn near edge-on was 47 px wide against the idle sheet's 122.
+  Refused above 1.4× on width or 1.15× on height.
 - ⚠️ **Never wrap the import loop in `AssetDatabase.StartAssetEditing`.** It defers `ImportAsset`,
   so `AssetImporter.GetAtPath` returns null for a file just written, every import setting is
   skipped, and assets land with Unity's defaults — no slices, no clips, no controller — **while
@@ -208,8 +215,8 @@ contents.
 the `SwingRoot` animator. **Probe by state, not by the `MeleeAttack` parameter**: both
 `ArtImportTool` and `GeneratedEnemyPrefabTool` declare that parameter unconditionally, so it says nothing
 about whether art exists. `SetFacing` still runs first — it is what points the attack clip the
-right way — and an in-flight swing is stopped and its pose cleared, since `NpcFactory` and
-`MagicTutorial` can attach an Animator after the fact.
+right way — and an in-flight swing is stopped and its pose cleared, since `NpcFactory` can attach
+an Animator after the fact.
 
 The procedural swing is **kept**, not deleted: it is still the only attack tell for an actor
 without art (the four police tiers above PCSO have no Animator at all). `SwingAngle` /

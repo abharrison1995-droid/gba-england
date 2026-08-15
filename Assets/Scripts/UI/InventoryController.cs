@@ -302,15 +302,13 @@ namespace ExiledAlvaston.UI
 #endif
         }
 
-        /// <summary>Debug: drops the two equipment test items into the bag. Editor/dev builds only.</summary>
+        /// <summary>Debug: drops the remaining equipment test item into the bag. Editor/dev builds only.</summary>
         private static void GrantTestGear()
         {
             var session = PlayerSession.Instance;
             if (session == null) return;
 
-            ItemData sword = ItemDatabase.Find("test_sword");
             ItemData ring = ItemDatabase.Find("test_ring");
-            if (sword != null) session.AddItem(sword, 1);
             if (ring != null) session.AddItem(ring, 1);
         }
 
@@ -439,7 +437,7 @@ namespace ExiledAlvaston.UI
         // ── Paper doll ──────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Binds the paper-doll slots the rebuild tool laid out: EquipSlot0..6 → ItemTypes per
+        /// Binds the paper-doll slots the rebuild tool laid out: EquipSlot0..7 → ItemTypes per
         /// EquipmentSlotMap. Populates EquipmentSlots (dead until the doll existed) and puts a
         /// Button on each slot that opens the worn item's tooltip, where UNEQUIP lives.
         /// </summary>
@@ -538,9 +536,12 @@ namespace ExiledAlvaston.UI
             {
                 var r = _boundCharacter.BaseResistances;
                 int armor = r.Physical + (PlayerSession.Instance != null ? PlayerSession.Instance.TotalArmor() : 0);
+                int poison = PlayerSession.Instance != null
+                    ? PlayerSession.Instance.EffectivePoisonResistance()
+                    : r.Poison;
                 ResistancesText.text =
                     $"Armor {armor}\nFire {r.Fire}  Cold {r.Cold}\n" +
-                    $"Poison {r.Poison}  Magic {r.Magic}";
+                    $"Poison {poison}  Magic {r.Magic}";
             }
         }
 
@@ -578,6 +579,8 @@ namespace ExiledAlvaston.UI
                 string stats = "";
                 if (item.Armor > 0) stats += $"+{item.Armor} Armor\n";
                 if (item.Damage > 0) stats += $"+{item.Damage} Damage\n";
+                if (item.AttackBonus > 0) stats += $"+{item.AttackBonus} Attack\n";
+                if (item.PoisonResistance > 0) stats += $"+{item.PoisonResistance} Poison Resistance\n";
                 TooltipBody.text = $"{item.Description}\n{stats}".Trim();
             }
         }
@@ -696,6 +699,9 @@ namespace ExiledAlvaston.UI
                     int max = player.PlayerData != null ? player.PlayerData.MaxManaStamina : 50;
                     player.CurrentMana = Mathf.Min(max, player.CurrentMana + item.HealMana);
                 }
+
+                if (item.ManaDamage > 0)
+                    player.CurrentMana = Mathf.Max(0, player.CurrentMana - item.ManaDamage);
 
                 PlayUseAnimation(player, item.UseAnimationTrigger);
             }

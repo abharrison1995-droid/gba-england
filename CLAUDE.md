@@ -90,6 +90,8 @@ logs, the data is gone:
   `Manor_Cellars_Data` uses `"Manor Cellars"` **with a space**. Do not normalise it.
 - **`ItemData.ItemID`** — inventory is saved as `ItemID` + `Quantity` and resolved through
   `Resources/Items`. A changed id is read, fails to resolve, and is dropped in silence.
+- **`AbilityData.AbilityID`** — learned and equipped spells are saved as ids and resolved through
+  `Resources/Abilities`. Never rename a shipped spell id.
 - **`WikiEntryData.EntryID`** — unlocked encyclopedia entries are saved as a list of these.
 - **`PerkData.PerkId`** — spent perks are saved as a list of these and resolved through
   `Resources/Perks`. A changed id is read, fails to resolve, and the perk's effects quietly stop
@@ -104,7 +106,7 @@ PlayerPrefs. Five call sites write it.
 
 - **Renaming a public serialized field drops its value everywhere** unless you add
   `[FormerlySerializedAs]`. Appending a field is safe; inserting is not.
-- **Enums are serialized by integer index. Always append.** Fifteen are live.
+- **Enums are serialized by integer index. Always append.** Twenty-one are live.
 - **Commit a script's `.meta` with the script.** The GUID inside it is what binds prefabs and the
   scene to the class. This has gone wrong twice, and it fails silently on a fresh clone.
 - ⚠️ **Never rebuild an existing prefab by deleting and re-saving it.** That takes the `.meta` with
@@ -156,6 +158,7 @@ preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLi
 | Wanted level, police, stealth, pickpocketing, mounts, movement speed | [docs/reference/CONSEQUENCES_AND_MOUNTS.md](docs/reference/CONSEQUENCES_AND_MOUNTS.md) |
 | World Palette, presets, NPCs, enemy prefabs | [docs/reference/WORLD_AUTHORING_AND_NPCS.md](docs/reference/WORLD_AUTHORING_AND_NPCS.md) |
 | Quests, quest conditions, dialogue graphs | [docs/reference/QUESTS_AND_DIALOGUE.md](docs/reference/QUESTS_AND_DIALOGUE.md) |
+| Spells, spell tuning, spellbook persistence and spell VFX | [docs/reference/SPELLS.md](docs/reference/SPELLS.md) |
 | The art importer, sprite sizing, animator controllers | [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) |
 | Title screen, character creator, their layout and art | the two `Assets/Editor/*ScreenSetup.cs` / `*CreatorSetup.cs` builders — no reference doc; the anchors and the reasons for them are commented at each call site, because they are only true of the code that writes them |
 | Git, asset pruning, `.gitattributes`, project naming | [docs/reference/REPO_HYGIENE.md](docs/reference/REPO_HYGIENE.md) |
@@ -272,6 +275,20 @@ confirmed, rather than leaving it hedged.
     facing right and that the walk cycles still run forwards, not backwards.* A wrong call is
     undone with `python Tools/flip_sheets.py --force <name>`. `player_stabmeister_walk` was flipped
     too but is still in `art_incoming/` and has never been imported.
+
+13. **The ambient traffic and car theft work, none of it exercised.** Four new scripts
+    (`TrafficRoute`, `TrafficCar`, `HotwireMenuUI`, `BuildTrafficCarPrefabTool`) and edits to
+    `EKVibe`, `VehicleData`, `VehicleController` and `WorldActorVisual` — all unseen by a compiler
+    or an editor. The four `.meta` files were hand-authored and then rewritten byte-exact after
+    Unity rejected the first pass. *Check the §10.2 list in
+    [docs/plans/TRAFFIC_AND_CAR_THEFT_PLAN.md](docs/plans/TRAFFIC_AND_CAR_THEFT_PLAN.md):* compile
+    on open; run the builder tool twice (Reliant Robin common, Vauxhall Corsa better); author two
+    routes in `Home_London_Prefab`; cars drive/brake/honk/resume; hotwire success → driver flees,
+    2 knives, two officers, hidden rider; timeout → 1 knife, car drives off; ride across a chunk
+    edge; reload → traffic fresh, stolen car gone. **The FU Sports nested prefab in
+    `Home_London_Prefab` was re-pointed** to its post-reorganisation `Shops/` path (committed
+    2026-08-12) — but that edit has never been opened in an editor, so *confirm on first open that
+    the FU Sports building resolves rather than showing as a missing prefab.*
 
 **The cast is now uniformly 65 px.** Every character sidecar declares `worldHeight: 1.35`, which
 imports at 65 px cells. `sheet_char_player_mrhood_idle` and `sheet_char_player_stabmeister_idle`
@@ -489,6 +506,50 @@ never compiled:
 → [docs/plans/SURVIVAL_PRESSURE_RESOURCES.md](docs/plans/SURVIVAL_PRESSURE_RESOURCES.md) §10.3 for
 the full routes.
 
+**Also outstanding — `spark_of_talent` converted off bespoke code onto the `.quest` pipeline.**
+Committed 2026-08-15, never compiled, and **not importable until the editor pass below is done**:
+
+- ⚠️ **`MagicTutorial.cs` is deleted and the import has not run.** These must happen in **one
+  editor session with no Play mode in between.** Until the import runs and both characters are
+  placed, London has **no Daniel Pauls and no geezer at all** — the quest cannot be started. Run
+  it in this order: compile → `Tools → Content → Validate Quests` → `Import Quests` → build
+  `Enemy_UnderHoused` → wire it → place both → only then Play.
+- **A GUID scan found no prefab, scene or asset holding `MagicTutorial`'s script**, and its only
+  two live C# references (`GameFlowController`, `StarterPresetGenerator`) were removed. The two
+  preset keys became the literals `"DanielPauls"` / `"TracksuitGeezer"` — unchanged values, and
+  they are what `PlacementPresetLibrary.asset` stores.
+- ⚠️ **`QuestGateType.ActiveAtStage = 4` is appended, never reordered** — serialized by integer
+  index inside every choice in all sixteen generated `DialogueData` assets.
+- **Daniel now opens with one fixed line at every beat**, because a conversation has a single
+  start node. The four beats are gated choices. *Check exactly one is offered at a time, and that
+  the reward branch is gone after the quest completes* — if it reappears, `QuestGateStage` is not
+  being read, which most likely means `BuildDialogue` lost its two new field assignments.
+- **Stage 1 is `MANUAL`, not `TALKTO`.** A TalkTo final stage completes on the interact, before
+  any choice is picked, which would skip the reward beat entirely.
+- **`Enemy_UnderHoused` does not exist yet.** `Tools → Content → Build Enemies From Generated Art`
+  creates it — **run it on a clean tree**, it rewrites the YAML of every enemy prefab on its
+  update path. Then in Prefab Mode: confirm `EnemyAI` is **unticked**, add `Interactable`
+  (prompt "Talk to the twitchy geezer", range 3, Reusable on), add `NPCDialogueInteractable` with
+  `Dialogue_underhoused`, add `HostileAfterDialogue` and hook `Interactable.OnInteract` →
+  `HostileAfterDialogue.OnTalked`, and set its hostile line.
+- ⚠️ **Unverified Unity behaviour: whether `Awake` runs on a disabled component.** If the geezer,
+  once panicked, stands still or falls through the NavMesh, that is the answer and
+  `HostileAfterDialogue` must snap him to the NavMesh itself.
+- **He is placed content now**, so he stands in London from the start and can be killed before the
+  quest is taken — which pre-completes the kill stage. Accepted deliberately.
+- **Two live defects this fixes**: loading a save directly into London used to produce no Daniel
+  and no geezer; and reloading mid-quest used to require killing a second geezer.
+- **`Preset_DanielPauls.QuestKey` is blank** and must be set to `danielpauls` for
+  `daniel_pauls_quest_one`. His `Conversation` is written by the importer.
+- **`spark_of_talent` is unchanged as a save key.** *Load a save holding it mid-flight (should bind
+  the kill stage to the placed geezer) and one holding it complete (should pay nothing — the
+  reward is deliberately 0/0, since the reward scan retro-pays any completed unclaimed quest).*
+- **`quests/spark_of_talent.quest` owns Daniel Pauls' conversation permanently.** One `DIALOGUE`
+  block per npcId across the whole folder; every future Daniel quest adds gated nodes to that file.
+- **`PlayerSession.KnowsSpark` is still written by nobody who reads it and is not saved.**
+  Pre-existing, unchanged by this, and now harder to spot: the spellbook's `KnownSpellIds` is what
+  actually persists a learnt spell.
+
 **Also outstanding — roll and knockback, imported 2026-08-09, only half exercised.**
 
 The import ran and accepted all ten sheets, so `Assembly-CSharp` compiled and the importer's own
@@ -626,6 +687,69 @@ compiled:
 
 → [docs/plans/MOBILE_PERFORMANCE_PASS.md](docs/plans/MOBILE_PERFORMANCE_PASS.md) §10.3 for the full
 check list.
+
+**Also outstanding — merchant stores and the equipment thread, none of it exercised.** Committed
+2026-08-12 on `codex/merchant-store-screens`, not yet pushed, never compiled:
+
+- **Three merchants** (Roaming Pharmacist, F.U. Sports, Quidland) with Buy/Sell catalogues, a Win95
+  shop window (`MerchantUI`) and a `MerchantValidator`. A `DialogueChoice` now carries an optional
+  `Merchant` + `MerchantAction`; picking it closes the conversation and opens the shop. ⚠️ **The
+  shop's pause is released before the merchant window takes its own** — closing the conversation
+  first, then `MerchantUI.Show` — so a wrong order leaves the world one `PauseManager.Push` ahead
+  when the shop closes. *Open a clerk conversation, pick Buy, and check the shop opens and closes
+  without freezing the game.*
+- **Fifteen new tradeable items with icons.** Existing items gained `Value`/`Tradeable`. *Buy one
+  and check pounds drop and it enters the bag; try to sell a `Tradeable: 0` item and check it
+  cannot be listed.* £ glyph caveat (§5 item 9) applies to the price readouts.
+- **The equipment/paper-doll thread the store needs rode in on the same commit** (no separate
+  equipment commit). `ItemData` gained flat equip bonuses (`MeleeBonus`, poison resistance) and
+  `IsEquippable`; `PlayerSession` sums equipped contributions; `CombatController` adds
+  `TotalAttackBonus()` to the swing; the paper-doll slots were rebuilt
+  (`InventoryWin95Builder`/`EquipmentSlotMap`/`InventoryController`); loot rows now show the item
+  icon (`LootMenuUI`/`SpriteContainer`). *Equip a weapon and check the melee number rises by its
+  bonus; equip armour and check incoming hits drop.*
+- **The exercise rig is the all-items test container** (`Container_AllItems_Test`, placed in
+  `Home_London_Prefab`) — see the art/tooling commit. Nothing has been placed or played yet.
+
+**Also outstanding — the quest pipeline, Phase 0 and Phase 1, none of it exercised.** Committed
+2026-08-12 on `codex/merchant-store-screens`, not yet pushed, never compiled:
+
+- **Phase 0 (own commit): the multi-quest foundation.** `QuestConditionWatcher` now binds EVERY
+  active quest, each with its own `QuestBinding`, instead of only the first; `QuestManager` gained
+  a player-chosen `FocusedQuestId` (auto-focused on a new grant; stale/none falls back to the first
+  active quest), the tracker shows it and the journal has a per-row FOCUS button. *Grant two quests
+  and check both advance while only the focused one shows in the tracker, and that the journal's
+  FOCUS button switches it.*
+- ⚠️ **`FocusedQuestId` is appended to `SaveData`** (append-only, no migration — a pre-focus save
+  reads it back as null and the tracker falls back to the first active quest). *Load a save made
+  before today and check it arrives with no error and a sensible tracker.* `GameFlowController`
+  restores and revalidates the focus after `RestoreQuests`.
+- **Quest-gated dialogue choices.** `DialogueChoice.QuestGate` + `MeetsQuestGate` hide (not grey) a
+  choice whose quest is not in the chosen state, so a gated branch never leaks a quest's existence;
+  `DialogueManager` renumbers the shown choices and keeps the escape search in step. *Author a
+  gated choice and check it appears only once its quest reaches the right state.*
+- **Phase 1: the plain-text `.quest` pipeline.** `QuestTextImporter` turns a `.quest` file into a
+  `QuestDefinition`; `QuestContentValidator` checks it; `QUEST_TEXT_FORMAT.md` and `_template.quest`
+  are the contract. *Run the importer on `_template.quest` from the menu and check it produces a
+  `QuestDefinition` without errors.* Editor tooling — it has generated nothing yet.
+- **`Tools/check_quest_phase0.py` passes its brace-balance scan.** That is NOT a compile (§5) — it
+  only rules out a truncated edit. No `.quest` has been imported and no `QuestDefinition` exists to
+  exercise the watcher or focus.
+
+**Also outstanding — the companion system C0–C3 plus HUD, none of it exercised.** Committed
+2026-08-12 on `codex/merchant-store-screens`, not yet pushed, never compiled:
+
+- **Data-driven companions.** `CompanionDefinition`/`CompanionDatabase` describe them;
+  `CompanionAI` is the runtime follower/combatant; `CompanionManager` and `CompanionHomePresence`
+  own the lifecycle; `CompanionHUDUI` draws the bar. `EnemyAI` now exposes `AggroTarget` so a
+  companion targets only hostiles already fighting the player, and nothing else.
+- **No `CompanionDefinition` asset exists and no companion has been recruited**, so none of this has
+  run. Covers phases C0–C3; C4/C6 are partial and C5/C7/Alex are outstanding per the plan. *Author
+  a `CompanionDefinition`, recruit one, and check the follower keeps up, engages only your
+  aggressor, and the HUD shows its bar.*
+
+→ [docs/plans/QUEST_PIPELINE_PLAN.md](docs/plans/QUEST_PIPELINE_PLAN.md) and
+[docs/plans/COMPANION_PIPELINE_PLAN.md](docs/plans/COMPANION_PIPELINE_PLAN.md) for the phase gates.
 
 ---
 

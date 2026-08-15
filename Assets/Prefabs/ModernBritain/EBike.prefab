@@ -181,3 +181,4 @@ MonoBehaviour:
   ParkedModel: {fileID: 780696340065892696}
   VehicleSprite: {fileID: 21300000, guid: 8c1e802242896f84ea8a2390dbb61b50, type: 3}
   ReturnsHomeOnChunkChange: 1
+  KeepModelVisibleWhileMounted: 0

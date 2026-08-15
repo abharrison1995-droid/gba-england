@@ -18,4 +18,16 @@ MonoBehaviour:
     Speaker: {fileID: 11400000, guid: e5457864e4d21824d9d5f48c6bab1182, type: 2}
     DialogueText: Two for one on the hoodies, mate. Stab-proof? Couldn't tell you,
       but they're two for one.
-    Choices: []
+    Choices:
+    - ChoiceText: Let me see what you've got.
+      NextNodeId:
+      Merchant: {fileID: 11400000, guid: e93119daebf14368bfe4faa355d78604, type: 2}
+      MerchantAction: 1
+    - ChoiceText: Want to buy anything?
+      NextNodeId:
+      Merchant: {fileID: 11400000, guid: e93119daebf14368bfe4faa355d78604, type: 2}
+      MerchantAction: 2
+    - ChoiceText: Leave.
+      NextNodeId:
+      Merchant: {fileID: 0}
+      MerchantAction: 0

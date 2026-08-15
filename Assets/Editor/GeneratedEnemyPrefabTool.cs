@@ -46,9 +46,21 @@ public static class GeneratedEnemyPrefabTool
         public int Health;
         public int Damage;
         public string QuestKey;
+        /// <summary>Throws a bolt from AttackRange instead of meleeing. Needs a wide AttackRange.</summary>
+        public bool RangedCaster;
+        public float AttackRange;
+        public float AttackCooldown;
+        /// <summary>
+        /// Built with the EnemyAI component disabled, for an enemy that stands passive until
+        /// something enables it — a talk-then-turn-hostile character. Nothing else here is
+        /// affected; the prefab is otherwise a normal enemy.
+        /// </summary>
+        public bool StartPassive;
 
         public EnemySpec(string subject, string prefabPath, string displayName, string presetLabel,
-            int health, int damage, string questKey)
+            int health, int damage, string questKey,
+            bool rangedCaster = false, float attackRange = 1.6f, float attackCooldown = 1.2f,
+            bool startPassive = false)
         {
             Subject = subject;
             PrefabPath = prefabPath;
@@ -57,6 +69,12 @@ public static class GeneratedEnemyPrefabTool
             Health = health;
             Damage = damage;
             QuestKey = questKey;
+            // Defaulted to what this tool hardcoded before these existed, so every row above that
+            // omits them builds byte-identically to how it did.
+            RangedCaster = rangedCaster;
+            AttackRange = attackRange;
+            AttackCooldown = attackCooldown;
+            StartPassive = startPassive;
         }
     }
 
@@ -77,6 +95,20 @@ public static class GeneratedEnemyPrefabTool
         // but nothing currently grants or completes a quest keyed on it.
         new EnemySpec("torturedneek", $"{PrefabFolder}/Enemy_TorturedNeek.prefab", "Tortured Neek",
             "Tortured Neek", 45, 7, "torturedneek"),
+
+        // The Spark of Talent tutorial's twitchy geezer, converted from the runtime-spawned
+        // character MagicTutorial.cs used to build. Health 40, Damage 8, RangedCaster with a 7 m
+        // AttackRange and a 1.6 s cooldown all match what that file set (MagicTutorial.cs:361-373)
+        // — his bolt is the story beat the quest turns on, so a melee geezer would break it.
+        //
+        // StartPassive: he must stand there harmlessly until the player talks to him and the
+        // conversation closes. HostileAfterDialogue enables the EnemyAI at that moment.
+        //
+        // under_housed is the QuestActor.Key the KILL stage of spark_of_talent binds to. It is
+        // matched against the .quest file, not stored in saves.
+        new EnemySpec("underhoused", $"{PrefabFolder}/Enemy_UnderHoused.prefab", "Under Housed",
+            "Under Housed", 40, 8, "under_housed",
+            rangedCaster: true, attackRange: 7f, attackCooldown: 1.6f, startPassive: true),
 
         // Update-only: Police_PCSO.prefab already exists, hand-built by ModernBritainSetup, and is
         // never (re)created here. No preset — police are spawned by WantedManager.SpawnPlod, not
@@ -280,13 +312,17 @@ public static class GeneratedEnemyPrefabTool
             agent.speed = 3.8f;
             agent.stoppingDistance = 1.2f;
 
-            // EnemyAI.Damage: spec table (7; 14 for tainted). SightRadius/AttackRange/MoveSpeed:
-            // 16 / 1.6 / 3.8, inherited. AttackCooldown/AttackWindup/EyeHeight/TurnSpeed left at
-            // EnemyAI.cs defaults (1.2/0.3/0.95/10). RangedCaster/IsPolice left false (EnemyAI.cs:22,27).
+            // EnemyAI.Damage: spec table (7; 14 for tainted). SightRadius/MoveSpeed: 16 / 3.8,
+            // inherited. AttackRange/AttackCooldown/RangedCaster come from the spec and default to
+            // the values this tool used to hardcode (1.6 / 1.2 / false), so every melee row builds
+            // exactly as before. AttackWindup/EyeHeight/TurnSpeed left at EnemyAI.cs defaults
+            // (0.3/0.95/10). IsPolice left false (EnemyAI.cs:27).
             EnemyAI ai = root.AddComponent<EnemyAI>();
             ai.Damage = spec.Damage;
             ai.SightRadius = 16f;
-            ai.AttackRange = 1.6f;
+            ai.AttackRange = spec.AttackRange;
+            ai.AttackCooldown = spec.AttackCooldown;
+            ai.RangedCaster = spec.RangedCaster;
             ai.MoveSpeed = 3.8f;
 
             // WorldActorVisual.Height/Width: EKVibe.CharacterHeight/CharacterWidth (EKVibe.cs:60-61).
@@ -307,6 +343,13 @@ public static class GeneratedEnemyPrefabTool
                 // assigns unless asked"). Without it the sheets never play.
                 if (animator != null) ai.Animator = animator;
             }
+
+            // Disabled LAST, after every field above is written — a disabled component still
+            // serializes its values, and whatever enables it later gets a fully configured AI.
+            // Disabling the component is the correct passive state; a SightRadius of 0 is NOT,
+            // because EnemyAI drops a target beyond SightRadius * 1.4 and would acquire then
+            // instantly forget the player on the same tick.
+            if (spec.StartPassive) ai.enabled = false;
 
             if (!string.IsNullOrEmpty(spec.QuestKey))
                 root.AddComponent<QuestActor>().Key = spec.QuestKey;

@@ -117,11 +117,23 @@ namespace ExiledAlvaston.Dialogue
             }
             else
             {
+                // The visible number counts only the choices actually shown. A quest-gated choice
+                // is skipped below, so numbering by the authored index would leave a gap ("1. ...",
+                // "3. ...") that reads as a missing option.
+                int shown = 0;
                 for (int i = 0; i < node.Choices.Count; i++)
                 {
                     DialogueChoice choice = node.Choices[i];
 
-                    string displayText = $"{i + 1}. {choice.ChoiceText}";
+                    // A quest-gated choice is hidden, not greyed out: it belongs to a branch the
+                    // player cannot take yet (quest not started / not active / not complete), and
+                    // showing it disabled would leak the quest's existence. The gate is re-evaluated
+                    // every time the node is displayed, so a choice appears the moment its quest
+                    // reaches the right state.
+                    if (choice != null && !choice.MeetsQuestGate()) continue;
+
+                    shown++;
+                    string displayText = $"{shown}. {choice.ChoiceText}";
 
                     if (!string.IsNullOrEmpty(choice.RequiredStat))
                     {
@@ -208,7 +220,10 @@ namespace ExiledAlvaston.Dialogue
                 for (int i = 0; i < current.Choices.Count; i++)
                 {
                     DialogueChoice choice = current.Choices[i];
-                    if (choice == null || !IsSelectable(choice)) continue;
+                    // A quest-gated choice that is currently hidden is not a route out — the
+                    // player cannot see or press it. Same rule as DisplayNode, so the escape
+                    // search and the buttons can never disagree.
+                    if (choice == null || !choice.MeetsQuestGate() || !IsSelectable(choice)) continue;
 
                     // Both of these end the chat in OnChoiceSelected — the second one loudly.
                     if (string.IsNullOrEmpty(choice.NextNodeId)) return true;
@@ -282,6 +297,43 @@ namespace ExiledAlvaston.Dialogue
             if (choice != null && choice.TeachSpark)
                 _teachSparkOnClose = true;
 
+            // A shop owns its own modal pause. Close the conversation first so its pause token is
+            // released, then let the merchant window acquire one; doing this in the other order
+            // leaves the world one Push ahead when the shop closes.
+            if (choice != null && choice.Merchant != null
+                && choice.MerchantAction != MerchantActionType.None)
+            {
+                MerchantData merchant = choice.Merchant;
+                MerchantActionType action = choice.MerchantAction;
+                EndDialogue();
+                UI.MerchantUI.Show(merchant, action);
+                return;
+            }
+
+            // Hiring a companion is a conversation-ender too: BeginContract spawns the follower
+            // into the running world, which must not happen while PauseManager is holding
+            // timeScale at 0 — so the chat closes first and the hire resolves after, exactly like
+            // the merchant branch above. The charge and its refusal stay inside BeginContract;
+            // false just means the player heard the line and stayed poor (or already has someone).
+            if (choice != null && !string.IsNullOrEmpty(choice.HireCompanionId))
+            {
+                string hireId = choice.HireCompanionId;
+                EndDialogue();
+                TryHireCompanion(hireId);
+                return;
+            }
+
+            // A companion command (fight beside me / stop fighting / dismiss) is a
+            // conversation-ender too, for the same reason as the hire above: the command acts on
+            // the live follower, which must not happen while PauseManager holds timeScale at 0.
+            if (choice != null && choice.CompanionCommand != CompanionCommandType.None)
+            {
+                CompanionCommandType command = choice.CompanionCommand;
+                EndDialogue();
+                ApplyCompanionCommand(command);
+                return;
+            }
+
             if (string.IsNullOrEmpty(nextNodeId))
             {
                 EndDialogue();
@@ -295,6 +347,63 @@ namespace ExiledAlvaston.Dialogue
                 return;
             }
             DisplayNode(next);
+        }
+
+        /// <summary>
+        /// Runs the hire a <see cref="DialogueChoice.HireCompanionId"/> asked for, after the chat
+        /// has closed. Toasts mirror what the old hire button said, so the swap from button to
+        /// dialogue changes the conversation, not the feedback.
+        /// </summary>
+        private static void TryHireCompanion(string companionId)
+        {
+            var mgr = Companions.CompanionManager.Instance;
+            if (mgr == null) return;
+
+            CompanionDefinition def = CompanionDatabase.Find(companionId);
+            string who = def != null && !string.IsNullOrEmpty(def.DisplayName) ? def.DisplayName : "Companion";
+
+            if (mgr.HasActiveCompanion)
+            {
+                string current = mgr.ActiveDefinition != null ? mgr.ActiveDefinition.DisplayName : "Someone";
+                if (UI.UIManager.Instance != null)
+                    UI.UIManager.Instance.ShowToast(current + " is already with you.", 1.6f);
+                return;
+            }
+
+            if (mgr.BeginContract(companionId))
+            {
+                if (UI.UIManager.Instance != null)
+                    UI.UIManager.Instance.ShowToast(who + " joins you.", 1.8f);
+            }
+            else
+            {
+                if (UI.UIManager.Instance != null)
+                    UI.UIManager.Instance.ShowToast("Not enough money for " + who + ".", 1.8f);
+            }
+        }
+
+        /// <summary>
+        /// Applies a DialogueChoice.CompanionCommand to the active companion, after the chat has
+        /// closed. FightBesideMe and StopFighting flip the follower's combat flag; Dismiss ends
+        /// the contract so the home presence reappears at its spawn spot.
+        /// </summary>
+        private static void ApplyCompanionCommand(CompanionCommandType command)
+        {
+            var mgr = Companions.CompanionManager.Instance;
+            if (mgr == null) return;
+
+            switch (command)
+            {
+                case CompanionCommandType.FightBesideMe:
+                    if (mgr.FollowerAI != null) mgr.FollowerAI.CombatEnabled = true;
+                    break;
+                case CompanionCommandType.StopFighting:
+                    if (mgr.FollowerAI != null) mgr.FollowerAI.CombatEnabled = false;
+                    break;
+                case CompanionCommandType.Dismiss:
+                    mgr.EndContract(false);
+                    break;
+            }
         }
 
         private void EndDialogue()

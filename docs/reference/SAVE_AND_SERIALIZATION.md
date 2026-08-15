@@ -1,7 +1,7 @@
 # Save format and Unity serialization
 
 ```
-Last verified against: working tree on branch progression-perks, 2026-08-08
+Last verified against: working tree, 2026-08-15
 Verification scope:    code (read line by line); tracked prefab/asset YAML. The appended
                        BundaBasher=4 class mapping is code-reviewed but not Unity-tested. Quest persistence
                        across an autosave was confirmed in an editor session by reading
@@ -10,7 +10,8 @@ Verification scope:    code (read line by line); tracked prefab/asset YAML. The 
                        code-read only — no compiler and no Unity have seen either, and no save has
                        been round-tripped with them present. PerkData.PerkId is documented from the
                        code that reads it; no PerkData asset exists yet, so no perk id has ever
-                       been written to a save file.
+                       been written to a save file. Spellbook fields and AbilityID resolution are
+                       code-reviewed only; Unity has not compiled or round-tripped them.
 ```
 
 **This is the highest-risk area in the repo.** A mistake here corrupts player saves silently —
@@ -23,7 +24,8 @@ nothing throws, nothing logs, the data is just gone.
 
 `SaveData` holds, in declaration order: character name, class, `TutorialComplete`, chunk name,
 position, health, mana, stamina, quest list, inventory, `Equipment`, `Pounds`, `LootedContainers`,
-`VisitedChunks`, `UnlockedWikiEntries`, `TotalXP`, `PerkIds`.
+`VisitedChunks`, `UnlockedWikiEntries`, `TotalXP`, `PerkIds`, `FocusedQuestId`,
+`ActiveCompanionId`, `CompanionHealth`, `KnownSpellIds`, `EquippedSpellIds`, `SpellName`.
 
 Everything from `Equipment` onwards was **appended**, so a save written before that feature existed
 has no such key at all and `JsonUtility` reads back the type's default — `0` for `Pounds` and
@@ -74,6 +76,18 @@ through `Resources/Items` by `PlayerSession.RestoreInventory`.
 - Changing an `ItemID` **value** on an existing item orphans it out of every save **silently** —
   the entry is read, the lookup fails, the item is dropped and nothing is reported.
 - An item must stay reachable from `Resources/Items`, since that is how the load resolves it.
+
+### `AbilityData.AbilityID`
+
+Learned and equipped spells are saved as `AbilityID` strings in `KnownSpellIds` and
+`EquippedSpellIds`, then resolved through `Resources/Abilities` by `SpellDatabase`.
+
+- Never rename a shipped `AbilityID`; doing so silently drops that spell from old spellbooks and
+  equipped slots.
+- `EquippedSpellIds` always carries four positions. Empty strings preserve deliberately empty
+  slots.
+- The original Spark id remains `spark`; `PlayerSession.KnowsSpark` is a compatibility mirror,
+  not a second source of truth.
 
 ### `WikiEntryData.EntryID`
 
@@ -129,11 +143,14 @@ in the same app session does not inherit the last playthrough's emptied bins.
 ## What is and is not saved
 
 **Saved:** character name and class, `TutorialComplete`, chunk, position, health/mana/stamina,
-quest state, inventory, pounds, the ids of emptied `Fixed` containers.
+quest state and focus, inventory/equipment, pounds, emptied `Fixed` container ids, map/wiki state,
+XP/perks, the active companion contract and health, known/equipped spells, and Spark's player-authored
+shout.
 
 `PlayerClass` is stored as its integer enum value. The original mappings remain
 `YoungDriller=0`, `EnGarde=1`, `MrHood=2`, `Dynamo=3`; `BundaBasher=4` was appended so existing
-saves keep their class identity.
+saves keep their class identity. `BundaBasher` is the stable internal value for the player-facing
+class **The Tudor** and must not be renamed or renumbered.
 
 **Not saved:** wanted level, and whether you are riding anything. A load puts you on foot with
 vehicles back at their authored spots, and a vehicle you had already nicked is nickable again.
@@ -207,21 +224,23 @@ git ls-files 'Assets/**/*.cs' | while read f; do [ -f "$f.meta" ] || echo "NO ME
 
 Reordering or inserting values silently remaps existing data. **Always append.**
 
-Fifteen live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
+Twenty live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
 
 `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`, `GameFlowState`,
 `HUDActionButton.ActionKind`, `InstanceDoor.Destination`, `PlacementCategory`, `CityRegion`,
-`QuestConditionType`, `MagicTutorial.Stage`, `TutorialSequence.Stage`,
+`QuestConditionType`, `TutorialSequence.Stage`,
 `SpriteContainer.ContainerMode` (`Fixed = 0`, `Respawning = 1`), `WikiCategory`,
-`PerkEffectType`.
+`PerkEffectType`, `SpellEffectType`, `QuestGateType`, `MerchantActionType`,
+`CompanionCommandType`, `CompanionContractType`, `TilingSurface.TilingPlane`.
 
 `HUDActionButton.ActionKind` is the one with values proven live in serialized data: `c.unity`
 holds six authored `HUDActionButton` components covering `Attack=0`, `Ability=1`, `Inventory=2`
 and `Interact=3`. They belong to the legacy cluster that `BuildActionButtons` deactivates, but
 they are still serialized, so a reorder would repoint them. `Crouch` was appended as 4.
 
-`PlayerClass` is also live in the JSON save as an integer. `BundaBasher` is appended at index 4;
-never insert a future class before it or reorder the five existing values.
+`PlayerClass` is also live in the JSON save as an integer. `BundaBasher` (displayed as **The
+Tudor**) is appended at index 4; never insert a future class before it or reorder the five existing
+values.
 
 ## Asset cross-references
 

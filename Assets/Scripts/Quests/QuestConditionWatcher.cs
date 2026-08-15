@@ -9,13 +9,23 @@ using ExiledAlvaston.World;
 namespace ExiledAlvaston.Quests
 {
     /// <summary>
-    /// Watches the active quest's current <see cref="QuestStage"/> and advances it when its
+    /// Watches every active quest's current <see cref="QuestStage"/> and advances each when its
     /// condition is met. Bootstraps itself — nothing needs placing in the scene.
+    ///
+    /// <b>Multi-quest.</b> All active quests are bound, not just the first. Each active quest gets
+    /// its own <see cref="QuestBinding"/> holding that quest's stage and per-condition state, so a
+    /// "kill 3" in one quest and a "talk to X" in another run side by side. The HUD tracker shows
+    /// only the focused quest, but the watcher advances every active one.
     ///
     /// <b>Containment.</b> A quest with no <see cref="QuestDefinition"/> asset under
     /// <c>Resources/Quests/</c> is never touched: <see cref="QuestDatabase.Find"/> returns null and
-    /// every path here bails out. The tutorial quests (<c>escape_manor</c>, <c>spark_of_talent</c>)
-    /// deliberately have no definition and keep running entirely off their own code.
+    /// every path here bails out. <c>escape_manor</c> deliberately has no definition and keeps
+    /// running entirely off <c>TutorialSequence</c>'s own code.
+    ///
+    /// ⚠️ <c>spark_of_talent</c> used to be the second such quest. It is now an ordinary
+    /// file-backed quest (<c>quests/spark_of_talent.quest</c>) watched from here like any other,
+    /// and <c>MagicTutorial</c> is gone. Giving <c>escape_manor</c> a definition would put it in
+    /// the same position: two systems advancing one quest id.
     ///
     /// <b>All quest-state mutation happens in <see cref="Update"/>.</b> Event callbacks
     /// (<c>Interactable.OnInteract</c>, <c>Health.OnDeath</c>, inventory changes) only set a flag
@@ -27,15 +37,50 @@ namespace ExiledAlvaston.Quests
     /// <b>Chunk changes are polled, not hooked</b> — <c>CurrentChunkData</c> is written from seven
     /// places across six files (CLAUDE.md §5), so any single hook misses the others. Same pattern
     /// as <c>VehicleSpawner</c>.
+    ///
+    /// <b>Allocation.</b> Each rebind allocates a fresh <see cref="QuestBinding"/> and its kill
+    /// lists. Rebind runs on quest changes and chunk crossings — not per frame — so this is off
+    /// the hot path; the per-frame <see cref="Update"/> path still allocates nothing.
     /// </summary>
     public class QuestConditionWatcher : MonoBehaviour
     {
         public static QuestConditionWatcher Instance { get; private set; }
 
+        /// <summary>
+        /// One active quest's binding: the stage being watched plus the per-condition state that
+        /// stage owns. Rebuilt wholesale on every rebind.
+        /// </summary>
+        private class QuestBinding
+        {
+            public string QuestId;
+            public int StageIndex = -1;
+            public QuestStage Stage;
+
+            // ── TalkTo ──
+            public Interactable TalkTarget;
+            public bool TalkFired;
+            // The delegate is stored so UnbindBinding can remove the exact listener it added.
+            public UnityEngine.Events.UnityAction TalkListener;
+
+            // ── Kill ──
+            // Per-binding lists, not shared: two quests can each be killing their own keyed actors.
+            public readonly List<GameObject> KillCandidates = new List<GameObject>(8);
+            public readonly List<Health> KillSubscriptions = new List<Health>(8);
+            public int KillCount;
+            public bool KillDirty;
+            public UnityEngine.Events.UnityAction KillListener;
+
+            // ── Collect ──
+            public bool CollectDirty;
+
+            // ── Reach ──
+            public Transform ReachTarget;
+        }
+
         // ── What we are currently bound to ──────────────────────────────────────────────────
-        private string _boundQuestId;
-        private int _boundStageIndex = -1;
-        private QuestStage _boundStage;
+        private readonly List<QuestBinding> _bindings = new List<QuestBinding>(4);
+        // Reused across rebinds so enumerating active quests allocates nothing (CLAUDE.md §4).
+        private readonly List<QuestProgress> _activeQuests = new List<QuestProgress>(4);
 
         // ── Chunk poll ──────────────────────────────────────────────────────────────────────
         private MapChunkData _boundChunkData;
@@ -46,23 +91,11 @@ namespace ExiledAlvaston.Quests
         private bool _rebindNeeded = true;
         private bool _rewardScanNeeded = true;
 
-        // ── TalkTo ──────────────────────────────────────────────────────────────────────────
-        private Interactable _talkTarget;
-        private bool _talkFired;
-
-        // ── Kill ────────────────────────────────────────────────────────────────────────────
-        // Both lists are reused across every rebind rather than reallocated (CLAUDE.md §4).
-        private readonly List<GameObject> _killCandidates = new List<GameObject>(8);
-        private readonly List<Health> _killSubscriptions = new List<Health>(8);
-        private int _killCount;
-        private bool _killDirty;
-
         // ── Collect ─────────────────────────────────────────────────────────────────────────
+        // One flag for all Collect bindings: a single inventory change re-evaluates every quest
+        // that is currently collecting something.
         private PlayerSession _subscribedSession;
-        private bool _collectDirty;
-
-        // ── Reach ───────────────────────────────────────────────────────────────────────────
-        private Transform _reachTarget;
+        private bool _collectDirtyAll;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -151,7 +184,7 @@ namespace ExiledAlvaston.Quests
             if (_subscribedSession != null)
                 _subscribedSession.OnInventoryChanged += OnInventoryChanged;
 
-            _collectDirty = true;
+            _collectDirtyAll = true;
         }
 
         /// <summary>Flag only — Update does the work. See the re-entrancy note on the class.</summary>
@@ -164,7 +197,7 @@ namespace ExiledAlvaston.Quests
         /// <summary>Flag only. Fires on every pickup, drop, hand-in and load.</summary>
         private void OnInventoryChanged()
         {
-            _collectDirty = true;
+            _collectDirtyAll = true;
         }
 
         private void PollChunk()
@@ -187,7 +220,7 @@ namespace ExiledAlvaston.Quests
         // ── Bind / unbind ───────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Drops every subscription and re-resolves them for whatever quest and stage is active
+        /// Drops every subscription and re-resolves them for whatever quests and stages are active
         /// now. Always a full teardown, never an incremental top-up — a listener added twice
         /// counts twice, which is how a "kill 3" objective completes after 2.
         /// </summary>
@@ -198,49 +231,57 @@ namespace ExiledAlvaston.Quests
             QuestManager mgr = QuestManager.Instance;
             if (mgr == null) return;
 
-            QuestProgress active = mgr.GetActiveQuest();
-            if (active == null) return;
+            mgr.GetActiveQuests(_activeQuests);
 
-            // CONTAINMENT: no definition, no involvement. This is the line that keeps the tutorial
-            // quests out of this system entirely.
-            QuestDefinition def = QuestDatabase.Find(active.Id);
-            if (def == null) return;
-
-            if (def.Stages == null || def.Stages.Count == 0) return;
-            if (active.StageIndex < 0 || active.StageIndex >= def.Stages.Count)
+            for (int i = 0; i < _activeQuests.Count; i++)
             {
-                Debug.LogWarning($"QuestConditionWatcher: quest '{active.Id}' is on stage " +
-                                 $"{active.StageIndex}, which '{def.name}' does not have " +
-                                 $"({def.Stages.Count} stages). Nothing is being watched.");
-                return;
-            }
+                QuestProgress active = _activeQuests[i];
 
-            _boundQuestId = active.Id;
-            _boundStageIndex = active.StageIndex;
-            _boundStage = def.Stages[active.StageIndex];
+                // CONTAINMENT: no definition, no involvement. This is the line that keeps the
+                // tutorial quests out of this system entirely.
+                QuestDefinition def = QuestDatabase.Find(active.Id);
+                if (def == null) continue;
 
-            switch (_boundStage.ConditionType)
-            {
-                case QuestConditionType.TalkTo:
-                    BindTalkTo(_boundStage);
-                    break;
+                if (def.Stages == null || def.Stages.Count == 0) continue;
+                if (active.StageIndex < 0 || active.StageIndex >= def.Stages.Count)
+                {
+                    Debug.LogWarning($"QuestConditionWatcher: quest '{active.Id}' is on stage " +
+                                     $"{active.StageIndex}, which '{def.name}' does not have " +
+                                     $"({def.Stages.Count} stages). Nothing is being watched.");
+                    continue;
+                }
 
-                case QuestConditionType.Kill:
-                    BindKill(_boundStage);
-                    break;
+                var binding = new QuestBinding
+                {
+                    QuestId = active.Id,
+                    StageIndex = active.StageIndex,
+                    Stage = def.Stages[active.StageIndex]
+                };
+                _bindings.Add(binding);
 
-                case QuestConditionType.Collect:
-                    BindCollect(_boundStage, def);
-                    break;
+                switch (binding.Stage.ConditionType)
+                {
+                    case QuestConditionType.TalkTo:
+                        BindTalkTo(binding, binding.Stage, def);
+                        break;
 
-                case QuestConditionType.Reach:
-                    BindReach(_boundStage);
-                    break;
+                    case QuestConditionType.Kill:
+                        BindKill(binding, binding.Stage);
+                        break;
 
-                case QuestConditionType.Manual:
-                    // Nothing to watch. Bespoke code calls QuestManager.CompleteQuest itself; the
-                    // reward scan picks the completion up wherever it came from.
-                    break;
+                    case QuestConditionType.Collect:
+                        BindCollect(binding, binding.Stage, def);
+                        break;
+
+                    case QuestConditionType.Reach:
+                        BindReach(binding, binding.Stage);
+                        break;
+
+                    case QuestConditionType.Manual:
+                        // Nothing to watch. Bespoke code calls QuestManager.CompleteQuest itself;
+                        // the reward scan picks the completion up wherever it came from.
+                        break;
+                }
             }
         }
 
@@ -250,89 +291,145 @@ namespace ExiledAlvaston.Quests
         /// </summary>
         private void Unbind()
         {
-            UnbindTalkTo();
-            UnbindKill();
-            UnbindCollect();
-            UnbindReach();
+            for (int i = 0; i < _bindings.Count; i++)
+                UnbindBinding(_bindings[i]);
+            _bindings.Clear();
+        }
 
-            _boundQuestId = null;
-            _boundStageIndex = -1;
-            _boundStage = null;
+        /// <summary>
+        /// Releases one binding's subscriptions. Used both by the full teardown and by
+        /// <see cref="AdvanceStage"/>, which removes a single quest's binding without disturbing
+        /// the others.
+        /// </summary>
+        private void UnbindBinding(QuestBinding b)
+        {
+            if (b == null) return;
+
+            // Unity's fake null: an Interactable destroyed with its chunk reads null here, and
+            // touching it would throw. Skipping the removal is free — the object is gone.
+            if (b.TalkTarget != null && b.TalkListener != null)
+                b.TalkTarget.OnInteract.RemoveListener(b.TalkListener);
+            b.TalkTarget = null;
+            b.TalkListener = null;
+            b.TalkFired = false;
+
+            for (int i = 0; i < b.KillSubscriptions.Count; i++)
+            {
+                Health health = b.KillSubscriptions[i];
+                // Unity's fake null: a Health destroyed with its chunk (or by its own death
+                // DestroyDelay) reads null here and must not be touched.
+                if (health != null && b.KillListener != null)
+                    health.OnDeath.RemoveListener(b.KillListener);
+            }
+            b.KillSubscriptions.Clear();
+            b.KillCandidates.Clear();
+            b.KillListener = null;
+            b.KillDirty = false;
+
+            b.ReachTarget = null;
+            b.CollectDirty = false;
         }
 
         /// <summary>Consumes flags set by event callbacks. The only place quest state is written.</summary>
         private void ApplyPending()
         {
-            if (_boundStage == null) return;
-
-            switch (_boundStage.ConditionType)
+            // A single inventory change re-evaluates every Collect binding.
+            if (_collectDirtyAll)
             {
-                case QuestConditionType.TalkTo:
-                    if (_talkFired)
-                    {
-                        _talkFired = false;
-                        AdvanceStage();
-                    }
-                    break;
+                _collectDirtyAll = false;
+                for (int i = 0; i < _bindings.Count; i++)
+                {
+                    QuestBinding b = _bindings[i];
+                    if (b.Stage != null && b.Stage.ConditionType == QuestConditionType.Collect)
+                        b.CollectDirty = true;
+                }
+            }
 
-                case QuestConditionType.Kill:
-                    if (_killDirty)
-                    {
-                        _killDirty = false;
-                        if (_killCount >= Mathf.Max(1, _boundStage.Count))
-                        {
-                            AdvanceStage();
-                        }
-                        else if (QuestManager.Instance != null)
-                        {
-                            // Partial only. SetStageProgress deliberately raises no event —
-                            // nothing renders the count, so a per-kill HUD rebuild would be waste.
-                            QuestManager.Instance.SetStageProgress(_boundQuestId, _killCount);
-                        }
-                    }
-                    break;
+            // Backwards so AdvanceStage can remove the binding it advanced without disturbing the
+            // iteration.
+            for (int i = _bindings.Count - 1; i >= 0; i--)
+            {
+                QuestBinding b = _bindings[i];
+                if (b.Stage == null) continue;
 
-                case QuestConditionType.Collect:
-                    if (_collectDirty)
-                    {
-                        _collectDirty = false;
-                        ApplyCollectObjective();
-                    }
-                    break;
+                // Safety net: a quest completed through dialogue (CompleteQuestId) while we are
+                // still bound to it must not be advanced or written to. The rebind flagged by the
+                // completion will drop this binding next frame; until then, skip it.
+                if (QuestManager.Instance == null || !QuestManager.Instance.IsActive(b.QuestId))
+                    continue;
+
+                switch (b.Stage.ConditionType)
+                {
+                    case QuestConditionType.TalkTo:
+                        if (b.TalkFired)
+                        {
+                            b.TalkFired = false;
+                            AdvanceStage(b);
+                        }
+                        break;
+
+                    case QuestConditionType.Kill:
+                        if (b.KillDirty)
+                        {
+                            b.KillDirty = false;
+                            if (b.KillCount >= Mathf.Max(1, b.Stage.Count))
+                            {
+                                AdvanceStage(b);
+                            }
+                            else if (QuestManager.Instance != null)
+                            {
+                                // Partial only. SetStageProgress deliberately raises no event —
+                                // nothing renders the count, so a per-kill HUD rebuild would be waste.
+                                QuestManager.Instance.SetStageProgress(b.QuestId, b.KillCount);
+                            }
+                        }
+                        break;
+
+                    case QuestConditionType.Collect:
+                        if (b.CollectDirty)
+                        {
+                            b.CollectDirty = false;
+                            ApplyCollectObjective(b);
+                        }
+                        break;
+                }
             }
         }
 
         /// <summary>
-        /// Moves onto the next stage, or completes the quest if this was the last one. Unbinds
-        /// afterwards so nothing can fire against a stage already behind us; the OnQuestsChanged
-        /// raised by the mutation has already flagged a rebind for the next frame.
+        /// Moves one quest onto its next stage, or completes it if this was the last one. Unbinds
+        /// that quest's binding so nothing can fire against a stage already behind us; the
+        /// OnQuestsChanged raised by the mutation has already flagged a rebind for the next frame,
+        /// which rebuilds the remaining bindings.
         /// </summary>
-        private void AdvanceStage()
+        private void AdvanceStage(QuestBinding binding)
         {
             QuestManager mgr = QuestManager.Instance;
-            if (mgr == null || string.IsNullOrEmpty(_boundQuestId))
+            if (mgr == null || binding == null || string.IsNullOrEmpty(binding.QuestId))
             {
-                Unbind();
+                if (binding != null) UnbindBinding(binding);
+                _bindings.Remove(binding);
                 return;
             }
 
-            string questId = _boundQuestId;
+            string questId = binding.QuestId;
             QuestDefinition def = QuestDatabase.Find(questId);
-            int next = _boundStageIndex + 1;
+            int next = binding.StageIndex + 1;
 
             if (def == null || def.Stages == null || next >= def.Stages.Count)
                 mgr.CompleteQuest(questId);
             else
                 mgr.SetStage(questId, next, def.Stages[next].Objective);
 
-            Unbind();
+            UnbindBinding(binding);
+            _bindings.Remove(binding);
         }
 
         // ── TalkTo ──────────────────────────────────────────────────────────────────────────
 
-        private void BindTalkTo(QuestStage stage)
+        private void BindTalkTo(QuestBinding b, QuestStage stage, QuestDefinition def)
         {
-            _talkFired = false;
+            b.TalkFired = false;
 
             GameObject actor = QuestActor.Find(_boundChunkInstance, stage.QuestKey);
             if (actor == null) return; // Not in this chunk. Silent — it may be in another one.
@@ -345,25 +442,30 @@ namespace ExiledAlvaston.Quests
                 return;
             }
 
-            _talkTarget = interactable;
-            _talkTarget.OnInteract.AddListener(OnTalkTargetInteracted);
-        }
+            b.TalkTarget = interactable;
+            // Closure captures the binding so the listener knows which quest fired. Allocated per
+            // bind, not per frame — see the allocation note on the class.
+            b.TalkListener = () => OnTalkTargetInteracted(b);
+            b.TalkTarget.OnInteract.AddListener(b.TalkListener);
 
-        private void UnbindTalkTo()
-        {
-            // Unity's fake null: an Interactable destroyed with its chunk reads null here, and
-            // touching it would throw. Skipping the removal is free — the object is gone.
-            if (_talkTarget != null)
-                _talkTarget.OnInteract.RemoveListener(OnTalkTargetInteracted);
-
-            _talkTarget = null;
-            _talkFired = false;
+            // Landmine warning: a TalkTo final stage completes the quest on the interact, before
+            // any dialogue choice is picked. If this NPC also carries the hand-in, the player can
+            // walk up, press Interact, back out — and keep the item, get the reward, and hand
+            // nothing over. Author hand-ins as Collect last + dialogue completes, never TalkTo
+            // last against the hand-in NPC. def is the definition Rebind already resolved.
+            if (def != null && def.Stages != null && b.StageIndex == def.Stages.Count - 1)
+            {
+                Debug.LogWarning($"QuestConditionWatcher: quest '{b.QuestId}' has a TalkTo final " +
+                                 "stage. It completes on the interact, before any dialogue choice. " +
+                                 "If this NPC also carries the hand-in, author the hand-in as a " +
+                                 "Collect last stage + a dialogue CompleteQuestId instead.", b.TalkTarget);
+            }
         }
 
         /// <summary>Flag only. Update advances the stage — see the re-entrancy note on the class.</summary>
-        private void OnTalkTargetInteracted()
+        private void OnTalkTargetInteracted(QuestBinding b)
         {
-            _talkFired = true;
+            b.TalkFired = true;
         }
 
         // ── Kill ────────────────────────────────────────────────────────────────────────────
@@ -378,61 +480,49 @@ namespace ExiledAlvaston.Quests
         /// them while the count carries on: a "kill 3" stage can be finished by killing one
         /// respawning actor three times. Author kill stages against targets in a single chunk.
         /// </summary>
-        private void BindKill(QuestStage stage)
+        private void BindKill(QuestBinding b, QuestStage stage)
         {
-            _killDirty = false;
-            _killCount = 0;
+            b.KillDirty = false;
+            b.KillCount = 0;
 
             QuestProgress progress = QuestManager.Instance != null
-                ? QuestManager.Instance.Find(_boundQuestId)
+                ? QuestManager.Instance.Find(b.QuestId)
                 : null;
             if (progress != null)
-                _killCount = Mathf.Max(0, progress.StageProgress);
+                b.KillCount = Mathf.Max(0, progress.StageProgress);
 
-            QuestActor.FindAll(_boundChunkInstance, stage.QuestKey, _killCandidates);
+            QuestActor.FindAll(_boundChunkInstance, stage.QuestKey, b.KillCandidates);
 
-            for (int i = 0; i < _killCandidates.Count; i++)
+            // One delegate per binding, added to every keyed Health, so a single death knows which
+            // quest it belongs to. Stored so UnbindBinding can remove the exact listener.
+            b.KillListener = () => OnKillTargetDied(b);
+
+            for (int i = 0; i < b.KillCandidates.Count; i++)
             {
-                var health = _killCandidates[i].GetComponent<Health>();
+                var health = b.KillCandidates[i].GetComponent<Health>();
                 if (health == null) continue;
 
                 // Never subscribe the same Health twice — a doubled listener counts one death as
                 // two, and a "kill 3" stage then completes on the second kill.
-                if (_killSubscriptions.Contains(health)) continue;
+                if (b.KillSubscriptions.Contains(health)) continue;
 
-                _killSubscriptions.Add(health);
-                health.OnDeath.AddListener(OnKillTargetDied);
+                b.KillSubscriptions.Add(health);
+                health.OnDeath.AddListener(b.KillListener);
             }
 
-            if (_killCandidates.Count > 0 && _killSubscriptions.Count == 0)
+            if (b.KillCandidates.Count > 0 && b.KillSubscriptions.Count == 0)
             {
-                Debug.LogWarning($"QuestConditionWatcher: {_killCandidates.Count} QuestActor(s) keyed " +
+                Debug.LogWarning($"QuestConditionWatcher: {b.KillCandidates.Count} QuestActor(s) keyed " +
                                  $"'{stage.QuestKey}' but none has a Health, so a Kill stage can " +
                                  "never progress.");
             }
         }
 
-        private void UnbindKill()
-        {
-            for (int i = 0; i < _killSubscriptions.Count; i++)
-            {
-                Health health = _killSubscriptions[i];
-                // Unity's fake null: a Health destroyed with its chunk (or by its own death
-                // DestroyDelay) reads null here and must not be touched.
-                if (health != null)
-                    health.OnDeath.RemoveListener(OnKillTargetDied);
-            }
-
-            _killSubscriptions.Clear();
-            _killCandidates.Clear();
-            _killDirty = false;
-        }
-
         /// <summary>Counter only. Update writes it through — see the re-entrancy note on the class.</summary>
-        private void OnKillTargetDied()
+        private void OnKillTargetDied(QuestBinding b)
         {
-            _killCount++;
-            _killDirty = true;
+            b.KillCount++;
+            b.KillDirty = true;
         }
 
         // ── Collect ─────────────────────────────────────────────────────────────────────────
@@ -450,28 +540,23 @@ namespace ExiledAlvaston.Quests
         /// assets live outside <c>Resources/</c> and are not loadable at runtime — so it is a rule
         /// to follow rather than a guard that catches you.
         /// </summary>
-        private void BindCollect(QuestStage stage, QuestDefinition def)
+        private void BindCollect(QuestBinding b, QuestStage stage, QuestDefinition def)
         {
-            _collectDirty = true; // Evaluate once on bind, so arriving already-carrying reads right.
+            b.CollectDirty = true; // Evaluate once on bind, so arriving already-carrying reads right.
 
             if (stage.Item == null)
             {
-                Debug.LogWarning($"QuestConditionWatcher: Collect stage {_boundStageIndex} of " +
+                Debug.LogWarning($"QuestConditionWatcher: Collect stage {b.StageIndex} of " +
                                  $"'{def.name}' has no Item, so it will never read as met.", def);
             }
 
-            if (def.Stages != null && _boundStageIndex < def.Stages.Count - 1)
+            if (def.Stages != null && b.StageIndex < def.Stages.Count - 1)
             {
-                Debug.LogWarning($"QuestConditionWatcher: Collect stage {_boundStageIndex} of " +
+                Debug.LogWarning($"QuestConditionWatcher: Collect stage {b.StageIndex} of " +
                                  $"'{def.name}' is not the last stage. A Collect stage only reports " +
                                  "progress and never advances, so every stage after it is " +
                                  "unreachable.", def);
             }
-        }
-
-        private void UnbindCollect()
-        {
-            _collectDirty = false;
         }
 
         /// <summary>
@@ -483,25 +568,25 @@ namespace ExiledAlvaston.Quests
         /// The write raises OnQuestsChanged, which flags a rebind, which re-flags this — but the
         /// second pass finds the text already correct and writes nothing, so it settles.
         /// </summary>
-        private void ApplyCollectObjective()
+        private void ApplyCollectObjective(QuestBinding b)
         {
             QuestManager mgr = QuestManager.Instance;
-            if (mgr == null || _boundStage == null) return;
+            if (mgr == null || b.Stage == null) return;
 
-            QuestProgress progress = mgr.Find(_boundQuestId);
+            QuestProgress progress = mgr.Find(b.QuestId);
             if (progress == null) return;
 
-            bool met = _boundStage.Item != null
+            bool met = b.Stage.Item != null
                        && PlayerSession.Instance != null
-                       && PlayerSession.Instance.HasItem(_boundStage.Item, Mathf.Max(1, _boundStage.Quantity));
+                       && PlayerSession.Instance.HasItem(b.Stage.Item, Mathf.Max(1, b.Stage.Quantity));
 
-            string desired = met && !string.IsNullOrEmpty(_boundStage.ObjectiveWhenMet)
-                ? _boundStage.ObjectiveWhenMet
-                : _boundStage.Objective;
+            string desired = met && !string.IsNullOrEmpty(b.Stage.ObjectiveWhenMet)
+                ? b.Stage.ObjectiveWhenMet
+                : b.Stage.Objective;
 
             if (progress.Objective == desired) return;
 
-            mgr.UpdateObjective(_boundQuestId, desired);
+            mgr.UpdateObjective(b.QuestId, desired);
         }
 
         // ── Reach ───────────────────────────────────────────────────────────────────────────
@@ -512,43 +597,49 @@ namespace ExiledAlvaston.Quests
         /// "go to where this thing is". Silent if neither is in the live chunk — the destination is
         /// very often in a chunk the player has not walked into yet.
         /// </summary>
-        private void BindReach(QuestStage stage)
+        private void BindReach(QuestBinding b, QuestStage stage)
         {
-            _reachTarget = SceneMarker.Find(_boundChunkInstance, stage.QuestKey);
-            if (_reachTarget != null) return;
+            b.ReachTarget = SceneMarker.Find(_boundChunkInstance, stage.QuestKey);
+            if (b.ReachTarget != null) return;
 
             GameObject actor = QuestActor.Find(_boundChunkInstance, stage.QuestKey);
-            if (actor != null) _reachTarget = actor.transform;
-        }
-
-        private void UnbindReach()
-        {
-            _reachTarget = null;
+            if (actor != null) b.ReachTarget = actor.transform;
         }
 
         /// <summary>
         /// The one polled condition — <see cref="SceneMarker"/> has no collider, trigger or event,
-        /// so there is nothing to subscribe to. Costs a squared-distance compare per frame, and
-        /// only while a Reach stage is actually bound with its destination resolved in the live
-        /// chunk. Allocates nothing (CLAUDE.md §4).
+        /// so there is nothing to subscribe to. Costs a squared-distance compare per frame per
+        /// bound Reach stage, and only while such a stage is actually bound with its destination
+        /// resolved in the live chunk. Allocates nothing (CLAUDE.md §4).
         /// </summary>
         private void PollReach()
         {
-            if (_boundStage == null || _boundStage.ConditionType != QuestConditionType.Reach) return;
-            if (_reachTarget == null) return;
-
             CombatController player = CombatController.Instance;
             if (player == null) return;
 
-            // Horizontal only: movement is on the X/Z plane, Y is up (CLAUDE.md §2). Comparing in
-            // 3D would refuse an arrival standing on a step or a kerb.
-            Vector3 delta = player.transform.position - _reachTarget.position;
-            delta.y = 0f;
+            for (int i = 0; i < _bindings.Count; i++)
+            {
+                QuestBinding b = _bindings[i];
+                if (b.Stage == null || b.Stage.ConditionType != QuestConditionType.Reach) continue;
+                if (b.ReachTarget == null) continue;
 
-            float radius = Mathf.Max(0.1f, _boundStage.ReachRadius);
-            if (delta.sqrMagnitude > radius * radius) return;
+                // Safety net, same as ApplyPending: a quest completed through dialogue while we are
+                // still bound to it must not be advanced.
+                if (QuestManager.Instance == null || !QuestManager.Instance.IsActive(b.QuestId))
+                    continue;
 
-            AdvanceStage();
+                // Horizontal only: movement is on the X/Z plane, Y is up (CLAUDE.md §2). Comparing
+                // in 3D would refuse an arrival standing on a step or a kerb.
+                Vector3 delta = player.transform.position - b.ReachTarget.position;
+                delta.y = 0f;
+
+                float radius = Mathf.Max(0.1f, b.Stage.ReachRadius);
+                if (delta.sqrMagnitude > radius * radius) continue;
+
+                AdvanceStage(b);
+                // AdvanceStage removed b from the list; step back so the next binding is visited.
+                i--;
+            }
         }
 
         // ── Rewards ─────────────────────────────────────────────────────────────────────────

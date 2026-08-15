@@ -18,6 +18,9 @@ namespace ExiledAlvaston.Combat
     {
         public LootDrop[] Loot;
 
+        [Tooltip("Optional weighted drops rolled once on death, in addition to fixed Loot.")]
+        public LootBand Band;
+
         private Health _health;
 
         private void Awake()
@@ -34,32 +37,44 @@ namespace ExiledAlvaston.Combat
 
         private void OnDied()
         {
-            if (Loot == null || Loot.Length == 0) return;
-
             var entries = new List<LootEntry>();
-            foreach (LootDrop drop in Loot)
+            if (Loot != null)
             {
-                if (drop == null || drop.Item == null || drop.Quantity <= 0) continue;
-
-                ItemData item = drop.Item;
-                int quantity = drop.Quantity;
-                string label = quantity > 1 ? $"{item.ItemName} x{quantity}" : item.ItemName;
-
-                entries.Add(new LootEntry
+                foreach (LootDrop drop in Loot)
                 {
-                    Name = label,
-                    Description = item.Description,
-                    Icon = item.Icon,
-                    OnTaken = () =>
-                    {
-                        if (PlayerSession.Instance != null)
-                            PlayerSession.Instance.AddItem(item, quantity);
-                    }
-                });
+                    if (drop == null || drop.Item == null || drop.Quantity <= 0) continue;
+
+                    AddEntry(entries, drop.Item, drop.Quantity);
+                }
+            }
+
+            if (Band != null)
+            {
+                foreach (LootBandResult result in Band.Roll())
+                {
+                    if (result == null || result.Item == null || result.Quantity <= 0) continue;
+                    AddEntry(entries, result.Item, result.Quantity);
+                }
             }
 
             if (entries.Count > 0)
                 LootMenuUI.Show(_health.DisplayName, entries);
+        }
+
+        private static void AddEntry(List<LootEntry> entries, ItemData item, int quantity)
+        {
+            string label = quantity > 1 ? $"{item.ItemName} x{quantity}" : item.ItemName;
+            entries.Add(new LootEntry
+            {
+                Name = label,
+                Description = item.Description,
+                Icon = item.Icon,
+                OnTaken = () =>
+                {
+                    if (PlayerSession.Instance != null)
+                        PlayerSession.Instance.AddItem(item, quantity);
+                }
+            });
         }
     }
 }

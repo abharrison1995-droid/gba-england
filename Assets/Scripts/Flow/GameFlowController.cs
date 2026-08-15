@@ -4,6 +4,7 @@ using ExiledAlvaston.World;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.UI;
 using ExiledAlvaston.Quests;
+using ExiledAlvaston.Companions;
 using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.Flow
@@ -136,6 +137,9 @@ namespace ExiledAlvaston.Flow
             CharacterData templateData = existing != null ? existing.PlayerData : null;
             PlayerSession.Instance.BeginNewGame(characterName, playerClass, templateData);
 
+            // A New Game in the same app session must not inherit the previous run's spellbook.
+            existing?.ClearLearnedSpells();
+
             BindPlayerToSession(existing);
 
             EnterManorCellars(isTutorial: true);
@@ -199,6 +203,15 @@ namespace ExiledAlvaston.Flow
             PlayerSession.Instance.RestoreFromSave(
                 data.CharacterName, (PlayerClass)data.PlayerClass, data.TutorialComplete, templateData);
             QuestManager.Instance.RestoreQuests(data.Quests);
+            // After RestoreQuests: the focus must be validated against the restored list, so a
+            // stale or completed focus clears and the tracker falls back to the first active quest.
+            QuestManager.Instance.RestoreFocusedQuest(data.FocusedQuestId);
+            // Restore the hired companion, if the save has one. RestoreContract is the free path
+            // (never re-charges). A null/empty id or a 0/negative health is "no companion", a no-op
+            // that matches a pre-companion save. The follower spawns beside the player now and
+            // rejoins across the LoadWorld below via CompanionManager's chunk poll.
+            if (CompanionManager.Instance != null)
+                CompanionManager.Instance.RestoreContract(data.ActiveCompanionId, data.CompanionHealth);
             PlayerSession.Instance.RestoreInventory(data.Inventory);
             PlayerSession.Instance.RestoreEquipment(data.Equipment); // null in pre-equipment saves → empty doll
             PlayerSession.Instance.RestorePounds(data.Pounds);
@@ -223,6 +236,9 @@ namespace ExiledAlvaston.Flow
             foreach (string chunkName in PlayerSession.Instance.VisitedChunks)
                 UI.WikiUnlock.GrantForChunk(chunkName, silent: true);
             BindPlayerToSession(existing);
+
+            PlayerSession.Instance.SpellName = PlayerSession.SanitizeSpellName(data.SpellName);
+            existing?.RestoreSpellLoadout(data.KnownSpellIds, data.EquippedSpellIds);
 
             // Mid-tutorial saves restart the tutorial cleanly rather than resuming half-staged
             if (!data.TutorialComplete)
@@ -515,16 +531,14 @@ namespace ExiledAlvaston.Flow
             var tracker = FindObjectOfType<QuestTrackerUI>();
             if (tracker != null) tracker.Refresh();
 
-            // Kick off the first magic quest (Daniel Pauls) in London. Parented to the chunk so it
-            // dies with it; resumes from quest state on re-entry.
-            if (MagicTutorial.Instance == null && ChunkManager.CurrentChunkInstance != null)
-            {
-                var magicGo = new GameObject("MagicTutorial");
-                magicGo.transform.SetParent(ChunkManager.CurrentChunkInstance.transform, false);
-                // No sprite passed any more: the quest resolves each character's own preset, so
-                // Daniel Pauls and the geezer no longer share one another's art — or the bandit's.
-                magicGo.AddComponent<MagicTutorial>().Begin();
-            }
+            // The first magic quest used to be spawned here, by a MagicTutorial component parented
+            // to the chunk. It is now spark_of_talent, authored in quests/spark_of_talent.quest and
+            // driven by QuestConditionWatcher like every other quest — Daniel Pauls and the geezer
+            // are placed content in Home_London_Prefab, so nothing needs kicking off.
+            //
+            // Removing this fixed a real defect as a side effect: the old component was created
+            // only on this one code path and died with the chunk, so loading a save directly into
+            // London produced no Daniel Pauls and no geezer at all.
 
             // Checkpoint: tutorial completion must survive an app restart
             SaveGameManager.Save();

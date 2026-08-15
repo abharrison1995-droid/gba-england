@@ -185,7 +185,7 @@ Chunks are only ever **destroyed**, never suspended, and the code reflects that.
 |---|---|---|
 | `EnemyAI` | — | `StartCoroutine(PerceptionRoutine())` runs **only in `Start`**. Deactivating stops it; reactivating does not re-run `Start`, so every enemy is permanently blind. |
 | `RuntimeNavMeshBaker` | `OnDestroy` (and `Rebake`) | `_instance.Remove()` is never called on disable, so an inactive chunk keeps its NavMesh registered — and every chunk instantiates at the origin, so meshes overlap. |
-| `MagicTutorial`, `TutorialSequence` | `OnDestroy` | Both set their static `Instance` in `Awake` and clear it only on destroy, so the singleton keeps pointing at a disabled object. |
+| `TutorialSequence` | `OnDestroy` | Sets its static `Instance` in `Awake` and clears it only on destroy, so the singleton keeps pointing at a disabled object. |
 | `EnemyNameplate` | `OnDestroy` | Builds an **unparented scene-root** `GameObject("Nameplate")`, so it is not a child of the chunk and does not hide with it. |
 
 Two more things are not chunk-owned at all and would leak across any suspend:

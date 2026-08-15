@@ -19,6 +19,7 @@ MonoBehaviour:
   Type: 5
   AllowedClasses: 
   Value: 20
+  Tradeable: 0
   Damage: 0
   Armor: 4
   Stackable: 0

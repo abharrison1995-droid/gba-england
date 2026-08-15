@@ -12,7 +12,10 @@ namespace ExiledAlvaston.Data
         Ring,
         Boots,
         Consumable,
-        Quest
+        Quest,
+        Legs,
+        Belt,
+        Junk
     }
 
     /// <summary>
@@ -62,8 +65,29 @@ namespace ExiledAlvaston.Data
                  "about, the way locomotion parameters are.")]
         public string UseAnimationTrigger = "";
 
-        /// <summary>Can go in a paper-doll slot. Consumables are used, quests are carried.</summary>
-        public bool IsEquippable => Type != ItemType.Consumable && Type != ItemType.Quest;
+        // Appended: existing ItemData assets deserialize both bonuses as zero.
+        [Header("Wearable Bonuses")]
+        [Tooltip("Flat melee attack added while this item is equipped, regardless of slot.")]
+        public int AttackBonus;
+
+        [Tooltip("Added to the character sheet's Poison resistance while equipped.")]
+        public int PoisonResistance;
+
+        // Appended: absent in older ItemData assets, where the initializer keeps ordinary items
+        // tradeable. Development/story content opts out explicitly.
+        [Header("Commerce")]
+        [Tooltip("Off for development or story-only items that must never appear in a sell list.")]
+        public bool Tradeable = true;
+
+        // Appended: existing ItemData assets deserialize this as zero and keep their old behaviour.
+        [Header("Consumable Costs")]
+        [Tooltip("Mana removed when this consumable is used, after any restoration. Clamped at zero.")]
+        public int ManaDamage;
+
+        /// <summary>Can go in a visible paper-doll slot. Consumables are used, quests are carried.</summary>
+        public bool IsEquippable =>
+            Type != ItemType.Shield && Type != ItemType.Consumable
+            && Type != ItemType.Quest && Type != ItemType.Junk;
 
         public bool CanBeUsedBy(PlayerClass playerClass)
         {

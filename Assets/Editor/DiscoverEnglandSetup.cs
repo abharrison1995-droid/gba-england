@@ -347,7 +347,7 @@ public static class DiscoverEnglandSetup
         input.text = "";
 
         // ⚠️ This builder is superseded by CharacterCreatorSetup and is out of date: four class
-        // names, no Bunda Basher, who was appended as PlayerClass index 4. Running it would build
+        // names, no The Tudor (the legacy BundaBasher enum value appended at index 4). Running it would build
         // a creator that cannot select the fifth class. Fix the list before using it, or delete
         // the tool — do not assume it still matches PlayerClass.
         string[] classNames = { "Young Driller", "Stabmeister", "Mr Hood", "Dynamo" };

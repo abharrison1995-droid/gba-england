@@ -17,4 +17,16 @@ MonoBehaviour:
   - Id: start
     Speaker: {fileID: 11400000, guid: 8a08364fd8dc89f409f4cdc482354ea6, type: 2}
     DialogueText: Don't even ask if i'll do you it on tick mate.
-    Choices: []
+    Choices:
+    - ChoiceText: Let me see what you've got.
+      NextNodeId:
+      Merchant: {fileID: 11400000, guid: fd87e3e6099444afafd7a7475602591f, type: 2}
+      MerchantAction: 1
+    - ChoiceText: Want to buy anything?
+      NextNodeId:
+      Merchant: {fileID: 11400000, guid: fd87e3e6099444afafd7a7475602591f, type: 2}
+      MerchantAction: 2
+    - ChoiceText: Leave.
+      NextNodeId:
+      Merchant: {fileID: 0}
+      MerchantAction: 0

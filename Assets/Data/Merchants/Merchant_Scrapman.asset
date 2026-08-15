@@ -1,0 +1,96 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a2b5e4c521048a0929eec75f19aad28, type: 3}
+  m_Name: Merchant_Scrapman
+  m_EditorClassIdentifier:
+  MerchantName: Scrapman
+  Stock: []
+  AcceptedTypes: []
+  PurchaseRules:
+  - Item: {fileID: 11400000, guid: df057da02d2d4176a6c19b7604681ab7, type: 2}
+    FixedPrice: 18
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 7a2506ea8dfe4cc2a32a89a3c8a1936c, type: 2}
+    FixedPrice: 12
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: c51577e902b54d8a8175e93f2c199c4d, type: 2}
+    FixedPrice: 25
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: caaa6878e4b9477fb6889986f3eb5371, type: 2}
+    FixedPrice: 65
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 5fc98077d1f34d3282cba34dd82e96e1, type: 2}
+    FixedPrice: 4
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 38fa338c10b4445d84e343ecd0e56497, type: 2}
+    FixedPrice: 8
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: def3b31b7f3d498a8758ff5174733128, type: 2}
+    FixedPrice: 16
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 6bea092f69e6470bafccf12dfa96697b, type: 2}
+    FixedPrice: 28
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 5d475d56ac054a1d9934781189abf44e, type: 2}
+    FixedPrice: 32
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: e28534660184478db67804af7ef378f3, type: 2}
+    FixedPrice: 45
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 4cf62efed9e645548fc5a3558c94b028, type: 2}
+    FixedPrice: 85
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  SellOnly: 1

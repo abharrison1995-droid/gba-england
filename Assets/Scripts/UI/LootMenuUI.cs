@@ -34,9 +34,6 @@ namespace ExiledAlvaston.UI
         private Action _onClosed;
         private List<LootEntry> _entries;
 
-        /// <summary>4 columns × 3 rows — the inventory look, smaller.</summary>
-        private const int MaxSlots = 12;
-
         public static bool IsOpen => _instance != null && _instance._panelRoot != null
                                      && _instance._panelRoot.activeSelf;
 
@@ -59,10 +56,6 @@ namespace ExiledAlvaston.UI
             _entries = entries ?? new List<LootEntry>();
             _onClosed = onClosed;
             _titleText.text = title;
-
-            if (_entries.Count > MaxSlots)
-                Debug.LogWarning($"LootMenuUI: {_entries.Count} entries but only {MaxSlots} " +
-                    "slots; the grid will overflow its window.", this);
 
             foreach (Transform child in _rowContainer)
                 Destroy(child.gameObject);
@@ -144,7 +137,7 @@ namespace ExiledAlvaston.UI
             Win95Skin.AddBevel((RectTransform)panel.transform, sunken: false);
             var prt = panel.GetComponent<RectTransform>();
             prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
-            prt.sizeDelta = new Vector2(640, 480);
+            prt.sizeDelta = new Vector2(720, 620);
             // Swallow clicks so tapping the panel itself doesn't hit the dimmer's close button.
             panel.GetComponent<Image>().raycastTarget = true;
 
@@ -163,21 +156,44 @@ namespace ExiledAlvaston.UI
 
             QuestUIBuilder.CreateCloseX(header.transform, Close);
 
-            // Sunken slot grid, 4 columns — the bag's look at chest size.
+            // Scrollable sunken slot grid. Ordinary containers still fit without scrolling; the
+            // test chest can hold the entire catalogue without rows escaping the window.
+            GameObject viewport = CreateImage("SlotsViewport", panel.transform, Win95Skin.SlotFill);
+            var vrt = viewport.GetComponent<RectTransform>();
+            vrt.anchorMin = Vector2.zero;
+            vrt.anchorMax = Vector2.one;
+            vrt.offsetMin = new Vector2(20, 96);
+            vrt.offsetMax = new Vector2(-20, -64);
+            Win95Skin.AddBevel(vrt, sunken: true);
+            var mask = viewport.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
+
             var containerGO = new GameObject("Slots", typeof(RectTransform));
-            containerGO.transform.SetParent(panel.transform, false);
+            containerGO.transform.SetParent(viewport.transform, false);
             var crt = containerGO.GetComponent<RectTransform>();
-            crt.anchorMin = new Vector2(0, 0);
-            crt.anchorMax = new Vector2(1, 1);
-            crt.offsetMin = new Vector2(20, 90);
-            crt.offsetMax = new Vector2(-20, -64);
+            crt.anchorMin = new Vector2(0f, 1f);
+            crt.anchorMax = new Vector2(1f, 1f);
+            crt.pivot = new Vector2(0.5f, 1f);
+            crt.anchoredPosition = Vector2.zero;
+            crt.sizeDelta = Vector2.zero;
             var grid = containerGO.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(140, 96);
+            grid.padding = new RectOffset(10, 10, 10, 10);
+            grid.cellSize = new Vector2(152, 108);
             grid.spacing = new Vector2(10, 10);
             grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 4;
             grid.childAlignment = TextAnchor.UpperCenter;
+            var fitter = containerGO.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var scroll = viewport.AddComponent<ScrollRect>();
+            scroll.viewport = vrt;
+            scroll.content = crt;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 45f;
             _rowContainer = containerGO.transform;
 
             GameObject takeAllBtn = CreateButton("TakeAllButton", panel.transform, "TAKE ALL", TakeAll);
@@ -212,7 +228,9 @@ namespace ExiledAlvaston.UI
 
             if (entry.Icon != null)
             {
-                GameObject icon = CreateImage("Icon", slot.transform, Color.clear);
+                // UI Image tint multiplies the sprite colour. Color.clear made every correctly
+                // assigned item icon fully transparent, leaving only the name visible.
+                GameObject icon = CreateImage("Icon", slot.transform, Color.white);
                 Stretch(icon, new Vector2(0.08f, 0.30f), new Vector2(0.92f, 0.94f));
                 var iconImg = icon.GetComponent<Image>();
                 iconImg.sprite = entry.Icon;

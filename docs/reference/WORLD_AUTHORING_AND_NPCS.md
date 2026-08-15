@@ -18,6 +18,11 @@ Verification scope:    code; tracked preset/prefab YAML (32 presets read). The v
 `Tools → World Palette` (`Editor/WorldPaletteWindow.cs`). Arm a preset, click in the Scene
 view, Shift to keep stamping, Esc to disarm.
 
+`Preset_Scrapman` is a stationary London NPC recipe intended to be stamped beside the authored
+flatbed van and scrap props. His portrait and four-frame idle arrive through the normal art handoff;
+importing them wires the preset by its `ArtSubject: scrapman` key. He is intentionally not placed
+by code.
+
 It sits directly at `Tools/World Palette`, uncategorised — the one deliberate exception to the
 `Tools/<Category>/` rule, because it is the entry point rather than one tool among many.
 
@@ -198,14 +203,13 @@ Two clicks in Unity and no code:
 
 - **`NpcFactory` is runtime and must stay that way.** `Assets/Editor/` is stripped from builds, so
   a recipe living there is unreachable from anything spawning an NPC while the game runs — which
-  is exactly how `MagicTutorial`'s characters ended up composed by hand, sharing one sprite.
+  is exactly how the old magic-tutorial characters ended up composed by hand, sharing one sprite.
   Nothing in `NpcFactory` may touch `UnityEditor`.
 - **Dialogue is generated at authoring time, never at build time.** `AssetDatabase.CreateAsset`
   does not exist at runtime. `NpcFactory` only ever *reads* `preset.Conversation`.
-- **`NpcHeight` of 0 means inherit `EKVibe.CharacterHeight`, currently 1.55.** Of the 30 presets,
-  12 are 0, 13 are an explicit 1.55, and one — the child — is 1.3. The squirrel is 0, so until his
-  sheets land he builds at 1.55 and reads as a man in a squirrel suit; his intended `worldHeight`
-  is 0.45 and the importer will write it.
+- **`NpcHeight` of 0 means inherit `EKVibe.CharacterHeight`, currently 1.55.** An explicit positive
+  value preserves a deliberately shorter or taller authored NPC, while the importer can fill an
+  inherited height from the subject's art manifest.
 - **The importer always wins on controller and sprite, never on height.** Those two are derived
   from the art, so a fresh import replaces placeholder wiring with no manual step; height is
   tunable, so a hand-set value survives.
@@ -218,13 +222,18 @@ Two clicks in Unity and no code:
   probes ahead with a `SphereCast` and gives up on the stroll instead.
 - **`NPCWander` calls `SetFacing` every step.** Without it half of every wander is walked
   backwards, which reads as a rendering bug.
-- **A roamer with no walk sheet slides.** Three presets currently do:
+- **A roamer with no walk sheet slides.** Two presets currently do:
   `Preset_OfficerMurtaugh` (has the sheet; his controller ignores it),
-  `Preset_RoamingPharmacist` (no sheet) and `Preset_AngrySquirrel` (no art at all).
-  `python Tools/art_status.py` finds the last two.
-- **Tutorial presets must not carry a `Conversation`.** Daniel Pauls and the geezer run dialogue
-  off quest state and own their own `Interactable`; a preset conversation would answer the same
-  button press. `MagicTutorial.OwnInteraction` warns if it finds one.
+  and `Preset_RoamingPharmacist` (its replacement walk sheet is staged but not imported).
+  `python Tools/art_status.py` reports tracked imported art only, so it remains outstanding until
+  the staged pair passes the Unity importer.
+- **Daniel Pauls and the geezer now REQUIRE a `Conversation`** — the reverse of what this said
+  while `MagicTutorial` owned their dialogue in code and warned about a preset conversation
+  fighting its own `Interactable`. Both are ordinary placed NPCs driven by
+  `quests/spark_of_talent.quest`; `Tools → Content → Import Quests` writes
+  `Preset_DanielPauls.Conversation` for you. The geezer is an enemy prefab, so the importer cannot
+  reach him — his `NPCDialogueInteractable.Conversation` is wired by hand once, and survives
+  re-imports because the generated asset keeps its GUID.
 - **`PlacementPresetLibrary` lives in `Resources/`; the presets do not.** Everything reachable from
   `Resources/` ships in the build, and the chest preset alone would drag in a 45 MB prop pack.
   Entries are keyed by an authored string, so renaming a preset asset is safe.
@@ -243,9 +252,9 @@ Two clicks in Unity and no code:
   who will not talk. A mark's prompt becomes "Pickpocket <name>", which is the player's only cue
   to crouch.
 - **`EnemyAI.Animator` is a public field nothing assigns unless asked.** An animated enemy's sheets
-  will import, build a controller, and never play a frame. `MagicTutorial` sets it from
-  `WorldActorVisual.SpriteAnimator` when the geezer turns hostile; anything else spawning an
-  animated enemy in code needs the same line.
+  will import, build a controller, and never play a frame. `GeneratedEnemyPrefabTool` sets it at
+  build time from `WorldActorVisual.AttachAnimator`, so any enemy it produces is already wired;
+  anything spawning an animated enemy in code needs the same line by hand.
 
 ## Enemies need a hand-built prefab
 
