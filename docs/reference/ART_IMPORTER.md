@@ -73,9 +73,9 @@ The NPC scan explicitly skips all five player-class subjects even though they sh
 `spr_portrait_` prefix. Without that separation, four profiles report false missing-preset errors
 and Stabmeister is accidentally treated as an NPC only because a same-subject preset exists.
 
-`MagicTutorial` owns Daniel Pauls' and the Tracksuit Geezer's branching conversations in code, so
-those nodes are not part of a preset conversation for the importer to edit. Their temporary
-speaker records copy the portrait from the same preset speaker at runtime while preserving the
+Daniel Pauls' and the Tracksuit Geezer's conversations are generated from
+`quests/spark_of_talent.quest` into `Data/Dialogue/Generated/`, and the importer wires Daniel's
+into his preset. They take their speaker (and so their portrait) from that preset, preserving the
 tutorial's authored display names and lines.
 
 Player portraits use `spr_portrait_player.png` for Young Driller and
@@ -215,8 +215,8 @@ contents.
 the `SwingRoot` animator. **Probe by state, not by the `MeleeAttack` parameter**: both
 `ArtImportTool` and `GeneratedEnemyPrefabTool` declare that parameter unconditionally, so it says nothing
 about whether art exists. `SetFacing` still runs first — it is what points the attack clip the
-right way — and an in-flight swing is stopped and its pose cleared, since `NpcFactory` and
-`MagicTutorial` can attach an Animator after the fact.
+right way — and an in-flight swing is stopped and its pose cleared, since `NpcFactory` can attach
+an Animator after the fact.
 
 The procedural swing is **kept**, not deleted: it is still the only attack tell for an actor
 without art (the four police tiers above PCSO have no Animator at all). `SwingAngle` /

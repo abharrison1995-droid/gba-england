@@ -7,8 +7,13 @@ quest; a definition only describes one that dialogue already started, so an Id t
 nothing is simply never used and nothing reports it.
 
 A quest with no definition in here is completely untouched by QuestConditionWatcher — no stages,
-no rewards, no interference. That is deliberate: the tutorial quests (escape_manor,
-spark_of_talent) run off their own code and must not get a definition.
+no rewards, no interference. That is deliberate: escape_manor runs off TutorialSequence's own code
+and must not get a definition.
+
+spark_of_talent used to be the second such quest. It is now authored in
+quests/spark_of_talent.quest and its definition is GENERATED into this folder by
+Tools > Content > Import Quests — do not hand-edit it, the .quest file owns it and a re-import
+overwrites whatever is here.
 
 Everything reachable from a Resources folder ships in the build. Never reference a GameObject,
 Sprite, Prefab or AudioClip from a QuestDefinition — one prefab reference drags its whole

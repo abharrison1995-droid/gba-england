@@ -203,7 +203,7 @@ Two clicks in Unity and no code:
 
 - **`NpcFactory` is runtime and must stay that way.** `Assets/Editor/` is stripped from builds, so
   a recipe living there is unreachable from anything spawning an NPC while the game runs — which
-  is exactly how `MagicTutorial`'s characters ended up composed by hand, sharing one sprite.
+  is exactly how the old magic-tutorial characters ended up composed by hand, sharing one sprite.
   Nothing in `NpcFactory` may touch `UnityEditor`.
 - **Dialogue is generated at authoring time, never at build time.** `AssetDatabase.CreateAsset`
   does not exist at runtime. `NpcFactory` only ever *reads* `preset.Conversation`.
@@ -227,9 +227,13 @@ Two clicks in Unity and no code:
   and `Preset_RoamingPharmacist` (its replacement walk sheet is staged but not imported).
   `python Tools/art_status.py` reports tracked imported art only, so it remains outstanding until
   the staged pair passes the Unity importer.
-- **Tutorial presets must not carry a `Conversation`.** Daniel Pauls and the geezer run dialogue
-  off quest state and own their own `Interactable`; a preset conversation would answer the same
-  button press. `MagicTutorial.OwnInteraction` warns if it finds one.
+- **Daniel Pauls and the geezer now REQUIRE a `Conversation`** — the reverse of what this said
+  while `MagicTutorial` owned their dialogue in code and warned about a preset conversation
+  fighting its own `Interactable`. Both are ordinary placed NPCs driven by
+  `quests/spark_of_talent.quest`; `Tools → Content → Import Quests` writes
+  `Preset_DanielPauls.Conversation` for you. The geezer is an enemy prefab, so the importer cannot
+  reach him — his `NPCDialogueInteractable.Conversation` is wired by hand once, and survives
+  re-imports because the generated asset keeps its GUID.
 - **`PlacementPresetLibrary` lives in `Resources/`; the presets do not.** Everything reachable from
   `Resources/` ships in the build, and the chest preset alone would drag in a 45 MB prop pack.
   Entries are keyed by an authored string, so renaming a preset asset is safe.
@@ -248,9 +252,9 @@ Two clicks in Unity and no code:
   who will not talk. A mark's prompt becomes "Pickpocket <name>", which is the player's only cue
   to crouch.
 - **`EnemyAI.Animator` is a public field nothing assigns unless asked.** An animated enemy's sheets
-  will import, build a controller, and never play a frame. `MagicTutorial` sets it from
-  `WorldActorVisual.SpriteAnimator` when the geezer turns hostile; anything else spawning an
-  animated enemy in code needs the same line.
+  will import, build a controller, and never play a frame. `GeneratedEnemyPrefabTool` sets it at
+  build time from `WorldActorVisual.AttachAnimator`, so any enemy it produces is already wired;
+  anything spawning an animated enemy in code needs the same line by hand.
 
 ## Enemies need a hand-built prefab
 

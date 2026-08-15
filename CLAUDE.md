@@ -506,6 +506,50 @@ never compiled:
 → [docs/plans/SURVIVAL_PRESSURE_RESOURCES.md](docs/plans/SURVIVAL_PRESSURE_RESOURCES.md) §10.3 for
 the full routes.
 
+**Also outstanding — `spark_of_talent` converted off bespoke code onto the `.quest` pipeline.**
+Committed 2026-08-15, never compiled, and **not importable until the editor pass below is done**:
+
+- ⚠️ **`MagicTutorial.cs` is deleted and the import has not run.** These must happen in **one
+  editor session with no Play mode in between.** Until the import runs and both characters are
+  placed, London has **no Daniel Pauls and no geezer at all** — the quest cannot be started. Run
+  it in this order: compile → `Tools → Content → Validate Quests` → `Import Quests` → build
+  `Enemy_UnderHoused` → wire it → place both → only then Play.
+- **A GUID scan found no prefab, scene or asset holding `MagicTutorial`'s script**, and its only
+  two live C# references (`GameFlowController`, `StarterPresetGenerator`) were removed. The two
+  preset keys became the literals `"DanielPauls"` / `"TracksuitGeezer"` — unchanged values, and
+  they are what `PlacementPresetLibrary.asset` stores.
+- ⚠️ **`QuestGateType.ActiveAtStage = 4` is appended, never reordered** — serialized by integer
+  index inside every choice in all sixteen generated `DialogueData` assets.
+- **Daniel now opens with one fixed line at every beat**, because a conversation has a single
+  start node. The four beats are gated choices. *Check exactly one is offered at a time, and that
+  the reward branch is gone after the quest completes* — if it reappears, `QuestGateStage` is not
+  being read, which most likely means `BuildDialogue` lost its two new field assignments.
+- **Stage 1 is `MANUAL`, not `TALKTO`.** A TalkTo final stage completes on the interact, before
+  any choice is picked, which would skip the reward beat entirely.
+- **`Enemy_UnderHoused` does not exist yet.** `Tools → Content → Build Enemies From Generated Art`
+  creates it — **run it on a clean tree**, it rewrites the YAML of every enemy prefab on its
+  update path. Then in Prefab Mode: confirm `EnemyAI` is **unticked**, add `Interactable`
+  (prompt "Talk to the twitchy geezer", range 3, Reusable on), add `NPCDialogueInteractable` with
+  `Dialogue_underhoused`, add `HostileAfterDialogue` and hook `Interactable.OnInteract` →
+  `HostileAfterDialogue.OnTalked`, and set its hostile line.
+- ⚠️ **Unverified Unity behaviour: whether `Awake` runs on a disabled component.** If the geezer,
+  once panicked, stands still or falls through the NavMesh, that is the answer and
+  `HostileAfterDialogue` must snap him to the NavMesh itself.
+- **He is placed content now**, so he stands in London from the start and can be killed before the
+  quest is taken — which pre-completes the kill stage. Accepted deliberately.
+- **Two live defects this fixes**: loading a save directly into London used to produce no Daniel
+  and no geezer; and reloading mid-quest used to require killing a second geezer.
+- **`Preset_DanielPauls.QuestKey` is blank** and must be set to `danielpauls` for
+  `daniel_pauls_quest_one`. His `Conversation` is written by the importer.
+- **`spark_of_talent` is unchanged as a save key.** *Load a save holding it mid-flight (should bind
+  the kill stage to the placed geezer) and one holding it complete (should pay nothing — the
+  reward is deliberately 0/0, since the reward scan retro-pays any completed unclaimed quest).*
+- **`quests/spark_of_talent.quest` owns Daniel Pauls' conversation permanently.** One `DIALOGUE`
+  block per npcId across the whole folder; every future Daniel quest adds gated nodes to that file.
+- **`PlayerSession.KnowsSpark` is still written by nobody who reads it and is not saved.**
+  Pre-existing, unchanged by this, and now harder to spot: the spellbook's `KnownSpellIds` is what
+  actually persists a learnt spell.
+
 **Also outstanding — roll and knockback, imported 2026-08-09, only half exercised.**
 
 The import ran and accepted all ten sheets, so `Assembly-CSharp` compiled and the importer's own

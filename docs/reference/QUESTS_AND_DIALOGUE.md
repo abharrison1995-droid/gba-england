@@ -49,9 +49,14 @@ condition per stage, and one reward on completion.
 
 **The containment rule is the whole safety argument. `QuestConditionWatcher` is completely inert
 for any quest id with no definition asset.** `QuestDatabase.Find` returns null and every path bails
-out. `escape_manor` and `spark_of_talent` deliberately have no definition, so `GameFlowController`,
-`TutorialSequence` and `MagicTutorial` are untouched. **Do not author a definition for either
-tutorial quest** without working out what happens to the bespoke code that already drives it.
+out. `escape_manor` deliberately has no definition, so `GameFlowController` and `TutorialSequence`
+are untouched. **Do not author a definition for it** without working out what happens to the
+bespoke code that already drives it — two systems advancing one quest id fight over the objective
+text and pay the reward from whichever got there first.
+
+`spark_of_talent` was the second such quest until it was converted. It is now authored in
+`quests/spark_of_talent.quest`, its definition is generated into `Resources/Quests/`, and it is
+watched from here like any other quest. `MagicTutorial` no longer exists.
 
 | `QuestConditionType` | Bound to | Advances when |
 |---|---|---|
@@ -263,15 +268,20 @@ dangling id, a duplicate or an inescapable node. Treat both as untested the firs
   choice inside a cycle. **`Validate` is public and UI-free on purpose** — a plain-text importer is
   meant to call it and refuse a bad script. Keep it that way.
 
-### `MagicTutorial` builds five conversations at runtime
+### One conversation per NPC, branched by gate — not one asset per beat
 
-`_intro`, `_nudge`, `_reward`, `_done`, `_underHousedTalk`, via local helpers that assign each node
-an id automatically and collect them into the enclosing `Tree(...)`'s `Nodes` list. This relies on
-C# evaluating method arguments left-to-right and fully before the enclosing call runs.
+`MagicTutorial` used to build five conversations in code and hand back whichever matched the quest
+beat, because a `DialogueData` has a single fixed `StartNodeId` and cannot open differently per
+state. Nothing does that any more.
 
-**Keep every `Node()` call inside the `Tree(...)` argument list it belongs to** — a `Node()` called
-outside that expression, or a second `Tree(...)` started before the first one's nodes are drained,
-would misfile nodes between conversations.
+The file-backed replacement is one conversation whose opening line is constant, with the beats
+hanging off gated choices — `GATE: not-started` / `active` / `complete`, and
+`GATE: stage <questId> <index>` when two beats are both "active". Exactly one is visible at a time.
+
+**One `DIALOGUE <npcId>` block may exist across the whole `quests/` folder**, because each import
+regenerates `Dialogue_<npcId>.asset` wholesale and the last writer wins. An NPC who appears in
+several quests keeps all their nodes in one file, gated per quest id. `QuestContentValidator`
+errors on a duplicate.
 
 ### `PresetDialogueTools` and overwriting
 

@@ -224,11 +224,11 @@ git ls-files 'Assets/**/*.cs' | while read f; do [ -f "$f.meta" ] || echo "NO ME
 
 Reordering or inserting values silently remaps existing data. **Always append.**
 
-Twenty-one live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
+Twenty live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
 
 `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`, `GameFlowState`,
 `HUDActionButton.ActionKind`, `InstanceDoor.Destination`, `PlacementCategory`, `CityRegion`,
-`QuestConditionType`, `MagicTutorial.Stage`, `TutorialSequence.Stage`,
+`QuestConditionType`, `TutorialSequence.Stage`,
 `SpriteContainer.ContainerMode` (`Fixed = 0`, `Respawning = 1`), `WikiCategory`,
 `PerkEffectType`, `SpellEffectType`, `QuestGateType`, `MerchantActionType`,
 `CompanionCommandType`, `CompanionContractType`, `TilingSurface.TilingPlane`.

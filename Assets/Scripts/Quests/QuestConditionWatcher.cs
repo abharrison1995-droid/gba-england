@@ -19,8 +19,13 @@ namespace ExiledAlvaston.Quests
     ///
     /// <b>Containment.</b> A quest with no <see cref="QuestDefinition"/> asset under
     /// <c>Resources/Quests/</c> is never touched: <see cref="QuestDatabase.Find"/> returns null and
-    /// every path here bails out. The tutorial quests (<c>escape_manor</c>, <c>spark_of_talent</c>)
-    /// deliberately have no definition and keep running entirely off their own code.
+    /// every path here bails out. <c>escape_manor</c> deliberately has no definition and keeps
+    /// running entirely off <c>TutorialSequence</c>'s own code.
+    ///
+    /// ⚠️ <c>spark_of_talent</c> used to be the second such quest. It is now an ordinary
+    /// file-backed quest (<c>quests/spark_of_talent.quest</c>) watched from here like any other,
+    /// and <c>MagicTutorial</c> is gone. Giving <c>escape_manor</c> a definition would put it in
+    /// the same position: two systems advancing one quest id.
     ///
     /// <b>All quest-state mutation happens in <see cref="Update"/>.</b> Event callbacks
     /// (<c>Interactable.OnInteract</c>, <c>Health.OnDeath</c>, inventory changes) only set a flag
