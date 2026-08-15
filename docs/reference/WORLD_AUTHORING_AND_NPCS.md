@@ -1,7 +1,8 @@
 # World authoring — the palette, presets and NPCs
 
 ```
-Last verified against: working tree, 2026-08-08
+Last verified against: working tree, 2026-08-15 for the Daniel Pauls / geezer conversation
+                       paragraph only; everything else, 2026-08-08 and not re-checked since.
 Verification scope:    code; tracked preset/prefab YAML (32 presets read). The villager path was
                        exercised end to end in the editor and reported working by the owner.
                        The six London enemy prefabs have NEVER been seen in play, and a GUID scan
@@ -11,6 +12,10 @@ Verification scope:    code; tracked preset/prefab YAML (32 presets read). The v
                        reopened in the editor, and no enemy has been placed with a level.
                        The Portal Placement section landed 2026-08-09 describing a rewritten tool
                        that has NEVER been compiled, opened or run, and no linked pair exists.
+                       The conversation-file paths named below were read off the quests/ tree on
+                       2026-08-15. Tools -> Content -> Import Quests has still never been run
+                       against any .quest file, so no generated DialogueData exists and no preset
+                       Conversation field has actually been written.
 ```
 
 ## The World Palette
@@ -229,11 +234,13 @@ Two clicks in Unity and no code:
   the staged pair passes the Unity importer.
 - **Daniel Pauls and the geezer now REQUIRE a `Conversation`** — the reverse of what this said
   while `MagicTutorial` owned their dialogue in code and warned about a preset conversation
-  fighting its own `Interactable`. Both are ordinary placed NPCs driven by
-  `quests/spark_of_talent.quest`; `Tools → Content → Import Quests` writes
-  `Preset_DanielPauls.Conversation` for you. The geezer is an enemy prefab, so the importer cannot
-  reach him — his `NPCDialogueInteractable.Conversation` is wired by hand once, and survives
-  re-imports because the generated asset keeps its GUID.
+  fighting its own `Interactable`. Both are ordinary placed NPCs driven by the `.quest` pipeline:
+  Daniel's whole conversation is `quests/dialogue/danielpauls.quest` (he appears in more than one
+  quest, so it lives in the dialogue folder rather than in any one quest file), and the geezer's is
+  the `DIALOGUE underhoused` block still inside `quests/spark_of_talent.quest`, his only quest.
+  `Tools → Content → Import Quests` writes `Preset_DanielPauls.Conversation` for you. The geezer is
+  an enemy prefab, so the importer cannot reach him — his `NPCDialogueInteractable.Conversation` is
+  wired by hand once, and survives re-imports because the generated asset keeps its GUID.
 - **`PlacementPresetLibrary` lives in `Resources/`; the presets do not.** Everything reachable from
   `Resources/` ships in the build, and the chest preset alone would drag in a 45 MB prop pack.
   Entries are keyed by an authored string, so renaming a preset asset is safe.

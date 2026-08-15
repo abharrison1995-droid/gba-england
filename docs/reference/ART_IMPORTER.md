@@ -1,7 +1,8 @@
 # The art importer and actor visuals
 
 ```
-Last verified against: working tree, 2026-08-14
+Last verified against: working tree, 2026-08-15 for the Daniel Pauls / geezer conversation
+                       paragraph only; everything else, 2026-08-14 and not re-checked since.
 Verification scope:    code. Player-class profile refresh and creator preview wiring are
                        UNVERIFIED in Unity. The importer has done real round trips (Mosley, the pharmacist, the
                        player's five sheets, the London enemies) and the BuildController fix was
@@ -11,7 +12,9 @@ Verification scope:    code. Player-class profile refresh and creator preview wi
                        been through the importer, and no controller yet holds either state. The
                        character-only baseline/shape validation gate and border-majority chroma-key
                        estimator are verified by code inspection but have not yet been exercised by
-                       another Unity import.
+                       another Unity import. The two conversation source files named below were
+                       read off the quests/ tree on 2026-08-15; Import Quests has still never been
+                       run, so neither generated DialogueData asset exists yet.
 ```
 
 This document owns the **Unity side**: what `ArtImportTool` does to a delivered PNG, and how
@@ -73,10 +76,12 @@ The NPC scan explicitly skips all five player-class subjects even though they sh
 `spr_portrait_` prefix. Without that separation, four profiles report false missing-preset errors
 and Stabmeister is accidentally treated as an NPC only because a same-subject preset exists.
 
-Daniel Pauls' and the Tracksuit Geezer's conversations are generated from
-`quests/spark_of_talent.quest` into `Data/Dialogue/Generated/`, and the importer wires Daniel's
-into his preset. They take their speaker (and so their portrait) from that preset, preserving the
-tutorial's authored display names and lines.
+Daniel Pauls' and the Tracksuit Geezer's conversations are generated into
+`Data/Dialogue/Generated/` by the `.quest` pipeline — Daniel's from
+`quests/dialogue/danielpauls.quest`, the geezer's from the `DIALOGUE underhoused` block in
+`quests/spark_of_talent.quest` — and the importer wires Daniel's into his preset. They take their
+speaker (and so their portrait) from that preset, preserving the tutorial's authored display names
+and lines.
 
 Player portraits use `spr_portrait_player.png` for Young Driller and
 `spr_portrait_player_<class-subject>.png` for the other four classes. The same rescan menu writes
