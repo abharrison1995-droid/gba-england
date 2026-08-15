@@ -14,6 +14,11 @@
 #   daniel_pauls_quest_one - quests/daniel_pauls_quest_one.quest (completed here; granted by
 #                            Councillor Mosley, quests/dialogue/councillormosley.quest)
 #
+# ⚠ TWO PLAYER LINES ARE STILL THE OWNER'S TO WRITE. Both are marked  [TODO: ]  :
+#   NODE start      - the choice that opens the daniel_pauls_quest_one branch
+#   NODE dpq1_close - the choice that closes the conversation after Daniel's last line
+# They are placeholders, not lines. Nothing here may invent them.
+#
 # The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
 # add a new gated choice on NODE start rather than rewriting his farewell.
 #
@@ -23,7 +28,10 @@
 DIALOGUE danielpauls
 
 # Daniel opens with the same line at every beat; which branch is offered depends on quest state.
-# Exactly one of the four gated choices can ever be visible at once.
+# The four spark_of_talent gates are mutually exclusive, so exactly one of THEM can ever be
+# visible at once. The daniel_pauls_quest_one gate is not exclusive with them: that quest is only
+# granted once spark_of_talent is complete, so while it is active the player sees its branch and
+# the post-spark farewell together.
 NODE start
 SPEAKER: danielpauls
 SPEAK: David Blaine was my 3rd ever student. Second was a fella named Jesus. Now he didn't learn too much, I didn't know spanish and he wasn't great with English but he was a good trier.
@@ -35,6 +43,10 @@ CHOICE Cheers I guess. -> reward
 GATE: stage spark_of_talent 1
 CHOICE Fine. -> done
 GATE: complete spark_of_talent
+# [TODO: ] below is a placeholder, not a line. The owner has not written what the player says to
+# open the daniel_pauls_quest_one branch. Fill it in; do not invent one.
+CHOICE [TODO: ] -> dpq1_open
+GATE: active daniel_pauls_quest_one
 CHOICE End Conversation.
 
 NODE offer_open
@@ -72,3 +84,51 @@ SPEAK: Right, now I invoke the 7 secret corners of the magic circle....... GUH..
 NODE done
 SPEAKER: danielpauls
 SPEAK: Careful where you sling spells lad. Johnny Law comes a knocking if you're to liberal with the lightening.
+
+# ----------------------------------------------------------------------------------------
+# daniel_pauls_quest_one - "Find the Magic Man".
+#
+# Reached from NODE start's  GATE: active daniel_pauls_quest_one  choice. The quest itself is
+# granted by Councillor Mosley at his hand-in (quests/dialogue/councillormosley.quest, node
+# nag_two), never here, and its definition is quests/daniel_pauls_quest_one.quest - one MANUAL
+# stage, which nothing watches, so the COMPLETE: below is the only thing that can end it.
+#
+# One straight run of single-choice nodes: Daniel talks, the player prompts him on.
+
+NODE dpq1_open
+SPEAKER: danielpauls
+SPEAK: Just the man. Right, well... I know you feel like you're only one now.
+CHOICE Do I? -> dpq1_help
+
+NODE dpq1_help
+SPEAKER: danielpauls
+SPEAK: Well, there's a way you can help me out.
+CHOICE Go on. -> dpq1_church
+
+NODE dpq1_church
+SPEAKER: danielpauls
+SPEAK: The abandoned church next to the castle has had its copper stripped from the roof.
+CHOICE And that's out of the ordinary? -> dpq1_speed
+
+NODE dpq1_speed
+SPEAKER: danielpauls
+SPEAK: No. Well, yes. But... it's the speed. I was there just the day before. Then by the morning, poof.
+# The quest ends HERE, on the choice that reaches Daniel's closing line, so the journal clears as
+# he briefs you rather than a beat later.
+#
+# QUEST 3 GOES HERE. "Check Out the Church" does not exist yet, so this choice deliberately
+# carries no GRANT:. When that quest is written, its  GRANT: <id>  goes on the line under the
+# COMPLETE: below - the same shape as councillormosley.quest's nag_two, which completes one quest
+# and grants the next from a single choice.
+CHOICE Maybe it was a gang? -> dpq1_close
+COMPLETE: daniel_pauls_quest_one
+
+NODE dpq1_close
+SPEAKER: danielpauls
+SPEAK: It's too big a church... something ain't right. Check it out for me, please. Few quid in it for you too.
+# [TODO: ] below is a placeholder, not a line. The owner has not written the click that closes the
+# conversation after Daniel's closing line. Fill it in; do not invent one.
+#
+# It must stay a choice with no  ->  : that is what ends a conversation. Without one this node has
+# no exit, and DialogueManager would append its own - an ending nobody wrote, mid-conversation.
+CHOICE [TODO: ]
