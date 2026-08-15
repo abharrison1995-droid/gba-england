@@ -1,13 +1,15 @@
 # Chunk world
 
 ```
-Last verified against: working tree, 2026-08-09
+Last verified against: working tree, 2026-08-15
 Verification scope:    code (read line by line); chunk prefabs and MapChunkData assets (tracked
                        YAML). Edge-crossing behaviour was play-tested in an earlier editor
-                       session. The 2026-08-04 height and EnemyAI changes are UNVERIFIED.
+                       session — but NOT since ChunkTravelKind was added on 2026-08-15, which
+                       changed OnChunkTransition's signature and has never been compiled.
+                       The 2026-08-04 height and EnemyAI changes are UNVERIFIED.
                        The portal-marker, mounted-refusal and MapChunkRegistry sections landed
                        2026-08-09 and have NEVER been compiled or run. "No DungeonPortal is
-                       placed anywhere" was checked by GUID scan and git log -S on this date.
+                       placed anywhere" was re-checked by GUID scan on 2026-08-15 and still holds.
 ```
 
 Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is live at a time.
@@ -45,6 +47,13 @@ Each is a floor, four walls at 3.2 m, a `RuntimeNavMeshBaker` on the root and on
 a portal, and **none is wired yet**. Their off-grid `Coordinates` are cosmetic: `Coordinates` is
 only a key for city lockout timers, and those are gated on `IsCity`, which is 0 on all six.
 
+**`IsCity: 0` on an interior is correct and does not launder the wanted level.** It once would
+have: the evasion rule read `IsCity` alone, so a door out of London would have cleared the player's
+knives. It now also requires the transition to be an edge crossing, and a portal is not one — see
+[CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md). **Do not set `IsCity: 1` on an interior
+to work around anything**; it would put the chunk on the lockout-timer path and make casting magic
+inside drain concealment.
+
 ⚠️ **`The_Winchester` interior does not replace the pub as it works today.** `PubInteractable`
 (`Pub_TheWinchester.prefab`, not currently placed in any chunk) clears the wanted level, heals and
 saves from a single USE. Putting it behind a door is a design change nobody has made — the shell
@@ -57,8 +66,8 @@ this table is checked.
 
 | Path | Entry point | Pauses | Notifies Wanted | Autosaves | Snaps camera |
 |---|---|---|---|---|---|
-| Edge crossing | `ChunkManager.TransitionToChunkRoutine` | yes | yes | yes | yes |
-| USE door / portal | `DungeonPortal` → `ChunkManager.TravelTo` → `TravelRoutine` | yes | yes | yes | yes |
+| Edge crossing | `ChunkManager.TransitionToChunkRoutine` | yes | yes, as `EdgeCrossing` | yes | yes |
+| USE door / portal | `DungeonPortal` → `ChunkManager.TravelTo` → `TravelRoutine` | yes | yes, as `Portal` | yes | yes |
 | Manor instance door | `GameFlowController.EnterManorCellars` | no | no | yes | no |
 | Tutorial exit | `GameFlowController.LoadLondonAtWestGates` | no | no | yes | no |
 | Continue / load | `SaveGameManager.LoadWorld` | no | no | no | no |
@@ -66,6 +75,12 @@ this table is checked.
 | Cold boot | `ChunkManager.Start` | no | no | no | no |
 
 **If you add or change transition behaviour you must touch all seven, or consolidate them first.**
+
+`OnChunkTransition` takes a `ChunkTravelKind` (declared beside `Direction` in `ChunkManager.cs`)
+saying **how** the player travelled, and it is a required parameter with no default. Only
+`EdgeCrossing` can shake the police — a door is not an escape. An eighth path that wants to notify
+the wanted system has to choose a kind deliberately; see
+[CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md), which owns that rule.
 
 `ChunkManager.Start` instantiates the scene's authored starting chunk when `CurrentChunkInstance`
 is null and the flow state is `Playing`. It writes `CurrentChunkInstance` but **not**

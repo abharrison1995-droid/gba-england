@@ -15,6 +15,24 @@ namespace ExiledAlvaston.World
     }
 
     /// <summary>
+    /// How the player got from one chunk to the next. Passed to
+    /// <see cref="ExiledAlvaston.Systems.WantedManager.OnChunkTransition"/>, which treats the two
+    /// differently: walking out of town can shake the police, walking through a door cannot.
+    ///
+    /// Not serialized anywhere — it is a method parameter only — so the append-only rule that
+    /// governs the project's other enums (CLAUDE.md §3) does not apply to it. It is deliberately a
+    /// required parameter with no default: a third transition path that wants to notify the wanted
+    /// system has to state which kind it is rather than inheriting whichever was convenient.
+    /// </summary>
+    public enum ChunkTravelKind
+    {
+        /// <summary>Walked over a chunk edge into an adjacent overworld chunk.</summary>
+        EdgeCrossing,
+        /// <summary>Used a <see cref="DungeonPortal"/> — a door into an interior or a dungeon.</summary>
+        Portal
+    }
+
+    /// <summary>
     /// Manages the discrete chunk-based world structure.
     /// Handles grid-edge transitions, UI loading screens, and lockout timers.
     /// </summary>
@@ -298,7 +316,11 @@ namespace ExiledAlvaston.World
                 if (!aborted)
                 {
                     // Read before CurrentChunkData is reassigned — it wants the pair, from and to.
-                    ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(CurrentChunkData, targetChunk);
+                    // Portal, not EdgeCrossing: a door is not an escape from the police. Every
+                    // interior and dungeon in the project carries IsCity: 0, so without this the
+                    // player could rob London, step into a shop, and step back out clean.
+                    ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(
+                        CurrentChunkData, targetChunk, ChunkTravelKind.Portal);
 
                     CurrentChunkData = targetChunk;
                     ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
@@ -429,8 +451,10 @@ namespace ExiledAlvaston.World
                 // so we never leave the player standing on nothing.
                 yield return new WaitForSecondsRealtime(0.15f);
 
-                // Notify Wanted System of transition
-                ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(CurrentChunkData, targetChunk);
+                // Notify Wanted System of transition. EdgeCrossing is the only kind that can shake
+                // the police — this is the "got out of town" path.
+                ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(
+                    CurrentChunkData, targetChunk, ChunkTravelKind.EdgeCrossing);
 
                 // Instantiate the next chunk BEFORE removing the old one, so there's never a
                 // frame where the player has no floor under them.

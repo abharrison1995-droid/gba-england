@@ -1,7 +1,7 @@
 # Consequences, police, stealth, mounts and vehicles
 
 ```
-Last verified against: working tree, 2026-08-12
+Last verified against: working tree, 2026-08-15
 Verification scope:    code; tracked prefab YAML. Mounting, dismounting, the boost, the prompt
                        flip and the data-driven spawner were play-tested in an earlier editor
                        session. The IsPolice defect below is read from prefab YAML and has NOT
@@ -11,7 +11,9 @@ Verification scope:    code; tracked prefab YAML. Mounting, dismounting, the boo
                        yet, so the band path has never been taken. The traffic and car theft
                        section below is code-review only — no compiler and no editor have seen
                        it, and no TrafficCar prefab or VehicleData asset exists yet (the builder
-                       tool creates them).
+                       tool creates them). The evasion section is code-review only, added
+                       2026-08-15 — never compiled, and it cannot be exercised at all until a
+                       DungeonPortal is authored, since none exists in the project.
 ```
 
 The GTA layer. Components live inside the `Prefabs/ModernBritain/` prefabs, whose instances are
@@ -39,6 +41,41 @@ single most load-bearing line in the whole consequence loop.
 transition. A version that only zeroed the meters dropped the HUD knife readout to zero and left
 Armed Response hunting the player. `PubInteractable` and `GameFlowController.ArrestRoutine` both
 still clear inline and are unaffected.
+
+### Evasion: only walking out of town shakes the police
+
+`WantedManager.OnChunkTransition(previous, new, travelKind)` is the one place a chunk change can
+wipe the wanted level. It fires when **all three** hold:
+
+1. `previous.IsCity` and not `new.IsCity` — you left a city for somewhere that isn't one;
+2. `CurrentKnives > 0`;
+3. `travelKind == ChunkTravelKind.EdgeCrossing`.
+
+That third condition is the whole point and is not decoration. **A door is not an escape.** Every
+interior and dungeon in the project is off the overworld grid and carries `IsCity: 0`, so testing
+`IsCity` alone would mean robbing London, stepping into a shop, and stepping back out with a clean
+sheet — plus a police cooldown on London as a parting gift, since the same branch applies one.
+
+`ChunkTravelKind` lives beside `Direction` in `ChunkManager.cs` and is passed by the two callers
+that notify the wanted system: `TransitionToChunkRoutine` sends `EdgeCrossing`,
+`TravelRoutine` (every `DungeonPortal`) sends `Portal`.
+
+Things to know before touching it:
+
+- **The parameter is deliberately required, with no default.** A new transition path that wants to
+  notify the wanted system has to state which kind it is, rather than inheriting whichever was
+  convenient. That is what stops the next interior mechanic quietly reopening this.
+- **The rule is behavioural, not per-chunk.** Nothing on `MapChunkData` declares "interior", so
+  every interior added from here on is covered the moment it exists, with no flag to remember to
+  tick. Contrast `IsPolice` below, which is exactly the failure this avoids.
+- **A portal that is genuinely meant to be an escape** — fast travel out to the countryside, say —
+  is a deliberate future decision: give it its own `ChunkTravelKind` rather than loosening the test.
+- **Police follow you indoors, and that is unchanged.** `SpawnPlod` instantiates them unparented at
+  the scene root, so they survive any chunk swap. Whether a bobby should be able to walk into a
+  pound shop after you is an open design question, not something this rule settled.
+- ⚠️ **The city lockout is only ever checked on edge travel.** `ChunkManager.OnPlayerHitEdge`
+  consults `_cityLockoutTimers`; `TravelRoutine` does not. A portal leading *into* a city would
+  therefore walk straight past an active lockout. No such portal exists today.
 
 ## The systems
 

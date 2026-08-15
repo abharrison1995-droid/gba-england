@@ -128,6 +128,10 @@ mapping table first.**
 - ⚠️ **A chunk root cannot be suspended with `SetActive(false)`.** It permanently blinds every
   `EnemyAI`, leaks a registered NavMesh, strands two tutorial singletons and leaves scene-root
   nameplates visible. Chunks are only ever destroyed.
+- ⚠️ **`OnChunkTransition` takes a `ChunkTravelKind`, and only `EdgeCrossing` shakes the police.**
+  A door is not an escape: every interior and dungeon carries `IsCity: 0`, so a new path that
+  passes `EdgeCrossing` because it is the first enum value hands the player a free wanted-level
+  wipe, silently. Pass `Portal` unless the player genuinely walked out of town.
 
 → [docs/reference/CHUNK_WORLD.md](docs/reference/CHUNK_WORLD.md)
 
@@ -660,6 +664,33 @@ id-less `PlayerSpawn`. All six are in `MapChunkRegistry`, which now lists twelve
 - **Downstream, not done:** arrest still teleports to Manor Cellars (`GameFlowController.ArrestRoutine`),
   not the police station. `WantedManager`'s own comment already calls rerouting the arrest path a
   separate job.
+
+**Also outstanding — a door no longer launders the wanted level.** Committed 2026-08-15, never
+compiled:
+
+- **`WantedManager.OnChunkTransition` gained a third parameter**, `ChunkTravelKind`, and only
+  `EdgeCrossing` can now clear `CurrentKnives`. Before this, every interior and dungeon carried
+  `IsCity: 0` and was reached by portal, so the first door wired to one would have let the player
+  rob London, step into a shop, and step back out clean — with a police cooldown on London as a
+  bonus. It was never live: no `DungeonPortal` is placed anywhere (GUID scan, 2026-08-15).
+- ⚠️ **The parameter is required, with no default, on purpose.** An eighth transition path that
+  notifies the wanted system must state its kind rather than inherit one. Both existing callers are
+  in `ChunkManager`: `TransitionToChunkRoutine` sends `EdgeCrossing`, `TravelRoutine` sends
+  `Portal`.
+- **`ChunkTravelKind` is declared beside `Direction` in `ChunkManager.cs`** rather than in its own
+  file, so no `.meta` had to be hand-authored. It is **not serialized anywhere** — a method
+  parameter only — so the append-only enum rule in §3 does not bind it.
+- **No asset, prefab or scene file changed**, and no save key is involved. Nothing to author and
+  nothing to tick; the rule is behavioural, which is the point — a per-chunk `IsInterior` flag would
+  have needed remembering on every future interior, the way `IsPolice` still needs remembering on
+  five police prefabs.
+- *Check, once a first door is authored:* commit a crime in London, step through the door, and check
+  the knives readout **does not** drop and the console logs "Slipped indoors…". Then walk out to
+  `North_Wasteland` over the chunk edge and check it **does** clear and logs "Evaded Police". Both
+  need a `DungeonPortal` that does not exist yet, so neither can be run today.
+- **Untouched next door:** the city lockout is only ever consulted by `ChunkManager.OnPlayerHitEdge`,
+  never by `TravelRoutine`, so a portal leading *into* a city would walk past an active lockout.
+  None exists; noted, not fixed.
 
 **Also outstanding — the mobile performance pass, none of it exercised.** Landed on `main`, never
 compiled:
