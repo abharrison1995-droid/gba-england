@@ -29,6 +29,28 @@ it does not invent dialogue.
 Files live in the repo-root `quests/` folder — git-tracked, diffable, **outside `Assets/`** — so
 nothing half-written ships in a build and Unity never imports the raw text.
 
+## Two kinds of file
+
+| Folder | Holds | Rule |
+|---|---|---|
+| `quests/*.quest` | one `QUEST` block, plus any `DIALOGUE` blocks | must declare a quest |
+| `quests/dialogue/*.quest` | `DIALOGUE` blocks only | must **not** declare a quest |
+
+**One `DIALOGUE <npcId>` block may exist across the whole folder tree.** Each import regenerates
+`Dialogue_<npcId>.asset` wholesale, so two files declaring the same npcId clobber each other in
+file order. An NPC who appears in several quests therefore keeps **every** line they say in one
+file under `quests/dialogue/`, with branches gated per quest id — that is what this folder exists
+for. A quest file may still carry its giver's conversation inline when that NPC appears in nothing
+else.
+
+The split is a separate folder rather than "a file with no QUEST block is a dialogue file" on
+purpose: a quest file whose `QUEST` line is lost to a typo must stay an **error**, not be silently
+reinterpreted as a conversation.
+
+Dialogue files are imported first, so a preset's `Conversation` is already wired by the time its
+quest lands. Their `GRANT:` and `COMPLETE:` ids take part in the same cross-file check as any
+other, so a conversation may grant or complete a quest defined anywhere.
+
 ## File layout
 
 ```

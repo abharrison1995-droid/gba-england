@@ -23,6 +23,11 @@ using ExiledAlvaston.Data;
 public static class QuestTextImporter
 {
     private const string QuestsRoot = "quests";
+    /// <summary>
+    /// Dialogue-only files: DIALOGUE blocks and no QUEST block. One file per NPC, holding every
+    /// line they say across every quest, gated per quest id.
+    /// </summary>
+    private const string DialogueRoot = "quests/dialogue";
     private const string QuestAssetsFolder = "Assets/Resources/Quests";
     private const string DialogueAssetsFolder = "Assets/Data/Dialogue/Generated";
 
@@ -104,20 +109,46 @@ public static class QuestTextImporter
         }
 
         string[] files = Directory.GetFiles(QuestsRoot, "*.quest", SearchOption.TopDirectoryOnly);
-        if (files.Length == 0)
+
+        // Dialogue-only files live one level down, in quests/dialogue/. An NPC who appears in
+        // several quests keeps ALL their nodes in one file there, because each import regenerates
+        // Dialogue_<npcId>.asset wholesale and two files declaring the same npcId would clobber
+        // each other. The separate folder is deliberate: a quest file that has lost its QUEST line
+        // to a typo must still be an ERROR, not silently reinterpreted as a dialogue file.
+        string[] dialogueFiles = Directory.Exists(DialogueRoot)
+            ? Directory.GetFiles(DialogueRoot, "*.quest", SearchOption.TopDirectoryOnly)
+            : new string[0];
+
+        if (files.Length == 0 && dialogueFiles.Length == 0)
         {
             Debug.Log("Import Quests: no .quest files found in 'quests/'.");
             return;
         }
 
         int ok = 0, skipped = 0;
+
+        // Dialogue first: a quest file's GRANT/COMPLETE wiring is validated against ids, not
+        // against the conversation, so order does not matter for correctness — but importing the
+        // conversations first means a preset's Conversation is already wired when its quest lands.
+        foreach (string file in dialogueFiles)
+        {
+            string name = Path.GetFileName(file);
+            if (name.StartsWith("_")) continue;
+
+            Debug.Log($"Import Quests: parsing dialogue/{name}...");
+            if (ImportFile(file, dialogueOnly: true))
+                ok++;
+            else
+                skipped++;
+        }
+
         foreach (string file in files)
         {
             string name = Path.GetFileName(file);
             if (name.StartsWith("_")) continue; // scaffolds and notes are not quests
 
             Debug.Log($"Import Quests: parsing {name}...");
-            if (ImportFile(file))
+            if (ImportFile(file, dialogueOnly: false))
                 ok++;
             else
                 skipped++;
@@ -127,7 +158,11 @@ public static class QuestTextImporter
         Debug.Log($"Import Quests: {ok} quest(s) imported, {skipped} skipped (see above for errors).");
     }
 
-    private static bool ImportFile(string path)
+    /// <param name="dialogueOnly">
+    /// True for a file under <see cref="DialogueRoot"/>: it must declare conversations and no
+    /// quest, and no <c>QuestDefinition</c> is written for it.
+    /// </param>
+    private static bool ImportFile(string path, bool dialogueOnly)
     {
         string text;
         try
@@ -150,7 +185,25 @@ public static class QuestTextImporter
             return false;
         }
 
-        if (string.IsNullOrEmpty(quest.Id))
+        if (dialogueOnly)
+        {
+            // Refused rather than ignored: a quest block here would name a quest whose stages and
+            // reward nothing would ever write, and it would read as authored.
+            if (!string.IsNullOrEmpty(quest.Id))
+            {
+                Debug.LogError($"Import Quests: '{path}' is in {DialogueRoot}/ and declares " +
+                               $"QUEST '{quest.Id}'. Dialogue files hold conversations only — " +
+                               "move the quest to a file directly in quests/.");
+                return false;
+            }
+            if (dialogues.Count == 0)
+            {
+                Debug.LogError($"Import Quests: '{path}' is in {DialogueRoot}/ but declares no " +
+                               "DIALOGUE block.");
+                return false;
+            }
+        }
+        else if (string.IsNullOrEmpty(quest.Id))
         {
             Debug.LogError($"Import Quests: '{path}' has no QUEST id.");
             return false;
@@ -186,13 +239,18 @@ public static class QuestTextImporter
             builtDialogues.Add((dialogue, asset, preset));
         }
 
-        // Write the quest definition.
-        QuestDefinition def = WriteQuestAsset(quest, errors);
-        if (def == null)
+        // Write the quest definition. A dialogue-only file has no quest to write — its
+        // conversations still land below, and its GRANT:/COMPLETE: directives point at quests
+        // defined in other files, which the validator's cross-file pass checks.
+        if (!dialogueOnly)
         {
-            Cleanup(builtDialogues);
-            LogErrors(path, errors);
-            return false;
+            QuestDefinition def = WriteQuestAsset(quest, errors);
+            if (def == null)
+            {
+                Cleanup(builtDialogues);
+                LogErrors(path, errors);
+                return false;
+            }
         }
 
         // Write the dialogue assets and wire their presets.

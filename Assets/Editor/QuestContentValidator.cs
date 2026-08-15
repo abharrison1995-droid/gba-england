@@ -28,6 +28,8 @@ public static class QuestContentValidator
     }
 
     private const string QuestsRoot = "quests";
+    /// <summary>Dialogue-only files: DIALOGUE blocks and no QUEST block. One per NPC.</summary>
+    private const string DialogueRoot = "quests/dialogue";
 
     /// <summary>What one .quest file declares, gathered for the cross-file pass.</summary>
     private sealed class FileInfo
@@ -77,7 +79,20 @@ public static class QuestContentValidator
             {
                 string name = Path.GetFileName(file);
                 if (name.StartsWith("_")) continue;
-                ValidateFile(file, all, problems);
+                ValidateFile(file, all, problems, dialogueOnly: false);
+            }
+
+            // quests/dialogue/ holds conversations with no quest of their own. They still take
+            // part in the cross-file pass, so a GRANT: or COMPLETE: in an NPC's dialogue file is
+            // checked against every quest id exactly as one inside a quest file would be.
+            if (Directory.Exists(DialogueRoot))
+            {
+                foreach (string file in Directory.GetFiles(DialogueRoot, "*.quest", SearchOption.TopDirectoryOnly))
+                {
+                    string name = Path.GetFileName(file);
+                    if (name.StartsWith("_")) continue;
+                    ValidateFile(file, all, problems, dialogueOnly: true);
+                }
             }
         }
         catch (Exception e)
@@ -89,7 +104,8 @@ public static class QuestContentValidator
         return problems;
     }
 
-    private static void ValidateFile(string path, List<FileInfo> all, List<Problem> problems)
+    private static void ValidateFile(string path, List<FileInfo> all, List<Problem> problems,
+                                     bool dialogueOnly)
     {
         string[] lines;
         try { lines = File.ReadAllLines(path); }
@@ -208,6 +224,20 @@ public static class QuestContentValidator
         }
 
         FlushChoice(path, info.QuestId, ref choiceTeachSpark, ref choiceGated, problems);
+
+        if (dialogueOnly)
+        {
+            // Mirrors the importer's two refusals for this folder.
+            if (info.QuestId != null)
+                problems.Add(new Problem(Severity.Error,
+                    $"{path}: a dialogue file must not declare a QUEST block (found '{info.QuestId}') - move the quest into quests/."));
+            else if (info.DialogueIds.Count == 0)
+                problems.Add(new Problem(Severity.Error, $"{path}: a dialogue file with no DIALOGUE block."));
+
+            // Registered either way so its GRANT ids take part in the cross-file pass.
+            all.Add(info);
+            return;
+        }
 
         if (info.QuestId == null) { problems.Add(new Problem(Severity.Error, path + ": no QUEST block")); return; }
 

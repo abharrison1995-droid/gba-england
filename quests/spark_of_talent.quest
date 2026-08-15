@@ -16,13 +16,13 @@
 # docs/reference/QUEST_TEXT_FORMAT.md.
 
 QUEST spark_of_talent
-TITLE: Spark of Talent
+TITLE: Serendipity!
 GIVER: Daniel Pauls
-LOCATION: London
+LOCATION: London, Cellar Entrance.
 
 # Stage 0 — kill the geezer. under_housed is the QuestActor.Key stamped on Enemy_UnderHoused.
 STAGE KILL under_housed x1
-OBJECTIVE: Daniel Pauls reckons the sparks are real magic. Walk into the city and sound out the twitchy geezer he pointed you at.
+OBJECTIVE: This jazzy fella wants me to have a word with some oddball. I'll indulge him I guess? He should be just north of where I met Daniel Pauls.
 
 # Stage 1 — MANUAL, not TALKTO, deliberately. A TalkTo final stage completes the quest on the
 # interact, BEFORE any choice is picked, which would flip the gates mid-conversation and skip the

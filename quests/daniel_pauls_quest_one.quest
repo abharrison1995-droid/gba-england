@@ -1,35 +1,42 @@
-# daniel_pauls_quest_one
-# Granted by Councillor Mosley's hand-in (see mosley_vape_quest_one.quest, node nag_two) once the
-# player returns his vape. A simple "go talk to Daniel Pauls" quest that hooks into a follow-up
-# Daniel Pauls quest, per the owner (not authored yet).
+# daniel_pauls_quest_one — "Help Daniel Pauls"
 #
-# STRUCTURE ONLY — Daniel's dialogue is intentionally left as [TODO:]. Do not fill it until the
-# owner dictates his lines in a future session; do not write it yourself.
+# Granted by Councillor Mosley's hand-in (mosley_vape_quest_one.quest, node nag_two) when the
+# player returns his vape. A bridging quest: walk back to Daniel Pauls, who is stood outside the
+# Cellar exit where you first met him, and hear him out. Its real job is to hand over the next
+# Daniel Pauls quest.
 #
-# Preset_DanielPauls.QuestKey is currently blank — must be set to "danielpauls" on his placed
-# instance in the Inspector before this can be tested (see docs/reference/QUEST_TEXT_FORMAT.md).
-# A TALKTO stage completes automatically on interacting with the keyed QuestActor — no COMPLETE:
-# directive needed in his dialogue for this stage type.
-
-QUEST daniel_pauls_quest_one
-TITLE: [TODO: quest title]
-GIVER: Daniel Pauls
-LOCATION: [TODO: where this sends the player]
-STAGE TALKTO danielpauls
-OBJECTIVE: [TODO: go talk to Daniel Pauls]
-REWARD
-POUNDS: 0
-XP: 0
-
-# ----------------------------------------------------------------------------------------
-# NO DIALOGUE BLOCK HERE, DELIBERATELY.
+# GIVER is Councillor Mosley because he is who hands this out; the quest is named for who it sends
+# you to. Change it if the journal should read the other way round.
 #
+# ⚠ STAGE IS MANUAL, NOT TALKTO — deliberate.
+# A TalkTo stage completes on the interact, BEFORE any dialogue choice is picked, so a choice
+# gated on this quest being active would race the completion and behave differently on the first
+# open than on every one after. Manual hands control to the dialogue: a choice carrying
+# COMPLETE: daniel_pauls_quest_one is what ends it, and that is also the natural place for Daniel
+# to grant whatever comes next.
+#
+# ⚠ NO DIALOGUE BLOCK HERE, DELIBERATELY.
 # quests/spark_of_talent.quest owns Daniel Pauls' entire conversation. Only one file may declare
 # DIALOGUE danielpauls: each import regenerates Dialogue_danielpauls.asset wholesale, so a second
 # declaration would silently clobber the first depending on file order.
 #
-# To give Daniel something to say about THIS quest, add nodes to spark_of_talent.quest and gate
-# them on daniel_pauls_quest_one — e.g. a choice on his NODE start carrying
-#   GATE: active daniel_pauls_quest_one
+# Daniel's lines for THIS quest go in spark_of_talent.quest as nodes reached by a choice on his
+# NODE start carrying  GATE: active daniel_pauls_quest_one  — and the COMPLETE: for this quest
+# lives on a choice in those nodes.
 #
-# The TALKTO stage above still completes on interacting with him, whichever conversation runs.
+# Preset_DanielPauls.QuestKey must be set to "danielpauls" in the Inspector. It is not read by
+# this quest any more (Manual watches nothing), but it is what any future TALKTO/KILL stage keyed
+# on him would bind to, and it costs nothing to set now.
+
+QUEST daniel_pauls_quest_one
+TITLE: Help Daniel Pauls
+GIVER: Councillor Mosley
+LOCATION: London, Cellar Entrance.
+
+STAGE MANUAL
+OBJECTIVE: Chat with Daniel Pauls again.
+
+# No payout: this is a bridge, and the payoff is the quest Daniel hands over at the end of it.
+REWARD
+POUNDS: 0
+XP: 0
