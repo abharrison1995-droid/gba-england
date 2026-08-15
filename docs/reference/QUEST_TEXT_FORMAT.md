@@ -9,9 +9,10 @@ Verification scope:    code + format. The importer (Assets/Editor/QuestTextImpor
                        conversations — but nothing in this pipeline has been imported, so the parser
                        and validator have never run against them. On 2026-08-15, traced by hand not
                        run: the validator's cross-file pass (GRANT:/COMPLETE: gathered across quests/
-                       and quests/dialogue/) was corrected, and multi-item COLLECT (a STAGE COLLECT
+                       and quests/dialogue/) was corrected; multi-item COLLECT (a STAGE COLLECT
                        carrying several item pairs) was added to the importer, QuestStage and the
-                       watcher.
+                       watcher; and a MERCHANT: <id> <buy|sell> choice directive was added to the
+                       importer.
                        See docs/plans/QUEST_PIPELINE_PLAN.md.
 ```
 
@@ -147,6 +148,7 @@ logged — wire it by hand.
 | `GATE: <state> <questId>` | Shows the choice only while the quest is `not-started` / `active` / `complete`. |
 | `GATE: stage <questId> <index>` | Shows the choice only while the quest is active **and** sitting on stage `<index>` (0-based). |
 | `STAT: <name> <level>` | Requires the trait (STR / INT / Personality) at or above `level`. |
+| `MERCHANT: <merchantId> <buy\|sell>` | Picking the choice closes the chat and opens that merchant's shop. `<merchantId>` resolves to a `MerchantData` asset by filename (`Merchant_` prefix ignored, case-insensitive) or `MerchantName`. Give the choice no `-> id` — it ends the conversation. Gate it (e.g. `GATE: complete <questId>`) to unlock a shop only after a quest. |
 | `TEACHSPARK` | No colon. Teaches the first spell and opens the naming popup once the chat closes. |
 
 `GATE: stage` exists because `active` cannot tell one beat of a multi-stage quest from another —

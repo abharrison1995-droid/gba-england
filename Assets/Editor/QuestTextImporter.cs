@@ -103,6 +103,10 @@ public static class QuestTextImporter
         public bool TeachSpark;
         public string RequiredStat;
         public int RequiredStatLevel;
+        // A merchant choice opens a shop after the conversation closes. Both are set together or
+        // neither is; DialogueValidator rejects a half-set pair.
+        public string MerchantId;
+        public MerchantActionType MerchantAction = MerchantActionType.None;
         public bool HasNext; // a choice with no "-> id" ends the conversation
     }
 
@@ -468,6 +472,11 @@ public static class QuestTextImporter
                     ParseStat(Value(line), currentChoice, errors, lineNo);
                     break;
 
+                case "MERCHANT:":
+                    if (currentChoice == null) { Err("MERCHANT outside a CHOICE"); break; }
+                    ParseMerchant(Value(line), currentChoice, errors, lineNo);
+                    break;
+
                 default:
                     // Anything unrecognised is a likely typo — flag it rather than silently ignore.
                     Err($"unrecognised keyword '{keyword}'");
@@ -604,6 +613,19 @@ public static class QuestTextImporter
         choice.RequiredStat = t[0];
         if (!int.TryParse(t[1], out choice.RequiredStatLevel))
             errors.Add($"line {lineNo}: STAT level must be an integer");
+    }
+
+    private static void ParseMerchant(string value, ParsedChoice choice, List<string> errors, int lineNo)
+    {
+        string[] t = value.Split(new[] { ' ', (char)9 }, StringSplitOptions.RemoveEmptyEntries);
+        if (t.Length < 2) { errors.Add($"line {lineNo}: MERCHANT needs <merchantId> <buy|sell>"); return; }
+        choice.MerchantId = t[0];
+        switch (t[1].ToLowerInvariant())
+        {
+            case "buy": choice.MerchantAction = MerchantActionType.Buy; break;
+            case "sell": choice.MerchantAction = MerchantActionType.Sell; break;
+            default: errors.Add($"line {lineNo}: MERCHANT action must be 'buy' or 'sell', got '{t[1]}'"); break;
+        }
     }
 
     private static ParsedChoice ParseChoice(string spec, List<string> errors, int lineNo)
@@ -744,7 +766,9 @@ public static class QuestTextImporter
                     QuestGateStage = pc.QuestGateStage,
                     TeachSpark = pc.TeachSpark,
                     RequiredStat = pc.RequiredStat,
-                    RequiredStatLevel = pc.RequiredStatLevel
+                    RequiredStatLevel = pc.RequiredStatLevel,
+                    Merchant = ResolveMerchant(pc.MerchantId, errors),
+                    MerchantAction = pc.MerchantAction
                 };
                 node.Choices.Add(choice);
             }
@@ -760,6 +784,35 @@ public static class QuestTextImporter
         ItemData item = ItemDatabase.Find(id);
         if (item == null) errors.Add($"item '{id}' not found in Resources/Items");
         return item;
+    }
+
+    /// <summary>
+    /// Finds a <see cref="MerchantData"/> for a merchant id by asset filename (case-insensitive,
+    /// ignoring a <c>Merchant_</c> prefix) or by <c>MerchantName</c> — the same best-effort match as
+    /// <see cref="ResolvePreset"/>. MerchantData assets are not in Resources, so this is an
+    /// AssetDatabase scan and therefore editor-only, like the rest of the importer.
+    /// </summary>
+    private static MerchantData ResolveMerchant(string merchantId, List<string> errors)
+    {
+        if (string.IsNullOrEmpty(merchantId)) return null;
+        string needle = merchantId.Trim().ToLowerInvariant();
+
+        string[] guids = AssetDatabase.FindAssets("t:MerchantData");
+        foreach (string guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            var merchant = AssetDatabase.LoadAssetAtPath<MerchantData>(path);
+            if (merchant == null) continue;
+
+            string fileName = Path.GetFileNameWithoutExtension(path);
+            if (fileName.StartsWith("Merchant_")) fileName = fileName.Substring("Merchant_".Length);
+            if (fileName.Trim().ToLowerInvariant() == needle) return merchant;
+            if (!string.IsNullOrEmpty(merchant.MerchantName)
+                && merchant.MerchantName.Trim().ToLowerInvariant() == needle) return merchant;
+        }
+
+        errors.Add($"merchant '{merchantId}' not found — no MerchantData asset matched by filename or MerchantName");
+        return null;
     }
 
     private static CharacterData ResolveSpeaker(string speakerId, PlacementPreset fallbackPreset)
