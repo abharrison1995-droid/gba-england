@@ -9,8 +9,12 @@ namespace ExiledAlvaston.Combat
 {
     /// <summary>
     /// Follower AI for an active companion. Follows the player on the X/Z plane with a NavMeshAgent,
-    /// keeps out of the player's body, catches up or warps when stranded, and fights HOSTILES ALREADY
-    /// FIGHTING THE PLAYER - it never initiates on civilians or police (the Alex design contract).
+    /// keeps out of the player's body, catches up or warps when stranded, and fights hostiles that
+    /// threaten the player - anything already fighting them, or any enemy that comes within
+    /// EngageRadius. Police are NOT exempt: the owner chose defence over the original never-police
+    /// contract. The follower's hits pass its own GameObject as the attacker, so an enemy turns on
+    /// ALEX when he lands a blow (EnemyAI.RetaliateToLastAttacker) and KillXP credits the player 30%
+    /// for a kill he finishes. Civilians are not EnemyAI, so they are still never targeted.
     ///
     /// Deliberately a separate class from EnemyAI, not a hostile turned toward the player: a companion
     /// has no aggro radius, no nameplate, stops to heal, and must keep following. Mirroring EnemyAI's
@@ -36,6 +40,16 @@ namespace ExiledAlvaston.Combat
 
         [Header("Combat")]
         public float RetargetInterval = 0.4f;
+        [Tooltip("How close a hostile must come to the player for the companion to engage, even " +
+                 "before it has attacked.")]
+        public float EngageRadius = 7f;
+        [Tooltip("Past this distance from the player the companion breaks off a target and returns " +
+                 "to your side, so a chase never drags it off across the map.")]
+        public float LeashRadius = 16f;
+        [Tooltip("False while the player has told the companion to stand down (Chill a minute). " +
+                 "It drops any current target and stops acquiring or retaliating, but still follows " +
+                 "and heals. Back me sets it true again.")]
+        public bool CombatEnabled = true;
 
         private Health _health;
         private NavMeshAgent _agent;
@@ -70,6 +84,7 @@ namespace ExiledAlvaston.Combat
             // class owns shutdown via OnDeath (see Health.cs commentary).
             _health.DestroyOnDeath = false;
             _health.OnDeath.AddListener(OnCompanionDied);
+            _health.OnTakeDamage.AddListener(OnTakeDamage);
 
             _agent.radius = 0.28f;   // same uniform radius as EnemyAI, so it fits doorways
             _agent.height = _visual != null && _visual.Height > 0f ? _visual.Height : 1.55f;
@@ -88,6 +103,15 @@ namespace ExiledAlvaston.Combat
             _agent.angularSpeed = 360f;
             _agent.acceleration = 12f;
             _agent.stoppingDistance = FollowDistance;
+
+            // The silhouette is data, so the follower and the home presence stay the same size.
+            if (_visual != null)
+            {
+                _visual.Height = Definition.Height;
+                _visual.Width = Definition.Width;
+                _visual.IndependentWidth = Definition.Width > 0f;
+                _visual.ApplyVisual();
+            }
         }
 
         private void Start()
@@ -114,6 +138,25 @@ namespace ExiledAlvaston.Combat
         private void OnDestroy()
         {
             if (_health != null) _health.OnDeath.RemoveListener(OnCompanionDied);
+            if (_health != null) _health.OnTakeDamage.RemoveListener(OnTakeDamage);
+        }
+
+        /// <summary>
+        /// Self-defence: a hostile that lands a hit on the companion becomes its target, even one
+        /// the retarget scan had not picked up (e.g. it slipped the engage radius while fighting
+        /// someone else). Never overrides a target the companion is already fighting.
+        /// </summary>
+        private void OnTakeDamage(int amount)
+        {
+            if (_disabled || _target != null) return;
+            if (!CombatEnabled) return; // standing down: no self-defence
+            GameObject attacker = _health != null ? _health.LastAttacker : null;
+            if (attacker == null) return;
+            var enemy = attacker.GetComponentInParent<EnemyAI>();
+            if (enemy == null) return;
+            Health eh = enemy.GetComponent<Health>();
+            if (eh != null && eh.IsDead) return;
+            _target = enemy.transform;
         }
 
         /// <summary>CompanionManager listens to this to end the contract and call home.</summary>
@@ -270,13 +313,14 @@ namespace ExiledAlvaston.Combat
                 toTarget.y = 0f;
                 if (toTarget.magnitude <= range * 1.25f)
                 {
-                    // Hand the player the kill attribution on land so the world behaves as if the
-                    // player did it (LastAttacker matters to police/arrest logic); the attacker name
-                    // shown in the combat log is the companion's display name.
+                    // The attacker GameObject is the follower, so the enemy turns on ALEX when he
+                    // lands a blow (EnemyAI.RetaliateToLastAttacker) and KillXP credits the player
+                    // 30% for the kill. The combat log names the follower as the attacker and the
+                    // target by its own name — never "you", which would mislabel a hit on an enemy.
                     Health targetHealth = target.GetComponentInParent<Health>();
                     if (targetHealth != null && !targetHealth.IsDead)
                     {
-                        targetHealth.TakeDamage(damage, DisplayName, "you", gameObject);
+                        targetHealth.TakeDamage(damage, DisplayName, null, gameObject);
                     }
                 }
             }
@@ -377,8 +421,9 @@ namespace ExiledAlvaston.Combat
         // ----- target selection -----
 
         /// <summary>
-        /// Every 0.4s, find an EnemyAI that is aggroed on the player. The companion only ever fights
-        /// hostiles already in combat with the player - it never picks its own fights.
+        /// Every 0.4s, find an EnemyAI that is aggroed on the player or standing close to them.
+        /// The companion only ever fights hostiles already threatening the player - it never picks
+        /// its own fights.
         /// </summary>
         private IEnumerator RetargetRoutine()
         {
@@ -401,12 +446,26 @@ namespace ExiledAlvaston.Combat
 
         private void Retarget()
         {
-            // A dead/finished target drops first.
+            // Standing down: drop any target and do not acquire a new one. The follower still
+            // follows and heals; it just will not fight until told to back the player up.
+            if (!CombatEnabled)
+            {
+                if (_target != null)
+                {
+                    _target = null;
+                    if (_agent != null && _agent.isOnNavMesh) _agent.ResetPath();
+                }
+                return;
+            }
+
+            // A dead target drops, and so does one that has dragged the companion past the leash.
             if (_target != null)
             {
                 Health th = _target.GetComponentInParent<Health>();
-                bool gone = _target == null || (th != null && th.IsDead);
-                if (_target == null || gone)
+                bool dead = th != null && th.IsDead;
+                bool tooFar = _player != null &&
+                    (_target.position - _player.position).sqrMagnitude > LeashRadius * LeashRadius;
+                if (dead || tooFar)
                 {
                     _target = null;
                     if (_agent != null && _agent.isOnNavMesh) _agent.ResetPath();
@@ -418,25 +477,41 @@ namespace ExiledAlvaston.Combat
             if (_player == null) return;
 
             _enemyPool.Clear();
-            // The companion lives at scene root; the chunk's enemies are under the live chunk instance.
-            var chunk = ChunkManager.Instance;
-            GameObject root = chunk != null ? chunk.CurrentChunkInstance : null;
-            if (root != null)
-                root.GetComponentsInChildren(false, _enemyPool);
+            // Scan EVERY active EnemyAI, not just the chunk's children: WantedManager spawns
+            // police unparented at the scene root and the tutorial/magic-tutorial hostiles live
+            // under their own runtime objects, so a chunk-only scan never saw the fights that
+            // actually happen. FindObjectsOfType allocates, but this runs five times every two
+            // seconds, not per frame (§4). includeInactive so an enemy briefly disabled (a
+            // knockback frame, a spawner flicker) does not turn invisible to the scan.
+            _enemyPool.AddRange(Object.FindObjectsOfType<EnemyAI>(true));
 
-            Transform playerT = _player;
+            // Engage the nearest hostile that is fighting the player, fighting the COMPANION, or
+            // has come within EngageRadius of the player. Civilians are not EnemyAI, so they are
+            // never in this list.
+            Vector3 playerPos = _player.position;
+            float engageSqr = EngageRadius * EngageRadius;
+            Transform best = null;
+            float bestSqr = float.MaxValue;
             for (int i = 0; i < _enemyPool.Count; i++)
             {
                 EnemyAI enemy = _enemyPool[i];
                 if (enemy == null) continue;
-                // Only hostiles already locked onto the player.
-                if (enemy.AggroTarget == null) continue;
-                if (enemy.AggroTarget != playerT) continue;
-                if (enemy.GetComponent<Health>() != null && enemy.GetComponent<Health>().IsDead) continue;
+                if (!enemy.isActiveAndEnabled) continue;
+                Health h = enemy.GetComponent<Health>();
+                if (h != null && h.IsDead) continue;
 
-                _target = enemy.transform;
-                break;
+                Transform aggro = enemy.AggroTarget;
+                bool fightingUs = (aggro == _player) || (aggro != null && aggro == transform);
+                float sqr = (enemy.transform.position - playerPos).sqrMagnitude;
+                if (!fightingUs && sqr > engageSqr) continue;
+
+                if (sqr < bestSqr)
+                {
+                    bestSqr = sqr;
+                    best = enemy.transform;
+                }
             }
+            _target = best;
         }
 
         // ----- helpers -----

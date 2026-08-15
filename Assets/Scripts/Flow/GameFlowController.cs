@@ -4,6 +4,7 @@ using ExiledAlvaston.World;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.UI;
 using ExiledAlvaston.Quests;
+using ExiledAlvaston.Companions;
 using ExiledAlvaston.Vibe;
 
 namespace ExiledAlvaston.Flow
@@ -205,6 +206,12 @@ namespace ExiledAlvaston.Flow
             // After RestoreQuests: the focus must be validated against the restored list, so a
             // stale or completed focus clears and the tracker falls back to the first active quest.
             QuestManager.Instance.RestoreFocusedQuest(data.FocusedQuestId);
+            // Restore the hired companion, if the save has one. RestoreContract is the free path
+            // (never re-charges). A null/empty id or a 0/negative health is "no companion", a no-op
+            // that matches a pre-companion save. The follower spawns beside the player now and
+            // rejoins across the LoadWorld below via CompanionManager's chunk poll.
+            if (CompanionManager.Instance != null)
+                CompanionManager.Instance.RestoreContract(data.ActiveCompanionId, data.CompanionHealth);
             PlayerSession.Instance.RestoreInventory(data.Inventory);
             PlayerSession.Instance.RestoreEquipment(data.Equipment); // null in pre-equipment saves → empty doll
             PlayerSession.Instance.RestorePounds(data.Pounds);

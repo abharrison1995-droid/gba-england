@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExiledAlvaston.AI;
 using ExiledAlvaston.Combat;
 using ExiledAlvaston.Data;
 using ExiledAlvaston.Flow;
@@ -32,6 +33,13 @@ namespace ExiledAlvaston.Companions
         public CompanionDefinition ActiveDefinition { get; private set; }
         public GameObject Follower { get; private set; }
         public CompanionAI FollowerAI { get; private set; }
+
+        /// <summary>
+        /// Fired whenever a contract begins or fully ends (despawn included). CompanionHomePresence
+        /// listens so the home figure hides the moment the hire lands and reappears when the
+        /// contract is over, instead of only re-checking when its chunk reloads.
+        /// </summary>
+        public event System.Action ContractChanged;
 
         // Follower lifetime bookkeeping.
         private float _knockoutDespawnAt = -1f;
@@ -99,6 +107,7 @@ namespace ExiledAlvaston.Companions
             SpawnFollower();
             _joinedChunkData = null; // force a rejoin next poll
             _joinedChunkInstance = null;
+            ContractChanged?.Invoke();
             return true;
         }
 
@@ -129,6 +138,7 @@ namespace ExiledAlvaston.Companions
             FollowerAI = null;
             _joinedChunkData = null;
             _joinedChunkInstance = null;
+            ContractChanged?.Invoke();
         }
 
         // ----- spawn / despawn -----
@@ -154,9 +164,29 @@ namespace ExiledAlvaston.Companions
                 return;
             }
 
-            // The follower is NOT an NPC - strip the dialogue/pickpocket interactable NpcFactory adds.
+            // The follower is NOT an NPC - strip the NPC dialogue/pickpocket/wander NpcFactory adds,
+            // but KEEP the Interactable so the player can talk to the follower (combat commands,
+            // dismiss). LowPriority so a follower hovering at your shoulder never shadows a chest,
+            // door or NPC you walk up to.
+            RemoveComponent<NPCDialogueInteractable>(root);
+            RemoveComponent<PickpocketInteractable>(root);
+            RemoveComponent<NPCWander>(root);
+
             var interactable = root.GetComponent<Interactable>();
-            if (interactable != null) UnityEngine.Object.Destroy(interactable);
+            if (interactable != null)
+            {
+                interactable.Prompt = "Talk to " + (ActiveDefinition != null ? ActiveDefinition.DisplayName : "Companion");
+                interactable.LowPriority = true;
+                interactable.Reusable = true;
+            }
+
+            // The follower conversation (Back me / Chill / Dismiss / Nevermind), authored on the
+            // preset. Separate from the recruit dialogue the home presence uses.
+            if (preset != null && preset.FollowerConversation != null)
+            {
+                var followerDialogue = root.AddComponent<CompanionFollowerDialogue>();
+                followerDialogue.Conversation = preset.FollowerConversation;
+            }
 
             // Turn the visual shell into a follower.
             root.AddComponent<Health>();
@@ -199,6 +229,12 @@ namespace ExiledAlvaston.Companions
                 if (FollowerAI != null) FollowerAI.HealthChanged -= OnFollowerHealthChanged;
                 UnityEngine.Object.Destroy(Follower);
             }
+        }
+
+        private static void RemoveComponent<T>(GameObject go) where T : Component
+        {
+            var c = go.GetComponent<T>();
+            if (c != null) UnityEngine.Object.Destroy(c);
         }
 
         private void OnFollowerKnockedOut()
@@ -321,6 +357,8 @@ namespace ExiledAlvaston.Companions
             }
             _joinedChunkData = null;
             _joinedChunkInstance = null;
+            ContractChanged?.Invoke(); // a restored contract hides the home presence too
         }
+
     }
 }

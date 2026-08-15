@@ -6,6 +6,7 @@ using ExiledAlvaston.Combat;
 using ExiledAlvaston.Data;
 using ExiledAlvaston.World;
 using ExiledAlvaston.Quests;
+using ExiledAlvaston.Companions;
 
 namespace ExiledAlvaston.Flow
 {
@@ -96,6 +97,15 @@ namespace ExiledAlvaston.Flow
         // falls back to the first active quest, exactly the pre-focus behaviour. No migration.
         public string FocusedQuestId;
 
+        // Appended for the companion contract, same append-only rule as every field above: a save
+        // written before companions existed has no ActiveCompanionId key, JsonUtility reads it back
+        // as null, and CompanionManager.RestoreContract ignores a null/empty id — so an old save
+        // simply loads with no companion, exactly the pre-companion behaviour. No migration.
+        // ActiveCompanionId holds the CompanionDefinition.Id, which is a save key — never rename one.
+        public string ActiveCompanionId;
+        // The follower's health at save time; 0 or negative reads as "no companion" on restore.
+        public int CompanionHealth;
+
         // Appended for the spellbook. AbilityID values are stable save keys resolved through
         // Resources/Abilities; the equipped list preserves its four positions with empty strings.
         // Pre-spellbook saves read both lists as empty, which correctly means no learned spells.
@@ -147,6 +157,15 @@ namespace ExiledAlvaston.Flow
             {
                 data.Quests.AddRange(QuestManager.Instance.Quests);
                 data.FocusedQuestId = QuestManager.Instance.FocusedQuestId;
+            }
+
+            // Companion contract, if one is active. CurrentCompanionId is null/empty and
+            // CurrentFollowerHealth() is -1 when nobody is hired, which the restore path reads as
+            // "no companion" — identical to a pre-companion save.
+            if (CompanionManager.Instance != null)
+            {
+                data.ActiveCompanionId = CompanionManager.Instance.CurrentCompanionId;
+                data.CompanionHealth = CompanionManager.Instance.CurrentFollowerHealth();
             }
 
             foreach (AbilityData ability in player.KnownSpells)

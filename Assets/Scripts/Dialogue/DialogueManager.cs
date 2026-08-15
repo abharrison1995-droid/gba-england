@@ -310,6 +310,30 @@ namespace ExiledAlvaston.Dialogue
                 return;
             }
 
+            // Hiring a companion is a conversation-ender too: BeginContract spawns the follower
+            // into the running world, which must not happen while PauseManager is holding
+            // timeScale at 0 — so the chat closes first and the hire resolves after, exactly like
+            // the merchant branch above. The charge and its refusal stay inside BeginContract;
+            // false just means the player heard the line and stayed poor (or already has someone).
+            if (choice != null && !string.IsNullOrEmpty(choice.HireCompanionId))
+            {
+                string hireId = choice.HireCompanionId;
+                EndDialogue();
+                TryHireCompanion(hireId);
+                return;
+            }
+
+            // A companion command (fight beside me / stop fighting / dismiss) is a
+            // conversation-ender too, for the same reason as the hire above: the command acts on
+            // the live follower, which must not happen while PauseManager holds timeScale at 0.
+            if (choice != null && choice.CompanionCommand != CompanionCommandType.None)
+            {
+                CompanionCommandType command = choice.CompanionCommand;
+                EndDialogue();
+                ApplyCompanionCommand(command);
+                return;
+            }
+
             if (string.IsNullOrEmpty(nextNodeId))
             {
                 EndDialogue();
@@ -323,6 +347,63 @@ namespace ExiledAlvaston.Dialogue
                 return;
             }
             DisplayNode(next);
+        }
+
+        /// <summary>
+        /// Runs the hire a <see cref="DialogueChoice.HireCompanionId"/> asked for, after the chat
+        /// has closed. Toasts mirror what the old hire button said, so the swap from button to
+        /// dialogue changes the conversation, not the feedback.
+        /// </summary>
+        private static void TryHireCompanion(string companionId)
+        {
+            var mgr = Companions.CompanionManager.Instance;
+            if (mgr == null) return;
+
+            CompanionDefinition def = CompanionDatabase.Find(companionId);
+            string who = def != null && !string.IsNullOrEmpty(def.DisplayName) ? def.DisplayName : "Companion";
+
+            if (mgr.HasActiveCompanion)
+            {
+                string current = mgr.ActiveDefinition != null ? mgr.ActiveDefinition.DisplayName : "Someone";
+                if (UI.UIManager.Instance != null)
+                    UI.UIManager.Instance.ShowToast(current + " is already with you.", 1.6f);
+                return;
+            }
+
+            if (mgr.BeginContract(companionId))
+            {
+                if (UI.UIManager.Instance != null)
+                    UI.UIManager.Instance.ShowToast(who + " joins you.", 1.8f);
+            }
+            else
+            {
+                if (UI.UIManager.Instance != null)
+                    UI.UIManager.Instance.ShowToast("Not enough money for " + who + ".", 1.8f);
+            }
+        }
+
+        /// <summary>
+        /// Applies a DialogueChoice.CompanionCommand to the active companion, after the chat has
+        /// closed. FightBesideMe and StopFighting flip the follower's combat flag; Dismiss ends
+        /// the contract so the home presence reappears at its spawn spot.
+        /// </summary>
+        private static void ApplyCompanionCommand(CompanionCommandType command)
+        {
+            var mgr = Companions.CompanionManager.Instance;
+            if (mgr == null) return;
+
+            switch (command)
+            {
+                case CompanionCommandType.FightBesideMe:
+                    if (mgr.FollowerAI != null) mgr.FollowerAI.CombatEnabled = true;
+                    break;
+                case CompanionCommandType.StopFighting:
+                    if (mgr.FollowerAI != null) mgr.FollowerAI.CombatEnabled = false;
+                    break;
+                case CompanionCommandType.Dismiss:
+                    mgr.EndContract(false);
+                    break;
+            }
         }
 
         private void EndDialogue()

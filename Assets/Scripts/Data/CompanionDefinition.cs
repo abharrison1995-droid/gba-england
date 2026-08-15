@@ -78,5 +78,14 @@ namespace ExiledAlvaston.Data
         [Header("Dodge")]
         [Tooltip("Seconds between dodge rolls. Alex plan: 8-10 (far rarer than the player's 1).")]
         public float DodgeCooldown = 9f;
+
+        [Header("Size")]
+        [Tooltip("World height of the companion's sprite. Applied at runtime to the follower and " +
+                 "the home presence, so both stay the same size.")]
+        public float Height = 1.3f;
+        [Tooltip("World width of the sprite. 0 keeps the art's natural aspect (uniform scale from " +
+                 "Height); a positive value fits the width independently for a deliberately wider " +
+                 "silhouette. Alex: 1.1.")]
+        public float Width = 1.1f;
     }
 }

@@ -32,6 +32,18 @@ namespace ExiledAlvaston.Data
         Sell = 2
     }
 
+    /// <summary>
+    /// Optional command applied to the active companion when a dialogue choice is picked.
+    /// Serialized by integer index: append only, exactly like QuestGateType.
+    /// </summary>
+    public enum CompanionCommandType
+    {
+        None = 0,
+        FightBesideMe = 1,
+        StopFighting = 2,
+        Dismiss = 3
+    }
+
     [System.Serializable]
     public class DialogueChoice
     {
@@ -74,6 +86,18 @@ namespace ExiledAlvaston.Data
         [Tooltip("Shop opened after this choice closes the conversation.")]
         public MerchantData Merchant;
         public MerchantActionType MerchantAction = MerchantActionType.None;
+
+        [Header("Companion (Optional)")]
+        [Tooltip("Picking this choice hires the companion with this CompanionDefinition.Id " +
+                 "(CompanionManager.BeginContract — a Paid contract still charges its price, and " +
+                 "an unaffordable or already-taken hire is refused with a toast). The conversation " +
+                 "ends on the pick. Empty means the choice hires nobody.")]
+        public string HireCompanionId;
+
+        [Header("Companion Command (Optional)")]
+        [Tooltip("Picking this choice applies a command to the active companion (fight beside you, " +
+                 "stop fighting, or dismiss). The conversation ends on the pick. None means no command.")]
+        public CompanionCommandType CompanionCommand = CompanionCommandType.None;
 
         public bool MeetsRequirement(CoreTraits playerTraits)
         {

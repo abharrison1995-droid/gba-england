@@ -1,16 +1,15 @@
 # Companion pipeline — plan
 
 ```
-Last updated:          2026-08-12 (after the first agent write-up + first compile pass)
-Verification scope:    C0–C3 are WRITTEN; C4 and C6 are PARTIAL; C5, C7 and the Alex instance are
-                       NOT STARTED. First compile pass surfaced three issues, all FIXED in the tree:
-                       - CompanionHUDUI was missing `using ExiledAlvaston.Vibe;` (EKVibe.HealthBar
-                         unresolved, CS0103) — fixed.
-                       - CompanionHUDUI assigned CreateImage's GameObject to the `Image _fill` field
-                         (CS0029) — fixed (`.GetComponent<Image>()`, then `_fill.rectTransform`).
-                       - CompanionAI._attackReady / _nextRetargetTime were dead fields (CS0414) —
-                         removed.
-                       Still NOT run in the editor — runtime behaviour needs the owner in Unity.
+Last updated:          2026-08-12 (C5 save wiring + CompanionPresetTool landed)
+Verification scope:    C0–C3 WRITTEN; C4 and C6 PARTIAL; C5 WRITTEN this pass; C7 NOT STARTED.
+                       The Alex instance is authored by a new editor tool (CompanionPresetTool),
+                       created but NOT yet run in the editor.
+                       Compile passes so far (owner, in-editor): the first pass surfaced three
+                       issues, all FIXED in the tree — CompanionHUDUI missing `using
+                       ExiledAlvaston.Vibe;` (CS0103), a GameObject→Image assignment (CS0029), and
+                       two dead CompanionAI fields (CS0414). C5 (below) compiles clean per the
+                       owner's latest pass; its runtime is NOT yet exercised.
                        Alex's eight sheets and controller are already imported (commit 5ec4cde), and
                        docs/plans/ALEX_COMPANION_PLAN.md is the approved Alex-specific design this
                        generalises.
@@ -117,29 +116,27 @@ same teardown without the KO pose.
 - The home anchor is **data**: definition's `HomeChunkName`/`HomeAnchorId`. For now a **temporary test
   anchor** is placed in `Home_London` (owner has not fixed the building yet); it is easy to move.
 
-**Decision (2026-08-12):** the home-presence component is written, but the World Palette append is
-**deferred**. Author the Alex home presence in `Home_London` with a dedicated editor builder tool
-(`CompanionPresetTool`, mirroring `BuildTrafficCarPrefabTool` / `StarterPresetGenerator`) rather than
-blocking on the full palette section. The `PlacementCategory.Companion = 7` append and the
-`PlacementPreset` definition field can follow once the runtime is verified in the editor. This gets a
-testable Alex onto a chunk without first touching the palette's serialization surface.
+**Decision (2026-08-12):** the World Palette append is **deferred**. Rather than touch the palette's
+serialization surface (or blind-edit the committed `Home_London_Prefab`), `CompanionPresetTool`
+authors a **self-contained `CompanionHome_Alex.prefab`** the owner drags into Home_London. The
+`PlacementCategory.Companion = 7` append and the `PlacementPreset` definition field can follow once
+the runtime is verified in the editor.
 
-### C5 — Save / restore  — NOT STARTED
+### C5 — Save / restore  — WRITTEN, unverified
 
-Append to `SaveData` (in order, after `FocusedQuestId`):
+Appended to `SaveData` (in order, after `FocusedQuestId`), matching the proven `FocusedQuestId`
+pattern:
 
-- `ActiveCompanionId` (string; empty = no active contract).
-- `CompanionHealth` (int).
+- `ActiveCompanionId` (string; empty/null = no active contract).
+- `CompanionHealth` (int; 0/negative reads as "no companion" on restore).
 
-On save, write from `CompanionManager`. On load (`GameFlowController.ContinueFromSave`), if
-`ActiveCompanionId` is non-empty, restore the contract **without charging** and set
-`Health.CurrentHealth = clamp(saved, 1, def.MaxHealth)`. Knockout/dismissal clears the fields before
-the next autosave. Old saves read null/0 -> no companion; no migration.
-
-`CompanionManager` already exposes `CurrentFollowerHealth()` and `RestoreContract(id, health)` — this
-phase only wires the two `SaveData` fields and the `ContinueFromSave` call, following the proven
-`FocusedQuestId` append pattern. **Do this after the first in-editor compile pass**, because it
-touches the same `SaveGameManager` / `GameFlowController` files that quest Phase 0 modified.
+On save, `SaveGameManager.Save` writes both from `CompanionManager` (`CurrentCompanionId` /
+`CurrentFollowerHealth()`). On load, `GameFlowController.ContinueFromSave` calls
+`CompanionManager.RestoreContract(id, health)` right after `RestoreFocusedQuest` — **without
+charging** — and clamps `Health.CurrentHealth = clamp(saved, 1, def.MaxHealth)`. Knockout/dismissal
+clears the manager's contract state, so the next autosave writes empty. Old saves read null/0 -> no
+companion; no migration. The follower spawns beside the player and rejoins across `LoadWorld` via the
+manager's chunk poll.
 
 ### C6 — Companion HUD  — PARTIAL (written, deviates from the seam — accepted)
 
@@ -164,27 +161,40 @@ if hire-by-dialogue is wanted now — the gates already exist (`QuestGateType`).
 (`BeginContract(id, free)` / `EndContract()` are already public on `CompanionManager`; only the
 optional dialogue fields and `.quest` directives remain for this phase.)
 
-## Alex instance  — NOT STARTED
+## Alex instance  — tool authored, unrun in the editor
 
-- Definition `Id = "alex"`, `ArtSubject = "alex"`, price £25 (provisional), a reasonable early-game
-  starter stat block, heal/dodge tuning per the Alex plan (20 s heal cooldown, 8–10 s dodge cooldown).
-- Prefab/preset built in place via editor tooling (never delete-and-recreate a preset — GUID
-  discipline) or a new `CompanionPresetTool` following `StarterPresetGenerator` / `GeneratedEnemyPrefabTool`.
-- Temporary home anchor in `Home_London`.
-- Requires `Assets/Resources/Companions/` to exist (currently it does not) and the `alex` definition
-  asset to be authored there; resolves art via the `alex` `PlacementPreset` already imported.
+`Tools → Content → Companions → Build Alex Companion` (`Assets/Editor/CompanionPresetTool.cs`)
+authors three assets, all new-file-only / update-in-place (never delete-and-recreate):
+
+- `Assets/Data/Presets/Preset_Alex.asset` — the `ArtSubject = "alex"` preset. None existed, so the
+  importer never wired Alex's art into any preset; the tool creates and wires it (controller + idle
+  frame zero + cast height) as the shared recipe for both the home presence and the runtime follower.
+- `Assets/Resources/Companions/Companion_alex.asset` — `Id = "alex"`, `ArtSubject = "alex"`, price
+  £25 (provisional), starter stat block (120 HP, 8 dmg), heal/dodge tuning per the Alex plan (20 s
+  heal cooldown, 9 s dodge cooldown, 0.4 player-priority fraction). Left untouched on re-run, so
+  Inspector tuning survives.
+- `Assets/Prefabs/ModernBritain/Companions/CompanionHome_Alex.prefab` — the hireable home presence,
+  `NpcFactory.Build` output stripped to hire-only plus a `CompanionHomePresence`. **The owner drags
+  this into `Home_London`** where Alex should wait (the tool deliberately does not edit the chunk
+  prefab). `HomeAnchorId` is left blank until the anchor's `QuestKey` is fixed.
+
+The runtime follower is spawned by `CompanionManager` from the same `alex` preset, not by this tool.
+⚠ If the follower spawns as a **capsule** in play, the `alex` preset is not reachable via
+`PlacementPresetLibrary` at runtime — re-run the library/preset wiring so `ResolveCompanionPreset`
+finds it (the home-presence prefab carries its art directly, so it is unaffected).
 
 ## Verification
 
-- First compile pass cleanup is DONE in the tree (see header). Next in-editor step is behavioural.
+- First compile pass cleanup is DONE in the tree (see header). C5 compiles clean; runtime unexercised.
 - `python Tools/check_quest_phase0.py`-style brace scan extended to the new files (or fold into a
   generalized checker).
-- `python Tools/asset_reachability.py --check-dangling` before/after (nothing here deletes/moves
-  assets, but run it as a regression).
+- `python Tools/asset_reachability.py --check-dangling` before/after (C5 adds no asset moves; the
+  tool's outputs are new files — run it as a regression once they exist).
 - `python Tools/art_status.py` — Alex sheets already done.
-- **In-editor checklist** (only the owner can do this): insufficient funds, exactly £25, dismissal,
-  knockout, rehire, save/continue without re-charge, every transition type (edge, portal, arrest,
-  death/reload), healing priority + cooldown, infrequent dodge, hostile targeting, no
-  civilian/police initiation, companion HUD, returning to the eventual home anchor.
+- **In-editor checklist** (only the owner can do this): run `Build Alex Companion`; drag
+  `CompanionHome_Alex` into Home_London; hire with insufficient funds (refused, no state change) and
+  at exactly £25; Alex follows, fights only your aggroed hostiles, heals, dodges infrequently;
+  knockout → KO pose → rehire; dismissal; **save → Continue → Alex returns without re-charging**;
+  every transition type (edge, portal, arrest, death/reload); companion HUD shows name + health.
 
 Nothing here compiles in the agent environment; none of it is "done" until opened in the editor.
