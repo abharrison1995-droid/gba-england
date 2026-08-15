@@ -11,9 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6b6b36a8c9bf654e906cb5798b01d33, type: 3}
   m_Name: NPC_Scrapman
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   CharacterName: Scrapman
-  Portrait: {fileID: 0}
+  Portrait: {fileID: 21300000, guid: 268f6d51826ffee4e88de88267726440, type: 3}
   Class: 0
   MaxHealth: 20
   MaxManaStamina: 10
