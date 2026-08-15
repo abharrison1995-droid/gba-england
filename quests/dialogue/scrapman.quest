@@ -17,11 +17,10 @@
 #   deliver_the_big_blue   - quests/deliver_the_big_blue.quest   (stage 0: take the Big Blue, reveal
 #                            what he knows)
 #
-# ⚠ PLAYER LINES THE OWNER MUST WRITE, all marked  [TODO: ]  . The script gives every Scrap Man line
-# but not these player clicks:
-#   NODE start      - the click that hands over the Big Blue; the click that opens his shop; and the
-#                     leave line (3 choices)
-#   NODE dbb_react / dbb_reveal1 / dbb_reveal2 - the three "[Next]" clicks through his reveal
+# ⚠ TWO PLAYER LINES REMAIN THE OWNER'S TO WRITE, both on NODE start, both marked  [TODO: ]  :
+#   - the line that opens his Sell shop (the MERCHANT choice)
+#   - his always-available leave line
+# The Big Blue hand-over and the three reveal "[Next]" clicks were written in on 2026-08-15.
 
 DIALOGUE scrapman
 
@@ -33,9 +32,9 @@ SPEAK: Easy, what you doing 'ere?
 CHOICE Daniel Paul sent me. Can you check this out for him? -> iwv_inspect
 GATE: stage investigate_weird_vape 0
 ITEM: makeshift_vape x1 consume
-# deliver_the_big_blue, stage 0 — bring back the Big Blue. Consumed on delivery. [TODO: ] is the
-# owner's: Scrap Man speaks first ("Ah, yes, buzzing.").
-CHOICE [TODO: ] -> dbb_react
+# deliver_the_big_blue, stage 0 — bring back the Big Blue. Consumed on delivery. Scrap Man speaks
+# first ("Ah, yes, buzzing.").
+CHOICE *Hand him the Big Blue* -> dbb_react
 GATE: stage deliver_the_big_blue 0
 ITEM: big_blue x1 consume
 # The Sell shop — unlocked only once the whole Big Blue arc (deliver_the_big_blue) is complete.
@@ -73,17 +72,17 @@ CHOICE Okay.
 NODE dbb_react
 SPEAKER: scrapman
 SPEAK: Ah, yes, buzzing. Can't believe it. You are an absolute legend. Right then... yep, I'll let you know what's going on.
-CHOICE [TODO: ] -> dbb_reveal1
+CHOICE Go on then. -> dbb_reveal1
 
 NODE dbb_reveal1
 SPEAKER: scrapman
 SPEAK: So, Councillor Mosley's been doing a few dodgy dealings. I saw him talking to Ralph and Sanjeet from the Spartans, and he was buying a box of these weird looking vapes.
-CHOICE [TODO: ] -> dbb_reveal2
+CHOICE Uh, right. -> dbb_reveal2
 
 NODE dbb_reveal2
 SPEAKER: scrapman
 SPEAK: The boxes had these weird Chinese letters on. Shanghai and all that jazz. So I assume it's some sort of weird import. I'm guessing that's got something to do with the vapes, because I ain't seen them anywhere else before, and they're the only characters shady enough to get involved with the Chinese at the minute.
-CHOICE [TODO: ] -> dbb_reveal3
+CHOICE Fuckin' hell. -> dbb_reveal3
 
 NODE dbb_reveal3
 SPEAKER: scrapman

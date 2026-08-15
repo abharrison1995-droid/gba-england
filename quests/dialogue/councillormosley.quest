@@ -16,10 +16,8 @@
 #   wtf_mosley             - quests/wtf_mosley.quest             (completed here; granted by Daniel's
 #                            Quest 4 report, quests/dialogue/danielpauls.quest node dbb_chat)
 #
-# ⚠ TWO PLAYER LINES ARE THE OWNER'S TO WRITE, both marked  [TODO: ]  :
-#   NODE start    - the choice that opens the wtf_mosley branch (Mosley greets first: "Ey up, lad.")
-#   NODE wm_thing - the click after "the thing is..." (script: player says nothing)
-# The script gives Mosley's confession in full but not these two player clicks. Nothing invents them.
+# All of Councillor Mosley's player lines are the owner's own words, written in on 2026-08-15. No
+# [TODO: ] blanks remain in this file.
 
 DIALOGUE councillormosley
 # councillormosley matches Preset_CouncillorMosley's filename (Preset_ prefix stripped,
@@ -33,9 +31,8 @@ CHOICE Come on what's up? Caught with the intern again? -> reveal_prompt
 GATE: not-started mosley_vape_quest_one
 CHOICE Christ, I'm on it alright. *leaves* -> nag_one
 GATE: active mosley_vape_quest_one
-# wtf_mosley branch. [TODO: ] is the owner's - Mosley greets first ("Ey up, lad."), so the script
-# never wrote the player's opening click.
-CHOICE [TODO: ] -> wm_greet
+# wtf_mosley branch. Mosley greets first ("Ey up, lad.").
+CHOICE Right Mosley! -> wm_greet
 GATE: active wtf_mosley
 CHOICE Don't gotta tell me twice. *leaves*
 
@@ -117,8 +114,8 @@ CHOICE Well, I just had a chat with Scrap Man, and he saw you out there with Ral
 NODE wm_thing
 SPEAKER: councillormosley
 SPEAK: No. Well, well, well, you see, the thing is...
-# [TODO: ] is the owner's. The script has the player say nothing here - just a click onward.
-CHOICE [TODO: ] -> wm_toomuch
+# The player says nothing scripted here - just a click onward.
+CHOICE What? -> wm_toomuch
 
 NODE wm_toomuch
 SPEAKER: councillormosley

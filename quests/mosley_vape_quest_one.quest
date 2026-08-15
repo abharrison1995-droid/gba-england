@@ -19,10 +19,10 @@ TITLE: Chemical Castration Gone Wrong
 GIVER: Councillor Mosley
 LOCATION: Mosley's Lab Basement
 STAGE KILL tortured_neek x1
-OBJECTIVE: [TODO: clear the basement and kill the Tortured Neek]
+OBJECTIVE: Check out the basement and deal with any stagglers.
 STAGE COLLECT cherry_mango_vape x1
-OBJECTIVE: [TODO: find his vape]
-WHENMET: [TODO: take the vape back to Mosley]
+OBJECTIVE: Gather the tainted vape.
+WHENMET: Bring the tainted vape back to Mosley.
 REWARD
 POUNDS: 40
 XP: 80

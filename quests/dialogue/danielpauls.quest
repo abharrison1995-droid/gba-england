@@ -23,14 +23,8 @@
 # The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
 # add a new gated choice on NODE start rather than rewriting his farewell.
 #
-# ⚠ PLAYER LINES THE OWNER MUST WRITE, all marked  [TODO: ]  . The script gives every NPC line but
-# not these player clicks - each is either a branch opener (Daniel speaks first) or a
-# "[Next]"/says-nothing beat. Nothing here invents them:
-#   NODE start     - openers for the check_out_the_church, investigate_weird_vape (stage 1 and
-#                    stage 3) and deliver_the_big_blue branches (4 choices)
-#   NODE cotc_show - the click after "What is this contraption?"
-#   NODE iwv_stir  - the "[Next]" after Daniel starts stirring
-#   NODE dbb_chat  - the click that closes the arc after Daniel's "chat with him" line
+# All of Daniel Pauls' player lines are the owner's own words, written in on 2026-08-15. No
+# [TODO: ] blanks remain in this file.
 #
 # Requires the ActiveAtStage gate and the TEACHSPARK directive — see
 # docs/reference/QUEST_TEXT_FORMAT.md.
@@ -56,25 +50,24 @@ GATE: complete spark_of_talent
 CHOICE Hey up. -> dpq1_open
 GATE: active daniel_pauls_quest_one
 # check_out_the_church branch. Requires the makeshift vape (greys until carried), so it only opens
-# once the player is back from the church with it. [TODO: ] is the owner's - Daniel speaks first
-# ("What is this contraption?"), so the script never wrote the player's opening click.
-CHOICE [TODO: ] -> cotc_show
+# once the player is back from the church with it. Daniel speaks first ("What is this contraption?").
+CHOICE Check this out! -> cotc_show
 GATE: active check_out_the_church
 ITEM: makeshift_vape x1
 # investigate_weird_vape, stage 1 — the player is back from Scrap Man with the "Big Blue" price.
-# [TODO: ] is the owner's: Daniel speaks first ("So what's he said?").
-CHOICE [TODO: ] -> iwv_bigblue
+# Daniel speaks first ("So what's he said?").
+CHOICE Oi. -> iwv_bigblue
 GATE: stage investigate_weird_vape 1
 # investigate_weird_vape, stage 3 — the player is back with the gathered goods. Requires blueberries
 # as a proxy (a choice can require only one item; the full three-item check is the Collect stage's
-# job — its objective only flips to "head back" once all three are carried). [TODO: ] is the
-# owner's: Daniel speaks first ("Oh mate, amazing.").
-CHOICE [TODO: ] -> iwv_brew
+# job — its objective only flips to "head back" once all three are carried). Daniel speaks first
+# ("Oh mate, amazing.").
+CHOICE Here's the stuff. -> iwv_brew
 GATE: stage investigate_weird_vape 3
 ITEM: blueberries x2
-# deliver_the_big_blue, stage 1 — the report after Scrap Man's reveal. [TODO: ] is the owner's:
-# Daniel speaks first ("Alright then, so what did you find out?").
-CHOICE [TODO: ] -> dbb_report
+# deliver_the_big_blue, stage 1 — the report after Scrap Man's reveal. Daniel speaks first
+# ("Alright then, so what did you find out?").
+CHOICE Well.. -> dbb_report
 GATE: stage deliver_the_big_blue 1
 CHOICE End Conversation.
 
@@ -171,9 +164,8 @@ CHOICE Ugh fine.
 NODE cotc_show
 SPEAKER: danielpauls
 SPEAK: What is this contraption?
-# [TODO: ] is the owner's. The script has the player say nothing here - just a click onward - but
-# the button still needs text. Do not invent it.
-CHOICE [TODO: ] -> cotc_scrapman
+# The player says nothing scripted here - just a click onward.
+CHOICE Look at it. -> cotc_scrapman
 
 NODE cotc_scrapman
 SPEAKER: danielpauls
@@ -225,8 +217,8 @@ CHOICE Okay. -> iwv_stir
 NODE iwv_stir
 SPEAKER: danielpauls
 SPEAK: *He begins to stir and smash in his pestle and mortar vigorously until a weird blue liquid emerges.*
-# [TODO: ] is the owner's - the script's "[Next]" here, the player just clicks on.
-CHOICE [TODO: ] -> iwv_distill
+# The script's "[Next]" beat here - the player just clicks on.
+CHOICE *watch him work* -> iwv_distill
 
 NODE iwv_distill
 SPEAKER: danielpauls
@@ -254,8 +246,7 @@ CHOICE Fuck me, Mosley's been buying dodgy vapes off the local gangs, and they'v
 NODE dbb_chat
 SPEAKER: danielpauls
 SPEAK: What? The Chinese? Mosley hates the Chinese. Nah, he can't be that desperate. Please, have a chat with him. Here's your cash, sorted for the info. But yeah, chat with him. That can't be right.
-# Ends the chat (no ->), completes part 2 and grants Quest 5. [TODO: ] is the owner's - the script
-# ends the beat here with no player line.
-CHOICE [TODO: ]
+# Ends the chat (no ->), completes part 2 and grants Quest 5.
+CHOICE I'll have a word.
 COMPLETE: deliver_the_big_blue
 GRANT: wtf_mosley
