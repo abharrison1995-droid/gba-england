@@ -136,6 +136,9 @@ namespace ExiledAlvaston.Flow
             CharacterData templateData = existing != null ? existing.PlayerData : null;
             PlayerSession.Instance.BeginNewGame(characterName, playerClass, templateData);
 
+            // A New Game in the same app session must not inherit the previous run's spellbook.
+            existing?.ClearLearnedSpells();
+
             BindPlayerToSession(existing);
 
             EnterManorCellars(isTutorial: true);
@@ -226,6 +229,9 @@ namespace ExiledAlvaston.Flow
             foreach (string chunkName in PlayerSession.Instance.VisitedChunks)
                 UI.WikiUnlock.GrantForChunk(chunkName, silent: true);
             BindPlayerToSession(existing);
+
+            PlayerSession.Instance.SpellName = PlayerSession.SanitizeSpellName(data.SpellName);
+            existing?.RestoreSpellLoadout(data.KnownSpellIds, data.EquippedSpellIds);
 
             // Mid-tutorial saves restart the tutorial cleanly rather than resuming half-staged
             if (!data.TutorialComplete)

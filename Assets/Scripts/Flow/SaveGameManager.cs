@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using ExiledAlvaston.Combat;
+using ExiledAlvaston.Data;
 using ExiledAlvaston.World;
 using ExiledAlvaston.Quests;
 
@@ -94,6 +95,16 @@ namespace ExiledAlvaston.Flow
         // as null, and QuestManager.RestoreFocusedQuest clears a null focus — so the tracker
         // falls back to the first active quest, exactly the pre-focus behaviour. No migration.
         public string FocusedQuestId;
+
+        // Appended for the spellbook. AbilityID values are stable save keys resolved through
+        // Resources/Abilities; the equipped list preserves its four positions with empty strings.
+        // Pre-spellbook saves read both lists as empty, which correctly means no learned spells.
+        public List<string> KnownSpellIds = new List<string>();
+        public List<string> EquippedSpellIds = new List<string>();
+
+        // The player-authored shout belongs to Spark. Old saves read null and restore the existing
+        // "Spark Out" default through PlayerSession.SanitizeSpellName.
+        public string SpellName;
     }
 
     /// <summary>
@@ -121,6 +132,7 @@ namespace ExiledAlvaston.Flow
             data.TutorialComplete = session != null && session.TutorialComplete;
             data.Pounds = session != null ? session.Pounds : 0;
             data.TotalXP = session != null ? session.TotalXP : 0;
+            data.SpellName = session != null ? session.SpellName : PlayerSession.DefaultSpellName;
 
             Vector3 pos = player.transform.position;
             data.ChunkName = chunkMgr.CurrentChunkData.ChunkName;
@@ -135,6 +147,20 @@ namespace ExiledAlvaston.Flow
             {
                 data.Quests.AddRange(QuestManager.Instance.Quests);
                 data.FocusedQuestId = QuestManager.Instance.FocusedQuestId;
+            }
+
+            foreach (AbilityData ability in player.KnownSpells)
+            {
+                if (ability == null || string.IsNullOrWhiteSpace(ability.AbilityID)) continue;
+                if (!data.KnownSpellIds.Contains(ability.AbilityID))
+                    data.KnownSpellIds.Add(ability.AbilityID);
+            }
+            for (int i = 0; i < CombatController.SpellSlots; i++)
+            {
+                AbilityData equipped = player.EquippedAbilities != null && i < player.EquippedAbilities.Count
+                    ? player.EquippedAbilities[i]
+                    : null;
+                data.EquippedSpellIds.Add(equipped != null ? equipped.AbilityID : "");
             }
 
             if (session != null)

@@ -136,6 +136,8 @@ namespace ExiledAlvaston.Flow
             Class = playerClass;
             TutorialComplete = false;
             HasStartedNewGame = true;
+            KnowsSpark = false;
+            SpellName = DefaultSpellName;
 
             // RestoreFromSave immediately repopulates these via RestoreInventory/RestorePounds — a
             // fresh New Game must not inherit whatever a previous playthrough carried or was

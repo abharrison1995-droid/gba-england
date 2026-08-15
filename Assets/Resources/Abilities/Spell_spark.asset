@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f2d2a977b31ac846a94cc1b6509433a, type: 3}
+  m_Name: Spell_spark
+  m_EditorClassIdentifier: 
+  AbilityID: spark
+  AbilityName: Spark
+  Description: Deals 20 lightning damage to the nearest target.
+  Icon: {fileID: 0}
+  IconGlyph: ⚡
+  CooldownTime: 5
+  CastTime: 0.28
+  Range: 8
+  ResourceType: 0
+  ResourceCost: 12
+  BaseDamage: 20
+  EffectPrefab: {fileID: 0}
+  SpellEffect: 1
+  HealAmount: 0
+  ArmourBonus: 0
+  EffectDuration: 0
+  EffectRadius: 0
+  SpeedMultiplier: 1
+  SlowMultiplier: 1
+  ProjectileSpeed: 10
+  CastEffectClip: {fileID: 0}
+  ProjectileClip: {fileID: 0}
+  ImpactClip: {fileID: 7400000, guid: da1104a56b4c72740bc0f1d45ef76843, type: 2}
+  LingeringClip: {fileID: 0}
