@@ -17,10 +17,8 @@
 #   deliver_the_big_blue   - quests/deliver_the_big_blue.quest   (stage 0: take the Big Blue, reveal
 #                            what he knows)
 #
-# ⚠ TWO PLAYER LINES REMAIN THE OWNER'S TO WRITE, both on NODE start, both marked  [TODO: ]  :
-#   - the line that opens his Sell shop (the MERCHANT choice)
-#   - his always-available leave line
-# The Big Blue hand-over and the three reveal "[Next]" clicks were written in on 2026-08-15.
+# All of Scrap Man's player lines are the owner's own words, written in on 2026-08-15. No [TODO: ]
+# blanks remain in this file.
 
 DIALOGUE scrapman
 
@@ -38,13 +36,12 @@ CHOICE *Hand him the Big Blue* -> dbb_react
 GATE: stage deliver_the_big_blue 0
 ITEM: big_blue x1 consume
 # The Sell shop — unlocked only once the whole Big Blue arc (deliver_the_big_blue) is complete.
-# A MERCHANT choice ends the conversation and opens the shop, so it has no  -> . [TODO: ] is the
-# owner's: the line that opens his shop.
-CHOICE [TODO: ]
+# A MERCHANT choice ends the conversation and opens the shop, so it has no  -> .
+CHOICE ANY OLD SCRAP IIIIIIIIRRROON?! .. Sorry lad, didn't see ya. Got anything for me?
 GATE: complete deliver_the_big_blue
 MERCHANT: scrapman sell
-# The always-available way out. [TODO: ] is the owner's leave line.
-CHOICE [TODO: ]
+# The always-available way out.
+CHOICE Squeeze ya later.
 
 # ----------------------------------------------------------------------------------------
 # investigate_weird_vape, stage 0 — Scrap Man eyes the vape and names his price.
