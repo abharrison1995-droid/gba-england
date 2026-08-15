@@ -89,4 +89,5 @@ CHOICE Gimme some time man.
 
 NODE vape_returned
 SPEAKER: councillormosley
-SPEAK: My friend. I owe you more than one. Here is some dough, and give Daniel Pauls a visit again I think he wants to have a chat. Don't forget to come see me again either.
+SPEAK: Good man, sorting that out for me. You should get back to Daniel Paul's. I hear he's in a spot of bother.
+CHOICE Okay.
