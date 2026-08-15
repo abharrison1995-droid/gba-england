@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46077ed314b31ca4db21b475c3f6b892, type: 3}
+  m_Name: Band1_EnemyScavenge
+  m_EditorClassIdentifier:
+  Entries:
+  - Item: {fileID: 11400000, guid: 555e8f53e3e64887bc8308341d5e152a, type: 2}
+    Weight: 18
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 141d96571912485ba3ffc9a5d19be268, type: 2}
+    Weight: 16
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 7a2506ea8dfe4cc2a32a89a3c8a1936c, type: 2}
+    Weight: 14
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: cf5932b1feb04cd9a5882d6a8a24775d, type: 2}
+    Weight: 12
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: df057da02d2d4176a6c19b7604681ab7, type: 2}
+    Weight: 10
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: c51577e902b54d8a8175e93f2c199c4d, type: 2}
+    Weight: 7
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: caaa6878e4b9477fb6889986f3eb5371, type: 2}
+    Weight: 3
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 5fc98077d1f34d3282cba34dd82e96e1, type: 2}
+    Weight: 16
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 38fa338c10b4445d84e343ecd0e56497, type: 2}
+    Weight: 10
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: def3b31b7f3d498a8758ff5174733128, type: 2}
+    Weight: 5
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 201e563f5e364b2f92c2aca3b55d973a, type: 2}
+    Weight: 15
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 3f6fae4e39204437bacfcc256b4ec886, type: 2}
+    Weight: 14
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 188a308e73d14acca34abfea879a8529, type: 2}
+    Weight: 12
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: bc68f4e8d2b34d098c9585c1a6e62003, type: 2}
+    Weight: 10
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: bacc17d6fe1340828ae6fdd96bbefa97, type: 2}
+    Weight: 7
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 246df41142e041d899708a37dbc5dc59, type: 2}
+    Weight: 5
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  - Item: {fileID: 11400000, guid: 38c503986b01417cb72542443736b699, type: 2}
+    Weight: 2
+    MinQuantity: 1
+    MaxQuantity: 1
+    TapsToFree: 1
+  RollCount: 1
+  EmptyWeight: 143

@@ -20,5 +20,82 @@ MonoBehaviour:
     PriceOverride: 0
   - Item: {fileID: 11400000, guid: dc0d40e77762144438af21d38d5928f0, type: 2}
     PriceOverride: 0
-  AcceptedTypes:
-  - 7
+  - Item: {fileID: 11400000, guid: 428236f3b8a0432392007eb3f7356acb, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: 4b3699dd254748f08ffaa14263c37305, type: 2}
+    PriceOverride: 0
+  - Item: {fileID: 11400000, guid: cef5e71aab9743a4a694d0a6b4ebab35, type: 2}
+    PriceOverride: 0
+  AcceptedTypes: []
+  PurchaseRules:
+  - Item: {fileID: 11400000, guid: 141d96571912485ba3ffc9a5d19be268, type: 2}
+    FixedPrice: 0
+    RandomMin: 1
+    RandomMax: 10
+    LowResultMessage: Eh, it something.
+    MidResultMessage: Ayy, they should've licked the bag.
+    HighResultMessage: SUMMER IS HERE, AND IM FUCKIN FUCKIN BUZZIN
+  - Item: {fileID: 11400000, guid: cf5932b1feb04cd9a5882d6a8a24775d, type: 2}
+    FixedPrice: 4
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 555e8f53e3e64887bc8308341d5e152a, type: 2}
+    FixedPrice: 3
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 201e563f5e364b2f92c2aca3b55d973a, type: 2}
+    FixedPrice: 2
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 3f6fae4e39204437bacfcc256b4ec886, type: 2}
+    FixedPrice: 2
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 188a308e73d14acca34abfea879a8529, type: 2}
+    FixedPrice: 3
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: bc68f4e8d2b34d098c9585c1a6e62003, type: 2}
+    FixedPrice: 4
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: bacc17d6fe1340828ae6fdd96bbefa97, type: 2}
+    FixedPrice: 7
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 246df41142e041d899708a37dbc5dc59, type: 2}
+    FixedPrice: 9
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  - Item: {fileID: 11400000, guid: 38c503986b01417cb72542443736b699, type: 2}
+    FixedPrice: 18
+    RandomMin: 0
+    RandomMax: 0
+    LowResultMessage:
+    MidResultMessage:
+    HighResultMessage:
+  SellOnly: 0

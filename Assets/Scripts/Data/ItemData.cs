@@ -14,7 +14,8 @@ namespace ExiledAlvaston.Data
         Consumable,
         Quest,
         Legs,
-        Belt
+        Belt,
+        Junk
     }
 
     /// <summary>
@@ -78,9 +79,15 @@ namespace ExiledAlvaston.Data
         [Tooltip("Off for development or story-only items that must never appear in a sell list.")]
         public bool Tradeable = true;
 
+        // Appended: existing ItemData assets deserialize this as zero and keep their old behaviour.
+        [Header("Consumable Costs")]
+        [Tooltip("Mana removed when this consumable is used, after any restoration. Clamped at zero.")]
+        public int ManaDamage;
+
         /// <summary>Can go in a visible paper-doll slot. Consumables are used, quests are carried.</summary>
         public bool IsEquippable =>
-            Type != ItemType.Shield && Type != ItemType.Consumable && Type != ItemType.Quest;
+            Type != ItemType.Shield && Type != ItemType.Consumable
+            && Type != ItemType.Quest && Type != ItemType.Junk;
 
         public bool CanBeUsedBy(PlayerClass playerClass)
         {

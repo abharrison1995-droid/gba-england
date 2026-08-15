@@ -53,58 +53,108 @@ public static class MerchantValidator
             errors++;
         }
 
-        if (merchant.Stock == null || merchant.Stock.Count == 0)
+        if (!merchant.SellOnly && (merchant.Stock == null || merchant.Stock.Count == 0))
         {
             problems.Add("[Error] Stock is empty.");
             errors++;
-            return problems;
         }
 
         var seen = new HashSet<ItemData>();
-        for (int i = 0; i < merchant.Stock.Count; i++)
+        if (merchant.Stock != null)
         {
-            MerchantStockEntry entry = merchant.Stock[i];
-            if (entry == null || entry.Item == null)
+            for (int i = 0; i < merchant.Stock.Count; i++)
             {
-                problems.Add($"[Error] Stock entry {i} has no item.");
-                errors++;
-                continue;
-            }
+                MerchantStockEntry entry = merchant.Stock[i];
+                if (entry == null || entry.Item == null)
+                {
+                    problems.Add($"[Error] Stock entry {i} has no item.");
+                    errors++;
+                    continue;
+                }
 
-            if (!seen.Add(entry.Item))
-            {
-                problems.Add($"[Error] '{entry.Item.ItemName}' appears in stock more than once.");
-                errors++;
-            }
+                if (!seen.Add(entry.Item))
+                {
+                    problems.Add($"[Error] '{entry.Item.ItemName}' appears in stock more than once.");
+                    errors++;
+                }
 
-            int shelf = merchant.PurchasePrice(entry);
-            if (shelf <= 0)
-            {
-                problems.Add($"[Error] '{entry.Item.ItemName}' has no positive shelf price.");
-                errors++;
-            }
+                int shelf = merchant.PurchasePrice(entry);
+                if (shelf <= 0)
+                {
+                    problems.Add($"[Error] '{entry.Item.ItemName}' has no positive shelf price.");
+                    errors++;
+                }
 
-            if (entry.Item.Type == ItemType.Quest || !entry.Item.Tradeable)
-            {
-                problems.Add($"[Error] '{entry.Item.ItemName}' is a quest/non-tradeable item in stock.");
-                errors++;
-            }
+                if (entry.Item.Type == ItemType.Quest || !entry.Item.Tradeable)
+                {
+                    problems.Add($"[Error] '{entry.Item.ItemName}' is a quest/non-tradeable item in stock.");
+                    errors++;
+                }
 
-            int resale = MerchantData.ResalePrice(entry.Item);
-            if (merchant.Accepts(entry.Item) && resale >= shelf)
-            {
-                problems.Add($"[Error] '{entry.Item.ItemName}' sells here for {shelf} but this " +
-                             $"merchant buys it for {resale}, creating a money loop.");
-                errors++;
-            }
+                MerchantPurchaseRule rule = merchant.FindPurchaseRule(entry.Item);
+                int resale = rule != null ? rule.MaximumPrice : MerchantData.ResalePrice(entry.Item);
+                if (merchant.Accepts(entry.Item) && resale >= shelf)
+                {
+                    problems.Add($"[Error] '{entry.Item.ItemName}' sells here for {shelf} but this " +
+                                 $"merchant buys it for {resale}, creating a money loop.");
+                    errors++;
+                }
 
-            if (entry.PriceOverride > 0 && entry.PriceOverride != entry.Item.Value)
-                problems.Add($"[Warning] '{entry.Item.ItemName}' overrides base value " +
-                             $"{entry.Item.Value} with shelf price {entry.PriceOverride}.");
+                if (entry.PriceOverride > 0 && entry.PriceOverride != entry.Item.Value)
+                    problems.Add($"[Warning] '{entry.Item.ItemName}' overrides base value " +
+                                 $"{entry.Item.Value} with shelf price {entry.PriceOverride}.");
+            }
         }
 
-        if (merchant.AcceptedTypes == null || merchant.AcceptedTypes.Length == 0)
+        var purchaseItems = new HashSet<ItemData>();
+        if (merchant.PurchaseRules != null)
+        {
+            for (int i = 0; i < merchant.PurchaseRules.Count; i++)
+            {
+                MerchantPurchaseRule rule = merchant.PurchaseRules[i];
+                if (rule == null || rule.Item == null)
+                {
+                    problems.Add($"[Error] Purchase rule {i} has no item.");
+                    errors++;
+                    continue;
+                }
+                if (!purchaseItems.Add(rule.Item))
+                {
+                    problems.Add($"[Error] '{rule.Item.ItemName}' has more than one purchase rule.");
+                    errors++;
+                }
+                if (!rule.Item.Tradeable || rule.Item.Type == ItemType.Quest)
+                {
+                    problems.Add($"[Error] Purchase rule '{rule.Item.ItemName}' targets a quest/non-tradeable item.");
+                    errors++;
+                }
+                if (rule.IsRandom)
+                {
+                    if (rule.RandomMin < 1 || rule.RandomMax < rule.RandomMin)
+                    {
+                        problems.Add($"[Error] '{rule.Item.ItemName}' has an invalid random payout range.");
+                        errors++;
+                    }
+                    if (string.IsNullOrWhiteSpace(rule.LowResultMessage) ||
+                        string.IsNullOrWhiteSpace(rule.MidResultMessage) ||
+                        string.IsNullOrWhiteSpace(rule.HighResultMessage))
+                        problems.Add($"[Warning] Random purchase rule '{rule.Item.ItemName}' has an empty result message tier.");
+                }
+                else if (rule.FixedPrice <= 0)
+                {
+                    problems.Add($"[Error] '{rule.Item.ItemName}' has no positive specialist payout.");
+                    errors++;
+                }
+            }
+        }
+
+        bool hasAcceptedTypes = merchant.AcceptedTypes != null && merchant.AcceptedTypes.Length > 0;
+        bool hasPurchaseRules = merchant.PurchaseRules != null && merchant.PurchaseRules.Count > 0;
+        if (!hasAcceptedTypes && !hasPurchaseRules)
             problems.Add("[Warning] Merchant accepts no item types from the player.");
+
+        if (merchant.SellOnly && merchant.Stock != null && merchant.Stock.Count > 0)
+            problems.Add("[Warning] Sell-only merchant has stock that cannot be shown.");
 
         return problems;
     }

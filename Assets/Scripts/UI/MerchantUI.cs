@@ -50,7 +50,7 @@ namespace ExiledAlvaston.UI
             if (IsOpen) return;
 
             _merchant = merchant;
-            _mode = mode;
+            _mode = merchant.SellOnly ? MerchantActionType.Sell : mode;
             _titleText.text = string.IsNullOrEmpty(merchant.MerchantName)
                 ? "Shop"
                 : merchant.MerchantName;
@@ -82,6 +82,7 @@ namespace ExiledAlvaston.UI
             _walletText.text = session != null ? EKVibe.FormatPounds(session.Pounds) : EKVibe.FormatPounds(0);
             _buyTab.interactable = _mode != MerchantActionType.Buy;
             _sellTab.interactable = _mode != MerchantActionType.Sell;
+            _buyTab.gameObject.SetActive(!_merchant.SellOnly);
 
             foreach (Transform child in _rowContainer)
                 Destroy(child.gameObject);
@@ -122,16 +123,22 @@ namespace ExiledAlvaston.UI
 
             if (totals.Count == 0)
             {
-                _statusText.text = "You have nothing to sell.";
+                if (string.IsNullOrEmpty(_statusText.text))
+                    _statusText.text = "You have nothing to sell.";
                 return;
             }
 
             foreach (var pair in totals)
             {
                 ItemData item = pair.Key;
-                int price = MerchantData.ResalePrice(item);
+                int price = _merchant.SalePreviewPrice(item);
                 bool accepted = _merchant.Accepts(item);
-                string priceLabel = accepted ? EKVibe.FormatPounds(price) : "NOT BUYING";
+                MerchantPurchaseRule rule = _merchant.FindPurchaseRule(item);
+                string priceLabel = accepted
+                    ? (rule != null && rule.IsRandom
+                        ? EKVibe.FormatPounds(rule.RandomMin) + " to " + EKVibe.FormatPounds(rule.RandomMax)
+                        : EKVibe.FormatPounds(price))
+                    : "NOT BUYING";
                 BuildRow(item, ItemDetails(item, pair.Value), priceLabel, "SELL", accepted,
                     () => Sell(item));
             }
@@ -161,7 +168,8 @@ namespace ExiledAlvaston.UI
             var session = PlayerSession.Instance;
             if (_merchant == null || session == null || !_merchant.Accepts(item)) return;
 
-            int price = MerchantData.ResalePrice(item);
+            MerchantPurchaseRule rule = _merchant.FindPurchaseRule(item);
+            int price = rule != null ? rule.RollPrice() : MerchantData.ResalePrice(item);
             if (price <= 0 || !session.RemoveItem(item, 1))
             {
                 Refresh();
@@ -169,7 +177,10 @@ namespace ExiledAlvaston.UI
             }
 
             session.AddPounds(price);
-            _statusText.text = "Sold " + item.ItemName + ".";
+            string resultMessage = rule != null ? rule.MessageFor(price) : "";
+            _statusText.text = string.IsNullOrEmpty(resultMessage)
+                ? "Sold " + item.ItemName + " for " + EKVibe.FormatPounds(price) + "."
+                : resultMessage + "  " + EKVibe.FormatPounds(price) + ".";
             Refresh();
         }
 
@@ -182,6 +193,7 @@ namespace ExiledAlvaston.UI
             if (item.PoisonResistance > 0) parts.Add("Poison resist +" + item.PoisonResistance);
             if (item.HealHP > 0) parts.Add("HP +" + item.HealHP);
             if (item.HealMana > 0) parts.Add("Mana +" + item.HealMana);
+            if (item.ManaDamage > 0) parts.Add("Mana -" + item.ManaDamage);
             parts.Add("Owned: " + owned);
             return string.Join("   ", parts);
         }

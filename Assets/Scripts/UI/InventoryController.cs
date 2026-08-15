@@ -700,6 +700,9 @@ namespace ExiledAlvaston.UI
                     player.CurrentMana = Mathf.Min(max, player.CurrentMana + item.HealMana);
                 }
 
+                if (item.ManaDamage > 0)
+                    player.CurrentMana = Mathf.Max(0, player.CurrentMana - item.ManaDamage);
+
                 PlayUseAnimation(player, item.UseAnimationTrigger);
             }
 
