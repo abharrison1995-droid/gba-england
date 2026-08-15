@@ -36,7 +36,17 @@ public static class QuestContentValidator
     {
         public string Path;
         public string QuestId;
+        // The last stage of this file's quest is Collect / Manual. Nothing watches a Manual stage
+        // and a Collect stage's hand-in is dialogue, so either needs a COMPLETE: somewhere to be
+        // finishable — and that COMPLETE: may live in a quests/dialogue/ file, so the check is
+        // cross-file (see CrossReference), not per-file.
+        public bool EndsInCollect;
+        public bool EndsInManual;
         public readonly List<string> GrantIds = new List<string>();
+        // Quest ids COMPLETEd by a choice anywhere in this file. Gathered for the cross-file pass
+        // so a conversation in quests/dialogue/ can satisfy the completion route of a quest defined
+        // in a different file.
+        public readonly List<string> CompleteIds = new List<string>();
         public readonly List<string> DialogueIds = new List<string>();
     }
 
@@ -116,7 +126,6 @@ public static class QuestContentValidator
         int stageCount = 0;
         bool collectLast = false;      // the last stage is Collect
         bool manualLast = false;       // the last stage is Manual
-        bool anyComplete = false;      // some choice COMPLETEs THIS quest
 
         // Per-choice, flushed at the next CHOICE/NODE and at end of file: a TEACHSPARK choice with
         // no gate can be re-picked forever, and SpellNamingUI.Show is called unconditionally when
@@ -144,7 +153,7 @@ public static class QuestContentValidator
             {
                 case "QUEST":
                     info.QuestId = Rest(line, 5);
-                    stageIndex = -1; stageCount = 0; collectLast = false; anyComplete = false;
+                    stageIndex = -1; stageCount = 0; collectLast = false;
                     manualLast = false; gateStageRefs.Clear();
                     choiceTeachSpark = false; choiceGated = false;
                     inDialogue = false; inChoice = false;
@@ -175,7 +184,10 @@ public static class QuestContentValidator
                     break;
 
                 case "TEACHSPARK":
-                    if (info.QuestId == null) break;
+                    // No QuestId guard: a TEACHSPARK choice lives in dialogue, which in the split
+                    // layout is a quests/dialogue/ file with no QUEST block, so QuestId is null
+                    // there. Gating it still matters — an ungated one reopens the naming popup
+                    // forever — so the check must run regardless of where the dialogue lives.
                     if (!inDialogue || !inChoice)
                     {
                         problems.Add(new Problem(Severity.Error, $"{path}: TEACHSPARK outside a CHOICE - the importer rejects it."));
@@ -185,7 +197,10 @@ public static class QuestContentValidator
                     break;
 
                 case "GATE:":
-                    if (info.QuestId == null) break;
+                    // No QuestId guard: a GATE lives in dialogue, which may be a quests/dialogue/
+                    // file (QuestId null). It still marks the choice gated for the TEACHSPARK check.
+                    // ParseGateStageRef only records a stage ref when the gate names THIS file's
+                    // quest, so a null QuestId simply records none — the cross-file limitation.
                     choiceGated = true;
                     ParseGateStageRef(Value(line), info.QuestId, gateStageRefs);
                     break;
@@ -198,7 +213,10 @@ public static class QuestContentValidator
                     break;
 
                 case "GRANT:":
-                    if (info.QuestId == null) break;
+                    // No QuestId guard: a GRANT lives in a CHOICE, and in the split layout the
+                    // granting conversation is a quests/dialogue/ file with no QUEST block. Dropping
+                    // it here was the bug that made every quest granted only from dialogue read as
+                    // "no GRANT: anywhere". The cross-file pass matches these against every quest id.
                     if (!inDialogue || !inChoice)
                     {
                         problems.Add(new Problem(Severity.Error, $"{path}: GRANT outside a CHOICE - the importer rejects it."));
@@ -208,22 +226,26 @@ public static class QuestContentValidator
                     break;
 
                 case "COMPLETE:":
-                    if (info.QuestId == null) break;
+                    // No QuestId guard, for the same reason as GRANT. Every COMPLETEd id is gathered
+                    // and resolved in the cross-file pass, because a quest's completion route may
+                    // live in the giver's quests/dialogue/ file, not in the quest's own file.
                     if (!inDialogue || !inChoice)
                     {
                         problems.Add(new Problem(Severity.Error, $"{path}: COMPLETE outside a CHOICE - the importer rejects it."));
                         break;
                     }
-                    // Only a COMPLETE naming THIS quest makes the quest completable. A COMPLETE for
-                    // a different quest (a multi-quest giver's file) must not satisfy the
-                    // Collect-last check.
-                    if (Value(line) == info.QuestId)
-                        anyComplete = true;
+                    info.CompleteIds.Add(Value(line));
                     break;
             }
         }
 
         FlushChoice(path, info.QuestId, ref choiceTeachSpark, ref choiceGated, problems);
+
+        // Whether this file's quest ends in a Collect / Manual stage. Resolved against the
+        // cross-file set of COMPLETEd ids in CrossReference, so a completion route in a
+        // quests/dialogue/ file counts. (False for dialogue files: they have no STAGEs.)
+        info.EndsInCollect = collectLast;
+        info.EndsInManual = manualLast;
 
         if (dialogueOnly)
         {
@@ -248,14 +270,9 @@ public static class QuestContentValidator
         if (stageCount == 0)
             problems.Add(new Problem(Severity.Error, $"{path}: quest '{info.QuestId}' has no STAGEs."));
 
-        // Collect stage must be last AND have a complete route.
-        if (collectLast && !anyComplete)
-            problems.Add(new Problem(Severity.Error, $"{path}: quest '{info.QuestId}' ends in a Collect stage but no dialogue COMPLETEs it - it can never finish."));
-
-        // Same trap, different condition: nothing watches a Manual stage, so if it is last and no
-        // dialogue completes the quest, it can never finish either.
-        if (manualLast && !anyComplete)
-            problems.Add(new Problem(Severity.Error, $"{path}: quest '{info.QuestId}' ends in a Manual stage but no dialogue COMPLETEs it - it can never finish."));
+        // The Collect-last and Manual-last "can it ever finish?" checks are cross-file — the
+        // COMPLETE: that finishes them often lives in the giver's quests/dialogue/ file — so they
+        // run in CrossReference, not here.
 
         // A stage gate pointing past the end gates a beat that can never be reached.
         foreach (int idx in gateStageRefs)
@@ -275,8 +292,13 @@ public static class QuestContentValidator
                                     List<Problem> problems)
     {
         if (teachSpark && !gated)
+        {
+            // In a quests/dialogue/ file there is no quest id to name, so anchor the warning on the
+            // file path instead of an empty '' quest id.
+            string where = string.IsNullOrEmpty(questId) ? path : $"{path}: quest '{questId}'";
             problems.Add(new Problem(Severity.Warning,
-                $"{path}: a TEACHSPARK choice in '{questId}' has no GATE, so it stays pickable after the spell is learnt and reopens the naming popup each time."));
+                $"{where} has a TEACHSPARK choice with no GATE, so it stays pickable after the spell is learnt and reopens the naming popup each time."));
+        }
         teachSpark = false;
         gated = false;
     }
@@ -301,6 +323,24 @@ public static class QuestContentValidator
     {
         var questIds = new HashSet<string>();
         foreach (var info in all) if (!string.IsNullOrEmpty(info.QuestId)) questIds.Add(info.QuestId);
+
+        // Every quest id COMPLETEd by a choice, in any file. A Collect / Manual last stage needs
+        // one of these to be finishable, and the completing choice usually lives in the giver's
+        // quests/dialogue/ file rather than the quest's own file — so this is resolved here, across
+        // files, not per-file.
+        var completedIds = new HashSet<string>();
+        foreach (var info in all)
+            foreach (string c in info.CompleteIds)
+                if (!string.IsNullOrEmpty(c)) completedIds.Add(c);
+
+        foreach (var info in all)
+        {
+            if (string.IsNullOrEmpty(info.QuestId)) continue;
+            if (info.EndsInCollect && !completedIds.Contains(info.QuestId))
+                problems.Add(new Problem(Severity.Error, $"{info.Path}: quest '{info.QuestId}' ends in a Collect stage but no dialogue COMPLETEs it - it can never finish."));
+            if (info.EndsInManual && !completedIds.Contains(info.QuestId))
+                problems.Add(new Problem(Severity.Error, $"{info.Path}: quest '{info.QuestId}' ends in a Manual stage but no dialogue COMPLETEs it - it can never finish."));
+        }
 
         // Every GRANT must resolve to a quest.
         foreach (var info in all)

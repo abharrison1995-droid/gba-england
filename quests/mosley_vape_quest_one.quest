@@ -6,11 +6,9 @@
 # That file owns every line he says, across every quest: one DIALOGUE block per npcId across the
 # whole quests/ tree, because each import regenerates Dialogue_councillormosley.asset wholesale
 # and a second declaration would clobber the first. This quest's GRANT: and COMPLETE: both live
-# there, as does the GRANT: for daniel_pauls_quest_one.
-#
-# ⚠ Tools -> Content -> Validate Quests only looks for a COMPLETE: inside the quest's own file,
-# so it reports this quest's Collect last stage as having no completion route. That is a blind
-# spot in the validator, not a hole in the quest.
+# there, as does the GRANT: for daniel_pauls_quest_one. Tools -> Content -> Validate Quests
+# resolves GRANT: and COMPLETE: across files, so it sees this Collect last stage's completion
+# route there.
 #
 # See docs/reference/QUEST_TEXT_FORMAT.md for the full format.
 # Import with  Tools -> Content -> Import Quests  (after finishing this file and the prerequisites

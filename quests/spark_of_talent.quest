@@ -13,9 +13,8 @@
 # hold it. Never change it.
 #
 # ⚠ The GRANT: and the COMPLETE: for this quest are both in quests/dialogue/danielpauls.quest.
-# Tools -> Content -> Validate Quests only looks for a COMPLETE: inside the quest's own file, so
-# it reports this Manual last stage as having no completion route. That is a blind spot in the
-# validator, not a hole in the quest.
+# Tools -> Content -> Validate Quests resolves GRANT: and COMPLETE: across files, so it sees this
+# Manual last stage's completion route in that file.
 #
 # underhoused's accusations need the ActiveAtStage gate — see
 # docs/reference/QUEST_TEXT_FORMAT.md.
