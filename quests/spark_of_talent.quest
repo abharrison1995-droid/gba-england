@@ -1,18 +1,23 @@
 # spark_of_talent — the first magic quest, converted from MagicTutorial.cs
 #
-# ⚠ THIS FILE OWNS DANIEL PAULS' ENTIRE CONVERSATION.
-# One DIALOGUE block per npcId across the whole quests/ folder: each import regenerates
-# Dialogue_danielpauls.asset wholesale, so a second file declaring DIALOGUE danielpauls would
-# clobber this one. Every future Daniel Pauls quest adds its nodes to THIS file, gated on its own
-# quest id — see daniel_pauls_quest_one.quest, which deliberately carries no DIALOGUE block.
+# ⚠ DANIEL PAULS' CONVERSATION IS NOT IN THIS FILE — it is quests/dialogue/danielpauls.quest.
+# That file owns every line he says, across every quest he appears in: one DIALOGUE block per
+# npcId across the whole quests/ tree, because each import regenerates Dialogue_danielpauls.asset
+# wholesale and a second declaration would clobber the first. This quest's four Daniel beats (the
+# offer, the nudge, the reward, the post-quest farewell) are gated nodes in there.
 #
-# The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
-# add a new gated choice on NODE start rather than rewriting his farewell.
+# DIALOGUE underhoused stays HERE deliberately: the geezer appears in this quest and nowhere
+# else, which is the case quests/dialogue/ is not for. Move him out the day that stops being true.
 #
 # ⚠ spark_of_talent is a SAVE KEY. It is the id MagicTutorial has always used and existing saves
 # hold it. Never change it.
 #
-# Requires the ActiveAtStage gate and the TEACHSPARK directive — see
+# ⚠ The GRANT: and the COMPLETE: for this quest are both in quests/dialogue/danielpauls.quest.
+# Tools -> Content -> Validate Quests only looks for a COMPLETE: inside the quest's own file, so
+# it reports this Manual last stage as having no completion route. That is a blind spot in the
+# validator, not a hole in the quest.
+#
+# underhoused's accusations need the ActiveAtStage gate — see
 # docs/reference/QUEST_TEXT_FORMAT.md.
 
 QUEST spark_of_talent
@@ -26,7 +31,8 @@ OBJECTIVE: This jazzy fella wants me to have a word with some oddball. I'll indu
 
 # Stage 1 — MANUAL, not TALKTO, deliberately. A TalkTo final stage completes the quest on the
 # interact, BEFORE any choice is picked, which would flip the gates mid-conversation and skip the
-# reward beat entirely. The dialogue's COMPLETE: below is what ends this quest.
+# reward beat entirely. The COMPLETE: on Daniel's reward choice, in
+# quests/dialogue/danielpauls.quest, is what ends this quest.
 STAGE MANUAL
 OBJECTIVE: You're crackling with it. Get back to Daniel Pauls and tell him what happened.
 
@@ -35,61 +41,6 @@ OBJECTIVE: You're crackling with it. Get back to Daniel Pauls and tell him what 
 REWARD
 POUNDS: 0
 XP: 0
-
-# ----------------------------------------------------------------------------------------
-
-DIALOGUE danielpauls
-
-# Daniel opens with the same line at every beat; which branch is offered depends on quest state.
-# Exactly one of the four gated choices can ever be visible at once.
-NODE start
-SPEAKER: danielpauls
-SPEAK: David Blaine was my 3rd ever student. Second was a fella named Jesus. Now he didn't learn too much, I didn't know spanish and he wasn't great with English but he was a good trier.
-CHOICE Uh what? -> offer_open
-GATE: not-started spark_of_talent
-CHOICE Okay okay! -> nudge
-GATE: stage spark_of_talent 0
-CHOICE Cheers I guess. -> reward
-GATE: stage spark_of_talent 1
-CHOICE Fine. -> done
-GATE: complete spark_of_talent
-CHOICE End Conversation.
-
-NODE offer_open
-SPEAKER: danielpauls
-SPEAK: HEY YOU! I can sense it, you've got it. Do me a favour and I'll change your life!
-CHOICE What you on about? What you up to? -> research
-CHOICE Not now, weirdo.
-
-NODE research
-SPEAKER: danielpauls
-SPEAK: There's been a few suspect events. Sparks and bangs, strange folk acting aloof.
-CHOICE Actually — saw a bloke get zapped by some smackhead by the Jones' last week. Thought I'd had some dodgy bud. -> sendoff
-GRANT: spark_of_talent
-CHOICE Right. I'll leave you to it.
-
-NODE sendoff
-SPEAKER: danielpauls
-SPEAK: Haha! That wasn't the bud, son. That was magic. Please, do me a kindness. Find the oddball and have a word for me.
-
-NODE nudge
-SPEAKER: danielpauls
-SPEAK: Come on! Get after him!
-
-NODE reward
-SPEAKER: danielpauls
-SPEAK: Let's have it! I knew you had it in you, you've got the gift!
-CHOICE So... what happens now? -> teach
-TEACHSPARK
-COMPLETE: spark_of_talent
-
-NODE teach
-SPEAKER: danielpauls
-SPEAK: Right, now I invoke the 7 secret corners of the magic circle....... GUH........ feel that? Give it a name if you want, then shout it out and try it!
-
-NODE done
-SPEAKER: danielpauls
-SPEAK: Careful where you sling spells lad. Johnny Law comes a knocking if you're to liberal with the lightening.
 
 # ----------------------------------------------------------------------------------------
 

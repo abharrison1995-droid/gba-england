@@ -1,0 +1,74 @@
+# danielpauls — Daniel Pauls' entire conversation, every quest he appears in.
+#
+# A quests/dialogue/ file: DIALOGUE blocks and NO QUEST block. The importer and
+# Tools -> Content -> Validate Quests both refuse either mistake. See
+# docs/reference/QUEST_TEXT_FORMAT.md.
+#
+# ⚠ THIS FILE OWNS DANIEL PAULS' CONVERSATION. One DIALOGUE block per npcId across the whole
+# quests/ tree: each import regenerates Dialogue_danielpauls.asset wholesale, so a second file
+# declaring DIALOGUE danielpauls would clobber this one. Every future Daniel Pauls quest adds its
+# nodes HERE, gated on its own quest id.
+#
+# The quests whose beats live in this file:
+#   spark_of_talent        - quests/spark_of_talent.quest        (granted and completed here)
+#   daniel_pauls_quest_one - quests/daniel_pauls_quest_one.quest (completed here; granted by
+#                            Councillor Mosley, quests/dialogue/councillormosley.quest)
+#
+# The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
+# add a new gated choice on NODE start rather than rewriting his farewell.
+#
+# Requires the ActiveAtStage gate and the TEACHSPARK directive — see
+# docs/reference/QUEST_TEXT_FORMAT.md.
+
+DIALOGUE danielpauls
+
+# Daniel opens with the same line at every beat; which branch is offered depends on quest state.
+# Exactly one of the four gated choices can ever be visible at once.
+NODE start
+SPEAKER: danielpauls
+SPEAK: David Blaine was my 3rd ever student. Second was a fella named Jesus. Now he didn't learn too much, I didn't know spanish and he wasn't great with English but he was a good trier.
+CHOICE Uh what? -> offer_open
+GATE: not-started spark_of_talent
+CHOICE Okay okay! -> nudge
+GATE: stage spark_of_talent 0
+CHOICE Cheers I guess. -> reward
+GATE: stage spark_of_talent 1
+CHOICE Fine. -> done
+GATE: complete spark_of_talent
+CHOICE End Conversation.
+
+NODE offer_open
+SPEAKER: danielpauls
+SPEAK: HEY YOU! I can sense it, you've got it. Do me a favour and I'll change your life!
+CHOICE What you on about? What you up to? -> research
+CHOICE Not now, weirdo.
+
+NODE research
+SPEAKER: danielpauls
+SPEAK: There's been a few suspect events. Sparks and bangs, strange folk acting aloof.
+CHOICE Actually — saw a bloke get zapped by some smackhead by the Jones' last week. Thought I'd had some dodgy bud. -> sendoff
+GRANT: spark_of_talent
+CHOICE Right. I'll leave you to it.
+
+NODE sendoff
+SPEAKER: danielpauls
+SPEAK: Haha! That wasn't the bud, son. That was magic. Please, do me a kindness. Find the oddball and have a word for me.
+
+NODE nudge
+SPEAKER: danielpauls
+SPEAK: Come on! Get after him!
+
+NODE reward
+SPEAKER: danielpauls
+SPEAK: Let's have it! I knew you had it in you, you've got the gift!
+CHOICE So... what happens now? -> teach
+TEACHSPARK
+COMPLETE: spark_of_talent
+
+NODE teach
+SPEAKER: danielpauls
+SPEAK: Right, now I invoke the 7 secret corners of the magic circle....... GUH........ feel that? Give it a name if you want, then shout it out and try it!
+
+NODE done
+SPEAKER: danielpauls
+SPEAK: Careful where you sling spells lad. Johnny Law comes a knocking if you're to liberal with the lightening.

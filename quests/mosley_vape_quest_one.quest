@@ -1,6 +1,17 @@
 # mosley_vape_quest_one
 # Giver: Councillor Mosley (Preset_CouncillorMosley). Sends the player into a new basement/attic
 # interior to clear Neeks and kill the Tortured Neek for his vape (CherryMangoVape.asset).
+#
+# ⚠ MOSLEY'S CONVERSATION IS NOT IN THIS FILE — it is quests/dialogue/councillormosley.quest.
+# That file owns every line he says, across every quest: one DIALOGUE block per npcId across the
+# whole quests/ tree, because each import regenerates Dialogue_councillormosley.asset wholesale
+# and a second declaration would clobber the first. This quest's GRANT: and COMPLETE: both live
+# there, as does the GRANT: for daniel_pauls_quest_one.
+#
+# ⚠ Tools -> Content -> Validate Quests only looks for a COMPLETE: inside the quest's own file,
+# so it reports this quest's Collect last stage as having no completion route. That is a blind
+# spot in the validator, not a hole in the quest.
+#
 # See docs/reference/QUEST_TEXT_FORMAT.md for the full format.
 # Import with  Tools -> Content -> Import Quests  (after finishing this file and the prerequisites
 # below are in place).
@@ -17,77 +28,3 @@ WHENMET: [TODO: take the vape back to Mosley]
 REWARD
 POUNDS: 40
 XP: 80
-
-# ----------------------------------------------------------------------------------------
-
-DIALOGUE councillormosley
-# councillormosley matches Preset_CouncillorMosley's filename (Preset_ prefix stripped,
-# case-insensitive) — the importer wires this conversation into that preset's Conversation
-# field automatically.
-
-NODE start
-SPEAKER: councillormosley
-SPEAK: Christ.. what have I done? You! no.. no.. leave me be...
-CHOICE Come on what's up? Caught with the intern again? -> reveal_prompt
-GATE: not-started mosley_vape_quest_one
-CHOICE Christ, I'm on it alright. *leaves* -> nag_one
-GATE: active mosley_vape_quest_one
-CHOICE Don't gotta tell me twice. *leaves*
-
-NODE reveal_prompt
-SPEAKER: councillormosley
-SPEAK: AH! I don't have time to care if you'll spread this. You've probably noticed a bit of an uptick in uh...
-CHOICE Nittys about the place? -> reveal_a
-CHOICE Can you spit it out? -> reveal_b
-
-NODE reveal_a
-SPEAKER: councillormosley
-SPEAK: YES! Well, no.. they're just misunderstood.. Anyway, I tried to calm them down. I'd asked ChatJeeves LLM and.. well 3 hours laters I had the vape of all vapes in my palm. I was told it'd chill the oiks down but fucking hell old boy, they're anything but calm.
-CHOICE Alright cool. And you're telling me because? -> ask_why_1
-CHOICE Sounds tasty, a toot for me perchance old boy? -> ask_why_2
-
-NODE reveal_b
-SPEAKER: councillormosley
-SPEAK: Right okay. Had a chat with AI, came up with a little proto-type chill out vape. Decided to test it out on a few of the local ruffians.
-CHOICE Alright cool. And you're telling me because? -> ask_why_1
-CHOICE Sounds tasty, a toot for me perchance old boy? -> ask_why_2
-
-NODE ask_why_1
-SPEAKER: councillormosley
-SPEAK: I've spoken to Daniel, I know you can sling spells. I'll tell the federalis if you don't help me out old boy. Give me a hand and there's a few quid in it for you. Please! *eyes begin to tear up*
-CHOICE Well since you asked nicely, go on then. -> end_accept
-GRANT: mosley_vape_quest_one
-CHOICE Fuck off. *leaves* -> end_decline
-
-NODE ask_why_2
-SPEAKER: councillormosley
-SPEAK: They're fucking zombies you fool. I'll tell you where they are just get back the vape. If that get's out it's Black Mamba 2.0, this place becomes Manchester.
-CHOICE Uh oh.. maybe not then.. so what do you want from me? -> ask_why_1
-CHOICE Ok I'm out *leaves*
-
-NODE end_accept
-SPEAKER: councillormosley
-SPEAK: Excellent. I've written the details in your little diary. I'll be here when you're done. Go on then, chop chop!!!
-
-NODE end_decline
-SPEAKER: councillormosley
-SPEAK: AH! I'll be here if you change your mind. *weeps*
-
-NODE nag_one
-SPEAKER: councillormosley
-SPEAK: COME ON CHAP! GET ME THAT VAPE AND DO NOT CHONG ON IT!
-CHOICE Ooooookay. -> nag_two
-
-NODE nag_two
-SPEAKER: councillormosley
-SPEAK: WHAT ARE YOU DOING??? I CAN PRACTICALLY HEAR THEM HUFFING ON THAT VAPE FROM HERE CHAP HURRY!!!
-CHOICE Mate how does a vape make them get like that? You slapping fent in these? -> vape_returned
-ITEM: cherry_mango_vape x1 consume
-COMPLETE: mosley_vape_quest_one
-GRANT: daniel_pauls_quest_one
-CHOICE Gimme some time man.
-
-NODE vape_returned
-SPEAKER: councillormosley
-SPEAK: Good man, sorting that out for me. You should get back to Daniel Paul's. I hear he's in a spot of bother.
-CHOICE Okay.
