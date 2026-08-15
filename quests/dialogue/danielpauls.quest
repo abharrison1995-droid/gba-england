@@ -14,11 +14,6 @@
 #   daniel_pauls_quest_one - quests/daniel_pauls_quest_one.quest (completed here; granted by
 #                            Councillor Mosley, quests/dialogue/councillormosley.quest)
 #
-# ⚠ TWO PLAYER LINES ARE STILL THE OWNER'S TO WRITE. Both are marked  [TODO: ]  :
-#   NODE start      - the choice that opens the daniel_pauls_quest_one branch
-#   NODE dpq1_close - the choice that closes the conversation after Daniel's last line
-# They are placeholders, not lines. Nothing here may invent them.
-#
 # The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
 # add a new gated choice on NODE start rather than rewriting his farewell.
 #
@@ -43,9 +38,7 @@ CHOICE Cheers I guess. -> reward
 GATE: stage spark_of_talent 1
 CHOICE Fine. -> done
 GATE: complete spark_of_talent
-# [TODO: ] below is a placeholder, not a line. The owner has not written what the player says to
-# open the daniel_pauls_quest_one branch. Fill it in; do not invent one.
-CHOICE [TODO: ] -> dpq1_open
+CHOICE Hey up. -> dpq1_open
 GATE: active daniel_pauls_quest_one
 CHOICE End Conversation.
 
@@ -74,6 +67,10 @@ NODE reward
 SPEAKER: danielpauls
 SPEAK: Let's have it! I knew you had it in you, you've got the gift!
 CHOICE So... what happens now? -> teach
+# Gated to stage 1 so it cannot be re-picked once the quest completes (which would reopen the
+# naming popup). The reward node is only reachable at stage 1 anyway; this makes the rule the
+# validator checks explicit rather than relying on the entry gate.
+GATE: stage spark_of_talent 1
 TEACHSPARK
 COMPLETE: spark_of_talent
 
@@ -126,9 +123,6 @@ COMPLETE: daniel_pauls_quest_one
 NODE dpq1_close
 SPEAKER: danielpauls
 SPEAK: It's too big a church... something ain't right. Check it out for me, please. Few quid in it for you too.
-# [TODO: ] below is a placeholder, not a line. The owner has not written the click that closes the
-# conversation after Daniel's closing line. Fill it in; do not invent one.
-#
-# It must stay a choice with no  ->  : that is what ends a conversation. Without one this node has
-# no exit, and DialogueManager would append its own - an ending nobody wrote, mid-conversation.
-CHOICE [TODO: ]
+# This choice must have no  ->  : that is what ends a conversation. Without one this node has no
+# exit, and DialogueManager would append its own - an ending nobody wrote, mid-conversation.
+CHOICE Ugh fine.
