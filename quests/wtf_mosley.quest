@@ -1,0 +1,28 @@
+# wtf_mosley — "WTF Mosley?" (Quest 5)
+#
+# The player confronts Councillor Mosley about the vapes. The whole beat is one conversation, so the
+# quest is a single MANUAL stage that Mosley's dialogue completes — a TALKTO last stage would
+# complete on the interact, before Mosley says a word, and skip the confession (see
+# daniel_pauls_quest_one for the same reasoning).
+#
+# GRANTED BY: the final Daniel report at the end of the Quest 4 arc (his "have a chat with him"
+# line). That report lives in quests/dialogue/danielpauls.quest and is part of the Quest 4 arc,
+# which is NOT authored yet — so until it is, Validate Quests will warn that wtf_mosley "has no
+# GRANT: anywhere". Expected; it resolves when the Quest 4 report is written.
+#
+# COMPLETED BY: Mosley's closing choice in quests/dialogue/councillormosley.quest, gated active
+# wtf_mosley.
+#
+# Quest 6 ("Gangbusters") is TBC, so no GRANT of it is wired on the closing choice yet — the same
+# shape as daniel_pauls_quest_one carried no grant of Quest 3 until it existed.
+
+QUEST wtf_mosley
+TITLE: WTF Mosley?
+GIVER: Councillor Mosley
+LOCATION: Councillor Mosley's spot, London.
+
+STAGE MANUAL
+OBJECTIVE: Find Ralph and Sanjeet. Maybe Mosley can help...
+
+REWARD
+XP: 30

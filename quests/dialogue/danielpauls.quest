@@ -13,9 +13,16 @@
 #   spark_of_talent        - quests/spark_of_talent.quest        (granted and completed here)
 #   daniel_pauls_quest_one - quests/daniel_pauls_quest_one.quest (completed here; granted by
 #                            Councillor Mosley, quests/dialogue/councillormosley.quest)
+#   check_out_the_church   - quests/check_out_the_church.quest   (granted here at dpq1_speed;
+#                            completed here at cotc_scrapman)
 #
 # The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
 # add a new gated choice on NODE start rather than rewriting his farewell.
+#
+# ⚠ TWO PLAYER LINES ARE THE OWNER'S TO WRITE, both marked  [TODO: ]  :
+#   NODE start     - the choice that opens the check_out_the_church branch
+#   NODE cotc_show - the click that advances after "What is this contraption?" (script: says nothing)
+# The script gives Daniel's lines for this beat but not the player's clicks. Nothing here invents them.
 #
 # Requires the ActiveAtStage gate and the TEACHSPARK directive — see
 # docs/reference/QUEST_TEXT_FORMAT.md.
@@ -40,6 +47,12 @@ CHOICE Fine. -> done
 GATE: complete spark_of_talent
 CHOICE Hey up. -> dpq1_open
 GATE: active daniel_pauls_quest_one
+# check_out_the_church branch. Requires the makeshift vape (greys until carried), so it only opens
+# once the player is back from the church with it. [TODO: ] is the owner's - Daniel speaks first
+# ("What is this contraption?"), so the script never wrote the player's opening click.
+CHOICE [TODO: ] -> cotc_show
+GATE: active check_out_the_church
+ITEM: makeshift_vape x1
 CHOICE End Conversation.
 
 NODE offer_open
@@ -110,15 +123,13 @@ CHOICE And that's out of the ordinary? -> dpq1_speed
 NODE dpq1_speed
 SPEAKER: danielpauls
 SPEAK: No. Well, yes. But... it's the speed. I was there just the day before. Then by the morning, poof.
-# The quest ends HERE, on the choice that reaches Daniel's closing line, so the journal clears as
-# he briefs you rather than a beat later.
-#
-# QUEST 3 GOES HERE. "Check Out the Church" does not exist yet, so this choice deliberately
-# carries no GRANT:. When that quest is written, its  GRANT: <id>  goes on the line under the
-# COMPLETE: below - the same shape as councillormosley.quest's nag_two, which completes one quest
-# and grants the next from a single choice.
+# This one choice both completes "Find the Magic Man" and grants Quest 3, "Check Out the Church" -
+# the same shape as councillormosley.quest's nag_two, which completes one quest and grants the next
+# from a single choice. By the time Daniel says his closing line, the journal has swapped one quest
+# for the next, so it clears as he briefs you rather than a beat later.
 CHOICE Maybe it was a gang? -> dpq1_close
 COMPLETE: daniel_pauls_quest_one
+GRANT: check_out_the_church
 
 NODE dpq1_close
 SPEAKER: danielpauls
@@ -126,3 +137,27 @@ SPEAK: It's too big a church... something ain't right. Check it out for me, plea
 # This choice must have no  ->  : that is what ends a conversation. Without one this node has no
 # exit, and DialogueManager would append its own - an ending nobody wrote, mid-conversation.
 CHOICE Ugh fine.
+
+# ----------------------------------------------------------------------------------------
+# check_out_the_church - "Check Out the Church" (Quest 3).
+#
+# Reached from NODE start's  GATE: active check_out_the_church  choice (which also requires the
+# makeshift vape). The player has fought through the church and is showing Daniel what a Neek was
+# carrying. The vape is NOT consumed - it travels on to Scrap Man in the Quest 4 arc.
+
+NODE cotc_show
+SPEAKER: danielpauls
+SPEAK: What is this contraption?
+# [TODO: ] is the owner's. The script has the player say nothing here - just a click onward - but
+# the button still needs text. Do not invent it.
+CHOICE [TODO: ] -> cotc_scrapman
+
+NODE cotc_scrapman
+SPEAKER: danielpauls
+SPEAK: Give Scrap Man a shout for me. He might know about this.
+# QUEST 4 GOES HERE. This choice completes Quest 3. Once the Quest 4 arc is authored, its first
+# quest is granted from this same choice - add  GRANT: investigate_weird_vape  on the line below the
+# COMPLETE:, the same shape as dpq1_speed above. Left off for now so no GRANT points at a quest file
+# that does not exist yet.
+CHOICE Alright.
+COMPLETE: check_out_the_church

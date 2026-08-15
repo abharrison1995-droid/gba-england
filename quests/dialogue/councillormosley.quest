@@ -13,6 +13,13 @@
 #   mosley_vape_quest_one  - quests/mosley_vape_quest_one.quest  (granted and completed here)
 #   daniel_pauls_quest_one - quests/daniel_pauls_quest_one.quest (granted here at nag_two;
 #                            completed in quests/dialogue/danielpauls.quest)
+#   wtf_mosley             - quests/wtf_mosley.quest             (completed here; granted by the
+#                            Quest 4 report in quests/dialogue/danielpauls.quest, not yet authored)
+#
+# ⚠ TWO PLAYER LINES ARE THE OWNER'S TO WRITE, both marked  [TODO: ]  :
+#   NODE start    - the choice that opens the wtf_mosley branch (Mosley greets first: "Ey up, lad.")
+#   NODE wm_thing - the click after "the thing is..." (script: player says nothing)
+# The script gives Mosley's confession in full but not these two player clicks. Nothing invents them.
 
 DIALOGUE councillormosley
 # councillormosley matches Preset_CouncillorMosley's filename (Preset_ prefix stripped,
@@ -26,6 +33,10 @@ CHOICE Come on what's up? Caught with the intern again? -> reveal_prompt
 GATE: not-started mosley_vape_quest_one
 CHOICE Christ, I'm on it alright. *leaves* -> nag_one
 GATE: active mosley_vape_quest_one
+# wtf_mosley branch. [TODO: ] is the owner's - Mosley greets first ("Ey up, lad."), so the script
+# never wrote the player's opening click.
+CHOICE [TODO: ] -> wm_greet
+GATE: active wtf_mosley
 CHOICE Don't gotta tell me twice. *leaves*
 
 NODE reveal_prompt
@@ -85,3 +96,52 @@ NODE vape_returned
 SPEAKER: councillormosley
 SPEAK: Good man, sorting that out for me. You should get back to Daniel Paul's. I hear he's in a spot of bother.
 CHOICE Okay.
+
+# ----------------------------------------------------------------------------------------
+# wtf_mosley - "WTF Mosley?" (Quest 5).
+#
+# Reached from NODE start's  GATE: active wtf_mosley  choice. One straight run of single-choice
+# nodes: Mosley confesses, the player presses him on. The last choice has no  ->  , so it ends the
+# conversation, and its COMPLETE: is what finishes the quest's single MANUAL stage.
+
+NODE wm_greet
+SPEAKER: councillormosley
+SPEAK: Ey up, lad. How we doing? Have you spoke to Daniel Paul's?
+CHOICE Mosley... where have you been getting these vapes from? -> wm_made
+
+NODE wm_made
+SPEAKER: councillormosley
+SPEAK: I made 'em. I asked the AI folks, and I made 'em myself. All my own parts, all my own bits. But why?
+CHOICE Well, I just had a chat with Scrap Man, and he saw you out there with Ralph and Sanjeet. He said you were buying a weird box of Chinese vapes— -> wm_thing
+
+NODE wm_thing
+SPEAKER: councillormosley
+SPEAK: No. Well, well, well, you see, the thing is...
+# [TODO: ] is the owner's. The script has the player say nothing here - just a click onward.
+CHOICE [TODO: ] -> wm_toomuch
+
+NODE wm_toomuch
+SPEAKER: councillormosley
+SPEAK: It was just too much, old boy. The place has been going down the tubes, and the Neeks, they were more and more rowdy. I just... I didn't know what to do.
+CHOICE Okay. -> wm_experiment
+
+NODE wm_experiment
+SPEAKER: councillormosley
+SPEAK: I didn't know what to do. So I've seen online that the Chinese, they've been using these vapes to sedate people, just make them comply. So I thought, okay, I'll do that. But I couldn't put it through the coffers — the council would never sign off on it, and the people aren't gonna vote for it. So... it was my own personal money. And, well, it was just an experiment. That was it.
+CHOICE But Mosley, why did you involve the Chinese? You hate the Chinese. -> wm_korean
+
+NODE wm_korean
+SPEAKER: councillormosley
+SPEAK: Well, I didn't know they were Chinese. They told me it was Korean. I asked, I said, this is Chinese, that looks Chinese. He said, don't be a racist mate, that's Korean. Who am I to question? He's, you know, he wasn't white.
+CHOICE Yeah, but Sanjeet, he sounds Indian or Pakistani. He doesn't sound like he's an authority on China, Japan, Korea, you know? -> wm_same
+
+NODE wm_same
+SPEAKER: councillormosley
+SPEAK: Well, it's all kind of the same, isn't it? Bit of this, bit of that. I mean, you know...
+CHOICE Alright, now that is a bit racist. Okay, never mind. Can you tell me where Ralph and Sanjeet usually stay? -> wm_where
+
+NODE wm_where
+SPEAKER: councillormosley
+SPEAK: Well, I know they've got a little place near the abandoned bus station. They might be there. That's near where I met them.
+CHOICE Alright, I'll have a word. Cheers. Be careful with the Chinese-Korean stuff, yeah? You're a councillor.
+COMPLETE: wtf_mosley

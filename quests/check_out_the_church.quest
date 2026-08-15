@@ -1,0 +1,29 @@
+# check_out_the_church — "Check Out the Church" (Quest 3)
+#
+# Granted by Daniel Pauls at the END of "Find the Magic Man" (daniel_pauls_quest_one), on the same
+# choice that completes it — quests/dialogue/danielpauls.quest, node dpq1_speed. Completed by Daniel
+# when the player brings him the makeshift vape; that same choice grants Quest 4
+# (investigate_weird_vape).
+#
+# ⚠ NEW ITEM ID — makeshift_vape. The owner is still building this item. Its ItemData.ItemID must
+# equal "makeshift_vape" exactly, or both the COLLECT stage below and Daniel's dialogue hand-in will
+# fail to resolve on import. The vape is NOT consumed at Daniel — the player carries it on to Scrap
+# Man in Quest 4.
+#
+# Daniel's lines for this quest live in quests/dialogue/danielpauls.quest, gated on this quest id.
+
+QUEST check_out_the_church
+TITLE: Check Out the Church
+GIVER: Daniel Pauls
+LOCATION: The abandoned church, by the castle.
+
+# Collect is the last (and only) stage: a Collect stage never completes the quest itself — the
+# hand-in is Daniel's dialogue, which carries the COMPLETE:. The makeshift vape drops from a Neek in
+# the church; how it drops is content/loot placement, not the quest's concern.
+STAGE COLLECT makeshift_vape x1
+OBJECTIVE: Bring D.P. back something from the church to shed some light on the theft.
+WHENMET: Take the makeshift vape to Daniel Paul's.
+
+REWARD
+POUNDS: 30
+XP: 60
