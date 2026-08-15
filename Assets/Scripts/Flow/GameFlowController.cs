@@ -531,16 +531,14 @@ namespace ExiledAlvaston.Flow
             var tracker = FindObjectOfType<QuestTrackerUI>();
             if (tracker != null) tracker.Refresh();
 
-            // Kick off the first magic quest (Daniel Pauls) in London. Parented to the chunk so it
-            // dies with it; resumes from quest state on re-entry.
-            if (MagicTutorial.Instance == null && ChunkManager.CurrentChunkInstance != null)
-            {
-                var magicGo = new GameObject("MagicTutorial");
-                magicGo.transform.SetParent(ChunkManager.CurrentChunkInstance.transform, false);
-                // No sprite passed any more: the quest resolves each character's own preset, so
-                // Daniel Pauls and the geezer no longer share one another's art — or the bandit's.
-                magicGo.AddComponent<MagicTutorial>().Begin();
-            }
+            // The first magic quest used to be spawned here, by a MagicTutorial component parented
+            // to the chunk. It is now spark_of_talent, authored in quests/spark_of_talent.quest and
+            // driven by QuestConditionWatcher like every other quest — Daniel Pauls and the geezer
+            // are placed content in Home_London_Prefab, so nothing needs kicking off.
+            //
+            // Removing this fixed a real defect as a side effect: the old component was created
+            // only on this one code path and died with the chunk, so loading a save directly into
+            // London produced no Daniel Pauls and no geezer at all.
 
             // Checkpoint: tutorial completion must survive an app restart
             SaveGameManager.Save();
