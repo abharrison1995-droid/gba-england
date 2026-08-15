@@ -151,10 +151,15 @@ namespace ExiledAlvaston.Systems
         }
 
         /// <summary>
-        /// Hook called by the ChunkManager when the player transitions between grid chunks.
+        /// Hook called by the ChunkManager when the player transitions between chunks.
         /// Evaluates evasion logic.
+        ///
+        /// ⚠ <paramref name="travelKind"/> is what stops a doorway laundering the wanted level.
+        /// Getting away from the police means getting out of town — which is an edge crossing and
+        /// nothing else. See <see cref="ChunkTravelKind"/>; the parameter is deliberately required.
         /// </summary>
-        public void OnChunkTransition(MapChunkData previousChunk, MapChunkData newChunk)
+        public void OnChunkTransition(MapChunkData previousChunk, MapChunkData newChunk,
+                                      ChunkTravelKind travelKind)
         {
             if (previousChunk == null || newChunk == null) return;
             if (CurrentKnives == 0) return; // Not wanted
@@ -162,6 +167,22 @@ namespace ExiledAlvaston.Systems
             // If escaping a City into a Wilderness chunk
             if (previousChunk.IsCity && !newChunk.IsCity)
             {
+                // A door is not an escape. Interiors and dungeons are off the overworld grid and
+                // all carry IsCity: 0, so testing IsCity alone would mean the player could rob
+                // London, step into a shop, and step back out with a clean sheet — and land a
+                // police cooldown on London for their trouble, since the branch below applies one.
+                //
+                // Gating on the travel kind rather than on a per-chunk flag means every interior
+                // added from here on is covered the moment it exists, with nothing to remember to
+                // tick. A portal that is genuinely meant to be an escape route can be given its
+                // own kind later, deliberately.
+                if (travelKind != ChunkTravelKind.EdgeCrossing)
+                {
+                    Debug.Log($"Slipped indoors ('{newChunk.ChunkName}') while wanted — " +
+                              "the law is still outside. Wanted level kept.");
+                    return;
+                }
+
                 Debug.Log("Evaded Police by entering a wilderness chunk!");
 
                 // Apply cooldown to the city chunk we just left
