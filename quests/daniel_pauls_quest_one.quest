@@ -22,12 +22,14 @@ POUNDS: 0
 XP: 0
 
 # ----------------------------------------------------------------------------------------
-
-DIALOGUE danielpauls
-# danielpauls matches Preset_DanielPauls's filename (Preset_ prefix stripped, case-insensitive).
-# This is his first general Conversation — Preset_DanielPauls.Conversation is currently null.
-
-NODE start
-SPEAKER: danielpauls
-SPEAK: [TODO: greeting — Mosley told him to expect a visit]
-CHOICE [TODO: goodbye]
+# NO DIALOGUE BLOCK HERE, DELIBERATELY.
+#
+# quests/spark_of_talent.quest owns Daniel Pauls' entire conversation. Only one file may declare
+# DIALOGUE danielpauls: each import regenerates Dialogue_danielpauls.asset wholesale, so a second
+# declaration would silently clobber the first depending on file order.
+#
+# To give Daniel something to say about THIS quest, add nodes to spark_of_talent.quest and gate
+# them on daniel_pauls_quest_one — e.g. a choice on his NODE start carrying
+#   GATE: active daniel_pauls_quest_one
+#
+# The TALKTO stage above still completes on interacting with him, whichever conversation runs.
