@@ -1,11 +1,15 @@
 # Quest text format — authoring quests as plain text
 
 ```
-Last verified against: working tree, 2026-08-12
+Last verified against: working tree, 2026-08-15
 Verification scope:    code + format. The importer (Assets/Editor/QuestTextImporter.cs) and
                        validator (Assets/Editor/QuestContentValidator.cs) are written and
-                       brace-balanced but have NEVER been compiled or opened in the editor. The
-                       .quest parser has not run against real content because none exists yet.
+                       brace-balanced but have NEVER been compiled or opened in the editor. Real
+                       .quest files now exist under quests/ — three quests plus two quests/dialogue/
+                       conversations — but nothing in this pipeline has been imported, so the parser
+                       and validator have never run against them. The validator's cross-file pass
+                       (GRANT:/COMPLETE: gathered across quests/ and quests/dialogue/) was corrected
+                       on 2026-08-15 and traced by hand, not run.
                        See docs/plans/QUEST_PIPELINE_PLAN.md.
 ```
 

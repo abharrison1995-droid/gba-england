@@ -544,8 +544,9 @@ Committed 2026-08-15, never compiled, and **not importable until the editor pass
 - **`spark_of_talent` is unchanged as a save key.** *Load a save holding it mid-flight (should bind
   the kill stage to the placed geezer) and one holding it complete (should pay nothing — the
   reward is deliberately 0/0, since the reward scan retro-pays any completed unclaimed quest).*
-- **`quests/spark_of_talent.quest` owns Daniel Pauls' conversation permanently.** One `DIALOGUE`
-  block per npcId across the whole folder; every future Daniel quest adds gated nodes to that file.
+- **`quests/dialogue/danielpauls.quest` owns Daniel Pauls' conversation permanently.** One
+  `DIALOGUE` block per npcId across the whole folder; every future Daniel quest adds gated nodes to
+  that file.
 - **`PlayerSession.KnowsSpark` is still written by nobody who reads it and is not saved.**
   Pre-existing, unchanged by this, and now harder to spot: the spellbook's `KnownSpellIds` is what
   actually persists a learnt spell.
