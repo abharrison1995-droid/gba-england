@@ -1,19 +1,19 @@
 # Vape Arc Build Guide — implementing the written quests
 
 ```
-Last verified against: working tree, 2026-08-16
-Verification scope:    Editor steps traced against code and tracked YAML — the placement of the
-                       London cast (Mosley placed; Daniel only a DanielPaulsSpawn marker; Scrap
-                       Man and the geezer unplaced), the enemy quest-key path
-                       (PlacementBuilders.BuildEnemy -> ApplyQuestKey; all six enemy presets carry
-                       a blank QuestKey), LootOnDeath, HostileAfterDialogue, NPCDialogueInteractable,
-                       and the Portal Placement tool. The four interior shells this guide needs
-                       (Abandoned_Church, Abandoned_Bus_Station, Mosley_Mansion, DP_Academy) were
-                       hand-authored on 2026-08-16 by cloning the Quidland shell — GUIDs assigned by
-                       script, registered, --check-dangling clean — but NEVER opened in Unity.
-                       NOTHING in this pipeline has been imported or run — there is no compiler or
-                       Unity in the agent environment. Every step below must be verified in the
-                       editor. Companion doc: the quest-script map.
+Last verified against: working tree, 2026-08-16 (branch quest/vape-arc-import-and-case-fix)
+Verification scope:    PHASES 1 AND 2 HAVE NOW BEEN RUN. The owner ran Import Quests and Build
+                       Enemies From Generated Art on 2026-08-16, which proves Assembly-CSharp
+                       compiles (an editor tool cannot load otherwise) and produced 7
+                       QuestDefinitions, 2 new DialogueData assets, Enemy_UnderHoused.prefab and
+                       Preset_UnderHoused. The import ALSO hit a case-collision defect that
+                       silently dropped Mosley's and Scrap Man's conversations — repaired, and the
+                       importer fixed, but a re-import is still owed (phase 1). The geezer's three
+                       missing components were hand-wired into the prefab YAML, verified only by
+                       --check-dangling and an anchor scan; that prefab has never been opened in an
+                       editor. The four interior shells (Abandoned_Church, Abandoned_Bus_Station,
+                       Mosley_Mansion, DP_Academy) are still hand-authored YAML never opened in
+                       Unity. Phases 3-6 remain entirely unrun. Companion doc: the quest-script map.
 ```
 
 The seven-quest arc — **Serendipity! → Chemical Castration Gone Wrong → Find the Magic Man →
@@ -23,11 +23,12 @@ those text files into a playable chain, in the order it has to happen.
 
 ## Four things that bite
 
-1. **One editor session, no Play mode, for Phases 1–2.** `MagicTutorial` is deleted, so until the
-   import runs, London has no working Daniel and no geezer. Compile → validate → import in one
-   sitting; don't press Play in the middle.
-2. **Commit before the enemy build tool.** `Build Enemies From Generated Art` rewrites every enemy
-   prefab's YAML on its update path. Run it on a clean tree so a bad run is one `git checkout` away.
+1. **A silent import failure has already happened once.** When a preset's `Conversation` comes back
+   `None` after an import, nothing is logged — read the Phase 1 note before assuming an import
+   succeeded. Check the presets, not just the console.
+2. **Don't re-run `Build Enemies From Generated Art`.** It rewrites every enemy prefab's YAML on its
+   update path and would strip the geezer's hand-added components. If you must, `git diff`
+   `Enemy_UnderHoused.prefab` afterwards.
 3. **Save keys are forever.** An `ItemID`, a quest id, a `QuestActor.Key` or a `ChunkName` that
    does not match *exactly* fails silently — the stage just never advances and nothing logs. Copy
    the strings from the reference tables below; don't retype from memory.
@@ -45,15 +46,16 @@ depends on the one before it.
 | Phase | State | Where it stands |
 |---|---|---|
 | **0 — Prep** | ✅ **Done** (agent, 2026-08-15/16) | 5 `ItemData` assets authored, 2 quest keys set. Hand-authored YAML, unopened in Unity. |
-| **1 — Import** | ⬜ Needs Unity | Validate → Import. **Start here.** |
-| **2 — Geezer** | ⬜ Needs Unity | `Enemy_UnderHoused` doesn't exist yet. |
-| **3 — Place cast** | ⬜ Needs Unity | Assume nothing placed; Ralph & Sanjeet relocate. |
+| **1 — Import** | 🟡 **Ran, one re-run owed** (owner, 2026-08-16) | 7 quests + 2 dialogues written. Mosley's and Scrap Man's were dropped by a defect — now fixed, but **re-import to write them**. |
+| **2 — Geezer** | 🟡 **Built & wired** (owner + agent, 2026-08-16) | Prefab exists, all components on. Only the hostile line is left — **your words**. |
+| **3 — Place cast** | ⬜ Needs Unity | **Start here** once the re-import is done. `Preset_UnderHoused` already exists. |
 | **4 — Locations** | 🟡 **Shells done** (agent, 2026-08-16) | All chunks exist. Dressing + doors need Unity. |
 | **5 — Populate** | ⬜ Needs Unity | Enemies, quest keys, loot. |
 | **6 — Play-test** | ⬜ Needs Unity | — |
 
-Everything an agent can do from outside the editor is done. **The rest needs you in Unity**, starting
-at Phase 1.
+**The project compiles.** Running those two tools loaded the editor assembly, which cannot happen
+unless `Assembly-CSharp` built — so the 147-file namespace rename is through a compiler. That proves
+it compiles and *nothing else*; no behaviour has been exercised.
 
 ---
 
@@ -87,44 +89,71 @@ Setting those keys means the NPCs stamped in Phase 3 carry the right `QuestActor
 - [ ] **Commit current work** before Phase 2 — `Build Enemies From Generated Art` rewrites every
   enemy prefab's YAML, so a clean tree makes a bad run one `git checkout` away.
 
-## Phase 1 — Import the quests
+## Phase 1 — Import the quests 🟡 RAN, ONE RE-RUN OWED
 
-- [ ] **Let it compile.** Console clean before continuing.
-- [ ] **`Tools → Content → Validate Quests`** — checks every quest has a grant, every grant
-  resolves, objectives aren't blank, each Collect stage is last with a completion route. Fix what it
-  names. A missing **item** logged here means Phase 0 isn't finished.
-- [ ] **`Tools → Content → Import Quests`** — writes 7 `QuestDefinition`s into `Resources/Quests/`,
-  the `Dialogue_*.asset` conversations into `Data/Dialogue/Generated/`, and wires
-  `Preset_DanielPauls.Conversation` (blank today) plus Mosley's and Scrap Man's. Read the log for
-  "missing item" lines.
-- [ ] **Confirm Mosley kept his link.** The placed `NPC_Councillor Mosley` references his dialogue
-  asset by GUID, so an in-place re-import *should* give him the new lines.
-  - ⚠️ **Case-sensitivity:** the existing asset is `Dialogue_CouncillorMosley.asset`; the importer
-    writes `Dialogue_councillormosley` (lowercase, from the `DIALOGUE` block name). If Unity makes a
-    *second* lowercase asset instead of overwriting, Mosley keeps his old one-liner. If so: set the
-    placed Mosley's `NPCDialogueInteractable → Conversation` to the new asset, or delete and re-stamp.
+*The owner ran this on 2026-08-16. It wrote the 7 `QuestDefinition`s into `Resources/Quests/` and
+two conversations — `Dialogue_danielpauls` and `Dialogue_underhoused` — and wired
+`Preset_DanielPauls.Conversation`, which had been blank. Then it hit the defect below.*
 
-## Phase 2 — Build & wire the geezer
+**What went wrong.** The case-sensitivity risk this guide flagged landed, but worse than predicted.
+`DialoguePathFor` builds `Dialogue_councillormosley.asset` from the lowercase `DIALOGUE` id.
+**Unity's AssetDatabase is case-sensitive even on Windows**, so it never found the existing
+`Dialogue_CouncillorMosley.asset`; `CreateAsset` then failed against the case-insensitive
+filesystem, and the unsaved object was assigned to the preset — serializing as `{fileID: 0}`. It did
+**not** make a second asset; it **nulled the link and wrote nothing**, in silence. `danielpauls` and
+`underhoused` were unaffected, having no PascalCase asset to collide with.
 
-The under-housed geezer is an **enemy that talks first, then turns hostile**. His prefab doesn't
-exist yet; his full sheet set does.
+**Already repaired** (commits `d4e8142`, `e6721a6`): both assets renamed to the lowercase names the
+pipeline expects with their `.meta` moved so **GUIDs are unchanged** — the placed Mosley and Scrap
+Man never lost their references — both presets' `Conversation` restored, and the importer fixed so
+it resolves paths case-insensitively and updates in place.
 
-- [ ] **`Tools → Content → Build Enemies From Generated Art`** → creates
-  `Assets/Prefabs/Enemies/Enemy_UnderHoused.prefab`. ⚠️ This rewrites every enemy prefab's YAML —
-  check `git status` after and `git checkout` anything unexpected.
-- [ ] **Open it in Prefab Mode** and on the root:
-  - **EnemyAI** — *untick* (disabled). He's harmless until talked to.
-  - **Add `QuestActor`**, **Key** = `under_housed`. *(The kill target for Serendipity! — note the
-    underscore; different string from the dialogue's `underhoused`. This is not in the CLAUDE.md
-    wiring list and is required for the kill stage to bind.)*
-  - **Add `Interactable`** — Prompt "Talk to the twitchy geezer", Interact Range 3, Reusable on.
-  - **Add `NPCDialogueInteractable`** — Conversation = `Dialogue_underhoused.asset` (from the import).
-  - **Add `HostileAfterDialogue`** — type his hostile one-liner into **Turn Hostile Line** (owner's words).
-- [ ] **Hook the interact:** Interactable → **On Interact ()** → `+` → drag the GameObject in →
-  `HostileAfterDialogue.OnTalked ()`. Save the prefab.
-  - ⚠️ Unverified Unity behaviour: if, once panicked, he stands still or sinks through the floor,
-    `Awake` didn't run while the AI was disabled — `HostileAfterDialogue` would need to snap him to
-    the NavMesh itself.
+- [ ] **Re-run `Tools → Content → Import Quests`.** Mosley's and Scrap Man's new lines are still
+  unwritten. Now the filenames match, they update in place with GUIDs intact.
+- [ ] **Confirm the two presets** show a populated `Conversation` rather than `None`:
+  `Preset_CouncillorMosley` and `Preset_Scrapman` in `Assets/Data/Presets/`.
+- [ ] **Confirm the placed pair still resolve** — select `NPC_Councillor Mosley` and Scrap Man in
+  `Home_London_Prefab` and check `NPCDialogueInteractable → Conversation` is not `Missing`.
+- [ ] **`Tools → Content → Validate Quests`** if you change any `.quest` file — checks every quest
+  has a grant, every grant resolves, objectives aren't blank, each Collect stage is last with a
+  completion route.
+
+⚠️ **Sixteen PascalCase dialogue assets are still on disk**, including `Dialogue_Ralph` and
+`Dialogue_Sanjeet` — Quest 6's cast. The importer fix protects them, but that fix has **never been
+compiled**. If a future import ever nulls a preset again, this is the first thing to look at.
+
+## Phase 2 — Build & wire the geezer 🟡 DONE BAR THE LINE
+
+*The owner ran `Tools → Content → Build Enemies From Generated Art` on 2026-08-16. It created
+`Enemy_UnderHoused.prefab` and `Preset_UnderHoused`, and rewrote the YAML of six enemy prefabs and
+two police prefabs on its update path — expected churn, committed as `8bedd67`.*
+
+The tool already delivered two of the three things this phase used to ask for: **`EnemyAI` present
+but disabled**, and **`QuestActor.Key = under_housed`**. The remaining three components were
+hand-written into the prefab YAML (in place, so the GUID is untouched):
+
+| Component | Settings |
+|---|---|
+| `Interactable` | Prompt "Talk to the twitchy geezer", Range 3, Reusable ✓ |
+| `NPCDialogueInteractable` | Conversation → `Dialogue_underhoused` |
+| `HostileAfterDialogue` | `OnTalked` bound to `OnInteract`; **line blank** |
+
+- [ ] **Type his hostile one-liner.** Prefab Mode on `Enemy_UnderHoused` → root →
+  `HostileAfterDialogue` → **Turn Hostile Line**. Left blank deliberately — the words are yours.
+- [ ] **First-open check.** That prefab has never been in an editor. Confirm all five components
+  read correctly in the Inspector, and that `Interactable → On Interact ()` shows one entry pointing
+  at `HostileAfterDialogue.OnTalked`.
+- [ ] **Decide on his combat style.** The tool made him `RangedCaster` with `AttackRange 7` — the
+  **only ranged enemy in the roster**; every other is `0` at `1.6`. Plausible for the magic quest's
+  target, but it wants a deliberate yes rather than an inherited default.
+
+⚠️ **Do not re-run `Build Enemies From Generated Art`.** It rewrites every enemy prefab's YAML on
+its update path and would take the three hand-added components with it. If you ever must, check
+`git diff` on `Enemy_UnderHoused.prefab` afterwards.
+
+⚠️ Unverified Unity behaviour: if, once panicked, he stands still or sinks through the floor,
+`Awake` didn't run while the AI was disabled — `HostileAfterDialogue` would need to snap him to the
+NavMesh itself.
 
 ## Phase 3 — Place the cast (assume nothing is placed)
 
@@ -141,9 +170,11 @@ click to stamp, save the prefab.
   in the arc works without him.
 - [ ] **Scrap Man** by the flatbed van / scrap props. Carries `QuestKey = scrapman`, his sell shop
   and his conversation. No separate chunk needed for him to function.
-- [ ] **The geezer** (`Enemy_UnderHoused`) just north of Daniel. Needs an Enemy preset pointing at
-  the prefab — create `Preset_UnderHoused` (Category **Enemy**, **EnemyPrefab** = `Enemy_UnderHoused`)
-  if none exists, or drag the prefab in by hand. Leave the palette **Level** at 0.
+- [ ] **The geezer** (`Enemy_UnderHoused`) just north of Daniel. **`Preset_UnderHoused` already
+  exists** — the build tool created it, pointing at the prefab with the conversation attached, so
+  just arm it. Leave the palette **Level** at 0.
+  - Its own `QuestKey` is blank, which is correct and safe: `ApplyQuestKey` early-returns on a blank
+    preset key, so the prefab's `under_housed` survives the stamp rather than being overwritten.
 - [ ] **Relocate Ralph & Sanjeet to their base house.** Delete `NPC_Ralph` and `NPC_Sanjeet` from
   `Home_London_Prefab` and stamp them inside their base-house prefab — the gang's trap house (the
   `Gang_Hideout` interior is the shell that fits), near the abandoned bus station. Not needed to play
@@ -247,7 +278,19 @@ All six now exist as assets in `Assets/Resources/Items/`. Nothing to create.
 | `scrapman` | Scrap Man NPC | `Preset_Scrapman.QuestKey` ✓ **set** | Investigate / Deliver — TalkTo |
 | `tortured_neek` | Tortured Neek | `QuestActor` on instance (or its preset) | Chemical Castration — Kill ×1 |
 | `bus_station_neek` | 3 bus-station Neeks | `QuestActor` per instance | Investigate — Kill ×3 |
-| `under_housed` | the geezer | `QuestActor` on `Enemy_UnderHoused` | Serendipity! — Kill ×1 |
+| `under_housed` | the geezer | `QuestActor` on `Enemy_UnderHoused` ✓ **set** | Serendipity! — Kill ×1 |
+
+### Dialogue assets — filenames are case-sensitive to the importer
+
+One `DIALOGUE` block per npcId across the whole `quests/` tree, and the asset filename must match
+the id **exactly**, including case. All four live ids do:
+
+| `DIALOGUE` id | Asset |
+|---|---|
+| `councillormosley` | `Dialogue_councillormosley.asset` (renamed 2026-08-16, GUID kept) |
+| `danielpauls` | `Dialogue_danielpauls.asset` |
+| `scrapman` | `Dialogue_scrapman.asset` (renamed 2026-08-16, GUID kept) |
+| `underhoused` | `Dialogue_underhoused.asset` |
 
 ### Locations
 
