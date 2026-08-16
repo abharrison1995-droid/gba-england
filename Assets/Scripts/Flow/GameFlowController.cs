@@ -17,7 +17,7 @@ namespace ExiledAlvaston.Flow
     }
 
     /// <summary>
-    /// Discover England bootstrap: Title → Creator → Manor Cellars → London gates.
+    /// GBH: England bootstrap: Title → Creator → Manor Cellars → London gates.
     /// </summary>
     public class GameFlowController : MonoBehaviour
     {

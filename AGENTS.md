@@ -6,19 +6,20 @@ never the whole folder.
 
 ## The project
 
-A Unity **mobile RPG**, working title **Exiled Alvaston** (`productName`), shown to the player as
-**GBH: England** (`EKVibe.DisplayTitle`). Modern Britain, magic played straight, a GTA-like
-consequence layer (wanted level, police, stealth, pickpocketing, vehicle theft) over a classic RPG
-core.
+A Unity **mobile RPG** called **GBH: England** (`EKVibe.DisplayTitle`). Modern Britain, magic played
+straight, a GTA-like consequence layer (wanted level, police, stealth, pickpocketing, vehicle theft)
+over a classic RPG core.
 
 **Isometric by design** — a 3D world drawn with billboarded 2D sprites and a fixed isometric
 camera. It is **not** a 2D project, whatever any older brief says. Movement is on the X/Z plane
 using `Rigidbody`/`Collider`. Never introduce `Physics2D`, `Rigidbody2D` or `Vector2` movement:
 nothing throws, things simply pass through each other.
 
-**Naming is deliberately inconsistent — do not "unify" it.** `Exiled Alvaston` is the product name
-and C# root namespace; `GBH: England` is the display title; `Discover England` survives only as an
-editor-tool name; `EK*` prefixes refer to *Exiled Kingdoms*, the inspiration game.
+**The name is unified — `GBH: England`.** The old working title `Exiled Alvaston` was swept out on
+2026-08-16: the C# root namespace is `GBHEngland`, `productName` is `GBH England` (no colon — it
+becomes a real folder in the save path), and `Discover England` is gone. **Do not reintroduce the
+old names.** The one deliberate survivor is the `EK*` prefix (`EKVibe`, `EKNavMeshBaker`), which
+refers to *Exiled Kingdoms*, the inspiration game — a lineage marker, not a stale title.
 
 Unity 2022.3 · one gameplay scene, `Assets/c.unity` · no `.asmdef`, so `Assets/Editor/` is the only
 thing keeping editor code out of builds · no Git LFS.

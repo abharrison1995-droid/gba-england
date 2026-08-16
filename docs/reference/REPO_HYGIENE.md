@@ -100,24 +100,33 @@ the reason at the site. Revisit if either package is ever added.
 
 ## Project naming
 
-Three names are live and **must not be "unified" without an explicit task**:
+**The name is `GBH: England`, and it is now unified.** The old working title `Exiled Alvaston` and
+the older `Discover England` were swept out on 2026-08-16 — see
+[docs/plans/NAME_UNIFICATION_PLAN.md](../plans/NAME_UNIFICATION_PLAN.md) for the survey and the
+phase breakdown.
 
-| Name | Where | Status |
+| Form | Where | Note |
 |---|---|---|
-| `Exiled Alvaston` | `productName`, root C# namespace, most editor menus | The canonical internal one |
-| `GBH: England` | `EKVibe.DisplayTitle` | The player-facing title |
-| `Discover England` | `DiscoverEnglandSetup.cs` and its menu item | Editor-tool name only — **no longer the display title** |
-| `EK` / Exiled Kingdoms | `EKVibe`, `EKNavMeshBaker` | The *inspiration* game, a deliberate reference |
+| `GBH: England` | `EKVibe.DisplayTitle`, all prose | The player-facing title. Use the constant, not a literal |
+| `GBH England` | `productName`, `metroPackageName`, `metroApplicationDescription` | **No colon** — `productName` becomes a real directory in `persistentDataPath` |
+| `GBHEngland` | root C# namespace | One word — a C# identifier cannot hold a space or colon |
+| `GBH England/Data/…` | `CreateAssetMenu` menu paths | Where `Create →` items sit |
+| `gba-england` | the repo and its folder | Unchanged — a colon is illegal in paths and repo names |
+| `EK` / Exiled Kingdoms | `EKVibe`, `EKNavMeshBaker` | **Deliberately kept.** Marks the *inspiration* game, not a stale title of this one |
 
-A rename to **GBH: England** (Great British Annals) has begun. `EKVibe.DisplayTitle` is done, and
-the hub chunk rename `Home_Alvaston` → `Home_London` shipped with a save-key migration.
+⚠️ **`productName` is part of the save path.** `Application.persistentDataPath` is
+`…/LocalLow/<companyName>/<productName>`, so changing it again silently orphans every save and all
+`PlayerPrefs`. It was changed once, on 2026-08-16, when there was no save worth keeping. There is no
+migration shim. `companyName` stays `DefaultCompany` for the same reason.
 
-Still open: the `ExiledAlvaston` namespace appears in **46 `.cs` files and zero serialized assets**,
-so a namespace rename is safe — Unity binds scripts by `.meta` GUID, not type name — but it is not
-done. `productName` is also still "Exiled Alvaston".
+⚠️ **Three serialized files hold the namespace as a literal string**, in `m_TargetAssemblyTypeName`
+(a `UnityEvent` persistent-call target): `EBike.prefab`, `Pub_TheWinchester.prefab` and `c.unity`.
+They are **not** GUID-bound like normal script references, so any future namespace change must
+rewrite them in lockstep — a miss breaks the binding with a clean console and no error.
 
-A colon is illegal in Windows paths and git repo names, so any repo or folder stays `gba-england`
-with `GBH: England` only as a display string.
+*(An earlier version of this section claimed the namespace touched "46 `.cs` files and zero
+serialized assets". Both numbers were wrong: it was 147 files, and those three assets. The grep that
+found them is recorded in the plan.)*
 
 ## Structure facts worth knowing
 

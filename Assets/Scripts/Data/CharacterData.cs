@@ -44,7 +44,7 @@ namespace ExiledAlvaston.Data
         public CoreTraits BaseTraits;
         public Resistances BaseResistances;
 
-        /// <summary>Apply Discover England class baselines (keeps name/portrait).</summary>
+        /// <summary>Apply GBH: England class baselines (keeps name/portrait).</summary>
         public void ApplyClassDefaults(PlayerClass playerClass)
         {
             Class = playerClass;

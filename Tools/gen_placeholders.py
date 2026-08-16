@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 import os, math
 
-out = r"C:\Users\P50\Desktop\Exiled Alvaston\Assets\Art\Placeholders"
+out = r"C:\Users\P50\Desktop\gba-england\Assets\Art\Placeholders"
 os.makedirs(out, exist_ok=True)
 
 def clamp(v):

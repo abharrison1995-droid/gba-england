@@ -11,14 +11,14 @@ using ExiledAlvaston.Vibe;
 using ExiledAlvaston.Systems;
 
 /// <summary>
-/// Boots Discover England: Title + Creator UI, Manor Cellars chunk, London link, GameFlow wiring.
+/// Boots GBH: England — Title + Creator UI, Manor Cellars chunk, London link, GameFlow wiring.
 /// </summary>
 public static class DiscoverEnglandSetup
 {
     const string DataFolder = "Assets/Data/Chunks";
     const string PrefabFolder = "Assets/Prefabs/Chunks";
 
-    [MenuItem("Tools/Danger Zone/Discover England Bootstrap (rebuilds scene + prefabs!)")]
+    [MenuItem("Tools/Danger Zone/GBH: England Bootstrap (rebuilds scene + prefabs!)")]
     public static void SetupAll()
     {
         string manorPrefabPath = PrefabFolder + "/Manor_Cellars_Prefab.prefab";
@@ -51,7 +51,7 @@ public static class DiscoverEnglandSetup
         // ground/path materials already set up on Home_London. Only run that tool manually
         // if a ground actually shows up pink/broken.
 
-        Debug.Log("Discover England ready: Title → Creator → Manor Cellars quest → London gates door (re-enter). Enter Play Mode.");
+        Debug.Log("GBH: England ready — Title → Creator → Manor Cellars quest → London gates door (re-enter). Enter Play Mode.");
     }
 
     private static void EnsureFolders()
@@ -308,7 +308,7 @@ public static class DiscoverEnglandSetup
         // Title
         GameObject title = CreatePanel("TitleScreen", canvasGO.transform, EKVibe.ParchmentDark);
         StretchFull(title);
-        CreateLabel(title.transform, "Discover England", 64, new Vector2(0.5f, 0.72f), EKVibe.TextLight);
+        CreateLabel(title.transform, EKVibe.DisplayTitle, 64, new Vector2(0.5f, 0.72f), EKVibe.TextLight);
         CreateLabel(title.transform, "London waits. The Manor Cellars come first.", 22, new Vector2(0.5f, 0.62f), EKVibe.TextLight);
         var newGame = CreateButton(title.transform, "NewGameButton", "New Game", new Vector2(0.5f, 0.42f));
         var quit = CreateButton(title.transform, "QuitButton", "Quit", new Vector2(0.5f, 0.32f));

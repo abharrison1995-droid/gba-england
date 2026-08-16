@@ -1,7 +1,7 @@
 import os
 import uuid
 
-base = r"C:\Users\P50\Desktop\Exiled Alvaston\Assets\Art\Placeholders"
+base = r"C:\Users\P50\Desktop\gba-england\Assets\Art\Placeholders"
 
 
 def guid():
@@ -265,7 +265,7 @@ for mat_name, tex_name in pairs:
 
 # Patch all chunk prefab Ground materials to mat_grass
 grass_guid = mat_guids["mat_grass"]
-prefab_dir = r"C:\Users\P50\Desktop\Exiled Alvaston\Assets\Prefabs\Chunks"
+prefab_dir = r"C:\Users\P50\Desktop\gba-england\Assets\Prefabs\Chunks"
 asphalt_guid = "f5a052633ce0bf44abd169755be20bd5"
 for name in os.listdir(prefab_dir):
     if not name.endswith(".prefab"):

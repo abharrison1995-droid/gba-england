@@ -15,7 +15,7 @@ namespace ExiledAlvaston.Flow
     }
 
     /// <summary>
-    /// Runtime session for Discover England — created character + tutorial flags.
+    /// Runtime session for GBH: England — created character + tutorial flags.
     /// Survives scene loads via DontDestroyOnLoad.
     /// </summary>
     public class PlayerSession : MonoBehaviour

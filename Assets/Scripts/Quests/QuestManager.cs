@@ -31,7 +31,7 @@ namespace ExiledAlvaston.Quests
     }
 
     /// <summary>
-    /// Tiny quest list for Discover England — start/complete/track active quests.
+    /// Tiny quest list for GBH: England — start/complete/track active quests.
     /// </summary>
     public class QuestManager : MonoBehaviour
     {

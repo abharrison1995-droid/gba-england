@@ -9,15 +9,19 @@ be missed, and a routing table. Detail lives in `docs/`, loaded on demand.
 
 ## 1. What this project is
 
-A Unity **mobile RPG**, working title **Exiled Alvaston** (`ProjectSettings` → `productName`),
-displayed to the player as **GBH: England** (`EKVibe.DisplayTitle`).
+A Unity **mobile RPG** called **GBH: England** (`EKVibe.DisplayTitle`).
 
 Set in a hostile modern Britain, with magic played straight. A GTA-like consequence layer — wanted
 level, police, stealth, pickpocketing, vehicle theft — sits on top of a classic RPG core.
 
-Three names are live and **deliberately not unified**: `Exiled Alvaston` (product name and C#
-namespace), `GBH: England` (display title), and `EK*` prefixes referring to *Exiled Kingdoms*, the
-inspiration game. `Discover England` survives only as the name of one editor tool.
+**The name is unified.** The old working title `Exiled Alvaston` and the older `Discover England`
+were swept out on 2026-08-16 — root C# namespace `GBHEngland`, `productName` **`GBH England`** (no
+colon: it becomes a real folder inside `persistentDataPath`), `Create →` menus under
+`GBH England/Data/…`, and the repo itself still `gba-england` because a colon is illegal in a path.
+**Do not reintroduce the old names.** The one deliberate survivor is the `EK*` prefix (`EKVibe`,
+`EKNavMeshBaker`) — it refers to *Exiled Kingdoms*, the inspiration game, and is a lineage marker
+rather than a stale title.
+→ [docs/plans/NAME_UNIFICATION_PLAN.md](docs/plans/NAME_UNIFICATION_PLAN.md)
 
 ### Presentation model — read this before touching movement or combat
 

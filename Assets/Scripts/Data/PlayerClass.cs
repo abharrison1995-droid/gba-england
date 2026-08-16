@@ -3,7 +3,7 @@ using UnityEngine;
 namespace ExiledAlvaston.Data
 {
     /// <summary>
-    /// Discover England player classes.
+    /// GBH: England player classes.
     /// </summary>
     public enum PlayerClass
     {
