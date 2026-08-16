@@ -23,7 +23,7 @@ those text files into a playable chain, in the order it has to happen.
 
 ## Four things that bite
 
-1. **One editor session, no Play mode, for Phases 0–2.** `MagicTutorial` is deleted, so until the
+1. **One editor session, no Play mode, for Phases 1–2.** `MagicTutorial` is deleted, so until the
    import runs, London has no working Daniel and no geezer. Compile → validate → import in one
    sitting; don't press Play in the middle.
 2. **Commit before the enemy build tool.** `Build Enemies From Generated Art` rewrites every enemy
@@ -40,25 +40,52 @@ those text files into a playable chain, in the order it has to happen.
 `0 Prep → 1 Import → 2 Geezer → 3 Place NPCs → 4 Locations → 5 Populate → 6 Play-test.` Each phase
 depends on the one before it.
 
+## Progress
+
+| Phase | State | Where it stands |
+|---|---|---|
+| **0 — Prep** | ✅ **Done** (agent, 2026-08-15/16) | 5 `ItemData` assets authored, 2 quest keys set. Hand-authored YAML, unopened in Unity. |
+| **1 — Import** | ⬜ Needs Unity | Validate → Import. **Start here.** |
+| **2 — Geezer** | ⬜ Needs Unity | `Enemy_UnderHoused` doesn't exist yet. |
+| **3 — Place cast** | ⬜ Needs Unity | Assume nothing placed; Ralph & Sanjeet relocate. |
+| **4 — Locations** | 🟡 **Shells done** (agent, 2026-08-16) | All chunks exist. Dressing + doors need Unity. |
+| **5 — Populate** | ⬜ Needs Unity | Enemies, quest keys, loot. |
+| **6 — Play-test** | ⬜ Needs Unity | — |
+
+Everything an agent can do from outside the editor is done. **The rest needs you in Unity**, starting
+at Phase 1.
+
 ---
 
-## Phase 0 — Prep the ingredients
+## Phase 0 — Prep the ingredients ✅ DONE
 
-- [ ] **Commit current work** so Phase 2's enemy tool has a clean tree.
-- [ ] **Create the 5 item assets.** The icons are already imported; only the `ItemData` objects are
-  missing. In `Assets/Resources/Items/`, right-click → `Create → ExiledAlvaston → Data → Item Data`,
-  once per item. Set **ItemID** to the exact string, drag the matching `spr_ui_item_…` sprite into
-  **Icon**, and copy the other fields from the template so Type/stacking are right:
-  - `makeshift_vape` & `big_blue` → copy `CherryMangoVape.asset` (quest item; not sellable, not stackable).
-  - `blueberries`, `vending_machine_fungus`, `bus_station_barnacles` → copy `Blackberry.asset` (forage; stackable, tradeable).
-  - ⚠️ You have both a `blueberries` and a `red_berries` icon — the quest wants **`blueberries`**.
-    `ItemName` / `Description` are the owner's words; leave them blank to fill in.
-- [ ] **Set `Preset_DanielPauls.QuestKey` = `danielpauls`** (Investigate stage 1 is `TALKTO danielpauls`).
-- [ ] **Set `Preset_Scrapman.QuestKey` = `scrapman`** (two quests use `TALKTO scrapman`).
+*Completed by agent 2026-08-15 (items + keys) — commit `1d8e66e`. Nothing to do here; the checks
+below are what to confirm on first open.*
 
-Both keys are blank on disk today. Setting them now means the NPCs stamped in Phase 3 carry the
-right `QuestActor` automatically — `PlacementBuilders.ApplyQuestKey` copies the preset's `QuestKey`
-onto whatever is stamped.
+- [x] **The 5 item assets exist** in `Assets/Resources/Items/`, hand-authored with correct `ItemID`s
+  and their icons wired:
+  - `MakeshiftVape.asset` (`makeshift_vape`) and `BigBlue.asset` (`big_blue`) — copied from
+    `CherryMangoVape` (Type 8, not sellable, not stackable).
+  - `Blueberries.asset`, `VendingMachineFungus.asset`, `BusStationBarnacles.asset` — copied from
+    `Blackberry` (Type 7, stackable ×20, tradeable, heals 4 HP / 2 mana).
+- [x] **`Preset_DanielPauls.QuestKey` = `danielpauls`** — was blank.
+- [x] **`Preset_Scrapman.QuestKey` = `scrapman`** — was blank.
+
+Setting those keys means the NPCs stamped in Phase 3 carry the right `QuestActor` automatically —
+`PlacementBuilders.ApplyQuestKey` copies the preset's `QuestKey` onto whatever is stamped.
+
+**Three things to confirm / decide when you open Unity:**
+
+- ⚠️ **Hand-authored `.meta` GUIDs.** Confirm Unity keeps them rather than minting new ones. Even if
+  it re-mints, nothing breaks — items resolve by `ItemID` *string*, not GUID.
+- **`Description` is blank on all five** — the flavour text is the owner's words. They work fine
+  blank; the bag just shows nothing until filled in.
+- **The three forage items are a faithful `Blackberry` copy**, so they are `Tradeable: 1` — a player
+  *could sell a quest ingredient*. Set **Tradeable = 0** on the three if you'd rather they can't.
+  A balance call, deliberately not guessed.
+
+- [ ] **Commit current work** before Phase 2 — `Build Enemies From Generated Art` rewrites every
+  enemy prefab's YAML, so a clean tree makes a bad run one `git checkout` away.
 
 ## Phase 1 — Import the quests
 
@@ -198,21 +225,26 @@ go (Phase 3), but Quest 6 that uses it isn't written — skip until then.
 
 ### Items
 
-| ItemID | Status | Copy from | Icon |
+All six now exist as assets in `Assets/Resources/Items/`. Nothing to create.
+
+| ItemID | Asset | Modelled on | Icon |
 |---|---|---|---|
-| `cherry_mango_vape` | exists | — | done |
-| `makeshift_vape` | make it | `CherryMangoVape` | `spr_ui_item_makeshift_vape` |
-| `big_blue` | make it | `CherryMangoVape` | `spr_ui_item_big_blue` |
-| `blueberries` | make it | `Blackberry` | `spr_ui_item_blueberries` |
-| `vending_machine_fungus` | make it | `Blackberry` | `spr_ui_item_vending_machine_fungus` |
-| `bus_station_barnacles` | make it | `Blackberry` | `spr_ui_item_bus_station_barnacles` |
+| `cherry_mango_vape` | `CherryMangoVape` ✓ | — | ✓ |
+| `makeshift_vape` | `MakeshiftVape` ✓ (2026-08-15) | `CherryMangoVape` | ✓ |
+| `big_blue` | `BigBlue` ✓ (2026-08-15) | `CherryMangoVape` | ✓ |
+| `blueberries` | `Blueberries` ✓ (2026-08-15) | `Blackberry` | ✓ |
+| `vending_machine_fungus` | `VendingMachineFungus` ✓ (2026-08-15) | `Blackberry` | ✓ |
+| `bus_station_barnacles` | `BusStationBarnacles` ✓ (2026-08-15) | `Blackberry` | ✓ |
+
+*The `red_berries` icon is unused — the quest wants `blueberries`. All five new ones have a blank
+`Description` awaiting the owner's words, and the three forage items inherited `Tradeable: 1`.*
 
 ### QuestActor keys
 
 | Key | Goes on | Set how | Used by |
 |---|---|---|---|
-| `danielpauls` | Daniel Pauls NPC | `Preset_DanielPauls.QuestKey` | Investigate — TalkTo |
-| `scrapman` | Scrap Man NPC | `Preset_Scrapman.QuestKey` | Investigate / Deliver — TalkTo |
+| `danielpauls` | Daniel Pauls NPC | `Preset_DanielPauls.QuestKey` ✓ **set** | Investigate — TalkTo |
+| `scrapman` | Scrap Man NPC | `Preset_Scrapman.QuestKey` ✓ **set** | Investigate / Deliver — TalkTo |
 | `tortured_neek` | Tortured Neek | `QuestActor` on instance (or its preset) | Chemical Castration — Kill ×1 |
 | `bus_station_neek` | 3 bus-station Neeks | `QuestActor` per instance | Investigate — Kill ×3 |
 | `under_housed` | the geezer | `QuestActor` on `Enemy_UnderHoused` | Serendipity! — Kill ×1 |
