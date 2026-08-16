@@ -1,34 +1,40 @@
 # Vape Arc Build Guide — implementing the written quests
 
 ```
-Last verified against: working tree, 2026-08-16 (branch quest/vape-arc-import-and-case-fix)
-Verification scope:    PHASES 1 AND 2 HAVE NOW BEEN RUN. The owner ran Import Quests and Build
-                       Enemies From Generated Art on 2026-08-16, which proves Assembly-CSharp
-                       compiles (an editor tool cannot load otherwise) and produced 7
-                       QuestDefinitions, 2 new DialogueData assets, Enemy_UnderHoused.prefab and
-                       Preset_UnderHoused. The import ALSO hit a case-collision defect that
-                       silently dropped Mosley's and Scrap Man's conversations — repaired, and the
-                       importer fixed, but a re-import is still owed (phase 1). The geezer's three
-                       missing components were hand-wired into the prefab YAML, verified only by
-                       --check-dangling and an anchor scan; that prefab has never been opened in an
-                       editor. The four interior shells (Abandoned_Church, Abandoned_Bus_Station,
-                       Mosley_Mansion, DP_Academy) are still hand-authored YAML never opened in
-                       Unity. Phases 3-6 remain entirely unrun. Companion doc: the quest-script map.
+Last verified against: working tree, 2026-08-16 evening (branch main, commit 94b1cad)
+Verification scope:    PHASES 1 AND 2 HAVE BEEN RUN, AND SO HAS AN ART IMPORT. The owner ran
+                       Import Quests and Build Enemies From Generated Art on 2026-08-16, then a
+                       second art import the same day, which together prove Assembly-CSharp
+                       compiles (an editor tool cannot load otherwise). Produced: 7
+                       QuestDefinitions, 2 new DialogueData assets, Enemy_UnderHoused.prefab,
+                       Preset_UnderHoused, and controllers for five new characters including
+                       trap_branch_manager with its Special state. The quest import ALSO hit a
+                       case-collision defect that silently dropped Mosley's and Scrap Man's
+                       conversations — repaired, and the importer fixed, but a re-import is still
+                       owed (phase 1). The geezer's three missing components were hand-wired into
+                       the prefab YAML, verified only by --check-dangling and an anchor scan; that
+                       prefab has never been opened in an editor. The four interior shells
+                       (Abandoned_Church, Abandoned_Bus_Station, Mosley_Mansion, DP_Academy) are
+                       still hand-authored YAML never opened in Unity. Mosley Mansion and its well
+                       are placed in Home_London_Prefab, done in the editor; the well is not wired.
+                       Phases 3-7 remain unrun. Companion doc: the quest-script map.
 ```
 
-The seven-quest arc — **Serendipity! → Chemical Castration Gone Wrong → Find the Magic Man →
-Check Out the Church → Investigate the Weird Vape (pt 1 & 2) → WTF Mosley?** — is fully written in
-`quests/` and `quests/dialogue/`. The words are done. This is the **content and wiring** that turns
-those text files into a playable chain, in the order it has to happen.
+The nine-quest arc — **Serendipity! → Chemical Castration Gone Wrong → Find the Magic Man →
+Check Out the Church → Investigate the Weird Vape (pt 1 & 2) → WTF Mosley? → Gangbusters →
+Ah, Barnacles** — is fully written in `quests/` and `quests/dialogue/`. The words are done. This is
+the **content and wiring** that turns those text files into a playable chain, in the order it has to
+happen.
 
 ## Four things that bite
 
 1. **A silent import failure has already happened once.** When a preset's `Conversation` comes back
    `None` after an import, nothing is logged — read the Phase 1 note before assuming an import
    succeeded. Check the presets, not just the console.
-2. **Don't re-run `Build Enemies From Generated Art`.** It rewrites every enemy prefab's YAML on its
-   update path and would strip the geezer's hand-added components. If you must, `git diff`
-   `Enemy_UnderHoused.prefab` afterwards.
+2. **Don't re-run `Build Enemies From Generated Art` carelessly.** It rewrites every enemy prefab's
+   YAML on its update path and would strip the geezer's hand-added components. Phase 7 needs one
+   more run to build the Trap Branch Manager: do it on a clean tree, then immediately
+   `git checkout -- Assets/Prefabs/Enemies/Enemy_UnderHoused.prefab`.
 3. **Save keys are forever.** An `ItemID`, a quest id, a `QuestActor.Key` or a `ChunkName` that
    does not match *exactly* fails silently — the stage just never advances and nothing logs. Copy
    the strings from the reference tables below; don't retype from memory.
@@ -38,24 +44,41 @@ those text files into a playable chain, in the order it has to happen.
 
 ## The order
 
-`0 Prep → 1 Import → 2 Geezer → 3 Place NPCs → 4 Locations → 5 Populate → 6 Play-test.` Each phase
-depends on the one before it.
+`0 Prep → 1 Import → 2 Geezer → 3 Place NPCs → 4 Locations → 5 Populate → 6 Play-test → 7 Quests
+6-7.` Each phase depends on the one before it.
+
+## Do these four first
+
+Everything downstream assumes them. Exit Play mode and `Ctrl+S` before starting.
+
+1. **`Tools → Art → Import Generated Art`** — 44 staged player sheets, phase 1.
+2. **`Tools → Content → Import Quests`** — the owed re-run, which also picks up quests 6 and 7.
+3. **`Tools → World → Bake Navigation Mesh`** — see below.
+4. **Wire the well** — phase 4, walkthrough included.
+
+⚠️ **Why the bake.** `Home_London_Prefab` carries **no `RuntimeNavMeshBaker`**. Every interior shell
+has one; **none of the six exteriors do** — they ride on the pre-baked `Assets/c/NavMesh.asset`.
+The Mosley Mansion and its well went into London on 2026-08-16, so that NavMesh is now stale and
+agents will path straight through the new building. Route: open `Assets/c.unity`, confirm the London
+chunk instance is in the **Hierarchy**, then `Tools → World → Bake Navigation Mesh`. The console
+logs a vertex count; *"produced no surface"* means the chunk is not loaded in the scene.
 
 ## Progress
 
 | Phase | State | Where it stands |
 |---|---|---|
 | **0 — Prep** | ✅ **Done** (agent, 2026-08-15/16) | 5 `ItemData` assets authored, 2 quest keys set. Hand-authored YAML, unopened in Unity. |
-| **1 — Import** | 🟡 **Ran, one re-run owed** (owner, 2026-08-16) | 7 quests + 2 dialogues written. Mosley's and Scrap Man's were dropped by a defect — now fixed, but **re-import to write them**. |
+| **1 — Import** | 🟡 **Two runs owed** | Art import (44 player sheets) then the quest re-import. Quests 6-7 ride along on the same run. |
 | **2 — Geezer** | 🟡 **Built & wired** (owner + agent, 2026-08-16) | Prefab exists, all components on. Only the hostile line is left — **your words**. |
-| **3 — Place cast** | ⬜ Needs Unity | **Start here** once the re-import is done. `Preset_UnderHoused` already exists. |
-| **4 — Locations** | 🟡 **Shells done** (agent, 2026-08-16) | All chunks exist. Dressing + doors need Unity. |
+| **3 — Place cast** | ⬜ Needs Unity | Daniel has **never** been placed. Mosley, Scrap Man, Ralph & Sanjeet need re-stamping. |
+| **4 — Locations** | 🟡 **Mansion + well placed** (owner, 2026-08-16) | The well is the arc's first door and the project's first `DungeonPortal`. Walkthrough below. |
 | **5 — Populate** | ⬜ Needs Unity | Enemies, quest keys, loot. |
 | **6 — Play-test** | ⬜ Needs Unity | — |
+| **7 — Quests 6-7** | 🟡 **Written, art in** (agent + owner, 2026-08-16) | Both quests authored and structurally checked; both characters' art imported. The boss prefab is the one build left. |
 
-**The project compiles.** Running those two tools loaded the editor assembly, which cannot happen
-unless `Assembly-CSharp` built — so the 147-file namespace rename is through a compiler. That proves
-it compiles and *nothing else*; no behaviour has been exercised.
+**The project compiles.** Running those tools loaded the editor assembly, which cannot happen unless
+`Assembly-CSharp` built — so the 147-file namespace rename is through a compiler. That proves it
+compiles and *nothing else*; no behaviour has been exercised.
 
 ---
 
@@ -89,7 +112,25 @@ Setting those keys means the NPCs stamped in Phase 3 carry the right `QuestActor
 - [ ] **Commit current work** before Phase 2 — `Build Enemies From Generated Art` rewrites every
   enemy prefab's YAML, so a clean tree makes a bad run one `git checkout` away.
 
-## Phase 1 — Import the quests 🟡 RAN, ONE RE-RUN OWED
+## Phase 1 — Import the art, then the quests 🟡 TWO RUNS OWED
+
+### 1a — the art
+
+- [ ] **`Tools → Art → Import Generated Art`.** 44 player sheets are staged in `art_incoming/`.
+
+All five player classes were internally inconsistent — some sheets at 65 px, some at 74. Every
+sidecar is now pinned to `worldHeight: 1.8`, so this run re-does them **in place at 86 px**, GUIDs
+intact, and no clip, controller or prefab reference moves.
+
+- [ ] **Check afterwards:** Project → `Assets/Art/Generated/characters/sheet_char_player_idle` →
+  the Inspector preview reads **86 px**. Then enter Play for ten seconds and confirm the player is
+  visible and animates — if the five class visual profiles did not refresh, that is where it shows.
+
+⚠️ **Pixel size is resolution only.** Nothing gets bigger on screen: `WorldActorVisual.FitScaleToHeight`
+computes `scaleY = Height / sprite.bounds.size.y`, normalising every sprite to its `Height` field.
+Making a boss tower is a `Height` change on the prefab, and stays adjustable en masse afterwards.
+
+### 1b — the quests
 
 *The owner ran this on 2026-08-16. It wrote the 7 `QuestDefinition`s into `Resources/Quests/` and
 two conversations — `Dialogue_danielpauls` and `Dialogue_underhoused` — and wired
@@ -109,9 +150,13 @@ Man never lost their references — both presets' `Conversation` restored, and t
 it resolves paths case-insensitively and updates in place.
 
 - [ ] **Re-run `Tools → Content → Import Quests`.** Mosley's and Scrap Man's new lines are still
-  unwritten. Now the filenames match, they update in place with GUIDs intact.
-- [ ] **Confirm the two presets** show a populated `Conversation` rather than `None`:
-  `Preset_CouncillorMosley` and `Preset_Scrapman` in `Assets/Data/Presets/`.
+  unwritten. Now the filenames match, they update in place with GUIDs intact. The same run picks up
+  **Gangbusters** and **Ah, Barnacles** — no extra step.
+- [ ] **Confirm three presets** show a populated `Conversation` rather than `None`:
+  `Preset_CouncillorMosley`, `Preset_Scrapman` and `Preset_MadFisherman` in `Assets/Data/Presets/`.
+  The fisherman's was authored blank on purpose (`501746f`); this run is what fills it. **No
+  `Preset_TrapBranchManager` exists yet**, so his conversation asset is written and a warning
+  logged — wire it by hand once Phase 7 builds his prefab.
 - [ ] **Confirm the placed pair still resolve** — select `NPC_Councillor Mosley` and Scrap Man in
   `Home_London_Prefab` and check `NPCDialogueInteractable → Conversation` is not `Missing`.
 - [ ] **`Tools → Content → Validate Quests`** if you change any `.quest` file — checks every quest
@@ -155,27 +200,34 @@ its update path and would take the three hand-added components with it. If you e
 `Awake` didn't run while the AI was disabled — `HostileAfterDialogue` would need to snap him to the
 NavMesh itself.
 
-## Phase 3 — Place the cast (assume nothing is placed)
+## Phase 3 — Re-place the cast
 
-Treat London as empty of the arc's cast and place each one fresh. A placement is a **copy, not a
-link**, so if an older copy is already standing — Mosley, Ralph and Sanjeet sit in
-`Home_London_Prefab` today — **delete it first**, then stamp a new one so it picks up the current
-preset wiring. Open `Tools → World Palette` and `Home_London_Prefab` in Prefab Mode; arm a preset,
-click to stamp, save the prefab.
+Do this **after** the imports, never before. Open `Tools → World Palette` and `Home_London_Prefab`
+in Prefab Mode; arm a preset, click to stamp, Esc, `Ctrl+S`.
 
-- [ ] **Councillor Mosley** — the vape-quest giver. Delete any existing `NPC_Councillor Mosley`,
-  then stamp `Preset_CouncillorMosley`. His conversation is wired by the Phase 1 import.
-- [ ] **Daniel Pauls** at the `DanielPaulsSpawn` marker location. Carries `QuestKey = danielpauls`
-  and his Conversation, so the whole Daniel thread and Serendipity! light up. The linchpin — nothing
-  in the arc works without him.
-- [ ] **Scrap Man** by the flatbed van / scrap props. Carries `QuestKey = scrapman`, his sell shop
-  and his conversation. No separate chunk needed for him to function.
+**Who is standing in London right now:** `NPC_Councillor Mosley`, `NPC_Scrapman`, `NPC_Ralph`,
+`NPC_Sanjeet`, plus the Roaming Pharmacist and villagers. **Not** Daniel Pauls — only his empty
+`DanielPaulsSpawn` marker exists.
+
+**Why re-stamp rather than leave them.** A placement is a *copy, not a link*: the stamped NPC keeps
+a reference to its dialogue asset — so a re-import does reach him — but every other preset field
+(sprite, controller, height, quest key, merchant catalogue) was baked in at stamp time and never
+updates. These four were stamped before the presets were finished. Delete, then stamp.
+
+- [ ] **Councillor Mosley** — the vape-quest giver. Delete `NPC_Councillor Mosley`, then stamp
+  `Preset_CouncillorMosley` outside his mansion, which only went in on 2026-08-16. His conversation
+  is wired by the Phase 1 import.
+- [ ] **Scrap Man** by the flatbed van / scrap props. Delete `NPC_Scrapman` first. Carries
+  `QuestKey = scrapman`, his sell shop and his conversation. No separate chunk needed to function.
+- [ ] **Daniel Pauls** at the `DanielPaulsSpawn` marker location — **he has never been placed at
+  all**. Carries `QuestKey = danielpauls` and his Conversation, so the whole Daniel thread and
+  Serendipity! light up together. The linchpin: nothing in the arc works without him.
 - [ ] **The geezer** (`Enemy_UnderHoused`) just north of Daniel. **`Preset_UnderHoused` already
   exists** — the build tool created it, pointing at the prefab with the conversation attached, so
   just arm it. Leave the palette **Level** at 0.
   - Its own `QuestKey` is blank, which is correct and safe: `ApplyQuestKey` early-returns on a blank
     preset key, so the prefab's `under_housed` survives the stamp rather than being overwritten.
-- [ ] **Relocate Ralph & Sanjeet to their base house.** Delete `NPC_Ralph` and `NPC_Sanjeet` from
+- [ ] **Move Ralph & Sanjeet out of London to their base house.** Delete `NPC_Ralph` and `NPC_Sanjeet` from
   `Home_London_Prefab` and stamp them inside their base-house prefab — the gang's trap house (the
   `Gang_Hideout` interior is the shell that fits), near the abandoned bus station. Not needed to play
   the current arc (Quest 6 is unwritten), but it puts them where the story wants them.
@@ -193,9 +245,11 @@ and no falling through the floor** — you dress the existing prefab and wire a 
   confirm Unity accepts it rather than reimporting: one root with a `RuntimeNavMeshBaker`, six
   children (Floor, four Walls, PlayerSpawn), lit floor, no console error. Then confirm
   `Resources/MapChunkRegistry` lists **seventeen** chunks in its Inspector.
-- [ ] **London → Mosley's basement.** `Tools → Place → Portal Placement` → author a **linked
-  pair**: exterior `Home_London`, interior `Mosleys Lab Basement`, link id e.g. `mosley_basement`.
-  Capture poses in Prefab Mode; create the link with no prefab stage open.
+- [x] **Mosley Mansion + the well placed in London** (owner, 2026-08-16, `94b1cad`). The well is
+  intended to carry the portal both ways — down into the cellar lab and back out of the same well.
+- [ ] **Wire the well, both ways** — the full walkthrough is the next section. It is the arc's first
+  door and the **project's first `DungeonPortal` anywhere**, so it is also the first real exercise
+  of portal travel, the arrival-marker lookup and the validator.
 - [ ] **Dress & wire the Abandoned Church** (`Abandoned_Church_Prefab`; model
   `abandoned+church+3d+model.glb` is imported):
   - Open the prefab, drop the church model in as a child (the placeholder box floor/walls stay — they
@@ -216,6 +270,134 @@ confrontation could move upstairs from the basement), `DP_Academy` (Daniel's mag
 placed on the London street today, so the academy is optional), `FU_Sports` and `Quidland` (merchant
 interiors, pre-existing shells). The northern trap house / `Gang_Hideout` is where Ralph & Sanjeet
 go (Phase 3), but Quest 6 that uses it isn't written — skip until then.
+
+## Phase 4a — Wiring the well, click by click
+
+Down into Mosley's cellar lab and back out of the same well. **One tool run writes both ends.**
+
+### What "both ways" actually means
+
+The well carries **one** portal. You do *not* put two on it. The return trip is a separate portal at
+the foot of the ladder down in the basement. Each end also gets an **arrival marker** — the pad you
+land on — and the London one sits **beside** the well, not in it, which is what makes climbing out
+read as climbing out. Each portal points at the *other* chunk's marker by id; that crossover is the
+whole trick, and the tool does it for you.
+
+### Before you touch anything
+
+1. **Exit Play mode and press `Ctrl+S`.** Inspector changes made during Play are discarded when it
+   stops, and this tool writes to prefab assets on disk.
+2. **Decide the Link Id now: `mosley_basement`.** Letters, digits, `_` and `-` only
+   (`LocationLinks.IsValidLinkId`). It names this pair permanently and appears inside four object
+   names. Re-running with the *same* id updates what it made; a *different* id makes a second door
+   beside the first.
+
+### A — capture the London end
+
+3. **Project panel → `Assets/Prefabs/Chunks/Home_London_Prefab` → double-click.** That opens Prefab
+   Mode; the Hierarchy switches to this prefab's contents, with a back arrow at the top-left.
+4. **Open `Tools → Place → Portal Placement`.** An amber banner reads *"Prefab Mode is open on
+   Home_London_Prefab…"*. **That is correct here** — capturing poses is exactly what Prefab Mode is
+   for. The Create button being greyed out is also correct; it stays that way until step 15.
+5. **Fill in the top three fields.** Link Id `mosley_basement` · Exterior Chunk `Home_London_Data` ·
+   Interior Chunk `Mosleys_Lab_Basement_Data`. Both are object fields — drag from
+   `Assets/Data/Chunks/` or use the circle picker.
+6. **Set the prompts and range.** *Exterior Prompt* is what you see at the well — "Climb down the
+   well". *Interior Prompt* is what you see at the bottom — "Climb back up". *Interact Range* 3 is
+   the project norm; the well is a big object, so 4 is defensible if the prompt feels hard to catch.
+7. **Select the well in the Hierarchy, then press "From Selection" under Exterior Door.** It copies
+   that object's position *and rotation*, converted to be relative to the prefab root. If the well
+   is a nested GLB whose pivot sits somewhere unhelpful, make an empty child `WellMouth`, drag it to
+   the lip, and capture that instead.
+8. **Point the rotation away from the mansion.** The portal draws an **orange arrow** in the Scene
+   view. That arrow is "the way out", and it is what the next step derives along. Type a Y rotation
+   until it points at open, walkable ground — not into a wall, not off a kerb.
+9. **Press "Derive From Door" under Outside Marker.** Puts the marker 3.5 m along that arrow, facing
+   the same way, so you climb out already looking away from the well. A **green pad with a blue
+   arrow** appears in the Scene view — check by eye that it is on flat ground. Nudge the numbers by
+   hand if not; the window warns in amber below 3.5 m (`LocationLinks.MinMarkerClearance`).
+
+### B — capture the basement end
+
+10. **Leave Prefab Mode** (back arrow, top-left of the Hierarchy), **then open
+    `Assets/Prefabs/Chunks/Mosleys_Lab_Basement_Prefab`.** The tool window keeps everything you have
+    typed — its fields are `[SerializeField]` on an `EditorWindow` on purpose, so they survive
+    prefab switches, recompiles and Play mode.
+11. **Decide where the ladder comes down and put something there.** The shell is a bare box with a
+    floor and four walls. With no ladder model yet, create an empty named `LadderFoot` against a
+    wall — the portal has no renderer of its own, so an empty is perfectly valid and a model can be
+    dropped on it later.
+12. **Select it and press "From Selection" under Interior Door.** Or use **From Scene Pivot**: frame
+    the spot in the Scene view and press it — position only, rotation stays as typed. Set the
+    rotation so the orange arrow points *into the room*, not into the wall behind it.
+13. **Press "Derive From Door" under Inside Marker.** 3.5 m into the room, facing into the room.
+    That is where you land coming down the well.
+14. **Confirm no amber clearance warnings are showing.** Two can appear, one per end. Both mean the
+    same thing: the marker is close enough to the door back out that you would arrive standing
+    inside its USE prompt, which reads as having failed to go anywhere.
+
+### C — write it
+
+15. **Leave Prefab Mode. The Create button lights up.** *Not optional.* Closed prefabs are edited in
+    place via `LoadPrefabContents`, and doing that to one that is simultaneously open fights
+    whatever the stage holds in memory. The tool refuses rather than risk it.
+16. **Press "Create Or Update Linked Pair".** It writes the exterior end first, then the interior,
+    then registers both chunks in `MapChunkRegistry` and saves.
+17. **Read the console.** You want three lines starting `PortalPlacementTool: linked
+    'mosley_basement'.` ⚠️ If instead it says the exterior end was written but the interior failed,
+    **the pair is half done** — London has a well into a basement with no way out. Fix the cause and
+    re-run before ever entering it.
+18. **Press "Validate All Location Links"** and read the panel underneath. Read-only, safe any time.
+    Errors are real breakage; registry warnings are worth clearing too.
+19. **Open `c.unity` and press "Register Both Chunks With Scene ChunkManager", then `Ctrl+S`.**
+    Optional but tidy — the registry already covers loading, but `AllChunks` is consulted first and
+    keeping the scene list honest makes what the game can reach visible in the Inspector. The button
+    warns if you are still in Prefab Mode.
+20. **Open both prefabs once more and check the tree matches:**
+
+```
+Home_London_Prefab
+└─ LocationLinks
+   └─ mosley_basement
+      ├─ Portal_Enter                          ← at the well · DungeonPortal + Interactable
+      └─ PlayerSpawn_mosley_basement_outside   ← where you land coming back up
+
+Mosleys_Lab_Basement_Prefab
+└─ LocationLinks
+   └─ mosley_basement
+      ├─ Portal_Exit                           ← at the ladder foot
+      └─ PlayerSpawn_mosley_basement_inside    ← where you land going down
+```
+
+⚠️ **Never wire `Interactable → On Interact ()` yourself.** It will look empty and wrong, and it is
+meant to. `DungeonPortal.Awake` adds its own listener at runtime; a persistent editor-time entry
+sits *alongside* it, so one press sends you on two journeys. The tool deliberately leaves it blank.
+
+### Notes
+
+- **Re-running is how you adjust it.** Same Link Id, change what you want, press Create again — it
+  finds everything by name under `LocationLinks/<linkId>/` and updates in place, so no GUID changes
+  and no second door appears. To change only a prompt or the range while keeping positions you have
+  since nudged in the prefab, turn **Overwrite Poses On Update** `OFF` first.
+- **`Mosleys Lab Basement` — spaces, no underscore.** The asset is `Mosleys_Lab_Basement_Data` but
+  its `ChunkName` has spaces, like `Manor Cellars`. That string is the save key. Nothing has ever
+  saved in there, so renaming is still free; after the first in-interior save it is permanent.
+- **Leave `Require Tutorial Done` OFF.** On, the well is barred until the Manor Cellars tutorial is
+  finished and answers "The way is barred for now."
+- **Two refusals that are working as intended.** The portal refuses while you are riding anything —
+  *"Get off the vehicle first."* — because a vehicle is a separate root that would be stranded in a
+  chunk about to be destroyed. And every portal shares a 1.5 s cooldown, so you cannot bounce back.
+- ⚠️ **The wanted level does NOT clear going down the well.** That is the point of a fix that landed
+  2026-08-15 and has **never run**, because no portal existed to run it. The first trip down is its
+  first exercise: commit a crime in London, drop down the well, and check the knives readout does
+  *not* move and the console logs "Slipped indoors…". Walking out to `North_Wasteland` over a chunk
+  edge should still clear it.
+- **Coming back up rebuilds London from the prefab.** `TravelRoutine` destroys and re-instantiates,
+  so dropped items, dead NPCs and opened chests in London reset. Inventory and quest state are safe.
+  Known and scoped out deliberately — see `BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`.
+- **A deliberately broken test, if you want proof the safety net works.** Set the well's
+  `Target Spawn Point Id` to something that does not exist and press USE: you should stay put with a
+  warning naming the chunk and the id — not a black screen, not a half-loaded chunk. Put it back.
 
 ## Phase 5 — Populate: enemies, keys & loot
 
@@ -247,8 +429,78 @@ go (Phase 3), but Quest 6 that uses it isn't written — skip until then.
    Wrong key. No Big Blue? Missing `big_blue` ItemData.)*
 6. **Hand the Big Blue to Scrap Man** (consumed) → reveal → back to Daniel → *WTF Mosley?* starts,
    and Scrap Man's **Sell shop** unlocks.
-7. **Confront Mosley** → confession → arc completes (dead-ends into unwritten Quest 6).
+7. **Confront Mosley** → confession → *Gangbusters* is granted from his closing line (Phase 7).
 8. **Reload a save mid-arc** — kill count survives, Big Blue still in the bag, no console errors.
+
+## Phase 7 — Quests 6-7, the Ralph & Sanjeet trail
+
+*Written by agent 2026-08-16 (`5cb332c`): `quests/gangbusters.quest` and `quests/ah_barnacles.quest`.
+Structurally checked, never imported. Both characters' art imported the same day (`94b1cad`).*
+
+The chain is now closed end to end. Mosley's existing closing line ("a little place near the
+abandoned bus station") gained a `GRANT: gangbusters`; the Trap Branch Manager grants *Ah, Barnacles*
+as he gives up the name; the Mad Fisherman's last choice completes it. **No new items** — Quest 7
+reuses `bus_station_barnacles`.
+
+- [x] **Art imported for both new characters, and `Preset_MadFisherman` authored** (2026-08-16).
+  The Trap Branch Manager arrived with a full six-action set including his **Sludge Bomb**, which
+  needed the importer taught a new `special` action (`1ca1998`) before it would wire into a
+  controller at all — `trap_branch_manager_Controller` now carries a `Special` state.
+  `Preset_MadFisherman` and its `CharacterData` speaker went in as `501746f`.
+- [ ] **Build the Trap Branch Manager prefab.** `Tools → Content → Build Enemies From Generated Art`
+  creates `Enemy_TrapBranchManager.prefab` and `Preset_TrapBranchManager`. ⚠️ That tool rewrites the
+  YAML of every enemy prefab on its update path, which would strip the geezer's three hand-added
+  components. **Run it on a clean tree**, then immediately restore him with
+  `git checkout -- Assets/Prefabs/Enemies/Enemy_UnderHoused.prefab` and re-check his components.
+- [ ] **Set the three prefab fields that carry the "knocked out, not dead" beat.** He talks, fights,
+  then talks again from the floor. That needs **no new code**, but it rests on:
+  - `Health.DestroyOnDeath` = **false** — keeps the body. `Health.Die` still fires `OnDeath` and
+    awards XP *before* its early return, so the Kill stage still counts. `EnemyAI` then stops on its
+    own; every loop early-returns on `IsDead`.
+  - `HostileAfterDialogue.DisableInteractionWhenHostile` = **false**, or the talk prompt is switched
+    off when he turns on you and he can never be spoken to again.
+  - The death clip must **hold its last frame** rather than loop.
+  - *Cost of that second one:* the talk prompt stays visible during the fight, and using it opens a
+    conversation with no valid choice. A small mirror-of-`HostileAfterDialogue` component would fix
+    it properly — not built, deliberately.
+  - *Also note:* the `!DestroyOnDeath` path returns **before** colliders and the NavMeshAgent are
+    disabled, so his body keeps its collider and may stand rather than lie. Don't leave him in a
+    doorway.
+- [ ] **Dress the trap house** — the `Gang_Hideout` shell is the interior;
+  `Croyden+spartan+traphouse+3d+model.glb` is committed and is the building. Same recipe as the
+  church. This is also where **Ralph & Sanjeet** go (Phase 3's last step), so both jobs in one visit.
+- [ ] **Place the Mad Fisherman.** The brief is "the chunk to the right of London", which is
+  `East_RetailPark` at `(1, 0)`. **Worth a decision:** a fisherman in a retail park is an odd fit,
+  and `West_Canal` is the water chunk but sits on the wrong side. His objective text deliberately
+  says nothing more precise than the direction, so a new coastal chunk east of London also works
+  without a rewrite.
+- [ ] **Stamp the trap-house gang** — Roadmen and Neeks, all keyed `trap_house_gang`, one count for
+  the lot. ⚠️ **The count in the file is 5 and is a placeholder** — it must equal the number of
+  keyed actors actually stamped, or the stage can never clear. Same one-chunk rule as always.
+- [ ] **Place ten barnacle containers** in the bus station. `LootChest` is the component —
+  drag-and-drop, one `bus_station_barnacles` ×1 in each Loot list. Respawn is free: a chunk is
+  destroyed and rebuilt on every entry, so chest state resets by itself. ⚠️ **Quest 4 leaves two of
+  these in the bag** and never consumes them, so a player arriving here starts at 2/10, not 0/10.
+  Not a miscount — flagged so it doesn't look like one.
+- [ ] **Fill the `[TODO:]` lines** — nine **player** lines across the two files, four in Gangbusters
+  and five in Ah, Barnacles. Every NPC line the owner sent is in verbatim; only the player's side is
+  placeholder where the script had none. The quests import and run with them in place; they just
+  read as brackets on screen. The Mad Fisherman's `[...]` is the owner's own speechless beat, kept
+  verbatim, and is **not** a TODO.
+
+⚠️ **The Sludge Bomb has art and an animation state and does nothing.** Nothing decides what it
+fires or what it does on landing. That mechanic is an open question for the owner.
+
+### Quest 8 — Rush Hour (TBC)
+
+No file written; it needs prose first. What it will need building:
+
+| Needs | State | Note |
+|---|---|---|
+| East York chunk at `(0, -2)` | not built | Two south, straight through `South_Slums`. A new `MapChunkData` + prefab + registry entry — same shape as the interior shells, but an exterior with edges. |
+| Alex as a hired companion | half there | `Preset_Alex` exists and the whole companion system is written, but **no `CompanionDefinition` asset exists anywhere**, so none of it has ever run. Alex would be its first exercise. |
+| Alex's "free for this one" offer | needs words | Owner's prose. He normally charges; this mission he doesn't. |
+| Mayor Zhao + forced approach dialogue | new | Nothing starts a conversation on proximity today — every conversation is USE-driven. This is the one genuinely new mechanic Quest 8 needs. |
 
 ---
 
@@ -279,11 +531,14 @@ All six now exist as assets in `Assets/Resources/Items/`. Nothing to create.
 | `tortured_neek` | Tortured Neek | `QuestActor` on instance (or its preset) | Chemical Castration — Kill ×1 |
 | `bus_station_neek` | 3 bus-station Neeks | `QuestActor` per instance | Investigate — Kill ×3 |
 | `under_housed` | the geezer | `QuestActor` on `Enemy_UnderHoused` ✓ **set** | Serendipity! — Kill ×1 |
+| `trap_house_gang` | every Roadman & Neek in the trap house | `QuestActor` per instance | Gangbusters — Kill ×5 (**count is a placeholder**) |
+| `trap_branch_manager` | the boss | `QuestActor` on his prefab | Gangbusters — TalkTo, then Kill ×1 |
+| `mad_fisherman` | Mad Fisherman NPC | `Preset_MadFisherman.QuestKey` ✓ **set** | Ah, Barnacles — TalkTo |
 
 ### Dialogue assets — filenames are case-sensitive to the importer
 
 One `DIALOGUE` block per npcId across the whole `quests/` tree, and the asset filename must match
-the id **exactly**, including case. All four live ids do:
+the id **exactly**, including case. All six live ids do:
 
 | `DIALOGUE` id | Asset |
 |---|---|
@@ -291,16 +546,23 @@ the id **exactly**, including case. All four live ids do:
 | `danielpauls` | `Dialogue_danielpauls.asset` |
 | `scrapman` | `Dialogue_scrapman.asset` (renamed 2026-08-16, GUID kept) |
 | `underhoused` | `Dialogue_underhoused.asset` |
+| `trapbranchmanager` | `Dialogue_trapbranchmanager.asset` (new — written by the owed import) |
+| `madfisherman` | `Dialogue_madfisherman.asset` (new — written by the owed import) |
+
+*Neither new id has a PascalCase asset on disk, so neither can hit the case-collision defect.*
 
 ### Locations
 
 | ChunkName | Status | Needs |
 |---|---|---|
-| `Mosleys Lab Basement` | shell ✓ | Door from London; Tortured Neek + vape drop |
+| `Mosleys Lab Basement` | shell ✓, **well placed in London** | Wire the pair (Phase 4a); then Tortured Neek + vape drop. Note the spaces — the asset is `Mosleys_Lab_Basement_Data` but the save key is not |
 | `Abandoned_Church` | shell ✓ (2026-08-16) | First-open check; drop church model in; door from London; a vape-dropping Neek |
 | `Abandoned_Bus_Station` | shell ✓ (2026-08-16) | First-open check; drop bus-station model in; door from London; 3 keyed Neeks + forage |
 | `Mosley_Mansion` | shell ✓ (2026-08-16) | Not required by this arc — ready for the WTF Mosley? finale if wanted |
 | `DP_Academy` | shell ✓ (2026-08-16) | Not required by this arc — Daniel's guild interior, optional |
+| `Gang_Hideout` | shell ✓ | **Quest 6.** Croyden traphouse model; door; keyed gang + the boss. Ralph & Sanjeet live here |
+| `East_RetailPark` | exists | **Quest 7.** The chunk east of London — the Mad Fisherman goes here, subject to the fit question in Phase 7 |
+| East York `(0, -2)` | not built | **Quest 8.** Two chunks south, through `South_Slums`. Nothing exists yet |
 
 *Shells created 2026-08-16 by cloning the Quidland shell (fresh GUIDs, registered, `--check-dangling`
 clean). Never opened in Unity — first-open check in Phase 4. `FU_Sports` and `Quidland` shells
