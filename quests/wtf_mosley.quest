@@ -11,8 +11,8 @@
 # COMPLETED BY: Mosley's closing choice in quests/dialogue/councillormosley.quest, gated active
 # wtf_mosley.
 #
-# Quest 6 ("Gangbusters") is TBC, so no GRANT of it is wired on the closing choice yet — the same
-# shape as daniel_pauls_quest_one carried no grant of Quest 3 until it existed.
+# Mosley's closing choice also GRANTs Quest 6 (gangbusters), written 2026-08-16. His line there
+# already named "a little place near the abandoned bus station" — that place is the trap house.
 
 QUEST wtf_mosley
 TITLE: WTF Mosley?

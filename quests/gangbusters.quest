@@ -1,0 +1,101 @@
+# gangbusters — "Gangbusters" (Quest 6)
+#
+# The player raids the trap house near the abandoned bus station, clears it, and beats the Trap
+# Branch Manager into giving up the Mad Fisherman's name.
+#
+# GRANTED BY: Councillor Mosley's closing choice in quests/dialogue/councillormosley.quest, node
+# wm_where — the same choice that completes wtf_mosley. Mosley's line there already points at "a
+# little place near the abandoned bus station", so the hand-off needed no new prose.
+# COMPLETED BY: the Trap Branch Manager's post-defeat choice below, which also grants Quest 7.
+#
+# ⚠ NEW KEYS: trap_house_gang (shared by every Roadman and Neek in the trap house — author them in
+# ONE chunk, per QUESTS_AND_DIALOGUE.md) and trap_branch_manager (the boss).
+#
+# ⚠ THIS FILE OWNS THE TRAP BRANCH MANAGER'S CONVERSATION. He appears in no other quest, so it is
+# inline rather than in quests/dialogue/. If he ever gains a second quest, move the whole DIALOGUE
+# block to quests/dialogue/trapbranchmanager.quest first — one DIALOGUE block per npcId across the
+# whole tree.
+#
+# ⚠ HE IS BEATEN, NOT KILLED. The design is that he stays on the floor in his final death frame,
+# knocked out, and talks again. That works today with no new code, but it constrains the prefab:
+#   - Health.DestroyOnDeath = FALSE, so the body is never destroyed. Health.Die still fires
+#     OnDeath and awards XP before the early return, so the Kill stage below still counts.
+#   - EnemyAI stops of its own accord — every one of its loops early-returns on _selfHealth.IsDead.
+#   - HostileAfterDialogue.DisableInteractionWhenHostile = FALSE, or the Interactable is switched
+#     off when he turns on you and can never be talked to again. The cost is that the talk prompt
+#     is visible during the fight; picking it mid-fight opens a conversation with no valid choice.
+#     See §"open gaps" in docs/plans/VAPE_ARC_BUILD_GUIDE.md.
+
+QUEST gangbusters
+TITLE: Gangbusters
+GIVER: Councillor Mosley
+LOCATION: The trap house, near the abandoned bus station.
+
+# Stage 0 — the raid. Every Roadman and Neek in the room shares the trap_house_gang key, so this
+# one count covers the lot. The count is a TUNING PLACEHOLDER: it must equal the number of keyed
+# actors actually stamped into the trap house, or the stage can never clear.
+STAGE KILL trap_house_gang x5
+OBJECTIVE: Head to the trap house.
+
+# Stage 1 — the room is clear and he opens up. Intermediate TalkTo: advances on the interact, which
+# is fine — it is not the final stage and carries no hand-in.
+STAGE TALKTO trap_branch_manager
+OBJECTIVE: [TODO: the room is clear — the Trap Branch Manager wants a word.]
+
+# Stage 2 — the boss fight, started by HostileAfterDialogue when the conversation closes.
+STAGE KILL trap_branch_manager x1
+OBJECTIVE: [TODO: he will not talk. Put him down.]
+
+# Stage 3 (last) — he talks from the floor. MANUAL, not TALKTO: a TalkTo final stage completes on
+# the interact, before he says a word, and would skip the reveal entirely (same reasoning as
+# daniel_pauls_quest_one and wtf_mosley).
+STAGE MANUAL
+OBJECTIVE: [TODO: hear him out.]
+
+# Not specified by the owner — 60 XP is a placeholder chosen to sit between wtf_mosley's 30 and
+# ah_barnacles' 120. He pays in information, not cash.
+REWARD
+XP: 60
+
+# ----------------------------------------------------------------------------------------
+# The Trap Branch Manager. One start node, branching per stage — a conversation has a single entry
+# point, so his opening line is heard again from the floor. That is the same constraint Daniel
+# Pauls lives with; if it reads badly, the fix is a second NPC, not a second start node.
+
+DIALOGUE trapbranchmanager
+
+NODE start
+SPEAKER: trapbranchmanager
+SPEAK: Oh man, that was a bit deep, weren't it? I'm just trying to get something started here.
+CHOICE Where's Ralph and Sanjeet? Just tell me. I don't wanna have to do anything. -> tbm_subway
+GATE: stage gangbusters 1
+CHOICE [TODO: press him again, from the floor] -> tbm_beaten
+GATE: stage gangbusters 3
+CHOICE End Conversation.
+
+NODE tbm_subway
+SPEAKER: trapbranchmanager
+SPEAK: Well, I can't tell you that. But just know, all this place is is a branch. It's just like a Subway. You're not gonna break up a Subway and ask for Mr. Subway, are you?
+CHOICE Well, yeah, I guess that would work. But you're not a sandwich shop. You're a dealer. -> tbm_franchise
+
+NODE tbm_franchise
+SPEAKER: trapbranchmanager
+SPEAK: Oi, I'm just a branchy. I'm just a franchisee. Come on, mate.
+CHOICE Come on, just tell me where they are. -> tbm_fight
+
+NODE tbm_fight
+SPEAKER: trapbranchmanager
+SPEAK: No. Fuck off. Come on then.
+# No -> : this ends the conversation, which is what HostileAfterDialogue waits for before switching
+# his EnemyAI on. The stage-1 TalkTo has already advanced by this point.
+CHOICE [TODO: square up]
+
+# Reached only at stage 3 — i.e. only once he is on the floor.
+NODE tbm_beaten
+SPEAKER: trapbranchmanager
+SPEAK: Well, I don't know. But if you go to the Mad Fisherman, he'll be able to tell you. The Mad Fisherman's the fella that got me on with them.
+# Ends the chat, completes Quest 6 and grants Quest 7 from one choice — the same shape as
+# dpq1_speed and dbb_chat.
+CHOICE [TODO: take the name and go]
+COMPLETE: gangbusters
+GRANT: ah_barnacles

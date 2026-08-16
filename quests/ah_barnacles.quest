@@ -1,0 +1,100 @@
+# ah_barnacles — "Ah, Barnacles" (Quest 7)
+#
+# The Mad Fisherman knows where Ralph and Sanjeet are and will not say so for free. Ten bus
+# barnacles buys the answer: East York, and a pointer at Alex back in London.
+#
+# GRANTED BY: the Trap Branch Manager's post-defeat choice (quests/gangbusters.quest, node
+# tbm_beaten), the same choice that completes Quest 6.
+# COMPLETED BY: the Mad Fisherman's closing choice below, node mf_alex.
+#
+# Quest 8 ("Rush Hour") is TBC, so no GRANT of it is wired on that closing choice yet — the same
+# shape wtf_mosley carried until Quest 6 existed.
+#
+# ⚠ NEW KEY: mad_fisherman (QuestActor). No item is new — bus_station_barnacles already exists and
+# is already used by investigate_weird_vape.
+#
+# ⚠ THE BARNACLES ARE SHARED WITH QUEST 4. investigate_weird_vape collects 2 of this exact item and
+# does NOT consume them, so a player arriving here still carrying that pair starts this stage at
+# 2/10 rather than 0/10. Collect counts what is in the bag, not what was picked up for this quest.
+# Deliberate to leave as-is — flagged so it is not mistaken for a miscount later.
+#
+# ⚠ THIS FILE OWNS THE MAD FISHERMAN'S CONVERSATION — inline because he appears in no other quest.
+# If Quest 8 gives him more to say, move the whole DIALOGUE block to
+# quests/dialogue/madfisherman.quest first.
+
+QUEST ah_barnacles
+TITLE: Ah, Barnacles
+GIVER: Trap Branch Manager
+LOCATION: East of London.
+
+# Stage 0 — a deliberately rough pointer: the owner's brief is that the journal names the chunk to
+# the right of London and nothing more. Intermediate TalkTo, so it advances on the interact.
+STAGE TALKTO mad_fisherman
+OBJECTIVE: Find the Mad Fisherman.
+
+# Stage 1 (last) — the gather. Ten single-item containers in the bus station chunk; a Collect stage
+# never completes the quest itself, so the hand-in is the dialogue below.
+STAGE COLLECT bus_station_barnacles x10
+OBJECTIVE: Try going back to the abandoned bus station. Maybe next door is open now.
+WHENMET: [TODO: take the barnacles back to the Mad Fisherman.]
+
+REWARD
+POUNDS: 50
+XP: 120
+
+# ----------------------------------------------------------------------------------------
+
+DIALOGUE madfisherman
+
+NODE start
+SPEAKER: madfisherman
+SPEAK: Arrr. What do you want?
+CHOICE Have you heard of Ralph and Sanjeet? Croydon Spartans? -> mf_barnacle
+GATE: stage ah_barnacles 0
+# Greys out until all ten are carried, and takes them on the pick. Remove `consume` if he should
+# only ever be shown them — the owner's script reads as a payment, so they are taken.
+CHOICE [TODO: hand over the barnacles] -> mf_return
+GATE: stage ah_barnacles 1
+ITEM: bus_station_barnacles x10 consume
+CHOICE End Conversation.
+
+NODE mf_barnacle
+SPEAKER: madfisherman
+SPEAK: Tha's ye fellas. Yarr. Good barnacle hunters they are.
+CHOICE Can you tell me where they're staying at the minute? -> mf_laugh
+
+NODE mf_laugh
+SPEAKER: madfisherman
+SPEAK: *The Mad Fisherman laughs maniacally.*
+# The owner's script has the player speechless here — "[...]" is verbatim, not a placeholder.
+CHOICE [...] -> mf_owt
+
+NODE mf_owt
+SPEAKER: madfisherman
+SPEAK: Owt for nowt, you lot. Gen Deers or whatever.
+CHOICE Well— -> mf_price
+
+NODE mf_price
+SPEAKER: madfisherman
+SPEAK: Ten bus barnacles, and I can help you.
+# Ends the conversation. Stage 0 has already advanced on the interact, so the journal reads
+# "Try going back to the abandoned bus station" as the chat closes.
+CHOICE Brilliant. Bus barnacles again. Okay, I'll be back.
+
+NODE mf_return
+SPEAKER: madfisherman
+SPEAK: Arr, very nice there, lad. I knew you'd come back for me. Here's a little thing for you.
+CHOICE [TODO: take the reward] -> mf_eastyork
+
+NODE mf_eastyork
+SPEAKER: madfisherman
+SPEAK: So, all I can tell you is that Ralph and Sanjeet, they're staying in East York at the minute. I know the Chinese are keeping them there nice and cushy.
+CHOICE Okay, right. I'll see what's up. -> mf_alex
+
+NODE mf_alex
+SPEAKER: madfisherman
+SPEAK: Before you get going though, have a chat with Alex at his place in London. He's not very handy but the lad's cheap and willing back ya for a couple quid.
+# Ends the chat and completes the quest, paying the £50 and 120 XP. Quest 8 is TBC, so nothing is
+# granted here yet — add  GRANT: rush_hour  to this choice when it exists.
+CHOICE Sounds good.
+COMPLETE: ah_barnacles

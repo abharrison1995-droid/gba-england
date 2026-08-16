@@ -140,5 +140,9 @@ CHOICE Alright, now that is a bit racist. Okay, never mind. Can you tell me wher
 NODE wm_where
 SPEAKER: councillormosley
 SPEAK: Well, I know they've got a little place near the abandoned bus station. They might be there. That's near where I met them.
+# Completes Quest 5 and grants Quest 6 from one choice — the same shape as dpq1_speed and dbb_chat.
+# Mosley's line above is already the location brief for the raid, so the hand-off needed no new
+# prose: "a little place near the abandoned bus station" IS the trap house.
 CHOICE Alright, I'll have a word. Cheers. Be careful with the Chinese-Korean stuff, yeah? You're a councillor.
 COMPLETE: wtf_mosley
+GRANT: gangbusters
