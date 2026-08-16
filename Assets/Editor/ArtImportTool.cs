@@ -53,6 +53,10 @@ public static class ArtImportTool
         { "cycle",  "Cycle"  },   // riding a vehicle — held by a bool, not fired by a trigger
         { "roll",       "Roll"      },
         { "knockback",  "Knockback" },
+        // A boss's signature move. Generic on purpose: the sheet is named "special" per subject, so
+        // every future boss inherits the state and trigger without another table entry. What the
+        // move DOES is the enemy's own business — this only guarantees there is something to play.
+        { "special",    "Special"   },
     };
 
     /// <summary>Bool parameters, for states that are held rather than fired once.</summary>
@@ -66,6 +70,7 @@ public static class ArtImportTool
         { "cast",   "CastSpell"   },   // nothing in the project defines this yet — see CLAUDE.md §8
         { "roll",       "Roll"      },
         { "knockback",  "Knockback" },
+        { "special",    "SpecialAttack" },
     };
 
     /// <summary>The frame/fps/loop table from ART_PIPELINE.md §8, so the two cannot drift apart.</summary>
@@ -91,6 +96,10 @@ public static class ArtImportTool
         // clip against a 0.22 s physical slide; see CombatController.KnockbackSlideDuration for why
         // that mismatch is deliberate.
         { "knockback",  new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
+        // Same shape as attack and cast — a telegraphed one-shot from a standing pose. Deliberately
+        // NOT in ShapeChanges(): the thrower stays on their feet, so the standing height and
+        // baseline checks are meaningful and stay switched on.
+        { "special",    new ActionSpec { Frames = 6, Fps = 12f, Loop = false } },
     };
 
     /// <summary>

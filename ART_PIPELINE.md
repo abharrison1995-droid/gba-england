@@ -168,7 +168,7 @@ horizontally centred. The importer reduces the whole sheet so each cell lands at
 recalculates the grid itself — you always work at source size.
 
 Name actions from this list so the importer can build the animator: `idle`, `walk`, `attack`,
-`hurt`, `death`, `cast`, `roll`, `knockback`, `cycle`. Anything else is fine but will be imported
+`hurt`, `death`, `cast`, `roll`, `knockback`, `special`, `cycle`. Anything else is fine but will be imported
 as a clip with no state wiring. The full mapping to animator states is in §4.
 
 ## 4. The sidecar JSON
@@ -243,6 +243,7 @@ a state machine:
 | `cast` | `Cast` | `CastSpell` trigger |
 | `roll` | `Roll` | `Roll` trigger, fired by the dodge roll |
 | `knockback` | `Knockback` | `Knockback` trigger, fired when an enemy's hit shoves the player |
+| `special` | `Special` | `SpecialAttack` trigger — a boss's signature move, one per subject |
 | `cycle` | `Cycle` | `Cycling` bool, held while riding — **cancelled, do not draw one** |
 
 `cycle` still imports and still wires itself into a controller, which is why it is listed. Nothing
@@ -356,6 +357,7 @@ height, feet near the bottom, facing camera-right. `worldHeight` **1.55** for ad
 | `death` | 6 | 6 | 1 | 10 | no |
 | `roll` | 6 | 6 | 1 | 14 | no |
 | `knockback` | 6 | 6 | 1 | 12 | no |
+| `special` | 6 | 6 | 1 | 12 | no |
 
 Frame counts are deliberately low. Every extra frame is another chance for the figure to drift in
 scale or angle, and at 65 px the difference between a 4-frame and an 8-frame walk is barely
