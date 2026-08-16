@@ -311,6 +311,57 @@ or the cast is the thing to change is the owner's call, and nothing here has mad
 so arrest never fires and `DespawnPolice` destroys nothing. Fix is ticking the box on all five
 prefabs in the Inspector, **never** by re-running `ModernBritainSetup`.
 
+⚠️ **Also a live defect — `Import Quests` silently nulls a preset's `Conversation` when the
+dialogue asset's filename differs only by case.** Found 2026-08-16 on the first real import.
+`QuestTextImporter.DialoguePathFor` builds `Dialogue_<npcId>.asset` from the `DIALOGUE` block name,
+which is lowercase. `SaveAsset` then calls `AssetDatabase.LoadAssetAtPath` on that exact path —
+**Unity's AssetDatabase is case-sensitive even on Windows**, so a pre-existing PascalCase asset is
+not found, `CreateAsset` fails against the case-insensitive filesystem, and the unsaved in-memory
+object is assigned to `preset.Conversation`, which serializes as `{fileID: 0}`.
+
+Observed: `Preset_CouncillorMosley` and `Preset_Scrapman` both went from a valid GUID to
+`{fileID: 0}`, and neither `Dialogue_CouncillorMosley.asset` nor `Dialogue_Scrapman.asset` received
+its new lines. `danielpauls` and `underhoused` had no pre-existing asset and imported correctly.
+**Nothing was logged** — the `no preset matched` warning does not fire, because the preset matcher
+lowercases both sides and matches fine. Only the filename is case-sensitive.
+
+Consequence: the placed Mosley still points at his old one-liner by GUID, so the arc cannot start;
+and re-stamping him from the palette gives him **no conversation at all**, which is worse.
+
+**Repaired for these two on 2026-08-16, agent-side, with Unity closed.**
+`Dialogue_CouncillorMosley` → `Dialogue_councillormosley` and `Dialogue_Scrapman` →
+`Dialogue_scrapman`, renamed with `git mv` in two hops (temp name, then target — a case-only rename
+cannot be done in one on Windows), `.meta` moved with each so **both GUIDs are unchanged**; internal
+`m_Name` aligned to the new filenames; and both presets' nulled `Conversation` fields restored to
+the original GUIDs. All four live `DIALOGUE` ids now match their asset filenames exactly.
+*Confirm on next open that Unity accepts the renames without re-importing, and that the placed
+Mosley and Scrap Man in `Home_London_Prefab` still resolve their conversations.*
+
+**The importer itself was fixed the same day — never compiled.** Three changes in
+`QuestTextImporter.cs`, which protect the other sixteen PascalCase assets still on disk (including
+**`Dialogue_Ralph` and `Dialogue_Sanjeet`**, the cast of the unwritten Quest 6, which the next quest
+written would have hit):
+
+- **`ResolveAssetPath`** maps a desired path onto the real file when the two differ only by case,
+  by enumerating the directory. ⚠️ It deliberately does **not** shortcut on `File.Exists` — on a
+  case-insensitive filesystem that answers true for the wrong casing, which is the entire bug.
+  Applied to the dialogue path and to the quest path, which had the same latent collision.
+- **The dialogue branch now loads-then-mutates**, mirroring `WriteQuestAsset`. It previously always
+  built a fresh `CreateInstance<DialogueData>()`, so even with the path fixed it would have dirtied
+  a detached instance — writing nothing and still nulling the preset. Path resolution alone would
+  have moved this bug, not fixed it.
+- ⚠️ **`Cleanup` now destroys only assets this run created**, tracked by an `isNew` flag added to
+  the `builtDialogues` tuple. Reusing a loaded asset made the old unconditional `DestroyImmediate`
+  a live hazard: Unity throws on destroying a persistent object rather than ignoring it, so a
+  validation failure would have aborted the import with an exception.
+- **`SaveAsset` now tests `AssetDatabase.Contains(asset)`** rather than probing the path, so it can
+  never dirty an object that is not the asset on disk.
+
+*Check on next open: re-import with an unchanged tree and confirm the four conversations keep their
+GUIDs; author a deliberate case-collision (a `DIALOGUE ralph` block) and confirm it updates
+`Dialogue_Ralph.asset` in place instead of nulling `Preset_Ralph.Conversation`; and force a
+validation error in a `.quest` file to confirm the failure path logs errors rather than throwing.*
+
 **Also outstanding — four sprites in `c.unity` point at files that do not exist.** Three `Visual`
 SpriteRenderers on one missing texture, three on another, one more on a third, and the **PCSO**
 actor's `WorldActorVisual.ActorSprite` on a fourth. They are as old as commit `fc1d035` at least,
@@ -669,13 +720,15 @@ id-less `PlayerSpawn`. All six are in `MapChunkRegistry`, which now lists twelve
   not the police station. `WantedManager`'s own comment already calls rerouting the arrest path a
   separate job.
 
-**Also outstanding — the name unification, never compiled.** Committed 2026-08-16, phases 1–4
-(`b763080`, `44b0fd8`, `947ded5`, `0b9301f`):
+**Also outstanding — the name unification. It compiles; behaviour unexercised.** Committed
+2026-08-16, phases 1–4 (`b763080`, `44b0fd8`, `947ded5`, `0b9301f`):
 
-- ⚠️ **The root namespace is now `GBHEngland`** — 147 `.cs` files, 460 occurrences. The phase 3 diff
-  was exactly **478 insertions / 478 deletions**, i.e. a pure rename with nothing else in it. **It
-  has not been compiled.** A single missed `using` is a build error nothing here can see. *First
-  Unity open is the gate — Console clear before trusting anything else.*
+- ✅ **The root namespace `GBHEngland` compiles.** On 2026-08-16 the owner successfully ran
+  `Tools → Content → Import Quests` and `Tools → Content → Build Enemies From Generated Art`,
+  which wrote 7 `QuestDefinition`s, two `DialogueData` assets and `Enemy_UnderHoused.prefab`. The
+  editor assembly cannot load unless `Assembly-CSharp` built, so the 147-file rename **has been
+  through a compiler**. Per §5 that proves it compiles and **nothing else** — none of the renamed
+  code's behaviour has been exercised.
 - ⚠️ **Three `UnityEvent` bindings store the namespace as a literal string** and were rewritten in
   the same commit: `EBike.prefab` (`VehicleController`), `Pub_TheWinchester.prefab`
   (`PubInteractable`) and `c.unity` (`InventoryController`). These are **not** GUID-bound, so a miss
