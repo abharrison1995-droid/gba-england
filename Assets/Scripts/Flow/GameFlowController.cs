@@ -1,13 +1,13 @@
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.Quests;
-using ExiledAlvaston.Companions;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.World;
+using GBHEngland.Combat;
+using GBHEngland.UI;
+using GBHEngland.Quests;
+using GBHEngland.Companions;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.Flow
+namespace GBHEngland.Flow
 {
     public enum GameFlowState
     {
@@ -90,7 +90,7 @@ namespace ExiledAlvaston.Flow
             var inv = FindObjectOfType<UI.InventoryController>(true);
             if (inv != null) inv.CloseIfOpen();
 
-            ExiledAlvaston.Systems.PauseManager.Reset();
+            GBHEngland.Systems.PauseManager.Reset();
             SetPlayerSimulated(false);
         }
 

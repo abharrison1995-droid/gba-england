@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
+using GBHEngland.Data;
+using GBHEngland.Flow;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// PERKS — the perk window, opened from the bag's left stats panel. Two panes: a scrollable

@@ -3,10 +3,10 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// EK-style HUD: portrait + bars, combat log, location/time, joystick, action cluster.

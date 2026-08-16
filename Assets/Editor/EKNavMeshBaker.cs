@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
-using ExiledAlvaston.World;
+using GBHEngland.World;
 
 /// <summary>
 /// Marks active chunk geometry for navigation and bakes the NavMesh.

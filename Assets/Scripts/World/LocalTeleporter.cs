@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Same-chunk teleport: walk up, press Interact, appear at a named SceneMarker elsewhere in

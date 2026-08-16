@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEngine.Serialization;
-using ExiledAlvaston.Systems;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Systems;
+using GBHEngland.UI;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Attach this to a civilian to allow the player to pickpocket them while crouched.

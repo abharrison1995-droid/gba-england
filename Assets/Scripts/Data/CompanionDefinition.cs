@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     /// <summary>
     /// How a companion joins and leaves the playerw. Paid means the hire interaction charges

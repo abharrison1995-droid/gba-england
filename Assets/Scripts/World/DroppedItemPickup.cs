@@ -1,8 +1,8 @@
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
+using GBHEngland.Data;
+using GBHEngland.Flow;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// A dropped item lying on the ground: a billboarded icon with a one-shot Interactable

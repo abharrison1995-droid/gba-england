@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.Flow
+namespace GBHEngland.Flow
 {
     /// <summary>One stack of a carried item — a quantity of the same ItemData.</summary>
     [Serializable]

@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
-using ExiledAlvaston.Data;
+using GBHEngland.Data;
 
-namespace ExiledAlvaston.Dialogue
+namespace GBHEngland.Dialogue
 {
     /// <summary>
     /// Exiled Kingdoms style dialogue UI. If the scene doesn't wire up a panel, one is
@@ -72,7 +72,7 @@ namespace ExiledAlvaston.Dialogue
             DialoguePanel.SetActive(true);
 
             _dialogueActive = true;
-            ExiledAlvaston.Systems.PauseManager.Push();
+            GBHEngland.Systems.PauseManager.Push();
 
             _currentData = data;
             DisplayNode(start);
@@ -412,7 +412,7 @@ namespace ExiledAlvaston.Dialogue
             if (_dialogueActive)
             {
                 _dialogueActive = false;
-                ExiledAlvaston.Systems.PauseManager.Pop();
+                GBHEngland.Systems.PauseManager.Pop();
             }
             _currentData = null;
             UI.QuestPopupUI.ShowPendingIfAny();

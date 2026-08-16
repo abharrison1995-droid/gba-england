@@ -1,10 +1,10 @@
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
+using GBHEngland.Data;
+using GBHEngland.Flow;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     public sealed class PlayerClassPreviewUI : MonoBehaviour
     {

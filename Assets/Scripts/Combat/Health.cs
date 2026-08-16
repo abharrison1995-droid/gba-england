@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.Events;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.Vibe;
+using GBHEngland.UI;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     public class Health : MonoBehaviour
     {

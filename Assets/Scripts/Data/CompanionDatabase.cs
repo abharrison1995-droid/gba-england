@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     /// <summary>
     /// Looks up a <see cref="CompanionDefinition"/> asset by its <see cref="CompanionDefinition.Id"/>.

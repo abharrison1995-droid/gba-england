@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using ExiledAlvaston.Data;
+using GBHEngland.Data;
 
 /// <summary>
 /// Click-to-place content authoring. Replaces the five Place/… windows, which all shared one
@@ -133,7 +133,7 @@ public class WorldPaletteWindow : EditorWindow
             EditorGUILayout.HelpBox(
                 "No PlacementPreset assets found.\n\n" +
                 "Generate a starter set with Tools → Content → Create Starter Presets, or " +
-                "make one via Assets → Create → ExiledAlvaston → Data → Placement Preset.",
+                "make one via Assets → Create → GBHEngland → Data → Placement Preset.",
                 MessageType.Warning);
             if (GUILayout.Button("Create Starter Presets"))
             {

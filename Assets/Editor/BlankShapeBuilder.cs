@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using ExiledAlvaston.World;
+using GBHEngland.World;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace ExiledAlvaston.EditorTools
+namespace GBHEngland.EditorTools
 {
     /// <summary>
     /// Creates the blank shape kit: untextured primitives sized in real metres, each with its own

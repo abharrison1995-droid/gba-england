@@ -1,7 +1,7 @@
 using UnityEngine;
-using ExiledAlvaston.UI;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Lives on the Player. Polls every enabled Interactable by horizontal distance each
@@ -31,7 +31,7 @@ namespace ExiledAlvaston.World
             // While any menu/dialogue pauses the game, interacting is off — and stays off
             // for a beat after unpausing so the E that closed a popup can't also re-open
             // the conversation that spawned it.
-            if (ExiledAlvaston.Systems.PauseManager.IsPaused)
+            if (GBHEngland.Systems.PauseManager.IsPaused)
             {
                 _armedAt = Time.unscaledTime + 0.3f;
                 if (_current != null)

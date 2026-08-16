@@ -4,9 +4,9 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.UI;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.EditorTools
+namespace GBHEngland.EditorTools
 {
     /// <summary>
     /// Restyles the scene-authored inventory panel (InventoryOverlay in Assets/c.unity) to the

@@ -29,7 +29,7 @@ plan actually touches. Do not read all of `docs/`.
 
 ## Conventions
 
-- Namespaces mirror folders: `ExiledAlvaston.<Folder>`
+- Namespaces mirror folders: `GBHEngland.<Folder>`
 - Public PascalCase for anything Unity serializes; private `_camelCase` otherwise
 - Singletons: `public static X Instance { get; private set; }` set in `Awake`, accessed as
   `X.Instance ?? FindObjectOfType<X>()`

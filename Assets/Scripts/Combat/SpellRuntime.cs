@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using ExiledAlvaston.Companions;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.World;
+using GBHEngland.Companions;
+using GBHEngland.Data;
+using GBHEngland.UI;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>Executes the data-driven spell effect after CombatController pays its cost.</summary>
     public static class SpellRuntime

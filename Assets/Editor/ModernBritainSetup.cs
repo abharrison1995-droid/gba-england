@@ -3,10 +3,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.AI;
 using UnityEngine.Events;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.World;
-using ExiledAlvaston.Systems;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Combat;
+using GBHEngland.World;
+using GBHEngland.Systems;
+using GBHEngland.Vibe;
 
 /// <summary>
 /// One-click setup for Phase 1–4 modern British mechanics:

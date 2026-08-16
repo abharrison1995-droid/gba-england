@@ -1,10 +1,10 @@
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Dialogue;
-using ExiledAlvaston.World;
+using GBHEngland.Combat;
+using GBHEngland.Data;
+using GBHEngland.Dialogue;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Companions
+namespace GBHEngland.Companions
 {
     /// <summary>
     /// The conversation a FOLLOWING companion offers when the player talks to it: combat commands

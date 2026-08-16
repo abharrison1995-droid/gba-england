@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
+using GBHEngland.Data;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// Follower AI for an active companion. Follows the player on the X/Z plane with a NavMeshAgent,

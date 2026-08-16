@@ -253,8 +253,8 @@ Three things in that snippet are load-bearing:
 - the `damage > 0` guard — without it a 0-damage call would be floored **upward** to 1 and start
   hurting the player. There is no such caller today, but `TakeDamage(int)` is public (`Health.cs:40`).
 - `Mathf.Max(1, …)` is the owner's "a hit always lands for something".
-- `Health.cs` needs `using ExiledAlvaston.Vibe;` added — it currently imports only `UnityEngine`,
-  `UnityEngine.Events` and `ExiledAlvaston.UI` (`Health.cs:1-3`).
+- `Health.cs` needs `using GBHEngland.Vibe;` added — it currently imports only `UnityEngine`,
+  `UnityEngine.Events` and `GBHEngland.UI` (`Health.cs:1-3`).
 
 Perk armour flows in through `BaseResistances.Physical` (§5.2), so it also appears in the bag's
 Armor line automatically — no UI change needed, and fact 2's discrepancy closes.
@@ -301,7 +301,7 @@ piece ~8-12, a full endgame doll landing around 40-60 effective, i.e. 67-75%.
 
 ### 5.1 The data
 
-New file `Assets/Scripts/Data/PerkData.cs` (+ `.meta`), namespace `ExiledAlvaston.Data`, modelled
+New file `Assets/Scripts/Data/PerkData.cs` (+ `.meta`), namespace `GBHEngland.Data`, modelled
 on `WikiEntryData.cs`:
 
 ```csharp

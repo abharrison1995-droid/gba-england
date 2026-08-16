@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Flow;
+using GBHEngland.Vibe;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Runtime-built Win95 merchant window. Merchant stock is unlimited; only the player's

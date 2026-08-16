@@ -7,10 +7,10 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.UI;
+using GBHEngland.Flow;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.EditorTools
+namespace GBHEngland.EditorTools
 {
     /// <summary>
     /// Rebuilds the title screen as a Win95 desktop: flat teal field edge to edge, a grey

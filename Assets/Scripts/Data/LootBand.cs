@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     /// <summary>One weighted entry in a <see cref="LootBand"/>.</summary>
     [Serializable]

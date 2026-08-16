@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     [RequireComponent(typeof(BoxCollider))]
     public class ChunkEdge : MonoBehaviour
@@ -27,7 +27,7 @@ namespace ExiledAlvaston.World
         private void TryCross(Collider other)
         {
             // Only trigger if the player hits the edge
-            if (other.CompareTag("Player") || other.GetComponent<ExiledAlvaston.Combat.CombatController>() != null)
+            if (other.CompareTag("Player") || other.GetComponent<GBHEngland.Combat.CombatController>() != null)
             {
                 // No Debug.Log here — from OnTriggerStay it would spam every physics tick.
                 if (ChunkManager.Instance != null)

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Wires a UI button to UIManager ability / attack actions (survives scene save).

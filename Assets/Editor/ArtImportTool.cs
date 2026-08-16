@@ -355,18 +355,18 @@ public static class ArtImportTool
     {
         if (!AssetDatabase.IsValidFolder(ArtRoot)) return 0;
 
-        var itemsById = new Dictionary<string, List<ExiledAlvaston.Data.ItemData>>(
+        var itemsById = new Dictionary<string, List<GBHEngland.Data.ItemData>>(
             StringComparer.OrdinalIgnoreCase);
         foreach (string guid in AssetDatabase.FindAssets("t:ItemData"))
         {
-            var item = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.ItemData>(
+            var item = AssetDatabase.LoadAssetAtPath<GBHEngland.Data.ItemData>(
                 AssetDatabase.GUIDToAssetPath(guid));
             if (item == null || string.IsNullOrWhiteSpace(item.ItemID)) continue;
 
             string itemId = item.ItemID.Trim();
             if (!itemsById.TryGetValue(itemId, out var matches))
             {
-                matches = new List<ExiledAlvaston.Data.ItemData>();
+                matches = new List<GBHEngland.Data.ItemData>();
                 itemsById[itemId] = matches;
             }
             matches.Add(item);
@@ -470,7 +470,7 @@ public static class ArtImportTool
         Sprite sprite = FindImported(baseName);
         if (sprite == null) return;
 
-        var player = UnityEngine.Object.FindObjectOfType<ExiledAlvaston.Combat.CombatController>();
+        var player = UnityEngine.Object.FindObjectOfType<GBHEngland.Combat.CombatController>();
         if (player == null)
         {
             problems.Add($"{baseName}: imported, but no CombatController in the open scene — " +
@@ -478,7 +478,7 @@ public static class ArtImportTool
             return;
         }
 
-        var visual = player.GetComponent<ExiledAlvaston.World.WorldActorVisual>();
+        var visual = player.GetComponent<GBHEngland.World.WorldActorVisual>();
         if (visual == null)
         {
             problems.Add($"{baseName}: the player has no WorldActorVisual to assign it to.");
@@ -512,8 +512,8 @@ public static class ArtImportTool
             .FirstOrDefault(s => s.name.EndsWith("_0"));
         if (first == null) return;
 
-        var player = UnityEngine.Object.FindObjectOfType<ExiledAlvaston.Combat.CombatController>();
-        var visual = player != null ? player.GetComponent<ExiledAlvaston.World.WorldActorVisual>() : null;
+        var player = UnityEngine.Object.FindObjectOfType<GBHEngland.Combat.CombatController>();
+        var visual = player != null ? player.GetComponent<GBHEngland.World.WorldActorVisual>() : null;
         if (visual == null) return;
         if (visual.ActorSprite == first) return;
 
@@ -535,7 +535,7 @@ public static class ArtImportTool
         var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
         if (controller == null) return;
 
-        var player = UnityEngine.Object.FindObjectOfType<ExiledAlvaston.Combat.CombatController>();
+        var player = UnityEngine.Object.FindObjectOfType<GBHEngland.Combat.CombatController>();
         if (player == null)
         {
             problems.Add($"{subject}_Controller built, but no CombatController in the open scene — " +
@@ -574,7 +574,7 @@ public static class ArtImportTool
         GameObject contents = PrefabUtility.LoadPrefabContents(prefabPath);
         try
         {
-            var vehicle = contents.GetComponent<ExiledAlvaston.World.VehicleController>();
+            var vehicle = contents.GetComponent<GBHEngland.World.VehicleController>();
             if (vehicle == null)
             {
                 problems.Add($"{baseName}: EBike.prefab has no VehicleController.");
@@ -665,7 +665,7 @@ public static class ArtImportTool
         foreach (string guid in AssetDatabase.FindAssets("t:PlacementPreset"))
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            var preset = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.PlacementPreset>(path);
+            var preset = AssetDatabase.LoadAssetAtPath<GBHEngland.Data.PlacementPreset>(path);
             if (preset == null) continue;
             if (!string.Equals(preset.ArtSubject, subject, StringComparison.OrdinalIgnoreCase)) continue;
 
@@ -722,7 +722,7 @@ public static class ArtImportTool
 
     /// <summary>
     /// Assigns every imported <c>spr_portrait_&lt;subject&gt;</c> single to the <c>Portrait</c> of the
-    /// <see cref="ExiledAlvaston.Data.CharacterData"/> that speaks for that subject — the
+    /// <see cref="GBHEngland.Data.CharacterData"/> that speaks for that subject — the
     /// <c>Speaker</c> on any <c>PlacementPreset</c> carrying the matching <c>ArtSubject</c>.
     ///
     /// Scans what is on disk rather than a batch, like the other single assignments, so it is
@@ -756,13 +756,13 @@ public static class ArtImportTool
 
             // Distinct Speaker assets across every preset on this subject — one CharacterData may be
             // shared by several presets, and it must not be reported (or recorded) twice.
-            var speakers = new List<ExiledAlvaston.Data.CharacterData>();
+            var speakers = new List<GBHEngland.Data.CharacterData>();
             bool matchedAnyPreset = false;
 
             foreach (string presetGuid in AssetDatabase.FindAssets("t:PlacementPreset"))
             {
                 string presetPath = AssetDatabase.GUIDToAssetPath(presetGuid);
-                var preset = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.PlacementPreset>(
+                var preset = AssetDatabase.LoadAssetAtPath<GBHEngland.Data.PlacementPreset>(
                     presetPath);
                 if (preset == null) continue;
                 if (!string.Equals(preset.ArtSubject, subject, StringComparison.OrdinalIgnoreCase)) continue;
@@ -809,20 +809,20 @@ public static class ArtImportTool
     /// name. Existing non-null dialogue-node speakers are never overwritten, preserving authored
     /// multi-speaker conversations.
     /// </summary>
-    private static ExiledAlvaston.Data.CharacterData EnsurePortraitSpeaker(
-        ExiledAlvaston.Data.PlacementPreset preset, string presetPath,
+    private static GBHEngland.Data.CharacterData EnsurePortraitSpeaker(
+        GBHEngland.Data.PlacementPreset preset, string presetPath,
         List<string> report, List<string> problems)
     {
         if (preset == null) return null;
 
-        ExiledAlvaston.Data.CharacterData speaker = preset.Speaker;
+        GBHEngland.Data.CharacterData speaker = preset.Speaker;
         if (speaker == null)
         {
-            var matches = new List<ExiledAlvaston.Data.CharacterData>();
+            var matches = new List<GBHEngland.Data.CharacterData>();
             foreach (string guid in AssetDatabase.FindAssets(
                          "t:CharacterData", new[] { "Assets/Data/Dialogue" }))
             {
-                var candidate = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.CharacterData>(
+                var candidate = AssetDatabase.LoadAssetAtPath<GBHEngland.Data.CharacterData>(
                     AssetDatabase.GUIDToAssetPath(guid));
                 if (candidate != null && string.Equals(candidate.CharacterName, preset.Label,
                         StringComparison.OrdinalIgnoreCase))
@@ -849,7 +849,7 @@ public static class ArtImportTool
                     : presetName;
                 string speakerPath = $"Assets/Data/Dialogue/NPC_{suffix}.asset";
 
-                speaker = AssetDatabase.LoadAssetAtPath<ExiledAlvaston.Data.CharacterData>(speakerPath);
+                speaker = AssetDatabase.LoadAssetAtPath<GBHEngland.Data.CharacterData>(speakerPath);
                 if (speaker == null && AssetDatabase.LoadMainAssetAtPath(speakerPath) != null)
                 {
                     problems.Add($"{presetName}: {speakerPath} exists but is not CharacterData.");
@@ -858,12 +858,12 @@ public static class ArtImportTool
 
                 if (speaker == null)
                 {
-                    speaker = ScriptableObject.CreateInstance<ExiledAlvaston.Data.CharacterData>();
+                    speaker = ScriptableObject.CreateInstance<GBHEngland.Data.CharacterData>();
                     speaker.CharacterName = preset.Label;
                     speaker.MaxHealth = 20;
                     speaker.MaxManaStamina = 10;
-                    speaker.BaseTraits = new ExiledAlvaston.Data.CoreTraits();
-                    speaker.BaseResistances = new ExiledAlvaston.Data.Resistances();
+                    speaker.BaseTraits = new GBHEngland.Data.CoreTraits();
+                    speaker.BaseResistances = new GBHEngland.Data.Resistances();
                     AssetDatabase.CreateAsset(speaker, speakerPath);
                     report.Add($"    created {speakerPath} for portrait/dialogue speaker");
                 }
@@ -879,8 +879,8 @@ public static class ArtImportTool
         return speaker;
     }
 
-    private static void WireSpeakerIntoConversation(ExiledAlvaston.Data.PlacementPreset preset,
-        ExiledAlvaston.Data.CharacterData speaker, List<string> report)
+    private static void WireSpeakerIntoConversation(GBHEngland.Data.PlacementPreset preset,
+        GBHEngland.Data.CharacterData speaker, List<string> report)
     {
         if (preset == null || speaker == null || preset.Conversation == null ||
             preset.Conversation.Nodes == null) return;
@@ -934,20 +934,20 @@ public static class ArtImportTool
     }
 
     internal static void PopulatePlayerClassVisualLibrary(
-        ExiledAlvaston.Flow.PlayerClassVisualLibrary library, List<string> report)
+        GBHEngland.Flow.PlayerClassVisualLibrary library, List<string> report)
     {
         if (library == null) return;
 
         var classes = new[]
         {
-            ExiledAlvaston.Data.PlayerClass.YoungDriller,
-            ExiledAlvaston.Data.PlayerClass.Stabmeister,
-            ExiledAlvaston.Data.PlayerClass.MrHood,
-            ExiledAlvaston.Data.PlayerClass.Dynamo,
-            ExiledAlvaston.Data.PlayerClass.BundaBasher
+            GBHEngland.Data.PlayerClass.YoungDriller,
+            GBHEngland.Data.PlayerClass.Stabmeister,
+            GBHEngland.Data.PlayerClass.MrHood,
+            GBHEngland.Data.PlayerClass.Dynamo,
+            GBHEngland.Data.PlayerClass.BundaBasher
         };
         string[] requiredActions = { "idle", "walk", "attack", "hurt", "death", "cast" };
-        var profiles = new ExiledAlvaston.Flow.PlayerClassVisualProfile[classes.Length];
+        var profiles = new GBHEngland.Flow.PlayerClassVisualProfile[classes.Length];
 
         for (int i = 0; i < classes.Length; i++)
         {
@@ -960,7 +960,7 @@ public static class ArtImportTool
             for (int actionIndex = 0; actionIndex < requiredActions.Length; actionIndex++)
                 complete &= FindClassClip(subject, requiredActions[actionIndex]) != null;
 
-            profiles[i] = new ExiledAlvaston.Flow.PlayerClassVisualProfile
+            profiles[i] = new GBHEngland.Flow.PlayerClassVisualProfile
             {
                 Class = classes[i],
                 Controller = controller,
@@ -989,7 +989,7 @@ public static class ArtImportTool
             return;
         }
 
-        var flows = UnityEngine.Object.FindObjectsOfType<ExiledAlvaston.Flow.GameFlowController>(true);
+        var flows = UnityEngine.Object.FindObjectsOfType<GBHEngland.Flow.GameFlowController>(true);
         if (flows.Length != 1)
         {
             if (requiredForBatch)
@@ -999,7 +999,7 @@ public static class ArtImportTool
 
         var library = flows[0].ClassVisuals != null
             ? flows[0].ClassVisuals
-            : flows[0].GetComponent<ExiledAlvaston.Flow.PlayerClassVisualLibrary>();
+            : flows[0].GetComponent<GBHEngland.Flow.PlayerClassVisualLibrary>();
         if (library == null)
         {
             if (requiredForBatch)
@@ -1350,7 +1350,7 @@ public static class ArtImportTool
         // agrees with the image and the check is worthless.
         if (isSheet) ValidateSheetDimensions(src, m, baseName, problems);
 
-        float worldHeight = m.worldHeight > 0f ? m.worldHeight : ExiledAlvaston.Vibe.EKVibe.CharacterHeight;
+        float worldHeight = m.worldHeight > 0f ? m.worldHeight : GBHEngland.Vibe.EKVibe.CharacterHeight;
 
         // Generators are poor at producing a real alpha channel and good at putting a subject on a
         // plain backdrop, so the contract asks for flat magenta and the backdrop is removed here.
@@ -1802,7 +1802,7 @@ public static class ArtImportTool
         else return;
 
         int spread = metrics.BaselineSpread;
-        float atFinalSize = spread * (m.worldHeight > 0f ? m.worldHeight : ExiledAlvaston.Vibe.EKVibe.CharacterHeight)
+        float atFinalSize = spread * (m.worldHeight > 0f ? m.worldHeight : GBHEngland.Vibe.EKVibe.CharacterHeight)
                             * PixelsPerWorldUnit / m.frameHeight;
 
         if (atFinalSize >= 2f && ShapeChanges(action))

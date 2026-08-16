@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Flow;
+using GBHEngland.Flow;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// "Name your spell" popup shown when Daniel Pauls hands the spell over. Letters/digits/spaces,

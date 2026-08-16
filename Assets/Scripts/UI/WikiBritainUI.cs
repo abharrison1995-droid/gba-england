@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
+using GBHEngland.Data;
+using GBHEngland.Flow;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// The single funnel for granting WIKIBRITAIN entries. Every trigger — chunk arrivals,

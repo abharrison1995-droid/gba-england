@@ -1,10 +1,10 @@
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Systems;
-using ExiledAlvaston.UI;
+using GBHEngland.Combat;
+using GBHEngland.Data;
+using GBHEngland.Systems;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Handles the "Grand Theft E-Bike" logic. When the player mounts, they get a speed boost.

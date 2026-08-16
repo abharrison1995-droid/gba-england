@@ -1,8 +1,8 @@
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
+using GBHEngland.Data;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Systems
+namespace GBHEngland.Systems
 {
     /// <summary>
     /// Manages the "Knives" notoriety system and city evasion logic.
@@ -57,9 +57,9 @@ namespace ExiledAlvaston.Systems
             {
                 CurrentConcealment = MaxConcealment; // reset after being busted
                 SpikeKnives();
-                if (ExiledAlvaston.UI.UIManager.Instance != null)
+                if (GBHEngland.UI.UIManager.Instance != null)
                 {
-                    ExiledAlvaston.UI.UIManager.Instance.ShowToast("Busted! The police have been alerted.", 2.5f);
+                    GBHEngland.UI.UIManager.Instance.ShowToast("Busted! The police have been alerted.", 2.5f);
                 }
             }
             UpdateConcealmentUI();
@@ -67,8 +67,8 @@ namespace ExiledAlvaston.Systems
 
         private void UpdateConcealmentUI()
         {
-            if (ExiledAlvaston.UI.UIManager.Instance != null)
-                ExiledAlvaston.UI.UIManager.Instance.UpdatePlayerConcealment(CurrentConcealment, MaxConcealment);
+            if (GBHEngland.UI.UIManager.Instance != null)
+                GBHEngland.UI.UIManager.Instance.UpdatePlayerConcealment(CurrentConcealment, MaxConcealment);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace ExiledAlvaston.Systems
         /// </summary>
         private void DespawnPolice()
         {
-            foreach (var enemy in FindObjectsOfType<ExiledAlvaston.Combat.EnemyAI>())
+            foreach (var enemy in FindObjectsOfType<GBHEngland.Combat.EnemyAI>())
             {
                 if (enemy != null && enemy.IsPolice)
                     Destroy(enemy.gameObject);
@@ -126,7 +126,7 @@ namespace ExiledAlvaston.Systems
             GameObject prefab = PolicePrefabs[index];
             if (prefab == null) return;
             
-            var player = ExiledAlvaston.Combat.CombatController.Instance;
+            var player = GBHEngland.Combat.CombatController.Instance;
             if (player == null) return;
             
             // Randomly spawn around player. A real implementation should use NavMesh.SamplePosition.
@@ -136,7 +136,7 @@ namespace ExiledAlvaston.Systems
             
             Instantiate(prefab, spawnPos, Quaternion.identity);
             
-            if (ExiledAlvaston.UI.UIManager.Instance != null)
+            if (GBHEngland.UI.UIManager.Instance != null)
             {
                 string message = CurrentKnives switch
                 {
@@ -146,7 +146,7 @@ namespace ExiledAlvaston.Systems
                     4 => "Ministry of Occult deployed.",
                     _ => "It's all kicked off now!"
                 };
-                ExiledAlvaston.UI.UIManager.Instance.ShowToast(message, 3f);
+                GBHEngland.UI.UIManager.Instance.ShowToast(message, 3f);
             }
         }
 
@@ -202,8 +202,8 @@ namespace ExiledAlvaston.Systems
 
         private void UpdateUIIndicator()
         {
-            if (ExiledAlvaston.UI.UIManager.Instance != null)
-                ExiledAlvaston.UI.UIManager.Instance.UpdateKnivesUI(CurrentKnives);
+            if (GBHEngland.UI.UIManager.Instance != null)
+                GBHEngland.UI.UIManager.Instance.UpdateKnivesUI(CurrentKnives);
         }
     }
 }

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// Evaluates an imported sprite AnimationClip without needing a dedicated AnimatorController.

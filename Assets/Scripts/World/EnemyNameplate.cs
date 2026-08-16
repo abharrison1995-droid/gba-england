@@ -1,9 +1,9 @@
 using UnityEngine;
 using TMPro;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Combat;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// EK enemy chrome: red name, level badge, green HP bar — shown only while the enemy is in

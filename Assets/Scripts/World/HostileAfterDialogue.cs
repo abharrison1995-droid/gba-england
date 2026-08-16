@@ -1,10 +1,10 @@
 using System.Collections;
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Dialogue;
-using ExiledAlvaston.UI;
+using GBHEngland.Combat;
+using GBHEngland.Dialogue;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// An NPC who is harmless until you talk to him, then turns on you when the conversation ends.

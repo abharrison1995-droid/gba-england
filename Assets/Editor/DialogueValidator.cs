@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEditor;
-using ExiledAlvaston.Data;
+using GBHEngland.Data;
 
 /// <summary>
 /// Checks <see cref="DialogueData"/> graphs for the authoring mistakes that the flat, id-referenced

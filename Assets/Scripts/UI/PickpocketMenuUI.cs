@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Flow;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>One pocket in the minigame: what is in it and how much work it is to get out.</summary>
     public class PickpocketSlot
@@ -118,7 +118,7 @@ namespace ExiledAlvaston.UI
                 return;
             }
 
-            var player = ExiledAlvaston.Combat.CombatController.Instance;
+            var player = GBHEngland.Combat.CombatController.Instance;
             if (player != null)
             {
                 Vector3 a = player.transform.position;

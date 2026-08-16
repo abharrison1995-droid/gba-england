@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     public enum AbilityResourceType
     {

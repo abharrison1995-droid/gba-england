@@ -3,10 +3,10 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEditor;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
-using ExiledAlvaston.Companions;
-using ExiledAlvaston.AI;
+using GBHEngland.Data;
+using GBHEngland.World;
+using GBHEngland.Companions;
+using GBHEngland.AI;
 
 /// <summary>
 /// Builds the Alex companion instance end to end. Run via:

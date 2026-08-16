@@ -1,8 +1,8 @@
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.UI;
+using GBHEngland.Combat;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Handles the ASBO/Hoodie Stealth state. Crouching halves movement speed and is the gate on

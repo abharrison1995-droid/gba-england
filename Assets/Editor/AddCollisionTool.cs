@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using ExiledAlvaston.World;
+using GBHEngland.World;
 
 /// <summary>
 /// Imported model-pack props (glb/fbx) never come with colliders, so they're pure visual

@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.World;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Combat;
+using GBHEngland.World;
+using GBHEngland.Vibe;
 
 /// <summary>
 /// Spawns a practice Bandit in front of the player for combat testing.

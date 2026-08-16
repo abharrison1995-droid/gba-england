@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Marks geometry that blocks enemy vision and should obstruct movement.

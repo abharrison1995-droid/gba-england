@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     /// <summary>
     /// WIKIBRITAIN entry categories. Append-only: serialized by integer index, so never

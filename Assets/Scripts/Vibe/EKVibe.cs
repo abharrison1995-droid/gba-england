@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Vibe
+namespace GBHEngland.Vibe
 {
     /// <summary>
     /// Hard vibe lock for Exiled Kingdoms–style presentation.

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
+using GBHEngland.Data;
+using GBHEngland.World;
 
 /// <summary>
 /// Builds a reusable World Palette test chest containing one of every ItemData under

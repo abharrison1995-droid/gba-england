@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Keeps a upright quad facing the camera yaw (EK-style 2.5D sprites).

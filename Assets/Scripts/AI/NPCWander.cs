@@ -1,9 +1,9 @@
 using UnityEngine;
-using ExiledAlvaston.Systems;
-using ExiledAlvaston.Dialogue;
-using ExiledAlvaston.World;
+using GBHEngland.Systems;
+using GBHEngland.Dialogue;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.AI
+namespace GBHEngland.AI
 {
     /// <summary>
     /// Ambient wandering: stroll somewhere near where you were placed, stand about for a bit, do it

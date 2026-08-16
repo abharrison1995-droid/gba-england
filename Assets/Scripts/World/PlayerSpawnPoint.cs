@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Marks where the player arrives in a chunk. Drop one into a chunk prefab (via

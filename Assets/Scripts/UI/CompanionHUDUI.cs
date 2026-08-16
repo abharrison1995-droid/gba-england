@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Companions;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Companions;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Companion health/name badge, code-built Win95 style like the quest popup. Appears only while a

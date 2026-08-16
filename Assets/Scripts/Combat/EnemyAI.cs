@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.World;
+using GBHEngland.UI;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// NavMesh pathfinding chase AI with physics collision and wall line-of-sight.

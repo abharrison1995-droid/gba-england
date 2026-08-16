@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
 /// <summary>
 /// Generates muted EK-style placeholder textures + sprites under Assets/Art/Placeholders.

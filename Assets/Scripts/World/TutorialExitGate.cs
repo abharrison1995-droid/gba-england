@@ -1,8 +1,8 @@
 using UnityEngine;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.UI;
+using GBHEngland.Flow;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Exit trigger inside Manor Cellars — drops player outside London's west gates

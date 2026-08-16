@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     /// <summary>
     /// The handful of <see cref="PlacementPreset"/> assets that runtime code needs to find by name.

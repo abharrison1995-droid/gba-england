@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Swaps primitive mesh visuals for an EK-scale sprite billboard,

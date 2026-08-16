@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// A named, draggable placement marker. Systems look one up by <see cref="Key"/> inside a

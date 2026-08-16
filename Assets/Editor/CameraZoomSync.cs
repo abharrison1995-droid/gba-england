@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using ExiledAlvaston.World;
+using GBHEngland.World;
 
 /// <summary>
 /// Re-applies EKVibe's camera constants (pitch/yaw/distance/ortho size) to the Main
@@ -22,10 +22,10 @@ public static class CameraZoomSync
         }
 
         Undo.RecordObject(follow, "Sync Camera Zoom");
-        follow.OrthoSize = ExiledAlvaston.Vibe.EKVibe.CameraOrthoSize;
+        follow.OrthoSize = GBHEngland.Vibe.EKVibe.CameraOrthoSize;
         follow.ApplyVibeLock();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log($"Camera ortho size synced to {ExiledAlvaston.Vibe.EKVibe.CameraOrthoSize}.");
+        Debug.Log($"Camera ortho size synced to {GBHEngland.Vibe.EKVibe.CameraOrthoSize}.");
     }
 }

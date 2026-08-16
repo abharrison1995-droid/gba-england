@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.World;
+using GBHEngland.Data;
+using GBHEngland.Flow;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// MAP OF BRITAIN — a Win95 window drawing the chunk graph: one node per chunk reachable

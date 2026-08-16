@@ -53,7 +53,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 257334473929494616}
-        m_TargetAssemblyTypeName: ExiledAlvaston.World.PubInteractable, Assembly-CSharp
+        m_TargetAssemblyTypeName: GBHEngland.World.PubInteractable, Assembly-CSharp
         m_MethodName: HaveAPint
         m_Mode: 1
         m_Arguments:

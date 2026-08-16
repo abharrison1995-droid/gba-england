@@ -1,9 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using ExiledAlvaston.Systems;
+using GBHEngland.Systems;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// DISPLAY SETTINGS — a small Win95-skinned window exposing GraphicsPrefs, opened from the

@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEditor;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
+using GBHEngland.Data;
+using GBHEngland.World;
 
 /// <summary>
 /// Naming conventions shared by the authoring tool and the validator. Both sides must agree on

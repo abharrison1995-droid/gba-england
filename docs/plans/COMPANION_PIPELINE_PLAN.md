@@ -7,7 +7,7 @@ Verification scope:    C0–C3 WRITTEN; C4 and C6 PARTIAL; C5 WRITTEN this pass;
                        created but NOT yet run in the editor.
                        Compile passes so far (owner, in-editor): the first pass surfaced three
                        issues, all FIXED in the tree — CompanionHUDUI missing `using
-                       ExiledAlvaston.Vibe;` (CS0103), a GameObject→Image assignment (CS0029), and
+                       GBHEngland.Vibe;` (CS0103), a GameObject→Image assignment (CS0029), and
                        two dead CompanionAI fields (CS0414). C5 (below) compiles clean per the
                        owner's latest pass; its runtime is NOT yet exercised.
                        Alex's eight sheets and controller are already imported (commit 5ec4cde), and

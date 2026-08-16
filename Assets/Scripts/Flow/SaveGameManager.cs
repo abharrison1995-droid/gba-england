@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
-using ExiledAlvaston.Quests;
-using ExiledAlvaston.Companions;
+using GBHEngland.Combat;
+using GBHEngland.Data;
+using GBHEngland.World;
+using GBHEngland.Quests;
+using GBHEngland.Companions;
 
-namespace ExiledAlvaston.Flow
+namespace GBHEngland.Flow
 {
     /// <summary>One saved inventory stack — an item id (resolved via ItemDatabase) plus a quantity.</summary>
     [Serializable]

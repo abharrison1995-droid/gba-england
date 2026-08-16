@@ -2,12 +2,12 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.Vibe;
-using ExiledAlvaston.World;
+using GBHEngland.Data;
+using GBHEngland.UI;
+using GBHEngland.Vibe;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     [RequireComponent(typeof(Rigidbody))]
     public class CombatController : MonoBehaviour
@@ -186,8 +186,8 @@ namespace ExiledAlvaston.Combat
         /// <summary>False on Title/Creator — the player must not move, attack, or regen there.</summary>
         private static bool IsFlowPlaying()
         {
-            var flow = ExiledAlvaston.Flow.GameFlowController.Instance;
-            return flow == null || flow.State == ExiledAlvaston.Flow.GameFlowState.Playing;
+            var flow = GBHEngland.Flow.GameFlowController.Instance;
+            return flow == null || flow.State == GBHEngland.Flow.GameFlowState.Playing;
         }
 
         private void Update()
@@ -952,8 +952,8 @@ namespace ExiledAlvaston.Combat
             _rb.velocity = Vector3.zero;
             if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", 0f);
 
-            if (ExiledAlvaston.Flow.GameFlowController.Instance != null)
-                ExiledAlvaston.Flow.GameFlowController.Instance.HandlePlayerDeath();
+            if (GBHEngland.Flow.GameFlowController.Instance != null)
+                GBHEngland.Flow.GameFlowController.Instance.HandlePlayerDeath();
             else if (UI.DeathScreenUI.Instance != null)
                 UI.DeathScreenUI.Instance.Show();
             else

@@ -172,7 +172,7 @@ Add, modelled line-for-line on the wallet (`PlayerSession.cs:55-60, 267-292`):
   Game started in the same app session inherits the last run's XP, **and** `RestoreFromSave` calls
   `BeginNewGame` first (`PlayerSession.cs:149`), so clear-then-restore is what makes load correct.
 
-`EKVibe` is `ExiledAlvaston.Vibe`; `PlayerSession.cs` does not currently import it. Add the `using`.
+`EKVibe` is `GBHEngland.Vibe`; `PlayerSession.cs` does not currently import it. Add the `using`.
 
 ### 5.3 `Assets/Scripts/Flow/SaveGameManager.cs`
 
@@ -199,7 +199,7 @@ The four-argument overload already exists (`Health.cs:43`). Nothing else changes
 
 ### 5.6 New file `Assets/Scripts/Combat/KillXP.cs` (+ `.meta`)
 
-`internal static class KillXP` in `ExiledAlvaston.Combat`, one method
+`internal static class KillXP` in `GBHEngland.Combat`, one method
 `public static void AwardFor(Health victim)`, called from `Health.Die`. Kept out of `Health` so the
 eligibility rules live in one greppable place and `Health` stays generic.
 
@@ -232,7 +232,7 @@ Two edits, both small, both load-bearing:
 ### 5.8 New file `Assets/Scripts/Combat/EnemyLevel.cs` (+ `.meta`) — Phase 2
 
 Shape: `[RequireComponent(typeof(Health))] public class EnemyLevel : MonoBehaviour` in
-`ExiledAlvaston.Combat`, with `public int Level = 1;` (authored per placement),
+`GBHEngland.Combat`, with `public int Level = 1;` (authored per placement),
 `public int BaseXP = EKVibe.KillXPBase;` (the same initialiser style `WorldActorVisual.Height` uses
 for `EKVibe.CharacterHeight`), a private `_applied` flag, and one method
 `public void ApplyTo(Health health)` called from `Health.Awake`.
@@ -255,7 +255,7 @@ across all eleven existing prefabs and every placed instance.
 
 In `Build()` (`EnemyNameplate.cs:54-92`), replace `Level.ToString()` at line 72 with a value resolved
 from `GetComponent<EnemyLevel>()` when one is present, falling back to the field otherwise. The file
-already imports `ExiledAlvaston.Combat` (line 3), so no new `using`.
+already imports `GBHEngland.Combat` (line 3), so no new `using`.
 
 Leave the `Level` field and its default of 3 alone (mapping row 5). Note in its tooltip that it is a
 **display-only fallback** used when no `EnemyLevel` is present. The badge is built once in `Awake`

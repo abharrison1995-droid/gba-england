@@ -204,8 +204,8 @@ public int EnemyLevel = 0;
 Tooltip: the two paragraphs from §4.1 and §4.2. Do **not** move it up beside the enemy recipe at
 `:88-98` — appending is this file's own stated convention, and the Inspector groups by header anyway.
 
-⚠ The field name `EnemyLevel` collides with the type name `ExiledAlvaston.Combat.EnemyLevel` inside
-`PlacementBuilders.cs`, which has `using ExiledAlvaston.Combat;` (`:5`). This compiles — member
+⚠ The field name `EnemyLevel` collides with the type name `GBHEngland.Combat.EnemyLevel` inside
+`PlacementBuilders.cs`, which has `using GBHEngland.Combat;` (`:5`). This compiles — member
 access and type lookup are separate — but the implementer must not name a local variable
 `EnemyLevel` in that method. If the reviewer finds it too clever, `EnemyLevelToPlace` is the escape
 hatch; decide **before commit 1**, because changing it afterwards is a serialized-field rename.

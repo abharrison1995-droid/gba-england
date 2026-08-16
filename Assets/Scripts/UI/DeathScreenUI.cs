@@ -1,11 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.World;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.Systems;
+using GBHEngland.Combat;
+using GBHEngland.World;
+using GBHEngland.Flow;
+using GBHEngland.Systems;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Standalone death screen — works even without GameFlowController wired up. Shows on

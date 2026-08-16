@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     /// <summary>
     /// One kind of rideable thing — hire e-bike, moped, milk float. The chassis prefab supplies the

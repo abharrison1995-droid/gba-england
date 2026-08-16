@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>Keeps a full-screen UI container inside the device's reported safe area.</summary>
     [ExecuteAlways]

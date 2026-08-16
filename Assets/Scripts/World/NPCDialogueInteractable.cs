@@ -1,11 +1,11 @@
 using System;
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Dialogue;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Quests;
+using GBHEngland.Data;
+using GBHEngland.Dialogue;
+using GBHEngland.Combat;
+using GBHEngland.Quests;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>One quest-gated conversation variant — checked in StateOverrides order, first match wins.</summary>
     [Serializable]

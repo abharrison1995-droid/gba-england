@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.World;
+using GBHEngland.Vibe;
 
 /// <summary>
 /// Drops a talkable NPC (billboard sprite + Interactable + NPCDialogueInteractable) into the

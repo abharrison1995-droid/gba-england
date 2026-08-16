@@ -1,7 +1,7 @@
 using UnityEngine;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Fixed isometric follow — pitch/yaw locked to EK vibe, no player zoom/tilt.

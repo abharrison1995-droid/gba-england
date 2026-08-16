@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.UI;
+using GBHEngland.Data;
+using GBHEngland.Flow;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// Optional death drop for an enemy: on <see cref="Health.OnDeath"/>, shows the same loot

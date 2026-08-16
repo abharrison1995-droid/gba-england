@@ -1,12 +1,12 @@
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Dialogue;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.World;
+using GBHEngland.Combat;
+using GBHEngland.Data;
+using GBHEngland.Dialogue;
+using GBHEngland.Flow;
+using GBHEngland.UI;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Companions
+namespace GBHEngland.Companions
 {
     /// <summary>
     /// The recruitable home presence: the idle companion standing in their home chunk. Attached to

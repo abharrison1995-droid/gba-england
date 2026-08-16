@@ -1,11 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Combat;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Bind known spells to the 4 HUD spell slots. Tap a slot to select it, tap a spell to bind

@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Bakes a NavMesh at runtime for the chunk this sits on, so NavMeshAgent enemies path around

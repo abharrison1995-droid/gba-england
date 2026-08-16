@@ -1,11 +1,11 @@
 using UnityEngine;
-using ExiledAlvaston.AI;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.World;
+using GBHEngland.AI;
+using GBHEngland.Combat;
+using GBHEngland.Data;
+using GBHEngland.Flow;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Companions
+namespace GBHEngland.Companions
 {
     /// <summary>
     /// Owns the single active companion contract: which companion is hired, the scene-root follower

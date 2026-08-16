@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEditor;
-using ExiledAlvaston.Data;
+using GBHEngland.Data;
 
 /// <summary>
 /// Authors a chunk's vehicle spawns without typing coordinates. Vehicles live on the chunk's
@@ -37,7 +37,7 @@ public class VehiclePlacementTool : EditorWindow
             _chunk, typeof(MapChunkData), false);
 
         _vehicle = (VehicleData)EditorGUILayout.ObjectField(
-            new GUIContent("Vehicle", "Create these via Assets > Create > ExiledAlvaston > Data > Vehicle Data."),
+            new GUIContent("Vehicle", "Create these via Assets > Create > GBHEngland > Data > Vehicle Data."),
             _vehicle, typeof(VehicleData), false);
 
         EditorGUILayout.Space();

@@ -1,8 +1,8 @@
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Builds an NPC from a <see cref="PlacementPreset"/> — the one description of what an NPC is,

@@ -1,8 +1,8 @@
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.UI;
+using GBHEngland.Combat;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Single owner of "is the player riding, and what". VehicleController used to answer that

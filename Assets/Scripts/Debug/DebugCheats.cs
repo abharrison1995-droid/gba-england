@@ -1,10 +1,10 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Flow;
+using GBHEngland.UI;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.Debugging
+namespace GBHEngland.Debugging
 {
     /// <summary>
     /// Dev-only cheats. Self-bootstraps in Play mode and is compiled ENTIRELY out of release builds

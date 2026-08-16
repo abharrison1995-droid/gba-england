@@ -1,8 +1,8 @@
 using UnityEngine;
 using TMPro;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Red popup numbers over combatants (EK hit feedback).

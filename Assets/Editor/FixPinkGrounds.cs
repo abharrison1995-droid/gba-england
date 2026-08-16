@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
 /// <summary>
 /// Reassigns chunk Ground / Path materials when Unity shows magenta (missing shader/texture).

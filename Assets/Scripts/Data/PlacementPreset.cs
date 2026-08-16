@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     /// <summary>
     /// One thing the World Palette can stamp into the world. Replaces the per-type placement
@@ -13,7 +13,7 @@ namespace ExiledAlvaston.Data
     /// leave it empty and the recipe fields below are used to compose the object the way the old
     /// tools did.
     ///
-    /// Create via Assets &gt; Create &gt; ExiledAlvaston &gt; Data &gt; Placement Preset, or generate
+    /// Create via Assets &gt; Create &gt; GBHEngland &gt; Data &gt; Placement Preset, or generate
     /// a starter library with Tools &gt; GBH &gt; Content &gt; Create Starter Presets.
     /// </summary>
     [CreateAssetMenu(fileName = "NewPlacementPreset", menuName = "GBH England/Data/Placement Preset")]

@@ -1,8 +1,8 @@
 using UnityEngine;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Flow;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// Decides whether a death pays the player XP, and how much.

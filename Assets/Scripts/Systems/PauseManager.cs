@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Systems
+namespace GBHEngland.Systems
 {
     /// <summary>
     /// Ref-counted owner of Time.timeScale so inventory, dialogue and chunk

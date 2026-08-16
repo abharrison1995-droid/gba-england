@@ -323,7 +323,7 @@ errors on a duplicate.
 Considered and rejected: it serializes the target's assembly + namespace + class name into the
 asset, and a root-namespace rename was pending at the time — introducing it here would have made
 that rename silently null every dialogue link. **That call was vindicated on 2026-08-16**, when
-`ExiledAlvaston` → `GBHEngland` swept 147 files: because no `[SerializeReference]` exists anywhere,
+`GBHEngland` → `GBHEngland` swept 147 files: because no `[SerializeReference]` exists anywhere,
 the whole rename reduced to three `m_TargetAssemblyTypeName` strings. It also produces
 opaque `rid:`-keyed YAML with no Inspector support for polymorphic references. Per-node sub-assets
 and integer indices into `Nodes` were rejected too: reordering silently repoints edges, and a

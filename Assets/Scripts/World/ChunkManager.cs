@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     public enum Direction
     {
@@ -16,7 +16,7 @@ namespace ExiledAlvaston.World
 
     /// <summary>
     /// How the player got from one chunk to the next. Passed to
-    /// <see cref="ExiledAlvaston.Systems.WantedManager.OnChunkTransition"/>, which treats the two
+    /// <see cref="GBHEngland.Systems.WantedManager.OnChunkTransition"/>, which treats the two
     /// differently: walking out of town can shake the police, walking through a door cannot.
     ///
     /// Not serialized anywhere — it is a method parameter only — so the append-only rule that
@@ -88,14 +88,14 @@ namespace ExiledAlvaston.World
         {
             if (PlayerTransform == null)
             {
-                var player = ExiledAlvaston.Combat.CombatController.Instance
-                    ?? FindObjectOfType<ExiledAlvaston.Combat.CombatController>();
+                var player = GBHEngland.Combat.CombatController.Instance
+                    ?? FindObjectOfType<GBHEngland.Combat.CombatController>();
                 if (player != null) PlayerTransform = player.transform;
             }
 
             // Load starting chunk if none is in the scene yet (skip during title/creator)
-            bool blockAutoload = ExiledAlvaston.Flow.GameFlowController.Instance != null
-                && ExiledAlvaston.Flow.GameFlowController.Instance.State != ExiledAlvaston.Flow.GameFlowState.Playing;
+            bool blockAutoload = GBHEngland.Flow.GameFlowController.Instance != null
+                && GBHEngland.Flow.GameFlowController.Instance.State != GBHEngland.Flow.GameFlowState.Playing;
 
             if (!blockAutoload
                 && CurrentChunkInstance == null
@@ -104,9 +104,9 @@ namespace ExiledAlvaston.World
             {
                 CurrentChunkInstance = Instantiate(CurrentChunkData.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 CurrentChunkInstance.name = CurrentChunkData.ChunkPrefab.name;
-                ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(CurrentChunkData.ChunkName);
+                GBHEngland.Flow.PlayerSession.Instance?.MarkChunkVisited(CurrentChunkData.ChunkName);
                 // Silent: the scene-autoload debug path is not a discovery.
-                ExiledAlvaston.UI.WikiUnlock.GrantForChunk(CurrentChunkData.ChunkName, silent: true);
+                GBHEngland.UI.WikiUnlock.GrantForChunk(CurrentChunkData.ChunkName, silent: true);
             }
         }
 
@@ -180,12 +180,12 @@ namespace ExiledAlvaston.World
 
             if (CurrentChunkData != null
                 && CurrentChunkData.LockExitsUntilTutorialComplete
-                && (ExiledAlvaston.Flow.PlayerSession.Instance == null
-                    || !ExiledAlvaston.Flow.PlayerSession.Instance.TutorialComplete))
+                && (GBHEngland.Flow.PlayerSession.Instance == null
+                    || !GBHEngland.Flow.PlayerSession.Instance.TutorialComplete))
             {
                 ShowWarning("The Manor Cellars exits are sealed. Clear the cellars and use the gate.");
-                if (ExiledAlvaston.UI.UIManager.Instance != null)
-                    ExiledAlvaston.UI.UIManager.Instance.LogCombat("Exits locked — find the manor gate.");
+                if (GBHEngland.UI.UIManager.Instance != null)
+                    GBHEngland.UI.UIManager.Instance.LogCombat("Exits locked — find the manor gate.");
                 return;
             }
 
@@ -250,7 +250,7 @@ namespace ExiledAlvaston.World
             }
             if (PlayerTransform == null)
             {
-                var player = ExiledAlvaston.Combat.CombatController.Instance;
+                var player = GBHEngland.Combat.CombatController.Instance;
                 if (player != null) PlayerTransform = player.transform;
             }
             if (PlayerTransform == null)
@@ -260,7 +260,7 @@ namespace ExiledAlvaston.World
             }
 
             _isTransitioning = true;
-            ExiledAlvaston.Systems.PauseManager.Push();
+            GBHEngland.Systems.PauseManager.Push();
             if (LoadingScreenUI)
             {
                 LoadingScreenUI.alpha = 1f;
@@ -319,13 +319,13 @@ namespace ExiledAlvaston.World
                     // Portal, not EdgeCrossing: a door is not an escape from the police. Every
                     // interior and dungeon in the project carries IsCity: 0, so without this the
                     // player could rob London, step into a shop, and step back out clean.
-                    ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(
+                    GBHEngland.Systems.WantedManager.Instance?.OnChunkTransition(
                         CurrentChunkData, targetChunk, ChunkTravelKind.Portal);
 
                     CurrentChunkData = targetChunk;
-                    ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
+                    GBHEngland.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
                     // Toast: portal travel is a live arrival — a first visit is a discovery.
-                    ExiledAlvaston.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
+                    GBHEngland.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
                     CurrentChunkInstance = candidate;
 
                     // Portal travel is given its arrival by the caller (DungeonPortal) — either a
@@ -347,7 +347,7 @@ namespace ExiledAlvaston.World
                     // findable by name even if the scene's AllChunks list predates it. This only
                     // lasts the run — MapChunkRegistry is what makes it survive a restart.
                     EnsureKnownChunk(targetChunk);
-                    ExiledAlvaston.Flow.SaveGameManager.Save();
+                    GBHEngland.Flow.SaveGameManager.Save();
                 }
             }
             finally
@@ -358,7 +358,7 @@ namespace ExiledAlvaston.World
                     LoadingScreenUI.interactable = false;
                     LoadingScreenUI.blocksRaycasts = false;
                 }
-                ExiledAlvaston.Systems.PauseManager.Pop();
+                GBHEngland.Systems.PauseManager.Pop();
                 _isTransitioning = false;
             }
         }
@@ -427,7 +427,7 @@ namespace ExiledAlvaston.World
             }
             if (PlayerTransform == null)
             {
-                var player = ExiledAlvaston.Combat.CombatController.Instance;
+                var player = GBHEngland.Combat.CombatController.Instance;
                 if (player != null) PlayerTransform = player.transform;
             }
             if (PlayerTransform == null)
@@ -437,7 +437,7 @@ namespace ExiledAlvaston.World
             }
 
             _isTransitioning = true;
-            ExiledAlvaston.Systems.PauseManager.Push();
+            GBHEngland.Systems.PauseManager.Push();
             if (LoadingScreenUI)
             {
                 LoadingScreenUI.alpha = 1f;
@@ -453,16 +453,16 @@ namespace ExiledAlvaston.World
 
                 // Notify Wanted System of transition. EdgeCrossing is the only kind that can shake
                 // the police — this is the "got out of town" path.
-                ExiledAlvaston.Systems.WantedManager.Instance?.OnChunkTransition(
+                GBHEngland.Systems.WantedManager.Instance?.OnChunkTransition(
                     CurrentChunkData, targetChunk, ChunkTravelKind.EdgeCrossing);
 
                 // Instantiate the next chunk BEFORE removing the old one, so there's never a
                 // frame where the player has no floor under them.
                 GameObject previousInstance = CurrentChunkInstance;
                 CurrentChunkData = targetChunk;
-                ExiledAlvaston.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
+                GBHEngland.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
                 // Toast: walking across an edge is a live arrival — a first visit is a discovery.
-                ExiledAlvaston.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
+                GBHEngland.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
                 CurrentChunkInstance = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 CurrentChunkInstance.name = targetChunk.ChunkPrefab.name;
 
@@ -482,7 +482,7 @@ namespace ExiledAlvaston.World
                 _nextEdgeTriggerAllowedAt = Time.unscaledTime + EdgeTriggerGrace;
 
                 // Checkpoint: every chunk crossing is a save point.
-                ExiledAlvaston.Flow.SaveGameManager.Save();
+                GBHEngland.Flow.SaveGameManager.Save();
             }
             finally
             {
@@ -493,7 +493,7 @@ namespace ExiledAlvaston.World
                     LoadingScreenUI.interactable = false;
                     LoadingScreenUI.blocksRaycasts = false;
                 }
-                ExiledAlvaston.Systems.PauseManager.Pop();
+                GBHEngland.Systems.PauseManager.Pop();
                 _isTransitioning = false;
             }
         }
@@ -525,7 +525,7 @@ namespace ExiledAlvaston.World
         /// Moves the player, keeping the Rigidbody in sync to avoid interpolation ghosting.
         ///
         /// <paramref name="facing"/> is optional and is routed through
-        /// <see cref="ExiledAlvaston.Combat.CombatController.FaceTowards"/> rather than written
+        /// <see cref="GBHEngland.Combat.CombatController.FaceTowards"/> rather than written
         /// straight onto the transform: the controller keeps its own facing vector, and the sprite
         /// is flipped from that, so a rotation set behind its back would be reverted by the next
         /// input and would never turn the sprite at all.
@@ -549,7 +549,7 @@ namespace ExiledAlvaston.World
             forward.y = 0f;
             if (forward.sqrMagnitude < 0.0001f) return; // marker aimed straight up or down
 
-            var combat = PlayerTransform.GetComponent<ExiledAlvaston.Combat.CombatController>();
+            var combat = PlayerTransform.GetComponent<GBHEngland.Combat.CombatController>();
             if (combat != null)
             {
                 combat.FaceTowards(forward);

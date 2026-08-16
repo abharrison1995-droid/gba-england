@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.UI;
+using GBHEngland.Data;
+using GBHEngland.Flow;
+using GBHEngland.UI;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// A billboarded searchable thing — a bin, a crate, a locker. Expects a

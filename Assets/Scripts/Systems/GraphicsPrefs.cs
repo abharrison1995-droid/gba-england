@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Systems
+namespace GBHEngland.Systems
 {
     /// <summary>
     /// Device-local graphics/performance preferences, applied on boot and whenever the settings

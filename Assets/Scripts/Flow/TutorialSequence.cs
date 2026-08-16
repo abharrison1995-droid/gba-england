@@ -1,14 +1,14 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Quests;
-using ExiledAlvaston.UI;
-using ExiledAlvaston.Vibe;
-using ExiledAlvaston.World;
+using GBHEngland.Combat;
+using GBHEngland.Data;
+using GBHEngland.Quests;
+using GBHEngland.UI;
+using GBHEngland.Vibe;
+using GBHEngland.World;
 
-namespace ExiledAlvaston.Flow
+namespace GBHEngland.Flow
 {
     /// <summary>
     /// Staged Manor Cellars tutorial: move → kill the bandit → loot the chest → reach the gate.

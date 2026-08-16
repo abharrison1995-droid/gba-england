@@ -1,9 +1,9 @@
 using UnityEngine;
 using TMPro;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Combat;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.World
+namespace GBHEngland.World
 {
     /// <summary>
     /// Floating HP bar over the player's head — appears on taking damage, fades out a few

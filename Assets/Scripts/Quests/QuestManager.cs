@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using ExiledAlvaston.Data;
+using GBHEngland.Data;
 
-namespace ExiledAlvaston.Quests
+namespace GBHEngland.Quests
 {
     [Serializable]
     public class QuestProgress

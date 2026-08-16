@@ -44,7 +44,7 @@ any existing collider — nothing will throw, things will simply pass through ea
 
 ```
 Assets/
-  Scripts/          # runtime code, namespace ExiledAlvaston.<Folder>
+  Scripts/          # runtime code, namespace GBHEngland.<Folder>
     AI/ Camera/ Combat/ Data/ Dialogue/ Flow/ Quests/ Systems/ UI/ Vibe/ World/
   Editor/           # editor-only tools (no asmdef — see below)
   Data/Chunks/      # 6 MapChunkData .asset files
@@ -60,7 +60,7 @@ Tools/              # python helpers (see §5)
 docs/               # everything else — routed from docs/README.md
 ```
 
-- **Namespaces mirror folders**: `ExiledAlvaston.World`, `ExiledAlvaston.Combat`. Keep it that way.
+- **Namespaces mirror folders**: `GBHEngland.World`, `GBHEngland.Combat`. Keep it that way.
 - **Public fields, PascalCase**, for anything Unity serializes (`CurrentKnives`, `ChunkPrefab`).
 - **Private fields `_camelCase`** (`_isTransitioning`, `_hitThisSwing`).
 - **Singletons**: `public static X Instance { get; private set; }` set in `Awake`. Access pattern

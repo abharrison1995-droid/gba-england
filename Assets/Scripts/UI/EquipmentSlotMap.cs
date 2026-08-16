@@ -1,6 +1,6 @@
-using ExiledAlvaston.Data;
+using GBHEngland.Data;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Canonical paper-doll wiring: EquipSlot0..7 in the scene map to these ItemTypes, in this

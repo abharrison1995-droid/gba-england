@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace ExiledAlvaston.Data
+namespace GBHEngland.Data
 {
     [System.Serializable]
     public struct Vector2IntCoords

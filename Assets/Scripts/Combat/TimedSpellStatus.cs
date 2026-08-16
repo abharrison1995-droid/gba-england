@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// Owns one temporary spell modifier. The token is parented to its target, so target teardown

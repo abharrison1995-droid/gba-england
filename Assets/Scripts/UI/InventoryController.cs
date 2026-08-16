@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.Flow;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Data;
+using GBHEngland.Flow;
+using GBHEngland.Vibe;
 using System.Collections.Generic;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Fullscreen parchment inventory: left stats, center paper doll + tooltip, right backpack.
@@ -291,8 +291,8 @@ namespace ExiledAlvaston.UI
             if (Input.GetKeyDown(KeyCode.I))
             {
                 // Only in gameplay — toggling on Title/Death would strand a pushed pause
-                var flow = ExiledAlvaston.Flow.GameFlowController.Instance;
-                if (flow == null || flow.State == ExiledAlvaston.Flow.GameFlowState.Playing)
+                var flow = GBHEngland.Flow.GameFlowController.Instance;
+                if (flow == null || flow.State == GBHEngland.Flow.GameFlowState.Playing)
                     ToggleInventory();
             }
 
@@ -424,13 +424,13 @@ namespace ExiledAlvaston.UI
         {
             ItemData item = _tooltipItem;
             var session = PlayerSession.Instance;
-            var player = ExiledAlvaston.Combat.CombatController.Instance;
+            var player = GBHEngland.Combat.CombatController.Instance;
             if (item == null || session == null || player == null) return;
 
             if (!session.RemoveItem(item, 1)) return;
 
             Vector3 dropAt = player.transform.position + player.FacingDirection * 0.6f;
-            ExiledAlvaston.World.DroppedItemPickup.Spawn(item, 1, dropAt);
+            GBHEngland.World.DroppedItemPickup.Spawn(item, 1, dropAt);
             HideTooltip();
         }
 
@@ -499,8 +499,8 @@ namespace ExiledAlvaston.UI
 
             bool isActive = !InventoryUIPanel.activeSelf;
             InventoryUIPanel.SetActive(isActive);
-            if (isActive) ExiledAlvaston.Systems.PauseManager.Push();
-            else ExiledAlvaston.Systems.PauseManager.Pop();
+            if (isActive) GBHEngland.Systems.PauseManager.Push();
+            else GBHEngland.Systems.PauseManager.Pop();
 
             if (isActive)
                 RefreshUI();
@@ -682,14 +682,14 @@ namespace ExiledAlvaston.UI
             var session = PlayerSession.Instance;
             if (session == null || !session.RemoveItem(item, 1)) return;
 
-            var player = ExiledAlvaston.Combat.CombatController.Instance;
+            var player = GBHEngland.Combat.CombatController.Instance;
             if (player != null)
             {
                 if (item.HealHP > 0)
                 {
                     // Health owns the clamp to MaxHealth and refuses to heal the dead;
                     // CombatController.PushHud copies its value back each frame.
-                    var health = player.GetComponent<ExiledAlvaston.Combat.Health>();
+                    var health = player.GetComponent<GBHEngland.Combat.Health>();
                     if (health != null) health.Heal(item.HealHP);
                     else player.CurrentHealth += item.HealHP;
                 }
@@ -718,7 +718,7 @@ namespace ExiledAlvaston.UI
         /// An item naming a trigger no character has is a content gap, not a crash — most sheets do
         /// not include a drinking animation and are not going to.
         /// </summary>
-        private static void PlayUseAnimation(ExiledAlvaston.Combat.CombatController player, string trigger)
+        private static void PlayUseAnimation(GBHEngland.Combat.CombatController player, string trigger)
         {
             if (string.IsNullOrEmpty(trigger)) return;
 

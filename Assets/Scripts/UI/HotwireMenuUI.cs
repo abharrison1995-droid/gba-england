@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>One wire in the hotwire minigame: how many taps it needs to come loose.</summary>
     public class HotwireWire
@@ -128,7 +128,7 @@ namespace ExiledAlvaston.UI
                 return;
             }
 
-            var player = ExiledAlvaston.Combat.CombatController.Instance;
+            var player = GBHEngland.Combat.CombatController.Instance;
             if (player != null)
             {
                 Vector3 a = player.transform.position;

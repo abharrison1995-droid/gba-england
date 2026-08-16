@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using ExiledAlvaston.Combat;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.UI;
+using GBHEngland.Combat;
+using GBHEngland.Data;
+using GBHEngland.UI;
 
 /// <summary>Spell content wiring plus reversible Play Mode spellbook shortcuts.</summary>
 public static class SpellTools
@@ -74,7 +74,7 @@ public static class SpellTools
             Debug.LogWarning("Preview Current Spell VFX: enter Play Mode first.");
             return;
         }
-        if (ExiledAlvaston.Systems.PauseManager.IsPaused)
+        if (GBHEngland.Systems.PauseManager.IsPaused)
         {
             Debug.LogWarning("Preview Current Spell VFX: close the spellbook or other paused window first.");
             return;

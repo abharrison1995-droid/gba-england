@@ -1,7 +1,7 @@
 using UnityEngine;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// The level of one placed enemy. Absent means level 1, and level 1 scales nothing, so adding

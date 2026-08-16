@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ExiledAlvaston.Combat
+namespace GBHEngland.Combat
 {
     /// <summary>
     /// Cheap procedural lightning VFX — a jagged electric-blue LineRenderer from caster to target

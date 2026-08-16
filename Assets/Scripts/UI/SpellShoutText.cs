@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// The player's chosen spell name, shouted over their head with a "!" when they cast —

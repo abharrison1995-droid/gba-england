@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using ExiledAlvaston.World;
+using GBHEngland.World;
 
 /// <summary>
 /// Drops a PlayerSpawnPoint (the player's arrival marker) into the open scene OR the open prefab

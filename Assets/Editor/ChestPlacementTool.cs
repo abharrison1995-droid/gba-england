@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using ExiledAlvaston.Data;
-using ExiledAlvaston.World;
+using GBHEngland.Data;
+using GBHEngland.World;
 
 /// <summary>
 /// Drops a generic <see cref="LootChest"/> into the open scene or prefab, loot list authored

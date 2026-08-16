@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using ExiledAlvaston.Quests;
-using ExiledAlvaston.Vibe;
+using GBHEngland.Quests;
+using GBHEngland.Vibe;
 
-namespace ExiledAlvaston.UI
+namespace GBHEngland.UI
 {
     /// <summary>
     /// Center-screen "New Quest" popup. Shown automatically when QuestManager starts a

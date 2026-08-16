@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace ExiledAlvaston.EditorTools
+namespace GBHEngland.EditorTools
 {
     /// <summary>
     /// Applies Android and iOS texture import overrides to the world/model/UI textures, so a
