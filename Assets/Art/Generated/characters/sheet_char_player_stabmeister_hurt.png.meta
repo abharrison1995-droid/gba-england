@@ -115,8 +115,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 74
-        height: 74
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -134,10 +134,10 @@ TextureImporter:
       name: sheet_char_player_stabmeister_hurt_1
       rect:
         serializedVersion: 2
-        x: 74
+        x: 86
         y: 0
-        width: 74
-        height: 74
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -155,10 +155,10 @@ TextureImporter:
       name: sheet_char_player_stabmeister_hurt_2
       rect:
         serializedVersion: 2
-        x: 148
+        x: 172
         y: 0
-        width: 74
-        height: 74
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}

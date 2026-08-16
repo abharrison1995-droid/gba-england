@@ -115,8 +115,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -134,10 +134,10 @@ TextureImporter:
       name: sheet_char_player_stabmeister_attack_1
       rect:
         serializedVersion: 2
-        x: 65
+        x: 86
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -155,10 +155,10 @@ TextureImporter:
       name: sheet_char_player_stabmeister_attack_2
       rect:
         serializedVersion: 2
-        x: 130
+        x: 172
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -176,10 +176,10 @@ TextureImporter:
       name: sheet_char_player_stabmeister_attack_3
       rect:
         serializedVersion: 2
-        x: 195
+        x: 258
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -197,10 +197,10 @@ TextureImporter:
       name: sheet_char_player_stabmeister_attack_4
       rect:
         serializedVersion: 2
-        x: 260
+        x: 344
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -218,10 +218,10 @@ TextureImporter:
       name: sheet_char_player_stabmeister_attack_5
       rect:
         serializedVersion: 2
-        x: 325
+        x: 430
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}

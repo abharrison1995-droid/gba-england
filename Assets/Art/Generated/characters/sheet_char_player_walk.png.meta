@@ -115,8 +115,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -134,10 +134,10 @@ TextureImporter:
       name: sheet_char_player_walk_1
       rect:
         serializedVersion: 2
-        x: 65
+        x: 86
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -155,10 +155,10 @@ TextureImporter:
       name: sheet_char_player_walk_2
       rect:
         serializedVersion: 2
-        x: 130
+        x: 172
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -176,10 +176,10 @@ TextureImporter:
       name: sheet_char_player_walk_3
       rect:
         serializedVersion: 2
-        x: 195
+        x: 258
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -197,10 +197,10 @@ TextureImporter:
       name: sheet_char_player_walk_4
       rect:
         serializedVersion: 2
-        x: 260
+        x: 344
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -208,20 +208,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 00000000000000000800000000000000
-      internalID: 0
+      spriteID: 3f7c2a90d4e6b1830800000000000000
+      internalID: 7238411905566280394
       vertices: []
-      indices: 
+      indices:
       edges: []
       weights: []
     - serializedVersion: 2
       name: sheet_char_player_walk_5
       rect:
         serializedVersion: 2
-        x: 325
+        x: 430
         y: 0
-        width: 65
-        height: 65
+        width: 86
+        height: 86
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -229,8 +229,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 00000000000000000800000000000000
-      internalID: 0
+      spriteID: a5d81c47f9302be60800000000000000
+      internalID: -6104973288451729657
       vertices: []
       indices: 
       edges: []
@@ -250,8 +250,8 @@ TextureImporter:
       sheet_char_player_walk_1: 2891276535445028270
       sheet_char_player_walk_2: 1119720581204881469
       sheet_char_player_walk_3: 4325452329122024052
-      sheet_char_player_walk_4: 0
-      sheet_char_player_walk_5: 0
+      sheet_char_player_walk_4: 7238411905566280394
+      sheet_char_player_walk_5: -6104973288451729657
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
