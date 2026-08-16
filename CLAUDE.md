@@ -669,6 +669,31 @@ id-less `PlayerSpawn`. All six are in `MapChunkRegistry`, which now lists twelve
   not the police station. `WantedManager`'s own comment already calls rerouting the arrest path a
   separate job.
 
+**Also outstanding — the name unification, never compiled.** Committed 2026-08-16, phases 1–4
+(`b763080`, `44b0fd8`, `947ded5`, `0b9301f`):
+
+- ⚠️ **The root namespace is now `GBHEngland`** — 147 `.cs` files, 460 occurrences. The phase 3 diff
+  was exactly **478 insertions / 478 deletions**, i.e. a pure rename with nothing else in it. **It
+  has not been compiled.** A single missed `using` is a build error nothing here can see. *First
+  Unity open is the gate — Console clear before trusting anything else.*
+- ⚠️ **Three `UnityEvent` bindings store the namespace as a literal string** and were rewritten in
+  the same commit: `EBike.prefab` (`VehicleController`), `Pub_TheWinchester.prefab`
+  (`PubInteractable`) and `c.unity` (`InventoryController`). These are **not** GUID-bound, so a miss
+  fails **silently** with a clean console. *Mount the e-bike, USE the Winchester, open the bag and
+  click the rebuilt buttons.* If one is dead, look at its `m_TargetAssemblyTypeName`, not the C#.
+- ⚠️ **`productName` is now `GBH England`** (no colon — it is a real folder in
+  `persistentDataPath`). **Every save made before 2026-08-16 is orphaned**, along with the graphics
+  `PlayerPrefs`. Accepted deliberately; there is no migration shim. *Play once and confirm a save
+  appears under `…/LocalLow/DefaultCompany/GBH England/`. Expect graphics settings to reset once.*
+- **`Create →` menus moved to `GBH England/Data/…`.** Existing assets are unaffected — `menuName`
+  is not stored in the asset. *Check `Create → GBH England → Data → Item Data` still makes a working
+  `ItemData`.*
+- **`EK*` is deliberately kept** (`EKVibe`, `EKNavMeshBaker`) — it marks *Exiled Kingdoms*, the
+  inspiration game. `DiscoverEnglandSetup.cs` keeps its filename too; renaming a `.cs` moves its
+  `.meta`, which is the one thing here that can mint a fresh GUID.
+
+→ [docs/plans/NAME_UNIFICATION_PLAN.md](docs/plans/NAME_UNIFICATION_PLAN.md)
+
 **Also outstanding — four more interior shells for the vape arc, hand-authored YAML.** Committed
 2026-08-16. `Abandoned_Bus_Station`, `Mosley_Mansion`, `DP_Academy` and `Abandoned_Church` — each
 cloned byte-for-byte from the `Quidland` shell (floor + MeshCollider, four walls, a

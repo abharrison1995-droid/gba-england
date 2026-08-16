@@ -1,13 +1,30 @@
 # Name Unification Plan — everything becomes GBH: England
 
 ```
-Last verified against: working tree, 2026-08-16 (commit c3b5a38)
-Verification scope:    Every claim below is from a grep of the tracked tree. The hazard survey
-                       (SerializeReference, asmdef, m_EditorClassIdentifier, Type.GetType,
-                       m_TargetAssemblyTypeName) was run and is reproduced with counts. NOTHING has
-                       been changed yet and NOTHING has been compiled — there is no C# compiler or
-                       Unity in the agent environment. This is a plan, not a result.
+Last verified against: working tree, 2026-08-16 (executed through commit 0b9301f)
+Verification scope:    Phases 1-4 are DONE and pushed. Every claim below is from a grep of the
+                       tracked tree; the hazard survey is reproduced with counts. Post-sweep gates
+                       that passed: zero occurrences of the old token across .cs/.prefab/.unity/
+                       .asset/.txt, the 3 m_TargetAssemblyTypeName strings rewritten, the 15 Create
+                       menu paths intact as "GBH England/Data/...", --check-dangling exit 0, brace
+                       scan balanced, and a phase 3 diff of exactly 478 insertions / 478 deletions
+                       (a pure rename). NONE OF IT HAS BEEN COMPILED — there is no C# compiler or
+                       Unity in the agent environment. The editor checklist at the end is the gate.
 ```
+
+## Status — phases 1–4 executed 2026-08-16
+
+| Phase | Commit | State |
+|---|---|---|
+| 1 — Prose, comments, dead paths | `b763080` | ✅ done |
+| 2 — `CreateAssetMenu` paths | `44b0fd8` | ✅ done |
+| 3 — Namespace + 3 UnityEvent strings | `947ded5` | ✅ done — **needs a compile** |
+| 4 — `productName` | `0b9301f` | ✅ done — **saves orphaned, as agreed** |
+| 5 — `EK*` identifiers | — | ⬜ **deliberately not done** (see below) |
+
+Two unrelated pieces of work were committed separately first, so the mechanical rename would not
+entangle them: the spell VFX PlayableGraph work (`27e2f63`) and an editor session's London bus
+station / paths / bins / NavMesh rebake (`663724c`). Neither was authored or reviewed here.
 
 ## The decision this reverses
 

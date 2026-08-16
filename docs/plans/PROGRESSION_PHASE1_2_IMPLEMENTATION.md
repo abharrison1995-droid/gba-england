@@ -425,8 +425,11 @@ project builds; that `LevelForXP`'s closed form agrees with `TotalXPForLevel` at
 1. **It compiles.** Unity, wait for the recompile to finish, then Window → General → Console, Clear,
    and confirm no red. Nothing below means anything until this passes.
 2. **A pre-progression save still loads.** Before pulling, copy
-   `%USERPROFILE%\AppData\LocalLow\<company>\Exiled Alvaston\savegame.json` somewhere safe (the
-   folder is whatever `Application.persistentDataPath` reports on that machine). Then Play → title
+   `%USERPROFILE%\AppData\LocalLow\<company>\GBH England\savegame.json` somewhere safe (the
+   folder is whatever `Application.persistentDataPath` reports on that machine). ⚠️ **`productName`
+   changed on 2026-08-16**, so any save written before that date is under the old
+   `…\Exiled Alvaston\` folder and will not be found — that orphaning was accepted deliberately, see
+   [NAME_UNIFICATION_PLAN.md](NAME_UNIFICATION_PLAN.md). Then Play → title
    screen → **Continue**. The character should load with wallet, gear, map and WIKIBRITAIN intact,
    and the bag should read **Player level: 1, Current XP: 0**. Then cross one chunk edge, which
    autosaves, and reopen the JSON: it should now contain a `TotalXP` key.
