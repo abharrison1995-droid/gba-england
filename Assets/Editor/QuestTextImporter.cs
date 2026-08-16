@@ -223,15 +223,24 @@ public static class QuestTextImporter
         }
 
         // Build the dialogue assets first so we can validate them before writing anything.
-        var builtDialogues = new List<(ParsedDialogue parsed, DialogueData asset, PlacementPreset preset)>();
+        var builtDialogues = new List<(ParsedDialogue parsed, DialogueData asset, PlacementPreset preset, bool isNew)>();
         foreach (ParsedDialogue dialogue in dialogues)
         {
-            DialogueData asset = ScriptableObject.CreateInstance<DialogueData>();
+            // Load-then-mutate, mirroring WriteQuestAsset. Creating a fresh instance here and
+            // relying on SaveAsset to reconcile it cannot preserve the GUID: SetDirty on a
+            // detached instance writes nothing, and the preset then stores an unsaved object,
+            // which serializes as {fileID: 0}. BuildDialogue clears the node list, so reusing
+            // the existing asset still rebuilds it wholesale from the text.
+            string existingPath = ResolveAssetPath(DialoguePathFor(dialogue.NpcId));
+            DialogueData asset = AssetDatabase.LoadAssetAtPath<DialogueData>(existingPath);
+            bool isNew = asset == null;
+            if (isNew) asset = ScriptableObject.CreateInstance<DialogueData>();
+
             PlacementPreset preset = ResolvePreset(dialogue.NpcId);
             if (!BuildDialogue(dialogue, asset, preset, errors))
             {
                 LogErrors(path, errors);
-                UnityEngine.Object.DestroyImmediate(asset);
+                if (isNew) UnityEngine.Object.DestroyImmediate(asset);
                 return false;
             }
 
@@ -245,11 +254,11 @@ public static class QuestTextImporter
             if (errors.Count > 0)
             {
                 LogErrors(path, errors);
-                UnityEngine.Object.DestroyImmediate(asset);
+                if (isNew) UnityEngine.Object.DestroyImmediate(asset);
                 return false;
             }
 
-            builtDialogues.Add((dialogue, asset, preset));
+            builtDialogues.Add((dialogue, asset, preset, isNew));
         }
 
         // Write the quest definition. A dialogue-only file has no quest to write — its
@@ -267,10 +276,10 @@ public static class QuestTextImporter
         }
 
         // Write the dialogue assets and wire their presets.
-        foreach (var (parsed, asset, preset) in builtDialogues)
+        foreach (var (parsed, asset, preset, _) in builtDialogues)
         {
-            string dPath = DialoguePathFor(parsed.NpcId);
             EnsureFolder(DialogueAssetsFolder);
+            string dPath = ResolveAssetPath(DialoguePathFor(parsed.NpcId));
             SaveAsset(asset, dPath);
 
             if (preset != null)
@@ -297,10 +306,15 @@ public static class QuestTextImporter
         Debug.LogError(sb.ToString().TrimEnd());
     }
 
-    private static void Cleanup(List<(ParsedDialogue, DialogueData, PlacementPreset)> built)
+    /// <summary>
+    /// Discards the in-memory dialogue assets after a failed import. Only the ones this run
+    /// created are destroyed — an asset loaded from disk is a real file, and DestroyImmediate
+    /// on a persistent object throws rather than quietly doing nothing.
+    /// </summary>
+    private static void Cleanup(List<(ParsedDialogue, DialogueData, PlacementPreset, bool)> built)
     {
-        foreach (var (_, asset, _) in built)
-            if (asset != null) UnityEngine.Object.DestroyImmediate(asset);
+        foreach (var (_, asset, _, isNew) in built)
+            if (isNew && asset != null) UnityEngine.Object.DestroyImmediate(asset);
     }
 
     // ── Parser ─────────────────────────────────────────────────────────────────────────────
@@ -651,8 +665,10 @@ public static class QuestTextImporter
 
     private static QuestDefinition WriteQuestAsset(ParsedQuest parsed, List<string> errors)
     {
-        string path = $"{QuestAssetsFolder}/{parsed.Id}.asset";
         EnsureFolder(QuestAssetsFolder);
+        // Same case-collision guard as the dialogue path: a quest id that differs from an
+        // existing asset only by case would otherwise be written as a second, unreachable file.
+        string path = ResolveAssetPath($"{QuestAssetsFolder}/{parsed.Id}.asset");
 
         var def = AssetDatabase.LoadAssetAtPath<QuestDefinition>(path);
         if (def == null) def = ScriptableObject.CreateInstance<QuestDefinition>();
@@ -856,11 +872,11 @@ public static class QuestTextImporter
 
     private static void SaveAsset(ScriptableObject asset, string path)
     {
-        // Update-in-place: load-then-dirty preserves the GUID (and any references to it). The
-        // builders already loaded the existing asset before mutating it, so this only creates
-        // when the asset is genuinely new.
-        var existing = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
-        if (existing != null)
+        // Update-in-place: dirtying the asset the builder loaded preserves the GUID (and any
+        // prefab or scene reference to it). Test the object rather than the path — a path that
+        // resolves to a file the builder did not load would dirty a detached instance, which
+        // writes nothing and leaves every reference to it null.
+        if (AssetDatabase.Contains(asset))
         {
             EditorUtility.SetDirty(asset);
         }
@@ -871,6 +887,36 @@ public static class QuestTextImporter
     }
 
     private static string DialoguePathFor(string npcId) => $"{DialogueAssetsFolder}/Dialogue_{npcId}.asset";
+
+    /// <summary>
+    /// Maps a desired asset path onto the real file already on disk when the two differ only by
+    /// case, and returns the desired path unchanged when nothing matches.
+    ///
+    /// Unity's AssetDatabase is case-sensitive on every platform, but Windows and macOS
+    /// filesystems are not. Without this, an id that lowercases onto an existing PascalCase
+    /// asset — <c>DIALOGUE scrapman</c> against <c>Dialogue_Scrapman.asset</c> — is invisible to
+    /// LoadAssetAtPath while CreateAsset cannot write it either. The import then wired presets to
+    /// an unsaved object, which serializes as <c>{fileID: 0}</c>: the conversation vanished and
+    /// nothing was logged. Observed on Mosley and Scrap Man, 2026-08-16.
+    ///
+    /// <c>File.Exists</c> is deliberately not used as a shortcut — on a case-insensitive
+    /// filesystem it answers true for the wrong casing, which is the whole bug. Only the name
+    /// as the directory actually spells it is trustworthy.
+    /// </summary>
+    private static string ResolveAssetPath(string desiredPath)
+    {
+        string folder = Path.GetDirectoryName(desiredPath);
+        if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder)) return desiredPath;
+
+        string wanted = Path.GetFileName(desiredPath);
+        foreach (string file in Directory.GetFiles(folder, "*.asset"))
+        {
+            string actual = Path.GetFileName(file);
+            if (string.Equals(actual, wanted, StringComparison.OrdinalIgnoreCase))
+                return $"{folder.Replace('\\', '/')}/{actual}";
+        }
+        return desiredPath;
+    }
 
     private static void EnsureFolder(string assetFolder)
     {
