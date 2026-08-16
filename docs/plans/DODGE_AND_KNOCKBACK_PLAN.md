@@ -631,7 +631,7 @@ Everything else needs a human in the editor. Routes, with preconditions:
 * **Hovering.** Roll off a kerb or a step. Check the player falls normally. If they hover, the
   velocity zeroing has been put inside the loop.
 * **Perk (Phase 4).** Needs a `PerkData` asset the owner authors: Project → Create →
-  `ExiledAlvaston/Data/Perk`, put it in a `Resources/Perks` folder, one effect of type
+  `GBH England/Data/Perk`, put it in a `Resources/Perks` folder, one effect of type
   `MeleeKnockback`, Magnitude 2. Then spend a point and hit something.
 
 **What cannot be proved without a human, and should not be claimed:** that any of it compiles;

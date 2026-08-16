@@ -22,7 +22,7 @@ namespace ExiledAlvaston.Data
     /// so never rename one once shipped (same rule as ItemData.ItemID / MapChunkData.ChunkName).
     /// Body prose is the owner's own work — machinery ships with placeholder text only.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewWikiEntry", menuName = "ExiledAlvaston/Data/Wiki Entry")]
+    [CreateAssetMenu(fileName = "NewWikiEntry", menuName = "GBH England/Data/Wiki Entry")]
     public class WikiEntryData : ScriptableObject
     {
         [Tooltip("Save key — never rename once shipped.")]

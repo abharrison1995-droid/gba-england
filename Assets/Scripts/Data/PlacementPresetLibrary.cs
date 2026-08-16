@@ -17,7 +17,7 @@ namespace ExiledAlvaston.Data
     /// is the contract; everything else about the preset is free to change.
     /// </summary>
     [CreateAssetMenu(fileName = "PlacementPresetLibrary",
-                     menuName = "ExiledAlvaston/Data/Placement Preset Library")]
+                     menuName = "GBH England/Data/Placement Preset Library")]
     public class PlacementPresetLibrary : ScriptableObject
     {
         /// <summary>Where <see cref="Resources.Load"/> expects this: Assets/Resources/&lt;this&gt;.asset.</summary>

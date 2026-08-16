@@ -1,4 +1,4 @@
-Drop QuestDefinition assets (Create > ExiledAlvaston > Data > Quest Definition) anywhere under
+Drop QuestDefinition assets (Create > GBH England > Data > Quest Definition) anywhere under
 this folder. QuestDatabase finds them by Id automatically at runtime (Resources.LoadAll) — no
 registration step needed.
 

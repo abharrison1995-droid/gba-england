@@ -33,7 +33,7 @@ namespace ExiledAlvaston.Data
     /// <summary>
     /// Configuration for a world chunk in the grid matrix.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewMapChunkData", menuName = "ExiledAlvaston/Data/Map Chunk Data")]
+    [CreateAssetMenu(fileName = "NewMapChunkData", menuName = "GBH England/Data/Map Chunk Data")]
     public class MapChunkData : ScriptableObject
     {
         public string ChunkName;

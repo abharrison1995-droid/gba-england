@@ -67,7 +67,7 @@ docs/               # everything else — routed from docs/README.md
   is `X.Instance ?? FindObjectOfType<X>()`.
 - **Tuning constants belong in `EKVibe`** (`Scripts/Vibe/EKVibe.cs`) — colours, sizes, camera,
   `ChunkSize`, `CharacterHeight`. Prefer adding there over new magic numbers.
-- **ScriptableObject menu path**: `ExiledAlvaston/Data/...`
+- **ScriptableObject menu path**: `GBH England/Data/...`
 - **Editor menu path**: `Tools/<Category>/...` — `Place`, `Art`, `World`, `UI`, `Debug`,
   `Repair`, `Content`, plus **`Danger Zone`** for the five tools that overwrite or re-create assets. Each of
   those confirms first and names what it destroys. **Nothing destructive may go anywhere else.**
@@ -378,7 +378,7 @@ the phase 1 branch), never compiled:
 - **`PerkEffectType.MeleeKnockback = 9` is appended, never reordered** — the enum is serialized by
   integer index inside every `PerkData` asset, and the first asset authored freezes these indices
   forever. Magnitude is a **flat metre value**, not a percentage. **No perk asset exists** — the
-  owner authors it: Create → `ExiledAlvaston/Data/Perk`, into a `Resources/Perks` folder, one
+  owner authors it: Create → `GBH England/Data/Perk`, into a `Resources/Perks` folder, one
   effect of type MeleeKnockback, Magnitude 2. *Then spend a point and hit something: the enemy
   should slide ~2 m and stop at walls.*
 - **`PlayerSession.MeleeKnockbackDistance` resets with the other cached query values** in

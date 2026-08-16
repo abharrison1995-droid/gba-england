@@ -46,7 +46,7 @@ A preset is one of: `Prop` (or any `Prefab` set — then the recipe fields are i
 
 Spec the fields as a clear list, then guide:
 
-- Create the preset (Project → Create under `ExiledAlvaston/Data/…`, or duplicate a similar one),
+- Create the preset (Project → Create under `GBH England/Data/…`, or duplicate a similar one),
   save under `Assets/Data/Presets/Preset_<Label>.asset`, fill the fields you specced.
 - Wire a conversation if wanted: right-click the preset → **Create Dialogue**
   (`CONTEXT/PlacementPreset/Create Dialogue`), or point its `Conversation` at a `.quest`-generated

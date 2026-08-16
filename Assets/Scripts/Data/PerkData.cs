@@ -62,7 +62,7 @@ namespace ExiledAlvaston.Data
     /// once shipped (same rule as ItemData.ItemID, MapChunkData.ChunkName and WikiEntryData.EntryID).
     /// Title and Description are the owner's own prose — no perk asset ships with this code.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewPerk", menuName = "ExiledAlvaston/Data/Perk")]
+    [CreateAssetMenu(fileName = "NewPerk", menuName = "GBH England/Data/Perk")]
     public class PerkData : ScriptableObject
     {
         [Tooltip("Save key — never rename once shipped.")]

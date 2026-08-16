@@ -169,7 +169,7 @@ namespace ExiledAlvaston.Data
     /// together by DialogueChoice.NextNodeId. Convergence (two choices leading to the same node)
     /// and cycles are both legal — see CLAUDE.md §15.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewDialogueTree", menuName = "ExiledAlvaston/Data/Dialogue Tree")]
+    [CreateAssetMenu(fileName = "NewDialogueTree", menuName = "GBH England/Data/Dialogue Tree")]
     public class DialogueData : ScriptableObject
     {
         public const string DefaultStartId = "start";

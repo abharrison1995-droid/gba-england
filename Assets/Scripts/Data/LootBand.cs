@@ -42,7 +42,7 @@ namespace ExiledAlvaston.Data
     /// yielding nothing at all, and counts towards the total like any entry, so a band of one item
     /// at weight 1 with EmptyWeight 3 pays out a quarter of the time.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewLootBand", menuName = "ExiledAlvaston/Data/Loot Band")]
+    [CreateAssetMenu(fileName = "NewLootBand", menuName = "GBH England/Data/Loot Band")]
     public class LootBand : ScriptableObject
     {
         public List<LootBandEntry> Entries = new List<LootBandEntry>();

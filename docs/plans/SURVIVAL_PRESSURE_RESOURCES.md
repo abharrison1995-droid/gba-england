@@ -555,7 +555,7 @@ bar's amber reads distinctly from the gold level badge beside it on a real scree
   `AbilityData` (safe: **zero `AbilityData` assets exist on disk**, so nothing carries a missing
   key), branch `CastAbilityRoutine` to heal the caster through `Health.Heal` when `BaseHeal > 0`
   instead of seeking a target. No spell asset ships — the owner authors it (Create →
-  `ExiledAlvaston/Data/Ability Data`) and decides who teaches it; any teaching dialogue is the
+  `GBH England/Data/Ability Data`) and decides who teaches it; any teaching dialogue is the
   owner's prose. The mana-cost gate, cooldown, shout and city-concealment drain all already exist
   and apply unchanged.
 * **Phase 3 — world and balance (owner actions, routes given when asked).** Place

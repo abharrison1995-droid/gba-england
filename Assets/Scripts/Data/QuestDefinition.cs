@@ -118,7 +118,7 @@ namespace ExiledAlvaston.Data
     /// returns null and <c>QuestConditionWatcher</c> skips it. That containment is deliberate: the
     /// tutorial quests deliberately have no definition and must keep running off their own code.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewQuest", menuName = "ExiledAlvaston/Data/Quest Definition")]
+    [CreateAssetMenu(fileName = "NewQuest", menuName = "GBH England/Data/Quest Definition")]
     public class QuestDefinition : ScriptableObject
     {
         [Tooltip("The save key. Must match the DialogueChoice.GrantQuestId that starts this quest, " +

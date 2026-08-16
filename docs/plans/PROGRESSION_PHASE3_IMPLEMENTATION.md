@@ -310,7 +310,7 @@ public enum PerkEffectType { ... }        // append-only — see 5.2
 [System.Serializable]
 public class PerkEffect { public PerkEffectType Type; public float Magnitude; }
 
-[CreateAssetMenu(fileName = "NewPerk", menuName = "ExiledAlvaston/Data/Perk")]
+[CreateAssetMenu(fileName = "NewPerk", menuName = "GBH England/Data/Perk")]
 public class PerkData : ScriptableObject
 {
     public string PerkId;                  // SAVE KEY — never rename once shipped
@@ -666,7 +666,7 @@ is legible at 39 px; that the derivation survives a real save round-trip.
    Play stopped. **This is the one layout number in the plan that was reasoned about rather than
    seen.**
 7. **Author one perk and spend a point.** Exit Play. Project panel, right-click `Assets/Resources/`,
-   **Create > Folder**, name it `Perks`. Right-click that folder, **Create > ExiledAlvaston > Data >
+   **Create > Folder**, name it `Perks`. Right-click that folder, **Create > GBH England > Data >
    Perk**. In the Inspector set **Perk Id** to a lowercase id you will never change (it is a save
    key), **Min Level** 2, one **Effect** of `Max Health Flat` magnitude 20, and write the Title and
    Description yourself. Ctrl+S. Play, reach level 2, open PERKS: the perk should be listed and

@@ -28,7 +28,7 @@ namespace ExiledAlvaston.Data
     /// <summary>
     /// Represents an equippable spell or action.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewAbilityData", menuName = "ExiledAlvaston/Data/Ability Data")]
+    [CreateAssetMenu(fileName = "NewAbilityData", menuName = "GBH England/Data/Ability Data")]
     public class AbilityData : ScriptableObject
     {
         public string AbilityID;

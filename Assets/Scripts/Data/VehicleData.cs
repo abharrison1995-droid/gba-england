@@ -7,7 +7,7 @@ namespace ExiledAlvaston.Data
     /// components and collider; this supplies the tuning and the art, so adding a vehicle is a
     /// new asset rather than a new prefab.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewVehicleData", menuName = "ExiledAlvaston/Data/Vehicle Data")]
+    [CreateAssetMenu(fileName = "NewVehicleData", menuName = "GBH England/Data/Vehicle Data")]
     public class VehicleData : ScriptableObject
     {
         public string VehicleName = "Limey E-Bike";

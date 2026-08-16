@@ -27,7 +27,7 @@ namespace ExiledAlvaston.Data
     /// <summary>
     /// Base configuration for any character (Player, Companion, NPC, Enemy)
     /// </summary>
-    [CreateAssetMenu(fileName = "NewCharacterData", menuName = "ExiledAlvaston/Data/Character Data")]
+    [CreateAssetMenu(fileName = "NewCharacterData", menuName = "GBH England/Data/Character Data")]
     public class CharacterData : ScriptableObject
     {
         [Header("Identity")]

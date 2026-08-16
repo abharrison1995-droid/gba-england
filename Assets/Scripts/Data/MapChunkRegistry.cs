@@ -21,7 +21,7 @@ namespace ExiledAlvaston.Data
     /// this asset stores object references, not names, so adding a chunk here is safe, but it can
     /// never be a reason to normalise a name (CLAUDE.md §3).
     /// </summary>
-    [CreateAssetMenu(fileName = "MapChunkRegistry", menuName = "ExiledAlvaston/Data/Map Chunk Registry")]
+    [CreateAssetMenu(fileName = "MapChunkRegistry", menuName = "GBH England/Data/Map Chunk Registry")]
     public class MapChunkRegistry : ScriptableObject
     {
         /// <summary>Path passed to <see cref="Resources.Load"/> — the asset must sit at Assets/Resources/MapChunkRegistry.asset.</summary>

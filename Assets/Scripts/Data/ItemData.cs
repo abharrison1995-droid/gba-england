@@ -21,7 +21,7 @@ namespace ExiledAlvaston.Data
     /// <summary>
     /// Base configuration for Items, suitable for Inventory Paper Doll mapping.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewItemData", menuName = "ExiledAlvaston/Data/Item Data")]
+    [CreateAssetMenu(fileName = "NewItemData", menuName = "GBH England/Data/Item Data")]
     public class ItemData : ScriptableObject
     {
         public string ItemID;

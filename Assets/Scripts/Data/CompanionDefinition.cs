@@ -28,7 +28,7 @@ namespace ExiledAlvaston.Data
     /// time by CompanionManager through the same preset. This keeps one 45MB prop pack or a sprite
     /// sheet from being dragged into every build by a companion nobody hired.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewCompanion", menuName = "ExiledAlvaston/Data/Companion Definition")]
+    [CreateAssetMenu(fileName = "NewCompanion", menuName = "GBH England/Data/Companion Definition")]
     public class CompanionDefinition : ScriptableObject
     {
         [Tooltip("The save key. Must match the PlacementPreset QuestKey used as the home anchor, " +

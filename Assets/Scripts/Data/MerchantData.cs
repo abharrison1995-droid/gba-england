@@ -57,7 +57,7 @@ namespace ExiledAlvaston.Data
     /// Reusable shop definition. Stock is unlimited in the first shop pass, so this asset holds
     /// catalogue and pricing only and introduces no save state.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewMerchantData", menuName = "ExiledAlvaston/Data/Merchant Data")]
+    [CreateAssetMenu(fileName = "NewMerchantData", menuName = "GBH England/Data/Merchant Data")]
     public class MerchantData : ScriptableObject
     {
         public const int ResalePercent = 30;

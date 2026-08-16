@@ -48,7 +48,7 @@ Small batches, propose defaults to approve:
 
 Propose the catalogue as a clear table the owner can eyeball, then either:
 
-- **Guide (default):** Project → Create → `ExiledAlvaston/Data/Merchant Data`, save under
+- **Guide (default):** Project → Create → `GBH England/Data/Merchant Data`, save under
   `Assets/Data/Merchants/Merchant_<Name>.asset`, and fill the fields you specced. Drag item assets
   into `Stock`/`PurchaseRules`. Leave the status messages blank for the owner.
 - **Hand-author (only if asked):** write the `.asset` YAML directly, resolving each `Item` to its
