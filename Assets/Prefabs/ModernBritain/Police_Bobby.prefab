@@ -125,7 +125,7 @@ MonoBehaviour:
   RangedCaster: 0
   EyeHeight: 0.95
   AttackWindup: 0.3
-  IsPolice: 0
+  IsPolice: 1
   KnockbackDistance: 0
   KnockbackChance: 1
   MoveSpeed: 3.6

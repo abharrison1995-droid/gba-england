@@ -278,7 +278,7 @@ MonoBehaviour:
   EyeHeight: 0.95
   AttackWindup: 0.3
   IsPolice: 0
-  KnockbackDistance: 0
+  KnockbackDistance: 2
   KnockbackChance: 1
   MoveSpeed: 3.8
   TurnSpeed: 10
