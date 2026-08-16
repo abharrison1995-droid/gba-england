@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.U2D.Sprites;
 
 /// <summary>
 /// Brings generated art out of the staging folder and into the project: import settings, sheet
@@ -2029,22 +2030,15 @@ public static class ArtImportTool
         // lands in the wrong place.
         importer.npotScale           = TextureImporterNPOTScale.None;
 
-        if (isSheet)
-        {
-            SpriteMetaData[] slices = Slice(assetPath, m, problems);
-            // Deliberately not an early return. Slicing is the part most likely to go wrong, and
-            // bailing here once left the asset imported with Unity's defaults — Default type,
-            // PPU 100, bilinear — which is far worse than an unsliced sprite.
-            //
-            // CS0618: the replacement, UnityEditor.U2D.Sprites.ISpriteEditorDataProvider, ships in
-            // com.unity.2d.sprite, which is not in Packages/manifest.json — so in this project the
-            // modern API does not exist and this one still works. VerifySliced below is the guard
-            // for the day that stops being true: it checks the sub-sprites actually appeared rather
-            // than trusting the assignment.
-#pragma warning disable 618
-            if (slices != null) importer.spritesheet = slices;
-#pragma warning restore 618
-        }
+        // Slicing runs *after* the settings above and before SaveAndReimport, and that order is
+        // load-bearing: the data provider works through a SerializedObject of this same importer
+        // and writes back whatever that object held when it was created. Created first, its Apply
+        // would put spriteImportMode back to Single and take the slices with it.
+        //
+        // Deliberately not an early return on failure. Slicing is the part most likely to go
+        // wrong, and bailing here once left the asset imported with Unity's defaults — Default
+        // type, PPU 100, bilinear — which is far worse than an unsliced sprite.
+        if (isSheet) Slice(assetPath, importer, m, problems);
 
         importer.SaveAndReimport();
 
@@ -2053,22 +2047,121 @@ public static class ArtImportTool
     }
 
     /// <summary>
-    /// Confirms the slices actually became sub-sprites. TextureImporter.spritesheet is deprecated
-    /// with a message claiming support has been removed; if it ever becomes a genuine no-op this
-    /// is what will say so, rather than the sheet quietly importing as one undivided image.
+    /// Confirms the slices actually became sub-sprites, and that each one carries a real local
+    /// file id. The id check is not paranoia: the old TextureImporter.spritesheet path could not
+    /// assign sprite ids at all, so a frame whose name was not already in the .meta's
+    /// nameFileIdTable imported with id 0 — one "Identifier uniqueness violation" line in the
+    /// console, a clip holding fileID 0, and a blank frame in the animation. Nothing else said so.
     /// </summary>
     private static void VerifySliced(string assetPath, ArtManifest m, List<string> problems)
     {
-        int found = AssetDatabase.LoadAllAssetRepresentationsAtPath(assetPath).OfType<Sprite>().Count();
+        Sprite[] found = AssetDatabase.LoadAllAssetRepresentationsAtPath(assetPath).OfType<Sprite>().ToArray();
         int expected = m.frameCount > 0 ? m.frameCount : Mathf.Max(1, m.columns) * Mathf.Max(1, m.rows);
-        if (found >= expected) return;
+        if (found.Length < expected)
+        {
+            problems.Add($"{m.name}: expected {expected} sub-sprites after slicing but found {found.Length}. " +
+                         "If this is zero the sheet imported undivided — look for a sprite data " +
+                         "provider problem reported above it.");
+            return;
+        }
 
-        problems.Add($"{m.name}: expected {expected} sub-sprites after slicing but found {found}. " +
-                     "If this is zero, TextureImporter.spritesheet has stopped working in this Unity " +
-                     "version and the slicing needs moving to ISpriteEditorDataProvider.");
+        var idOwner = new Dictionary<long, string>(found.Length);
+        foreach (Sprite s in found)
+        {
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(s, out string _, out long localId)) continue;
+
+            if (localId == 0)
+                problems.Add($"{m.name}: frame '{s.name}' imported with local file id 0, so any clip " +
+                             "built from it will show a blank frame. The sprite id was not assigned.");
+            else if (idOwner.TryGetValue(localId, out string other))
+                problems.Add($"{m.name}: frames '{other}' and '{s.name}' share local file id {localId}. " +
+                             "Unity will report an identifier uniqueness violation and one of them will " +
+                             "resolve to the wrong image.");
+            else
+                idOwner[localId] = s.name;
+        }
     }
 
-    private static SpriteMetaData[] Slice(string assetPath, ArtManifest m, List<string> problems)
+    /// <summary>
+    /// Writes the frame rectangles through ISpriteEditorDataProvider (com.unity.2d.sprite), which
+    /// is the only path that can assign a sprite id per frame.
+    ///
+    /// ⚠️ This must never go back to TextureImporter.spritesheet. SpriteMetaData carries no id, so
+    /// Unity had to re-link frames by name against the nameFileIdTable already in the .meta: names
+    /// it recognised kept their ids and names it did not got zero. Fresh sheets were fine — only a
+    /// sheet that *gained* frames broke, and it broke silently. sheet_char_player_walk went 4
+    /// frames to 6 and the player flickered invisible once per stride.
+    ///
+    /// Existing frames keep the id they already have, looked up by frame name, so no clip or
+    /// prefab reference is repointed and re-importing an unchanged sheet writes back what was
+    /// already there. Only a name never seen before mints a new id.
+    /// </summary>
+    private static bool Slice(string assetPath, TextureImporter importer, ArtManifest m, List<string> problems)
+    {
+        SpriteRect[] frames = BuildFrameRects(assetPath, m, problems);
+        if (frames == null) return false;
+
+        var factories = new SpriteDataProviderFactories();
+        factories.Init();
+        ISpriteEditorDataProvider provider = factories.GetSpriteEditorDataProviderFromObject(importer);
+        if (provider == null)
+        {
+            problems.Add($"{assetPath}: no sprite editor data provider for this importer, so the sheet " +
+                         "was left unsliced. com.unity.2d.sprite is what supplies it — check it is " +
+                         "still in Packages/manifest.json.");
+            return false;
+        }
+
+        provider.InitSpriteEditorDataProvider();
+
+        // Two places already hold ids for a frame name, and they normally agree. The
+        // nameFileIdTable is the one Unity actually re-links against, so it wins where they do
+        // not, and it is also the only one that remembers a frame the sheet has since lost —
+        // which is what gives a shrunk-then-regrown sheet its original ids back.
+        var idByName = new Dictionary<string, GUID>();
+        foreach (SpriteRect existing in provider.GetSpriteRects())
+            if (!string.IsNullOrEmpty(existing.name)) idByName[existing.name] = existing.spriteID;
+
+        var nameFileIds = provider.GetDataProvider<ISpriteNameFileIdDataProvider>();
+        var pairs = new List<SpriteNameFileIdPair>();
+        if (nameFileIds != null)
+        {
+            foreach (SpriteNameFileIdPair pair in nameFileIds.GetNameFileIdPairs())
+            {
+                if (string.IsNullOrEmpty(pair.name)) continue;
+                idByName[pair.name] = pair.GetFileGUID();
+                pairs.Add(pair);
+            }
+        }
+
+        var emitted = new HashSet<string>();
+        foreach (SpriteRect frame in frames)
+        {
+            frame.spriteID = idByName.TryGetValue(frame.name, out GUID known) && !known.Empty()
+                ? known
+                : GUID.Generate();
+            emitted.Add(frame.name);
+        }
+
+        provider.SetSpriteRects(frames);
+
+        if (nameFileIds != null)
+        {
+            // Keep every id this sheet no longer uses — a frame that comes back should come back
+            // as itself — and restate the ones it does, so a new frame is in the table before the
+            // reimport rather than after it.
+            pairs.RemoveAll(p => emitted.Contains(p.name));
+            foreach (SpriteRect frame in frames)
+                pairs.Add(new SpriteNameFileIdPair(frame.name, frame.spriteID));
+
+            nameFileIds.SetNameFileIdPairs(pairs);
+        }
+
+        provider.Apply();
+        return true;
+    }
+
+    private static SpriteRect[] BuildFrameRects(string assetPath, ArtManifest m, List<string> problems)
     {
         if (m.frameWidth <= 0 || m.frameHeight <= 0)
         {
@@ -2086,7 +2179,7 @@ public static class ArtImportTool
         int sheetHeight = rows * m.frameHeight;
         int total   = m.frameCount > 0 ? Mathf.Min(m.frameCount, columns * rows) : columns * rows;
 
-        var slices = new List<SpriteMetaData>(total);
+        var slices = new List<SpriteRect>(total);
         for (int i = 0; i < total; i++)
         {
             int col = i % columns;
@@ -2101,11 +2194,13 @@ public static class ArtImportTool
                 break;
             }
 
-            slices.Add(new SpriteMetaData
+            // The id is left for Slice to fill: the geometry is a property of the manifest, the id
+            // is a property of what is already on disk.
+            slices.Add(new SpriteRect
             {
                 name      = $"{Path.GetFileNameWithoutExtension(assetPath)}_{i}",
                 rect      = new Rect(col * m.frameWidth, y, m.frameWidth, m.frameHeight),
-                alignment = (int)SpriteAlignment.Center,
+                alignment = SpriteAlignment.Center,
                 pivot     = new Vector2(0.5f, 0.5f)
             });
         }
