@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Daniel Pauls
   NpcSprite: {fileID: -7075296084550867932, guid: 469b366370d15f04a9ac0d6da7f63baf, type: 3}
   NpcController: {fileID: 9100000, guid: 8993b57cea026f44f89c30ca3ca67a98, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: f4bcb7f12ad40b64f9ced9d89115d0b7, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -52,3 +52,4 @@ MonoBehaviour:
   PickpocketBand: {fileID: 0}
   EnemyLevel: 0
   PortalTargetSpawnPointId: 
+  FollowerConversation: {fileID: 0}

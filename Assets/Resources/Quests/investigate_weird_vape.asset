@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1da3c189838436e9b41ab0c0d94bb6e, type: 3}
+  m_Name: investigate_weird_vape
+  m_EditorClassIdentifier: 
+  Id: investigate_weird_vape
+  Title: Investigate the Weird Vape
+  Giver: Daniel Pauls
+  Location: Scrap Man's place, southeast of London.
+  Stages:
+  - Objective: Take the makeshift vape to Scrap Man, southeast of London.
+    ConditionType: 0
+    QuestKey: scrapman
+    Item: {fileID: 0}
+    Quantity: 1
+    ObjectiveWhenMet: 
+    Count: 1
+    ReachRadius: 3
+    AlsoCollect: []
+  - Objective: Scrap Man wants a "Big Blue". Ask Daniel Paul about it.
+    ConditionType: 0
+    QuestKey: danielpauls
+    Item: {fileID: 0}
+    Quantity: 1
+    ObjectiveWhenMet: 
+    Count: 1
+    ReachRadius: 3
+    AlsoCollect: []
+  - Objective: Clear the Neeks out of the old bus station.
+    ConditionType: 1
+    QuestKey: bus_station_neek
+    Item: {fileID: 0}
+    Quantity: 1
+    ObjectiveWhenMet: 
+    Count: 3
+    ReachRadius: 3
+    AlsoCollect: []
+  - Objective: 'Gather the goods from the old bus station: 2 blueberries, 2 vending
+      machine fungus and 2 bus station barnacles.'
+    ConditionType: 2
+    QuestKey: 
+    Item: {fileID: 11400000, guid: 3a8154c7f7a34bfd9636c5e7ce715b3f, type: 2}
+    Quantity: 2
+    ObjectiveWhenMet: Head back to Daniel Paul to combine them.
+    Count: 1
+    ReachRadius: 3
+    AlsoCollect:
+    - Item: {fileID: 11400000, guid: 7e4bada84ebd4dfdbb0ae89b463ecd15, type: 2}
+      Quantity: 2
+    - Item: {fileID: 11400000, guid: 79e06e459b9e431b84624ccaa95c7980, type: 2}
+      Quantity: 2
+  Reward:
+    PoundsAmount: 0
+    Item: {fileID: 11400000, guid: 5ab0d89a223043a88d8030feb150a87b, type: 2}
+    Quantity: 1
+    ClearsWantedLevel: 0
+    XP: 0

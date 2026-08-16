@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1da3c189838436e9b41ab0c0d94bb6e, type: 3}
+  m_Name: spark_of_talent
+  m_EditorClassIdentifier: 
+  Id: spark_of_talent
+  Title: Serendipity!
+  Giver: Daniel Pauls
+  Location: London, Cellar Entrance.
+  Stages:
+  - Objective: This jazzy fella wants me to have a word with some oddball. I'll indulge
+      him I guess? He should be just north of where I met Daniel Pauls.
+    ConditionType: 1
+    QuestKey: under_housed
+    Item: {fileID: 0}
+    Quantity: 1
+    ObjectiveWhenMet: 
+    Count: 1
+    ReachRadius: 3
+    AlsoCollect: []
+  - Objective: You're crackling with it. Get back to Daniel Pauls and tell him what
+      happened.
+    ConditionType: 4
+    QuestKey: 
+    Item: {fileID: 0}
+    Quantity: 1
+    ObjectiveWhenMet: 
+    Count: 1
+    ReachRadius: 3
+    AlsoCollect: []
+  Reward:
+    PoundsAmount: 0
+    Item: {fileID: 0}
+    Quantity: 0
+    ClearsWantedLevel: 0
+    XP: 0

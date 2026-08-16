@@ -1,0 +1,803 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_danielpauls
+  m_EditorClassIdentifier: 
+  StartNodeId: start
+  Nodes:
+  - Id: start
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: David Blaine was my 3rd ever student. Second was a fella named
+      Jesus. Now he didn't learn too much, I didn't know spanish and he wasn't great
+      with English but he was a good trier.
+    Choices:
+    - ChoiceText: Uh what?
+      NextNodeId: offer_open
+      QuestGate: 1
+      QuestGateId: spark_of_talent
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Okay okay!
+      NextNodeId: nudge
+      QuestGate: 4
+      QuestGateId: spark_of_talent
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Cheers I guess.
+      NextNodeId: reward
+      QuestGate: 4
+      QuestGateId: spark_of_talent
+      QuestGateStage: 1
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Fine.
+      NextNodeId: done
+      QuestGate: 3
+      QuestGateId: spark_of_talent
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Hey up.
+      NextNodeId: dpq1_open
+      QuestGate: 2
+      QuestGateId: daniel_pauls_quest_one
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Check this out!
+      NextNodeId: cotc_show
+      QuestGate: 2
+      QuestGateId: check_out_the_church
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 11400000, guid: 52e9b25fafae4110a8500c7b9c9761c4, type: 2}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Oi.
+      NextNodeId: iwv_bigblue
+      QuestGate: 4
+      QuestGateId: investigate_weird_vape
+      QuestGateStage: 1
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Here's the stuff.
+      NextNodeId: iwv_brew
+      QuestGate: 4
+      QuestGateId: investigate_weird_vape
+      QuestGateStage: 3
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 11400000, guid: 3a8154c7f7a34bfd9636c5e7ce715b3f, type: 2}
+      RequiredItemQuantity: 2
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Well..
+      NextNodeId: dbb_report
+      QuestGate: 4
+      QuestGateId: deliver_the_big_blue
+      QuestGateStage: 1
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: End Conversation.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: offer_open
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: HEY YOU! I can sense it, you've got it. Do me a favour and I'll
+      change your life!
+    Choices:
+    - ChoiceText: What you on about? What you up to?
+      NextNodeId: research
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Not now, weirdo.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: research
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: There's been a few suspect events. Sparks and bangs, strange folk
+      acting aloof.
+    Choices:
+    - ChoiceText: "Actually \u2014 saw a bloke get zapped by some smackhead by the
+        Jones' last week. Thought I'd had some dodgy bud."
+      NextNodeId: sendoff
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: spark_of_talent
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+    - ChoiceText: Right. I'll leave you to it.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: sendoff
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Haha! That wasn't the bud, son. That was magic. Please, do me a
+      kindness. Find the oddball and have a word for me.
+    Choices: []
+  - Id: nudge
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Come on! Get after him!
+    Choices: []
+  - Id: reward
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Let's have it! I knew you had it in you, you've got the gift!
+    Choices:
+    - ChoiceText: So... what happens now?
+      NextNodeId: teach
+      QuestGate: 4
+      QuestGateId: spark_of_talent
+      QuestGateStage: 1
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 1
+      CompleteQuestId: spark_of_talent
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: teach
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Right, now I invoke the 7 secret corners of the magic circle.......
+      GUH........ feel that? Give it a name if you want, then shout it out and try
+      it!
+    Choices: []
+  - Id: done
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Careful where you sling spells lad. Johnny Law comes a knocking
+      if you're to liberal with the lightening.
+    Choices: []
+  - Id: dpq1_open
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Just the man. Right, well... I know you feel like you're only one
+      now.
+    Choices:
+    - ChoiceText: Do I?
+      NextNodeId: dpq1_help
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: dpq1_help
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Well, there's a way you can help me out.
+    Choices:
+    - ChoiceText: Go on.
+      NextNodeId: dpq1_church
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: dpq1_church
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: The abandoned church next to the castle has had its copper stripped
+      from the roof.
+    Choices:
+    - ChoiceText: And that's out of the ordinary?
+      NextNodeId: dpq1_speed
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: dpq1_speed
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: No. Well, yes. But... it's the speed. I was there just the day
+      before. Then by the morning, poof.
+    Choices:
+    - ChoiceText: Maybe it was a gang?
+      NextNodeId: dpq1_close
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: check_out_the_church
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: daniel_pauls_quest_one
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: dpq1_close
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: It's too big a church... something ain't right. Check it out for
+      me, please. Few quid in it for you too.
+    Choices:
+    - ChoiceText: Ugh fine.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: cotc_show
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: What is this contraption?
+    Choices:
+    - ChoiceText: Look at it.
+      NextNodeId: cotc_scrapman
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: cotc_scrapman
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Give Scrap Man a shout for me. He might know about this.
+    Choices:
+    - ChoiceText: Alright.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: investigate_weird_vape
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: check_out_the_church
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_bigblue
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: So what's he said?
+    Choices:
+    - ChoiceText: Make him a Big Blue and he'll talk.
+      NextNodeId: iwv_bits
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_bits
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Fuck's sake. Right, I'm gonna need some bits.
+    Choices:
+    - ChoiceText: Well, you've got legs.
+      NextNodeId: iwv_guild
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_guild
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Come on, get him a good box and you're in the guild.
+    Choices:
+    - ChoiceText: Guild?
+      NextNodeId: iwv_list
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_list
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Yeah, guild. Come on. Here's the list. You can grab all of it in
+      the old bus station.
+    Choices:
+    - ChoiceText: Sounds fun.
+      NextNodeId: iwv_diary
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_diary
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Directions in the diary. I'll sort you some cash when you're back
+      too.
+    Choices:
+    - ChoiceText: Sigh. Fine. BRB.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_brew
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Oh mate, amazing. You are such a lad. Right, I'm gonna make these
+      into a potion now for you to take to Scrap Man. So just wait a second.
+    Choices:
+    - ChoiceText: Okay.
+      NextNodeId: iwv_stir
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_stir
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: '*He begins to stir and smash in his pestle and mortar vigorously
+      until a weird blue liquid emerges.*'
+    Choices:
+    - ChoiceText: '*watch him work*'
+      NextNodeId: iwv_distill
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_distill
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: '*He distills the weird blue liquid into a janky looking container
+      and hands it back to you.*'
+    Choices:
+    - ChoiceText: '[Grab the suspicious blue container]'
+      NextNodeId: iwv_deliver
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: iwv_deliver
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Right, so get that back to Scrap Man and get back here with what
+      he says. Cheers, lad.
+    Choices:
+    - ChoiceText: Alright, son. See you.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: deliver_the_big_blue
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: investigate_weird_vape
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: dbb_report
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: Alright then, so what did you find out?
+    Choices:
+    - ChoiceText: Fuck me, Mosley's been buying dodgy vapes off the local gangs,
+        and they've been getting the vapes from the Chinese. I think that's what's
+        been sending the Neeks crazy.
+      NextNodeId: dbb_chat
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0
+  - Id: dbb_chat
+    Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
+    DialogueText: What? The Chinese? Mosley hates the Chinese. Nah, he can't be that
+      desperate. Please, have a chat with him. Here's your cash, sorted for the info.
+      But yeah, chat with him. That can't be right.
+    Choices:
+    - ChoiceText: I'll have a word.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: wtf_mosley
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: deliver_the_big_blue
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      CompanionCommand: 0

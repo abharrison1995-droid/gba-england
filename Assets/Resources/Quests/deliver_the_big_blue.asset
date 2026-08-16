@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1da3c189838436e9b41ab0c0d94bb6e, type: 3}
+  m_Name: deliver_the_big_blue
+  m_EditorClassIdentifier: 
+  Id: deliver_the_big_blue
+  Title: Investigate the Weird Vape
+  Giver: Daniel Pauls
+  Location: Scrap Man's place, southeast of London.
+  Stages:
+  - Objective: Take the Big Blue to Scrap Man.
+    ConditionType: 0
+    QuestKey: scrapman
+    Item: {fileID: 0}
+    Quantity: 1
+    ObjectiveWhenMet: 
+    Count: 1
+    ReachRadius: 3
+    AlsoCollect: []
+  - Objective: Get back to Daniel Paul with what Scrap Man said.
+    ConditionType: 4
+    QuestKey: 
+    Item: {fileID: 0}
+    Quantity: 1
+    ObjectiveWhenMet: 
+    Count: 1
+    ReachRadius: 3
+    AlsoCollect: []
+  Reward:
+    PoundsAmount: 30
+    Item: {fileID: 0}
+    Quantity: 0
+    ClearsWantedLevel: 0
+    XP: 60
