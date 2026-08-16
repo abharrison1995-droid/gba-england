@@ -25,7 +25,10 @@ used by the debug grant tool.
 - `SpellRuntime` owns damage, healing, projectiles, area hits and timed effects.
 - `TimedSpellStatus` applies source-keyed armour/speed modifiers and always removes them on expiry,
   cancellation or target teardown.
-- `SpellFxPlayer` samples imported FX clips without a dedicated AnimatorController.
+- `SpellFxPlayer` evaluates imported non-legacy FX clips through a manual, Animator-backed
+  PlayableGraph, with direct `AnimationClip.SampleAnimation` as a compatibility fallback. This
+  avoids a dedicated AnimatorController per transient effect while still using Unity's runtime
+  animation binding path.
 - `KnownSpellIds`, four-position `EquippedSpellIds`, and Spark's `SpellName` are saved. Old saves
   default to an empty spellbook.
 
@@ -40,6 +43,9 @@ remaining `sheet_fx_spark_effect` pair, exit Play Mode and run
   Aura and Iron Skin into the four slots.
 - `Tools > Debug > Forget All Spells` clears known spells, slots, cooldowns and active player spell
   buffs.
+- `Tools > Debug > Preview Current Spell VFX` spawns every distinct wired clip in a grid around the
+  player and reports how many successfully bound a sprite. Close the spellbook first: paused time
+  intentionally prevents transient effects from advancing.
 
-Both debug commands are intentionally enabled only in Play Mode and do not write a save by
+All three debug commands are intentionally enabled only in Play Mode and do not write a save by
 themselves.

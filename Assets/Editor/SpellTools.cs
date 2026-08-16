@@ -10,6 +10,7 @@ public static class SpellTools
 {
     private const string LearnMenu = "Tools/Debug/Learn All Current Spells";
     private const string ForgetMenu = "Tools/Debug/Forget All Spells";
+    private const string PreviewVfxMenu = "Tools/Debug/Preview Current Spell VFX";
 
     [MenuItem(LearnMenu)]
     public static void LearnAllCurrentSpells()
@@ -60,6 +61,67 @@ public static class SpellTools
 
     [MenuItem(ForgetMenu, true)]
     private static bool ValidateForgetTool() => Application.isPlaying;
+
+    /// <summary>
+    /// Spawns every distinct clip currently wired to the six spells in a grid around the player.
+    /// This isolates imported clip playback from targeting, mana, cooldowns and spellbook input.
+    /// </summary>
+    [MenuItem(PreviewVfxMenu)]
+    public static void PreviewCurrentSpellVfx()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("Preview Current Spell VFX: enter Play Mode first.");
+            return;
+        }
+        if (ExiledAlvaston.Systems.PauseManager.IsPaused)
+        {
+            Debug.LogWarning("Preview Current Spell VFX: close the spellbook or other paused window first.");
+            return;
+        }
+
+        CombatController combat = CombatController.Instance ?? Object.FindObjectOfType<CombatController>();
+        if (combat == null)
+        {
+            Debug.LogWarning("Preview Current Spell VFX: no live CombatController found.");
+            return;
+        }
+
+        SpellDatabase.ResetCache();
+        var clips = new List<AnimationClip>();
+        foreach (string abilityId in SpellDatabase.CurrentSpellIds)
+        {
+            AbilityData ability = SpellDatabase.Find(abilityId);
+            if (ability == null) continue;
+            AddDistinct(clips, ability.CastEffectClip);
+            AddDistinct(clips, ability.ProjectileClip);
+            AddDistinct(clips, ability.ImpactClip);
+            AddDistinct(clips, ability.LingeringClip);
+        }
+
+        int sampled = 0;
+        var failed = new List<string>();
+        for (int i = 0; i < clips.Count; i++)
+        {
+            int column = i % 5;
+            int row = i / 5;
+            Vector3 position = combat.transform.position
+                             + new Vector3((column - 2) * 1.35f, 0.9f + row * 1.35f, 1.5f);
+            SpellFxPlayer player = SpellFxPlayer.Spawn(clips[i], position);
+            SpriteRenderer renderer = player != null ? player.GetComponent<SpriteRenderer>() : null;
+            if (renderer != null && renderer.sprite != null) sampled++;
+            else failed.Add(clips[i].name);
+        }
+
+        if (failed.Count == 0)
+            Debug.Log($"Preview Current Spell VFX: sampled {sampled}/{clips.Count} wired clips around the player.");
+        else
+            Debug.LogWarning($"Preview Current Spell VFX: {sampled}/{clips.Count} clips sampled a sprite; failed: " +
+                             string.Join(", ", failed));
+    }
+
+    [MenuItem(PreviewVfxMenu, true)]
+    private static bool ValidatePreviewVfxTool() => Application.isPlaying;
 
     /// <summary>
     /// Reconnects generated clips after an art import. It only writes VFX references; all authored
@@ -134,5 +196,10 @@ public static class SpellTools
             return; // preserve an existing reference if an import is temporarily absent
         }
         destination = clip;
+    }
+
+    private static void AddDistinct(List<AnimationClip> clips, AnimationClip clip)
+    {
+        if (clip != null && !clips.Contains(clip)) clips.Add(clip);
     }
 }

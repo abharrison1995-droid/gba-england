@@ -16,7 +16,7 @@ MonoBehaviour:
   AbilityName: Spark
   Description: Deals 20 lightning damage to the nearest target.
   Icon: {fileID: 0}
-  IconGlyph: ⚡
+  IconGlyph: "\u26A1"
   CooldownTime: 5
   CastTime: 0.28
   Range: 8
@@ -33,6 +33,6 @@ MonoBehaviour:
   SlowMultiplier: 1
   ProjectileSpeed: 10
   CastEffectClip: {fileID: 0}
-  ProjectileClip: {fileID: 0}
+  ProjectileClip: {fileID: 7400000, guid: bee8d44ebce59a3408c544691a8cf2d7, type: 2}
   ImpactClip: {fileID: 7400000, guid: da1104a56b4c72740bc0f1d45ef76843, type: 2}
   LingeringClip: {fileID: 0}
