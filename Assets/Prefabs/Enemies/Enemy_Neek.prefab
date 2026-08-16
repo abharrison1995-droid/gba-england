@@ -23,20 +23,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &880000000000000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3788719977510381040}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 39e1e11c5af1ff943b3ddb89781a2fd1, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  Loot: []
-  Band: {fileID: 11400000, guid: 52c025da627e4716ba609ae394b70262, type: 2}
 --- !u!4 &5064979907128126244
 Transform:
   m_ObjectHideFlags: 0
@@ -141,6 +127,8 @@ MonoBehaviour:
   EyeHeight: 0.95
   AttackWindup: 0.3
   IsPolice: 0
+  KnockbackDistance: 0
+  KnockbackChance: 1
   MoveSpeed: 3.8
   TurnSpeed: 10
   Animator: {fileID: 3582958893179547763}
@@ -160,6 +148,7 @@ MonoBehaviour:
   Tint: {r: 1, g: 1, b: 1, a: 1}
   Height: 1.55
   Width: 0.85
+  IndependentWidth: 0
   GroundOffset: 0
   SpriteFacesRightByDefault: 1
   SwingAngle: 55
@@ -182,6 +171,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Level: 3
   HeightOffset: 1.9
+  VisibleDuration: 4
+--- !u!114 &880000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3788719977510381040}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39e1e11c5af1ff943b3ddb89781a2fd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Loot: []
+  Band: {fileID: 11400000, guid: 52c025da627e4716ba609ae394b70262, type: 2}
 --- !u!1 &3982073532860126049
 GameObject:
   m_ObjectHideFlags: 0
@@ -208,7 +212,7 @@ Transform:
   m_GameObject: {fileID: 3982073532860126049}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.675, z: 0}
+  m_LocalPosition: {x: 0, y: 0.775, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -256,7 +260,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.99692315, y: 0.99692315, z: 1}
+  m_LocalScale: {x: 1.1446154, y: 1.1446154, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1952158251202395707}

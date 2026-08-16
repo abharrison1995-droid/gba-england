@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 598920586492850795}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.675, z: 0}
+  m_LocalPosition: {x: 0, y: 0.775, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -172,6 +172,8 @@ MonoBehaviour:
   EyeHeight: 0.95
   AttackWindup: 0.3
   IsPolice: 0
+  KnockbackDistance: 0
+  KnockbackChance: 1
   MoveSpeed: 3
   TurnSpeed: 10
   Animator: {fileID: 190888552025017161}
@@ -189,6 +191,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Level: 3
   HeightOffset: 1.9
+  VisibleDuration: 4
 --- !u!114 &926150497891457856
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -205,6 +208,7 @@ MonoBehaviour:
   Tint: {r: 1, g: 1, b: 1, a: 1}
   Height: 1.55
   Width: 0.85
+  IndependentWidth: 0
   GroundOffset: 0
   SpriteFacesRightByDefault: 1
   SwingAngle: 55
@@ -241,7 +245,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.99692315, y: 0.99692315, z: 1}
+  m_LocalScale: {x: 1.1446154, y: 1.1446154, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8705638234444931736}
