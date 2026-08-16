@@ -1,15 +1,19 @@
 # Vape Arc Build Guide — implementing the written quests
 
 ```
-Last verified against: working tree, 2026-08-15
+Last verified against: working tree, 2026-08-16
 Verification scope:    Editor steps traced against code and tracked YAML — the placement of the
                        London cast (Mosley placed; Daniel only a DanielPaulsSpawn marker; Scrap
                        Man and the geezer unplaced), the enemy quest-key path
                        (PlacementBuilders.BuildEnemy -> ApplyQuestKey; all six enemy presets carry
                        a blank QuestKey), LootOnDeath, HostileAfterDialogue, NPCDialogueInteractable,
-                       and the Portal Placement tool. NOTHING in this pipeline has been imported or
-                       run — there is no compiler or Unity in the agent environment. Every step
-                       below must be verified in the editor. Companion doc: the quest-script map.
+                       and the Portal Placement tool. The four interior shells this guide needs
+                       (Abandoned_Church, Abandoned_Bus_Station, Mosley_Mansion, DP_Academy) were
+                       hand-authored on 2026-08-16 by cloning the Quidland shell — GUIDs assigned by
+                       script, registered, --check-dangling clean — but NEVER opened in Unity.
+                       NOTHING in this pipeline has been imported or run — there is no compiler or
+                       Unity in the agent environment. Every step below must be verified in the
+                       editor. Companion doc: the quest-script map.
 ```
 
 The seven-quest arc — **Serendipity! → Chemical Castration Gone Wrong → Find the Magic Man →
@@ -118,25 +122,42 @@ click to stamp, save the prefab.
   `Gang_Hideout` interior is the shell that fits), near the abandoned bus station. Not needed to play
   the current arc (Quest 6 is unwritten), but it puts them where the story wants them.
 
-## Phase 4 — Build the locations & wire the doors
+## Phase 4 — Dress the locations & wire the doors
 
-- [ ] **London → Mosley's basement.** The chunk exists (`Mosleys_Lab_Basement_Prefab`, ChunkName
-  `Mosleys Lab Basement`). `Tools → Place → Portal Placement` → author a **linked pair**: exterior
-  `Home_London`, interior `Mosleys Lab Basement`, link id e.g. `mosley_basement`. Capture poses in
-  Prefab Mode; create the link with no prefab stage open.
-- [ ] **Abandoned Church chunk** (model `abandoned+church+3d+model.glb` is imported; no chunk yet):
-  - `Portal Placement → Create Empty Interior Bundle` — empty `MapChunkData` + prefab, registered.
-    Give it a ChunkName you'll never change (a save key).
-  - Open the prefab, drop in the church model, **add a floor with a collider** (the bundle has none —
-    the player falls through).
-  - Confirm a `RuntimeNavMeshBaker` and one `PlayerSpawn` are present (add the baker if missing).
-  - Wire a London → church door.
-- [ ] **Old Bus Station chunk** (model `bus+station+3d+model.glb`, imported today) — same recipe.
+**The shells now exist.** All the interiors this arc needs are already built as chunks —
+`Mosleys_Lab_Basement`, `Abandoned_Church`, `Abandoned_Bus_Station` — plus `Mosley_Mansion` and
+`DP_Academy` for later beats. Each is a bare lit box: floor **with a MeshCollider**, four walls, a
+`RuntimeNavMeshBaker`, and one id-less `PlayerSpawn`. So there is **no Empty Interior Bundle step
+and no falling through the floor** — you dress the existing prefab and wire a door to it.
+
+- [ ] **First-open sanity check (do this once).** The five shells above other than the basement were
+  hand-authored as YAML and never opened in Unity. Open each `*_Prefab` in Prefab Mode once and
+  confirm Unity accepts it rather than reimporting: one root with a `RuntimeNavMeshBaker`, six
+  children (Floor, four Walls, PlayerSpawn), lit floor, no console error. Then confirm
+  `Resources/MapChunkRegistry` lists **seventeen** chunks in its Inspector.
+- [ ] **London → Mosley's basement.** `Tools → Place → Portal Placement` → author a **linked
+  pair**: exterior `Home_London`, interior `Mosleys Lab Basement`, link id e.g. `mosley_basement`.
+  Capture poses in Prefab Mode; create the link with no prefab stage open.
+- [ ] **Dress & wire the Abandoned Church** (`Abandoned_Church_Prefab`; model
+  `abandoned+church+3d+model.glb` is imported):
+  - Open the prefab, drop the church model in as a child (the placeholder box floor/walls stay — they
+    give you the collider and NavMesh surface; scale/hide walls to taste once the model reads right).
+  - Wire a **London → church** linked pair, interior `Abandoned_Church`.
+- [ ] **Dress & wire the Old Bus Station** (`Abandoned_Bus_Station_Prefab`; model
+  `bus+station+3d+model.glb`) — same recipe, interior `Abandoned_Bus_Station`.
 - [ ] **`Portal Placement → Validate All Location Links`** (read-only). Clear every error — a
   non-reciprocal pair or broken arrival marker is a building you enter and can't leave.
 
-*Not needed for this arc:* the northern trap house and a bespoke Scrap Man yard. WTF Mosley?
-completes at Mosley, and Quest 6 (Ralph & Sanjeet) isn't written — skip both until then.
+⚠️ **The five new ChunkNames are permanent save keys the instant a save is made inside one** —
+`Abandoned_Church`, `Abandoned_Bus_Station`, `Mosley_Mansion`, `DP_Academy` (and the existing
+`Mosleys Lab Basement`, note the spaces and no underscore). Nothing has saved in any of them yet, so
+**now is the free moment to rename** — do it before the first play-test, or not at all.
+
+*Not needed for this arc, but the shells are ready when you are:* `Mosley_Mansion` (the WTF Mosley?
+confrontation could move upstairs from the basement), `DP_Academy` (Daniel's magic guild — he's
+placed on the London street today, so the academy is optional), `FU_Sports` and `Quidland` (merchant
+interiors, pre-existing shells). The northern trap house / `Gang_Hideout` is where Ralph & Sanjeet
+go (Phase 3), but Quest 6 that uses it isn't written — skip until then.
 
 ## Phase 5 — Populate: enemies, keys & loot
 
@@ -200,6 +221,12 @@ completes at Mosley, and Quest 6 (Ralph & Sanjeet) isn't written — skip both u
 
 | ChunkName | Status | Needs |
 |---|---|---|
-| `Mosleys Lab Basement` | chunk ✓ | Door from London; Tortured Neek + vape drop |
-| Abandoned Church *(name it)* | build | Model ✓; Empty Interior Bundle → floor → NavMesh → door; a vape-dropping Neek |
-| Old Bus Station *(name it)* | build | Model ✓; Empty Interior Bundle → floor → NavMesh → door; 3 keyed Neeks + forage |
+| `Mosleys Lab Basement` | shell ✓ | Door from London; Tortured Neek + vape drop |
+| `Abandoned_Church` | shell ✓ (2026-08-16) | First-open check; drop church model in; door from London; a vape-dropping Neek |
+| `Abandoned_Bus_Station` | shell ✓ (2026-08-16) | First-open check; drop bus-station model in; door from London; 3 keyed Neeks + forage |
+| `Mosley_Mansion` | shell ✓ (2026-08-16) | Not required by this arc — ready for the WTF Mosley? finale if wanted |
+| `DP_Academy` | shell ✓ (2026-08-16) | Not required by this arc — Daniel's guild interior, optional |
+
+*Shells created 2026-08-16 by cloning the Quidland shell (fresh GUIDs, registered, `--check-dangling`
+clean). Never opened in Unity — first-open check in Phase 4. `FU_Sports` and `Quidland` shells
+already existed. Rename any ChunkName **before** its first in-interior save; after that it's a save key.*

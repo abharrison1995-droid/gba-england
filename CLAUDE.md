@@ -665,6 +665,25 @@ id-less `PlayerSpawn`. All six are in `MapChunkRegistry`, which now lists twelve
   not the police station. `WantedManager`'s own comment already calls rerouting the arrest path a
   separate job.
 
+**Also outstanding — four more interior shells for the vape arc, hand-authored YAML.** Committed
+2026-08-16. `Abandoned_Bus_Station`, `Mosley_Mansion`, `DP_Academy` and `Abandoned_Church` — each
+cloned byte-for-byte from the `Quidland` shell (floor + MeshCollider, four walls, a
+`RuntimeNavMeshBaker`, one id-less `PlayerSpawn`), differing only in `m_Name`, `ChunkName`,
+`Coordinates` (the `-2` interior column, Y −8…−11), and fresh file GUIDs. All four are appended to
+`MapChunkRegistry`, which now lists **seventeen** chunks.
+
+- ⚠️ **Eight `.asset`/`.prefab` files and their eight `.meta` files were written by hand** — no Unity
+  was available, so every GUID was assigned by a script. *Open each `*_Prefab` once and confirm Unity
+  accepts it rather than reimporting:* one root with a `RuntimeNavMeshBaker`, six children, lit floor,
+  no console error. `--check-dangling` was clean (exit 0) — proves the GUIDs resolve, **nothing about
+  whether the YAML parses**.
+- ⚠️ **The four `ChunkName` values are save keys the instant a save is made inside one.** Nothing has
+  saved yet, so renaming is still free. Guide: [docs/plans/VAPE_ARC_BUILD_GUIDE.md](docs/plans/VAPE_ARC_BUILD_GUIDE.md).
+- **These are the arc's church and bus-station interiors** (models `abandoned+church+3d+model.glb`
+  and `bus+station+3d+model.glb` are imported and want dropping in); `Mosley_Mansion` and `DP_Academy`
+  are built ahead of need and not required by the current arc. All are bare `mat_dungeon_*` boxes with
+  no doors — wiring is a `Tools → Place → Portal Placement` run against `Home_London_Data`.
+
 **Also outstanding — a door no longer launders the wanted level.** Committed 2026-08-15, never
 compiled:
 
