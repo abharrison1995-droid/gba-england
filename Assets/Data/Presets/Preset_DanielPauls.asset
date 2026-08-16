@@ -37,7 +37,7 @@ MonoBehaviour:
   DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
   Vehicle: {fileID: 0}
   SpawnPointId: 
-  QuestKey: 
+  QuestKey: danielpauls
   ArtSubject: danielpauls
   NpcHeight: 0
   Roams: 0
