@@ -6,6 +6,10 @@ Last verified against: working tree, 2026-08-16 for the sprite-id paragraph only
                        2026-08-14 and not re-checked since.
 Verification scope:    code. The move of slicing onto ISpriteEditorDataProvider (2026-08-16) is
                        UNVERIFIED: it has not been compiled, and no sheet has been through it.
+                       Every API call it makes WAS checked line by line against the package's own
+                       source in Library/PackageCache/com.unity.2d.sprite@1.0.0 — signatures,
+                       the id-minting path and the import-mode capture. That is stronger than
+                       reading the docs and is still not a compile.
                        Player-class profile refresh and creator preview wiring are
                        UNVERIFIED in Unity. The importer has done real round trips (Mosley, the pharmacist, the
                        player's five sheets, the London enemies) and the BuildController fix was
@@ -133,6 +137,20 @@ Do not undo these to simplify the code. Each cost a wasted generation cycle.
   and re-importing an unchanged sheet writes back what was already there. `VerifySliced` now also
   checks every sub-sprite came back with a non-zero, unique local file id, because that failure had
   no other voice.
+- ⚠️ **Slice after the importer's own settings, never before.** `ISpriteEditorDataProvider` captures
+  `spriteImportMode` once, at `InitSpriteEditorDataProvider`, and `SetSpriteRects` branches on the
+  captured value: `Multiple` takes the multi-frame path, anything else takes a single-sprite path
+  that only handles a one-rect array. Build the provider before `spriteImportMode` is set to
+  `Multiple` and a six-rect array matches **neither** branch — nothing is sliced, nothing throws,
+  nothing is logged. `VerifySliced` is the only thing that would notice. The order in
+  `ApplyImportSettings` is therefore load-bearing: properties first, `Slice`, then
+  `SaveAndReimport`.
+- **Ids are Unity's to mint, not ours.** `SpriteDataExt(SpriteRect)` derives
+  `internalID = spriteID.GetHashCode()`, so assigning a real `spriteID` per frame is the entire fix —
+  the id follows from it. `CopyFromSpriteRect` copies name, rect, pivot and `spriteID` but
+  **deliberately not `internalID`**, so a frame Unity already knows keeps the id it holds. That pair
+  of behaviours is why re-importing an existing sheet cannot repoint a clip, and it is what the
+  hand repair in `fefe311` is relying on.
 - ⚠️ **Never wrap the import loop in `AssetDatabase.StartAssetEditing`.** It defers `ImportAsset`,
   so `AssetImporter.GetAtPath` returns null for a file just written, every import setting is
   skipped, and assets land with Unity's defaults — no slices, no clips, no controller — **while

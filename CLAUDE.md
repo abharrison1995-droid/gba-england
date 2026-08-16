@@ -619,15 +619,26 @@ Committed 2026-08-15, never compiled, and **not importable until the editor pass
   `sheet_char_player_walk` went 4 frames to 6 and frame 5 of the clip took `fileID: 0`, so the
   player flickered invisible once per stride. Repaired by hand in `fefe311`; this stops it
   recurring. Ids for existing frame names are reused, so nothing that references a frame moves.
-- ⚠️ **`Assets/Editor/ArtImportTool.cs` now has `using UnityEditor.U2D.Sprites;`** — from
-  `com.unity.2d.sprite`, added in `e1dc5b0` for exactly this. **`Assets/Editor/` has no `.asmdef`,
-  so if that package's editor assembly is not auto-referenced the whole editor assembly fails to
-  load and every tool stops** — quest import, World Palette, Portal Placement. *This is the first
-  thing to check on open.* Rollback is `git checkout -- Assets/Editor/ArtImportTool.cs`.
-- **Slicing runs after the importer's own settings and before `SaveAndReimport`, deliberately.**
-  The data provider works through a `SerializedObject` of the same importer and writes back what
-  that object held when it was created; built first, its `Apply` would put `spriteImportMode` back
-  to Single and take the slices with it.
+- **`Assets/Editor/ArtImportTool.cs` now has `using UnityEditor.U2D.Sprites;`** — from
+  `com.unity.2d.sprite`, added in `e1dc5b0` for exactly this. `Assets/Editor/` has no `.asmdef`, so
+  this was raised as a risk that the editor assembly might not see the package and would fail to
+  load wholesale. **It is not a risk:** `Unity.2D.Sprite.Editor.asmdef` declares
+  `"autoReferenced": true` and is Editor-only, so `Assembly-CSharp-Editor` references it with no
+  `.asmdef` of ours, and the package is resolved on disk at
+  `Library/PackageCache/com.unity.2d.sprite@1.0.0`. Rollback, if it is ever wanted for another
+  reason, is `git checkout -- Assets/Editor/ArtImportTool.cs`.
+- **The id a new frame gets comes from its GUID, not from us.** `SpriteDataExt(SpriteRect)` sets
+  `internalID = spriteID.GetHashCode()`, so assigning a real `spriteID` per frame is the whole fix —
+  that step is what `SpriteMetaData` had no field for. Conversely `CopyFromSpriteRect` copies name,
+  rect, pivot and `spriteID` but **deliberately not `internalID`**, so a frame Unity already knows
+  keeps the id it has. That is why re-importing `sheet_char_player_walk` does not repoint the clip
+  `fefe311` repaired by hand.
+- ⚠️ **Slicing runs after the importer's own settings and before `SaveAndReimport`, and that order
+  is the difference between working and silently doing nothing.** The provider captures
+  `spriteImportMode` once, at `InitSpriteEditorDataProvider`; `SetSpriteRects` then branches on the
+  captured value. Built before the mode is set to Multiple, a six-rect array matches neither branch
+  and **no slicing happens at all** — it does not throw and it does not warn. `VerifySliced` is what
+  would catch it.
 - **`VerifySliced` now also checks each sub-sprite's local file id is non-zero and unique**, so the
   failure above can never again be silent. *Re-import one pair from `art_incoming/processed/` and
   check there is no "Identifier uniqueness violation", no new Animator transitions, and
