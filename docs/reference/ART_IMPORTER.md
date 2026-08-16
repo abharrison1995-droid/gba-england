@@ -1,9 +1,12 @@
 # The art importer and actor visuals
 
 ```
-Last verified against: working tree, 2026-08-15 for the Daniel Pauls / geezer conversation
-                       paragraph only; everything else, 2026-08-14 and not re-checked since.
-Verification scope:    code. Player-class profile refresh and creator preview wiring are
+Last verified against: working tree, 2026-08-16 for the sprite-id paragraph only; 2026-08-15 for
+                       the Daniel Pauls / geezer conversation paragraph; everything else,
+                       2026-08-14 and not re-checked since.
+Verification scope:    code. The move of slicing onto ISpriteEditorDataProvider (2026-08-16) is
+                       UNVERIFIED: it has not been compiled, and no sheet has been through it.
+                       Player-class profile refresh and creator preview wiring are
                        UNVERIFIED in Unity. The importer has done real round trips (Mosley, the pharmacist, the
                        player's five sheets, the London enemies) and the BuildController fix was
                        play-tested. Sprite sizing at the NEW 1.55/1.8 heights is UNVERIFIED —
@@ -117,6 +120,19 @@ Do not undo these to simplify the code. Each cost a wasted generation cycle.
 - **Character sheets of one subject are checked against each other.** Each can be internally perfect
   and still disagree — a walk drawn near edge-on was 47 px wide against the idle sheet's 122.
   Refused above 1.4× on width or 1.15× on height.
+- ⚠️ **Slice through `ISpriteEditorDataProvider`, never `TextureImporter.spritesheet`.**
+  `SpriteMetaData` carries no sprite id, so with the old API Unity had to re-link frames by name
+  against the `nameFileIdTable` already in the `.meta`: a name it recognised kept its id, a name it
+  had never seen got **zero**. Fresh sheets were fine, and so was any re-import of the same frame
+  count — **only a sheet that gained frames broke**, silently, with one "Identifier uniqueness
+  violation" line for the whole run. `sheet_char_player_walk` went 4 frames to 6 on 2026-08-16;
+  frames 4 and 5 both landed on id 0, the clip took `fileID: 0` for frame 5, and the player
+  flickered invisible once per stride. The data provider (`com.unity.2d.sprite`, added for this)
+  assigns a real id per frame. `Slice` reuses the id an existing frame name already holds — from
+  the `nameFileIdTable` first, the rects second — so nothing that references a frame is repointed
+  and re-importing an unchanged sheet writes back what was already there. `VerifySliced` now also
+  checks every sub-sprite came back with a non-zero, unique local file id, because that failure had
+  no other voice.
 - ⚠️ **Never wrap the import loop in `AssetDatabase.StartAssetEditing`.** It defers `ImportAsset`,
   so `AssetImporter.GetAtPath` returns null for a file just written, every import setting is
   skipped, and assets land with Unity's defaults — no slices, no clips, no controller — **while

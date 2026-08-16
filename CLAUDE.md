@@ -610,6 +610,29 @@ Committed 2026-08-15, never compiled, and **not importable until the editor pass
   Pre-existing, unchanged by this, and now harder to spot: the spellbook's `KnownSpellIds` is what
   actually persists a learnt spell.
 
+**Also outstanding — the importer's slicing moved onto `ISpriteEditorDataProvider`.** Committed
+2026-08-16, never compiled:
+
+- **The defect it fixes:** `TextureImporter.spritesheet` takes `SpriteMetaData`, which carries no
+  sprite id, so Unity re-linked frames by name against the `nameFileIdTable` in the `.meta` — known
+  names kept their ids, new names got **zero**. Only a sheet that *gained* frames broke.
+  `sheet_char_player_walk` went 4 frames to 6 and frame 5 of the clip took `fileID: 0`, so the
+  player flickered invisible once per stride. Repaired by hand in `fefe311`; this stops it
+  recurring. Ids for existing frame names are reused, so nothing that references a frame moves.
+- ⚠️ **`Assets/Editor/ArtImportTool.cs` now has `using UnityEditor.U2D.Sprites;`** — from
+  `com.unity.2d.sprite`, added in `e1dc5b0` for exactly this. **`Assets/Editor/` has no `.asmdef`,
+  so if that package's editor assembly is not auto-referenced the whole editor assembly fails to
+  load and every tool stops** — quest import, World Palette, Portal Placement. *This is the first
+  thing to check on open.* Rollback is `git checkout -- Assets/Editor/ArtImportTool.cs`.
+- **Slicing runs after the importer's own settings and before `SaveAndReimport`, deliberately.**
+  The data provider works through a `SerializedObject` of the same importer and writes back what
+  that object held when it was created; built first, its `Apply` would put `spriteImportMode` back
+  to Single and take the slices with it.
+- **`VerifySliced` now also checks each sub-sprite's local file id is non-zero and unique**, so the
+  failure above can never again be silent. *Re-import one pair from `art_incoming/processed/` and
+  check there is no "Identifier uniqueness violation", no new Animator transitions, and
+  `0 duplicate transition(s) removed`* — which also settles the reimport-idempotency item below.
+
 **Also outstanding — roll and knockback, imported 2026-08-09, only half exercised.**
 
 The import ran and accepted all ten sheets, so `Assembly-CSharp` compiled and the importer's own
