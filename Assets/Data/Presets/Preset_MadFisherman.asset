@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f611db80a0d2341448c09c7c80cd9d1f, type: 3}
+  m_Name: Preset_MadFisherman
+  m_EditorClassIdentifier:
+  Label: Mad Fisherman
+  Category: 0
+  Icon: {fileID: 1849707194109113509, guid: f7207c6d55148f64f9dbd9523cec3c96, type: 3}
+  Prefab: {fileID: 0}
+  NpcName: Mad Fisherman
+  NpcSprite: {fileID: 1849707194109113509, guid: f7207c6d55148f64f9dbd9523cec3c96, type: 3}
+  NpcController: {fileID: 9100000, guid: 77fcad89a1923354a951f79388d1cde4, type: 2}
+  Conversation: {fileID: 0}
+  EnemyPrefab: {fileID: 0}
+  OverrideHealth: 0
+  Health: 45
+  OverrideDamage: 0
+  Damage: 7
+  Loot: []
+  ChestName: Chest
+  ChestVisualPrefab: {fileID: 0}
+  ChestLoot: []
+  TargetChunk: {fileID: 0}
+  PortalSpawnPosition: {x: 0, y: 0, z: -8}
+  PortalPrompt: Enter
+  RequireTutorialComplete: 0
+  AddDoorVisual: 1
+  DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
+  Vehicle: {fileID: 0}
+  SpawnPointId:
+  QuestKey: mad_fisherman
+  ArtSubject: mad_fisherman
+  NpcHeight: 1.55
+  Roams: 0
+  RoamRadius: 6
+  Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+  AmbientLine:
+  Pickpocketable: 0
+  PickpocketMinPounds: 5
+  PickpocketMaxPounds: 25
+  PickpocketCatchChance: 0.3
+  Region: 0
+  PickpocketBand: {fileID: 0}
+  EnemyLevel: 0
+  PortalTargetSpawnPointId:
+  FollowerConversation: {fileID: 0}
