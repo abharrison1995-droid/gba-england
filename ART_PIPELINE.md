@@ -72,7 +72,8 @@ The `worldHeight` in the JSON is what drives the reduction, so it must be right:
 
 | Subject | `worldHeight` | Finishes at |
 |---|---|---|
-| **Adults — player, NPCs, police, civilians** | **1.55** | ~74 px |
+| **Player classes and their weapon variants** | **1.8** | ~86 px |
+| **Adults — NPCs, police, civilians** | **1.55** | ~74 px |
 | Children | 1.3 | ~62 px |
 | E-bikes, mopeds and similar | 0.9 | ~43 px |
 | Bushes | 0.9 | ~43 px |
@@ -80,6 +81,16 @@ The `worldHeight` in the JSON is what drives the reduction, so it must be right:
 | Sheds | 2.2 | ~106 px |
 | Trees | 2.2 | ~106 px |
 | Office buildings | 6.0 | ~288 px |
+
+⚠️ **These numbers are not stylistic — they must equal the height the actor renders at**, which is
+`WorldActorVisual.Height` (player 1.8, NPCs `EKVibe.CharacterHeight` = 1.55, child 1.3).
+`FitScaleToHeight` scales whatever sprite it is given to that field, so a wrong `worldHeight` never
+changes how *big* a character looks — it only decides how many pixels are stretched to fill the
+space. Draw an adult at 1.35 and the sprite arrives at 65 px and is upscaled 14.5% forever. Draw a
+character at the height they render at and the art is 1:1.
+
+A boss meant to tower is therefore **not** drawn taller here. Bigness is `WorldActorVisual.Height`
+on the prefab; `worldHeight` only follows it so the resolution budget matches.
 
 Width follows whatever the subject needs — only height is normalised. **Every prop in the queue
 carries its own `worldHeight` in the queue's world-props band** — that table is the authority for anything listed there,
@@ -345,7 +356,8 @@ Its measurements, which are the numbers every other sheet is scored against:
 ## 8. Standard frame counts
 
 All source cells **512×512** unless stated, one drawing per cell, subject filling ~90% of the cell
-height, feet near the bottom, facing camera-right. `worldHeight` **1.55** for adult people (1.3 for a child). See §2.
+height, feet near the bottom, facing camera-right. `worldHeight` **1.8** for a player class, **1.55**
+for any other adult, 1.3 for a child. See §2.
 
 | Action | Frames | Columns | Rows | fps | Loop |
 |---|---|---|---|---|---|
