@@ -52,3 +52,4 @@ MonoBehaviour:
   PickpocketBand: {fileID: 0}
   EnemyLevel: 0
   PortalTargetSpawnPointId: 
+  FollowerConversation: {fileID: 0}
