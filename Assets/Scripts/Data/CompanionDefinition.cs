@@ -67,13 +67,17 @@ namespace GBHEngland.Data
         public float AttackWindup = 0.3f;
 
         [Header("Heal")]
-        [Tooltip("Health restored by the cast. Heals the badly-injured player first, else self.")]
-        public int HealAmount = 18;
-        [Tooltip("Seconds between heals. Alex plan: 20.")]
-        public float HealCooldown = 20f;
-        [Tooltip("Player health fraction (of max) at or below which Alex prioritises the player.")]
+        [Tooltip("Health restored by one cast, paid to the player AND the companion. Because it " +
+                 "lands twice and costs no mana, keep it well below a single-target heal.")]
+        public int HealAmount = 12;
+        [Tooltip("Seconds between heals. Longer than the player's own Healing Aura (30s), which " +
+                 "at least costs mana — this one is free and automatic.")]
+        public float HealCooldown = 35f;
+        [Tooltip("Health fraction (of max) at or below which EITHER of them triggers the cast. " +
+                 "Out of combat any missing health triggers it instead, so the pair do not stand " +
+                 "around wounded between fights.")]
         [Range(0f, 1f)]
-        public float HealPlayerPriorityFraction = 0.4f;
+        public float HealPlayerPriorityFraction = 0.5f;
 
         [Header("Dodge")]
         [Tooltip("Seconds between dodge rolls. Alex plan: 8-10 (far rarer than the player's 1).")]

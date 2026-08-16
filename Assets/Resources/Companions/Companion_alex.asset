@@ -25,9 +25,9 @@ MonoBehaviour:
   AttackRange: 1.6
   AttackCooldown: 1.3
   AttackWindup: 0.3
-  HealAmount: 18
-  HealCooldown: 20
-  HealPlayerPriorityFraction: 0.4
+  HealAmount: 12
+  HealCooldown: 35
+  HealPlayerPriorityFraction: 0.5
   DodgeCooldown: 9
   Height: 1.76
   Width: 1.62

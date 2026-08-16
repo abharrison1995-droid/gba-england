@@ -3,6 +3,7 @@ using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
 using GBHEngland.Data;
+using GBHEngland.UI;
 using GBHEngland.World;
 
 namespace GBHEngland.Combat
@@ -335,35 +336,54 @@ namespace GBHEngland.Combat
 
         // ----- heal / dodge -----
 
-        /// <summary>The companion's own heal cast. Called by the AI when its heal cooldown is up.</summary>
+        /// <summary>
+        /// The companion's heal cast. Heals the player AND the companion for HealAmount each, the
+        /// same both-targets shape as the player's own Healing Aura spell. That is why HealAmount
+        /// is tuned well below a single-target heal: it pays out twice, costs no resource, and
+        /// nothing but the cooldown limits how often it comes round.
+        ///
+        /// It fires in combat as well as out of it. A heal that waits for the fight to end is one
+        /// the player never sees work — and the fraction test below exists so the long cooldown is
+        /// not burned topping up a scratch.
+        /// </summary>
         public bool TryHeal()
         {
             if (_disabled || _health == null || _health.IsDead) return false;
             if (Time.time < _nextHealTime) return false;
             if (Definition == null) return false;
 
-            // Decide target: the badly-injured player first, else self if the spell would top us up.
-            Health target = null;
+            float threshold = Definition.HealPlayerPriorityFraction;
+            bool inCombat = _target != null;
+
+            // Out of combat there is nothing to save the cast for, so any missing health is worth
+            // topping up rather than leaving the pair standing around wounded between fights.
+            bool playerNeedsIt = false;
             if (_playerHealth != null && !_playerHealth.IsDead)
             {
                 float frac = (float)_playerHealth.CurrentHealth / Mathf.Max(1, _playerHealth.MaxHealth);
-                if (frac <= Definition.HealPlayerPriorityFraction) target = _playerHealth;
+                playerNeedsIt = frac <= threshold ||
+                                (!inCombat && _playerHealth.CurrentHealth < _playerHealth.MaxHealth);
             }
-            if (target == null && _health.CurrentHealth < _health.MaxHealth) target = _health;
-            if (target == null) { _nextHealTime = Time.time + 2f; return false; } // nobody needs it; re-check soon
+
+            float selfFrac = (float)_health.CurrentHealth / Mathf.Max(1, _health.MaxHealth);
+            bool selfNeedsIt = selfFrac <= threshold ||
+                               (!inCombat && _health.CurrentHealth < _health.MaxHealth);
+
+            if (!playerNeedsIt && !selfNeedsIt) { _nextHealTime = Time.time + 2f; return false; } // nobody needs it; re-check soon
 
             _nextHealTime = Time.time + Definition.HealCooldown;
-            target.Heal(Definition.HealAmount);
 
-            // The cast/grounded-spell animation, toward the target or else toward the player.
+            // Both are healed whichever of them triggered it. Health.Heal clamps at MaxHealth and
+            // no-ops on the dead, so the overheal on the healthier one needs no test here.
+            if (_playerHealth != null) _playerHealth.Heal(Definition.HealAmount);
+            _health.Heal(Definition.HealAmount);
+
+            UIManager.Instance?.LogCombat($"{DisplayName} restores {Definition.HealAmount} health.");
+
+            // The cast animation, facing the player: the heal reaches both of us, but it is aimed
+            // at them.
             SetAnimatorTrigger("CastSpell");
-            if (_visual != null && target != null)
-            {
-                Vector3 dir = target.transform.position - transform.position;
-                dir.y = 0f;
-                if (dir.sqrMagnitude > 0.001f) _visual.SetFacing(dir.normalized);
-            }
-            else if (_visual != null && _player != null)
+            if (_visual != null && _player != null)
             {
                 Vector3 dir = _player.position - transform.position;
                 dir.y = 0f;
@@ -436,7 +456,12 @@ namespace GBHEngland.Combat
 
                     // Let behaviour cooldowns drive the occasional heal/dodge rather than a fixed
                     // schedule: try once per tick and the timers gate it.
-                    if (_target == null && Time.time >= _nextHealTime) TryHeal();
+                    //
+                    // The heal is deliberately NOT gated on being out of combat any more. TryHeal
+                    // is instantaneous — no coroutine, no movement stop — so casting mid-fight
+                    // costs the follower nothing and is the only time the heal matters. Dodge
+                    // stays combat-only; there is nothing to roll away from otherwise.
+                    if (Time.time >= _nextHealTime) TryHeal();
                     if (_target != null && Time.time >= _nextDodgeTime) TryDodge();
                 }
 

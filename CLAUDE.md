@@ -903,17 +903,34 @@ check list.
   only rules out a truncated edit. No `.quest` has been imported and no `QuestDefinition` exists to
   exercise the watcher or focus.
 
-**Also outstanding — the companion system C0–C3 plus HUD, none of it exercised.** Committed
-2026-08-12 on `codex/merchant-store-screens`, not yet pushed, never compiled:
+**The companion system — ALEX has been played, and works.** On `main` (`ab2d6c5`, namespaced in
+`947ded5`). ✅ **Exercised in an editor session on 2026-08-16**: Alex was recruited and fought
+alongside the player against a placed `Enemy_Spicehead`, and the owner reports following, targeting
+and combat all good. That is the first time any of C0–C3 has run.
 
 - **Data-driven companions.** `CompanionDefinition`/`CompanionDatabase` describe them;
   `CompanionAI` is the runtime follower/combatant; `CompanionManager` and `CompanionHomePresence`
-  own the lifecycle; `CompanionHUDUI` draws the bar. `EnemyAI` now exposes `AggroTarget` so a
-  companion targets only hostiles already fighting the player, and nothing else.
-- **No `CompanionDefinition` asset exists and no companion has been recruited**, so none of this has
-  run. Covers phases C0–C3; C4/C6 are partial and C5/C7/Alex are outstanding per the plan. *Author
-  a `CompanionDefinition`, recruit one, and check the follower keeps up, engages only your
-  aggressor, and the HUD shows its bar.*
+  own the lifecycle; `CompanionHUDUI` draws the bar. `EnemyAI` exposes `AggroTarget` so a companion
+  targets only hostiles already fighting the player, and nothing else.
+- **`Companion_alex.asset` is the one authored definition**, in `Resources/Companions/`. ⚠️ **`Id:
+  alex` is a save key** — it is what the save resolves the hired companion through, and it must
+  also match the `PlacementPreset.QuestKey` used as his home anchor. Do not rename it.
+- ⚠️ **Alex's heal was rebuilt on 2026-08-16 and has NEVER been compiled or played.** It was
+  previously single-target and gated on `_target == null`, so it **only ever fired out of combat** —
+  which is why it was never seen. It now heals the player *and* Alex for `HealAmount` each, mirroring
+  the player's own `Spell_healing_aura`, and the tick no longer gates it on being out of combat.
+  Retuned on the asset: `HealAmount` 18 → **12**, `HealCooldown` 20 → **35**,
+  `HealPlayerPriorityFraction` 0.4 → **0.5**. The numbers are deliberately weaker and slower than the
+  player's own aura (35 each, 30 s) **because Alex's costs no mana and mana no longer regenerates** —
+  the player's aura is hard-limited by a resource, Alex's is free forever. *Take a fight below half
+  health and check the combat log reads "Alex restores 12 health.", that both bars move, and that it
+  cannot repeat inside 35 s.*
+- **`HealPlayerPriorityFraction` now gates the whole cast**, not just player priority — either party
+  at or below it triggers one, and out of combat any missing health does. The field was
+  **deliberately not renamed**: renaming a public serialized field drops its value everywhere without
+  `[FormerlySerializedAs]`. The name is stale; the data is intact.
+- **Still unexercised:** the HUD bar, dismissal, the home presence, and death/downed handling. C4/C6
+  are partial and C5/C7 outstanding per the plan.
 
 → [docs/plans/QUEST_PIPELINE_PLAN.md](docs/plans/QUEST_PIPELINE_PLAN.md) and
 [docs/plans/COMPANION_PIPELINE_PLAN.md](docs/plans/COMPANION_PIPELINE_PLAN.md) for the phase gates.
