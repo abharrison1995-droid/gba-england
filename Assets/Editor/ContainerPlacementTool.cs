@@ -170,9 +170,10 @@ public class ContainerPlacementTool : EditorWindow
         if (existing != null)
         {
             EditorGUILayout.HelpBox(
-                "This object already has a container. Its settings are loaded below — pressing " +
-                "Create Or Update edits it in place rather than adding a second.",
-                MessageType.None);
+                "This object already has a container. Update edits it in place rather than adding " +
+                "a second — but the fields below are still whatever this window last held, so " +
+                "press Load Settings From Existing first unless you mean to overwrite them.",
+                MessageType.Warning);
         }
     }
 
@@ -293,8 +294,11 @@ public class ContainerPlacementTool : EditorWindow
             else
             {
                 EditorGUILayout.HelpBox(
-                    "Click the spot on the model in the Scene view. Hold Shift to stay armed for " +
-                    "a run of several objects. Esc cancels.", MessageType.Info);
+                    "Click the spot on the model in the Scene view to set the point for the " +
+                    "SELECTED object.\n\n" +
+                    "Hold Shift to stamp instead: each shift-click creates a container on whatever " +
+                    "you clicked, using the settings above, and stays armed for the next. Esc " +
+                    "cancels.", MessageType.Info);
                 if (GUILayout.Button("Cancel")) Disarm();
             }
         }
@@ -377,16 +381,24 @@ public class ContainerPlacementTool : EditorWindow
 
         if (e.type == EventType.MouseDown && e.button == 0 && !e.alt)
         {
-            if (TryGetPoint(e.mousePosition, out Vector3 point))
+            if (TryGetPoint(e.mousePosition, out Vector3 point, out GameObject struck))
             {
-                GameObject target = Selection.activeGameObject;
+                // Shift is stamp mode: target whatever was clicked and place immediately, so a run
+                // of objects can be done without going back to the window between each.
+                //
+                // ⚠ It has to resolve the target from the raycast, not from Selection. This tool
+                // takes the default control so the click places instead of selecting, which means
+                // Selection never changes during a run — using it would stamp the same object over
+                // and over while the cursor moved across the scene.
+                GameObject target = e.shift
+                    ? ResolveModelRoot(struck) ?? Selection.activeGameObject
+                    : Selection.activeGameObject;
+
                 if (target != null)
                 {
                     _localOffset = target.transform.InverseTransformPoint(point);
                     _hasPoint = true;
 
-                    // Shift is stamp mode: place it now and stay armed, so a run of objects can be
-                    // done without returning to the window between each.
                     if (e.shift) CreateOrUpdate(target);
                     else _armed = false;
 
@@ -419,7 +431,17 @@ public class ContainerPlacementTool : EditorWindow
     /// </summary>
     private static bool TryGetPoint(Vector2 mousePosition, out Vector3 point)
     {
+        return TryGetPoint(mousePosition, out point, out _);
+    }
+
+    /// <summary>
+    /// Also reports what the ray struck, so stamp mode can target the clicked object. Null when the
+    /// point came from the ground-plane fallback rather than real geometry.
+    /// </summary>
+    private static bool TryGetPoint(Vector2 mousePosition, out Vector3 point, out GameObject struck)
+    {
         Ray ray = HandleUtility.GUIPointToWorldRay(mousePosition);
+        struck = null;
 
         PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
         if (stage != null)
@@ -429,12 +451,14 @@ public class ContainerPlacementTool : EditorWindow
             if (stage.scene.GetPhysicsScene().Raycast(ray.origin, ray.direction, out RaycastHit stageHit, 5000f))
             {
                 point = stageHit.point;
+                struck = stageHit.collider != null ? stageHit.collider.gameObject : null;
                 return true;
             }
         }
         else if (Physics.Raycast(ray, out RaycastHit hit, 5000f))
         {
             point = hit.point;
+            struck = hit.collider != null ? hit.collider.gameObject : null;
             return true;
         }
 
@@ -447,6 +471,36 @@ public class ContainerPlacementTool : EditorWindow
 
         point = Vector3.zero;
         return false;
+    }
+
+    /// <summary>
+    /// Walks a struck collider up to the object a person would call "the model" — the outermost
+    /// ancestor still inside the open prefab or scene root. A raycast lands on whichever child mesh
+    /// carries the collider, which is rarely the thing the container should hang off.
+    ///
+    /// Returns null for a click that hit nothing, or hit something outside the current scope.
+    /// </summary>
+    private static GameObject ResolveModelRoot(GameObject struck)
+    {
+        if (struck == null) return null;
+
+        PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+        Transform boundary = stage != null ? stage.prefabContentsRoot.transform : null;
+
+        Transform cursor = struck.transform;
+
+        if (boundary != null)
+        {
+            if (!cursor.IsChildOf(boundary)) return null;
+            if (cursor == boundary) return boundary.gameObject;
+            while (cursor.parent != null && cursor.parent != boundary) cursor = cursor.parent;
+        }
+        else
+        {
+            while (cursor.parent != null) cursor = cursor.parent;
+        }
+
+        return cursor.gameObject;
     }
 
     // ════════════════════════════════════════════════════════════════════════════════════════
@@ -474,7 +528,10 @@ public class ContainerPlacementTool : EditorWindow
         Undo.RecordObject(container, "Configure Container");
         Undo.RecordObject(container.transform, "Configure Container");
 
-        container.transform.localPosition = _hasPoint ? _localOffset : Vector3.zero;
+        // Only when a point has actually been picked. Writing Vector3.zero on an update where the
+        // user never touched the point would silently drag an already-authored container back to
+        // the model's origin — a new child is already at zero, so there is nothing to write there.
+        if (_hasPoint) container.transform.localPosition = _localOffset;
 
         container.ContainerName = _containerName;
         container.InteractPrompt = _interactPrompt;
