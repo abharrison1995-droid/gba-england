@@ -1,7 +1,7 @@
 # Chunk world
 
 ```
-Last verified against: working tree, 2026-08-15
+Last verified against: working tree, 2026-08-17
 Verification scope:    code (read line by line); chunk prefabs and MapChunkData assets (tracked
                        YAML). Edge-crossing behaviour was play-tested in an earlier editor
                        session — but NOT since ChunkTravelKind was added on 2026-08-15, which
@@ -10,6 +10,8 @@ Verification scope:    code (read line by line); chunk prefabs and MapChunkData 
                        The portal-marker, mounted-refusal and MapChunkRegistry sections landed
                        2026-08-09 and have NEVER been compiled or run. "No DungeonPortal is
                        placed anywhere" was re-checked by GUID scan on 2026-08-15 and still holds.
+                       ChunkBeingBuilt/ContentChunkName and the container-cooldown ticks landed
+                       2026-08-17 and have NEVER been compiled or run.
 ```
 
 Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is live at a time.
@@ -64,15 +66,15 @@ exists, the decision does not.
 Two do the full job. Five are direct replacements. `grep -rn "Instantiate(.*ChunkPrefab"` is how
 this table is checked.
 
-| Path | Entry point | Pauses | Notifies Wanted | Autosaves | Snaps camera |
-|---|---|---|---|---|---|
-| Edge crossing | `ChunkManager.TransitionToChunkRoutine` | yes | yes, as `EdgeCrossing` | yes | yes |
-| USE door / portal | `DungeonPortal` → `ChunkManager.TravelTo` → `TravelRoutine` | yes | yes, as `Portal` | yes | yes |
-| Manor instance door | `GameFlowController.EnterManorCellars` | no | no | yes | no |
-| Tutorial exit | `GameFlowController.LoadLondonAtWestGates` | no | no | yes | no |
-| Continue / load | `SaveGameManager.LoadWorld` | no | no | no | no |
-| New-game fallback | `DeathScreenUI.OnNewGame` | no | no | no | no |
-| Cold boot | `ChunkManager.Start` | no | no | no | no |
+| Path | Entry point | Pauses | Notifies Wanted | Autosaves | Snaps camera | Ticks container cooldowns |
+|---|---|---|---|---|---|---|
+| Edge crossing | `ChunkManager.TransitionToChunkRoutine` | yes | yes, as `EdgeCrossing` | yes | yes | **yes** |
+| USE door / portal | `DungeonPortal` → `ChunkManager.TravelTo` → `TravelRoutine` | yes | yes, as `Portal` | yes | yes | **yes**, given back on abort |
+| Manor instance door | `GameFlowController.EnterManorCellars` | no | no | yes | no | no |
+| Tutorial exit | `GameFlowController.LoadLondonAtWestGates` | no | no | yes | no | no |
+| Continue / load | `SaveGameManager.LoadWorld` | no | no | no | no | no |
+| New-game fallback | `DeathScreenUI.OnNewGame` | no | no | no | no | no |
+| Cold boot | `ChunkManager.Start` | no | no | no | no | no |
 
 **If you add or change transition behaviour you must touch all seven, or consolidate them first.**
 
@@ -122,6 +124,18 @@ nothing until it has one**: wanted state, `CurrentChunkData`, the visited list, 
 toast and the autosave all happen after the check, and the candidate instance is destroyed again on
 failure. The player stays exactly where they were, with a `Debug.LogWarning` naming the chunk and
 the id.
+
+⚠️ **That ordering has a consequence the abort safety does not pay for: during the destination's
+`Awake`, `CurrentChunkData` is still the chunk the player is leaving.** Every `Awake` in the new
+chunk runs synchronously inside the `Instantiate`, which happens first. Content that resolves its
+own chunk — a container building a save key, anything similar added later — would key itself under
+the origin chunk, silently and only on this one path of the seven.
+
+`ChunkManager.ChunkBeingBuilt` is set around that `Instantiate` and cleared in the routine's
+`finally`, and **`ChunkManager.ContentChunkName` is what content must ask** — it prefers
+`ChunkBeingBuilt` and falls back to `CurrentChunkData`. The other six paths assign
+`CurrentChunkData` before they instantiate, so they need nothing; deliberately, only `TravelRoutine`
+sets the field, because setting it in seven places is seven things to keep in step.
 
 This is why the lookup is `PlayerSpawnPoint.FindExact` and not `PlayerSpawnPoint.Find` — `Find`
 falls back to the id-less default point and then to the first point in the chunk, which is right

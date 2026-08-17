@@ -524,11 +524,15 @@ reuses `bus_station_barnacles`.
 - [ ] **Stamp the trap-house gang** — Roadmen and Neeks, all keyed `trap_house_gang`, one count for
   the lot. ⚠️ **The count in the file is 5 and is a placeholder** — it must equal the number of
   keyed actors actually stamped, or the stage can never clear. Same one-chunk rule as always.
-- [ ] **Place ten barnacle containers** in the bus station. `LootChest` is the component —
-  drag-and-drop, one `bus_station_barnacles` ×1 in each Loot list. Respawn is free: a chunk is
-  destroyed and rebuilt on every entry, so chest state resets by itself. ⚠️ **Quest 4 leaves two of
-  these in the bag** and never consumes them, so a player arriving here starts at 2/10, not 0/10.
-  Not a miscount — flagged so it doesn't look like one.
+- [ ] **Place ten barnacle containers** in the bus station, with
+  `Tools → Place → Container Placement`. Attach one to each piece of wreckage: Mode **Fixed**,
+  **Fixed Loot** = `BusStationBarnacles` ×1, prompt "Search wreckage". Shift-click stays armed for
+  the run. ⚠️ **Fixed Loot, not `LootBand_BusBarnacles`** — the band can roll nothing, and the stage
+  wants exactly ten. Then press **Validate All Containers** and confirm no duplicate save ids.
+  ⚠️ **Respawn is no longer free.** Container state is saved now, so a Fixed container stays empty
+  and a Respawning one sits out `RespawnVisits` entries to the chunk — re-entering does not reset
+  either. ⚠️ **Quest 4 leaves two of these in the bag** and never consumes them, so a player
+  arriving here starts at 2/10, not 0/10. Not a miscount — flagged so it doesn't look like one.
 - [ ] **Fill the `[TODO:]` lines** — nine **player** lines across the two files, four in Gangbusters
   and five in Ah, Barnacles. Every NPC line the owner sent is in verbatim; only the player's side is
   placeholder where the script had none. The quests import and run with them in place; they just
