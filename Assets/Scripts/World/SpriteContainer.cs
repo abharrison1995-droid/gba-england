@@ -3,6 +3,7 @@ using UnityEngine;
 using GBHEngland.Data;
 using GBHEngland.Flow;
 using GBHEngland.UI;
+using GBHEngland.Vibe;
 
 namespace GBHEngland.World
 {
@@ -16,9 +17,9 @@ namespace GBHEngland.World
     /// * <see cref="ContainerMode.Fixed"/> — an authored container that empties permanently. Its
     ///   looted state is written into the save under an id built from the chunk and the object
     ///   name, so it stays empty across a reload.
-    /// * <see cref="ContainerMode.Respawning"/> — rolls fresh contents every time its chunk is
-    ///   built, and remembers nothing. Chunks are destroyed and rebuilt on every visit, so this is
-    ///   simply the mode that opts out of the save.
+    /// * <see cref="ContainerMode.Respawning"/> — restocks after <see cref="RespawnVisits"/> visits
+    ///   to its chunk. Both modes are saved; the difference is whether the container ever comes
+    ///   back.
     ///
     /// Contents come from a <see cref="LootBand"/>, the same table type the pickpocket minigame
     /// rolls, so a band is authored once and works in both.
@@ -42,6 +43,10 @@ namespace GBHEngland.World
         public string ContainerName = "Bin";
 
         public ContainerMode Mode = ContainerMode.Fixed;
+
+        [Tooltip("Respawning only. Visits to this chunk before the container restocks — 3 means " +
+                 "it is available again on the third return. Zero or less uses the default (3).")]
+        public int RespawnVisits = EKVibe.DefaultContainerRespawnVisits;
 
         [Tooltip("What might be inside. Empty means the container opens onto nothing.")]
         public LootBand Band;
@@ -85,8 +90,9 @@ namespace GBHEngland.World
 
             if (Animator == null) Animator = GetComponentInChildren<Animator>();
 
-            if (Mode == ContainerMode.Fixed) SetUpFixed();
-            else RollContents();
+            // Both modes need a save id now: Fixed remembers being emptied forever, Respawning
+            // remembers how many visits it still owes. Neither can do that without one.
+            SetUpFromSave();
         }
 
         private void OnDestroy()
@@ -99,14 +105,14 @@ namespace GBHEngland.World
         }
 
         /// <summary>
-        /// Builds the save id and either restores the looted state or rolls contents.
+        /// Builds the save id and either restores the spent state or rolls contents.
         ///
         /// Never throws. A container living outside a chunk — dropped straight into c.unity, or
         /// alive while ChunkManager is still starting up — has nothing to build an id from, so it
-        /// falls back to behaving as Respawning and says so once. Throwing in Awake would take the
-        /// rest of the chunk's Awakes with it.
+        /// falls back to rolling contents and remembering nothing, and says so once. Throwing in
+        /// Awake would take the rest of the chunk's Awakes with it.
         /// </summary>
-        private void SetUpFixed()
+        private void SetUpFromSave()
         {
             var manager = ChunkManager.Instance;
             // ContentChunkName, never CurrentChunkData: this runs in Awake, and on the portal path
@@ -118,7 +124,8 @@ namespace GBHEngland.World
             {
                 Debug.LogWarning(
                     $"SpriteContainer '{name}': no current chunk to build a save id from, so it " +
-                    "cannot remember being looted. Behaving as Respawning for this session.", this);
+                    "cannot remember being looted. Rolling contents and remembering nothing for " +
+                    "this session.", this);
                 RollContents();
                 return;
             }
@@ -137,11 +144,16 @@ namespace GBHEngland.World
                 _claimedIds[_containerId] = this;
             }
 
-            if (PlayerSession.Instance != null && PlayerSession.Instance.IsContainerLooted(_containerId))
+            bool spent = Mode == ContainerMode.Fixed
+                ? PlayerSession.Instance != null && PlayerSession.Instance.IsContainerLooted(_containerId)
+                : PlayerSession.Instance != null && PlayerSession.Instance.IsContainerOnCooldown(_containerId);
+
+            if (spent)
             {
-                // Already emptied in an earlier session. Show it open, hand it no contents, and
-                // take it out of the interact list. Never SetActive(false) — the object stays
-                // present and visible, it is simply spent.
+                // Emptied earlier — permanently for Fixed, or still sitting out its visits for
+                // Respawning. Show it open, hand it no contents, and take it out of the interact
+                // list. Never SetActive(false) — the object stays present and visible, it is
+                // simply spent.
                 _entries = new List<LootEntry>();
                 if (Animator != null) Animator.Play("Open", 0, 1f);
                 if (_interactable != null) _interactable.enabled = false;
@@ -199,9 +211,9 @@ namespace GBHEngland.World
         }
 
         /// <summary>
-        /// Shuts the lid, and retires the container once there is nothing left in it. A Fixed
-        /// container also records that in the save at this point rather than on each TAKE, so a
-        /// half-emptied one reopens with the rest still inside.
+        /// Shuts the lid, and retires the container once there is nothing left in it. The save is
+        /// written at this point rather than on each TAKE, so a half-emptied container reopens with
+        /// the rest still inside.
         /// </summary>
         private void OnClosed()
         {
@@ -217,8 +229,20 @@ namespace GBHEngland.World
 
             if (_interactable != null) _interactable.enabled = false;
 
-            if (Mode == ContainerMode.Fixed && !string.IsNullOrEmpty(_containerId))
+            if (string.IsNullOrEmpty(_containerId)) return;   // no id — nothing to remember it by
+
+            if (Mode == ContainerMode.Fixed)
+            {
                 PlayerSession.Instance?.MarkContainerLooted(_containerId);
+            }
+            else
+            {
+                // A count of zero or less would mean "already free", which reads as the old
+                // refills-every-visit behaviour. Fall back rather than store it: an asset authored
+                // before RespawnVisits existed deserializes the field as 0, not as its initializer.
+                int visits = RespawnVisits > 0 ? RespawnVisits : EKVibe.DefaultContainerRespawnVisits;
+                PlayerSession.Instance?.AddContainerCooldown(_containerId, visits);
+            }
         }
     }
 }
