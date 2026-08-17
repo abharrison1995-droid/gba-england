@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   ItemID: bus_station_barnacles
   ItemName: Bus Station Barnacles
-  Description:
+  Description: AVAST! THERE BE A LAND CLAM! Is a barnacle a clam? Are these living? Dunno, but the fisherman will buy them for cash.
   Icon: {fileID: 21300000, guid: 305fbaf167236dc47984b0440f3917ae, type: 3}
   Type: 7
   AllowedClasses:
@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxStack: 20
   HealHP: 4
   HealMana: 2
-  UseAnimationTrigger:
+  UseAnimationTrigger: Consume

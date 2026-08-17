@@ -105,6 +105,16 @@ namespace GBHEngland.Data
                  "ends on the pick. Empty means the choice hires nobody.")]
         public string HireCompanionId;
 
+        // Appended, per CLAUDE.md §3: absent in every DialogueChoice authored before this field
+        // existed, where Unity applies the initializer below — false, which is exactly how every
+        // hire choice behaved already.
+        [Tooltip("Waive this hire's PricePounds for this choice only. The price lives on the " +
+                 "CompanionDefinition and is shared by every hire of that companion, so this is " +
+                 "how one branch gives a companion away while the others still charge — a " +
+                 "quest-reward hire beside an ordinary paid one. Ignored when HireCompanionId is " +
+                 "empty, and ignored for a QuestBound contract, which never charges anyway.")]
+        public bool HireCompanionFree = false;
+
         [Header("Companion Command (Optional)")]
         [Tooltip("Picking this choice applies a command to the active companion (fight beside you, " +
                  "stop fighting, or dismiss). The conversation ends on the pick. None means no command.")]

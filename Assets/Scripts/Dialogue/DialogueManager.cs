@@ -318,8 +318,9 @@ namespace GBHEngland.Dialogue
             if (choice != null && !string.IsNullOrEmpty(choice.HireCompanionId))
             {
                 string hireId = choice.HireCompanionId;
+                bool hireFree = choice.HireCompanionFree;
                 EndDialogue();
-                TryHireCompanion(hireId);
+                TryHireCompanion(hireId, hireFree);
                 return;
             }
 
@@ -354,7 +355,7 @@ namespace GBHEngland.Dialogue
         /// has closed. Toasts mirror what the old hire button said, so the swap from button to
         /// dialogue changes the conversation, not the feedback.
         /// </summary>
-        private static void TryHireCompanion(string companionId)
+        private static void TryHireCompanion(string companionId, bool free)
         {
             var mgr = Companions.CompanionManager.Instance;
             if (mgr == null) return;
@@ -370,15 +371,20 @@ namespace GBHEngland.Dialogue
                 return;
             }
 
-            if (mgr.BeginContract(companionId))
+            if (mgr.BeginContract(companionId, free))
             {
                 if (UI.UIManager.Instance != null)
                     UI.UIManager.Instance.ShowToast(who + " joins you.", 1.8f);
             }
             else
             {
+                // A free hire cannot fail on money, so the only way here is a refusal
+                // BeginContract makes for another reason — a missing definition, which it has
+                // already logged as an error. Saying "not enough money" there would be a lie.
                 if (UI.UIManager.Instance != null)
-                    UI.UIManager.Instance.ShowToast("Not enough money for " + who + ".", 1.8f);
+                    UI.UIManager.Instance.ShowToast(
+                        free ? who + " can't join you right now." : "Not enough money for " + who + ".",
+                        1.8f);
             }
         }
 

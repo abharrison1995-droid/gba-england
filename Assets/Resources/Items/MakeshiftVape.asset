@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   ItemID: makeshift_vape
   ItemName: Makeshift Vape
-  Description:
+  Description: I've seen dodgy vapes before and this one makes those feel uncomfortable. Do. Not. Toot. (Unless absolutely gasping.)
   Icon: {fileID: 21300000, guid: 229d6827de0a8fc4488672d8246331ec, type: 3}
   Type: 8
   AllowedClasses:

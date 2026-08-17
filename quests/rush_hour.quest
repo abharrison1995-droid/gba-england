@@ -1,0 +1,116 @@
+# rush_hour — "Rush Hour" (Quest 8)
+#
+# GRANTED BY: the Mad Fisherman's closing choice in quests/ah_barnacles.quest, node mf_alex — the
+# same choice that completes ah_barnacles. That file already pointed at East York and already sent
+# the player to Alex, so the hand-off needed no new prose.
+# COMPLETED BY: not written yet. See "UNWRITTEN" below.
+#
+# ⚠ THIS QUEST IS A BEGINNING, NOT A WHOLE QUEST. The owner supplied two journal lines and Mayor
+# Zhao's opening conversation on 2026-08-17. Everything past the squatters is unwritten, and the
+# words are the owner's — do not draft them.
+#
+# ⚠ NOTHING THIS QUEST NEEDS EXISTS YET. East York is not a chunk, the flats are not a location,
+# Mayor Zhao has no PlacementPreset and no art, the Red Star Workers Brigade have no enemy prefab,
+# and red_star_cigarettes has no ItemData. The full list, with what each one blocks, is in
+# docs/plans/RUSH_HOUR_BUILD_LEDGER.md. This file is importable today and will produce a
+# QuestDefinition, but the quest cannot be played until that ledger is worked through.
+#
+# ⚠ NEW KEYS: east_york_gate (the REACH marker on the road in) and mayor_zhao.
+
+QUEST rush_hour
+TITLE: Rush Hour
+GIVER: The Mad Fisherman
+LOCATION: East York, two chunks south through the slums.
+
+# Stage 0 — the journey. REACH rather than TALKTO because Zhao is not sought out; he ambushes the
+# player on the road in, through the proximity trigger described below. The marker key is a
+# placeholder until East York exists and the arrival point is authored.
+STAGE REACH east_york_gate
+OBJECTIVE: Get yourself to far off lands of… east York! Apparently the Chinese have deep roots here. Maybe someone can point me in the right direction here, I'll ask around.
+
+# Stage 1 — Zhao's favour. MANUAL, not KILL: what "have a word, or several" resolves to is not
+# written yet, and a KILL stage would decide it. Change this once the owner says how it ends.
+STAGE MANUAL
+OBJECTIVE: Find the North Korean squatters and show them how we protect our glorious landlords.
+
+# ⚠ UNWRITTEN, and deliberately absent rather than guessed at:
+#   - how the squatters resolve (a fight? a conversation? paying them off?)
+#   - Zhao's second conversation, where he honours the bargain and points at Ralph and Sanjeet
+#   - the stage that actually finds Ralph and Sanjeet, which is what the arc has been building to
+#   - whether Quest 9 is granted from here
+# Add the stages ABOVE this comment and the COMPLETE: below, once those lines exist.
+
+# Not specified by the owner. 150 XP is a placeholder chosen to sit above ah_barnacles' 120, since
+# this is a longer journey. No pounds: Zhao pays in a pack of cigarettes and a favour owed.
+REWARD
+XP: 150
+
+# ----------------------------------------------------------------------------------------
+# Mayor Zhao.
+#
+# ⚠ THIS IS PROXIMITY DIALOGUE, AND NOTHING IN THE PROJECT FIRES IT YET. Every conversation today
+# is opened by the player pressing USE on an Interactable. Zhao's is meant to start on its own as
+# the player walks into East York, which needs a new ProximityDialogueTrigger component on a
+# trigger collider across the road in. See the ledger.
+#
+# ⚠ THE RE-FIRE PROBLEM IS THE HARD PART, NOT THE FIRING. A chunk is destroyed and rebuilt on every
+# entry (ChunkManager.TravelRoutine), so a plain "already seen this" bool on the component resets
+# and Zhao ambushes the player every single time they walk into East York, forever. The fix that
+# needs no new save field is to gate the trigger on quest state: fire only while rush_hour is
+# active AND sitting on stage 0. Reaching the marker advances the stage, which disarms the trigger
+# by itself and keeps it disarmed across saves.
+#
+# ⚠ ZHAO GIVES THE PLAYER A PACK OF CIGARETTES AND THE PIPELINE CANNOT DO THAT. A DialogueChoice's
+# ITEM: is a REQUIREMENT (carry it, optionally consume it), not a grant; the only item payout that
+# exists is a quest REWARD, which pays at completion, far too late. Options are a GIVE: directive
+# (new, and the mirror image of HIRE:), or a container at Zhao's feet. NOT DECIDED — the line below
+# is authored as though he hands them over, and until this is resolved he says it and gives nothing.
+
+DIALOGUE mayorzhao
+
+NODE start
+SPEAKER: mayorzhao
+SPEAK: KONICHIWA BROTHERMAN!
+CHOICE Konichiwa? -> zhao_china
+
+NODE zhao_china
+SPEAKER: mayorzhao
+SPEAK: Yes my fine feathered friend! This is as close to China as you can be without jetting off to Beijing herself!
+CHOICE Understood, but konichiwa is Japanese. -> zhao_correction
+
+NODE zhao_correction
+SPEAKER: mayorzhao
+SPEAK: OOOOOH OKAY. Who do you think knows real Chinese? Mayor Zhao or … ? Yeah. So konichiwa foreigner!
+CHOICE … -> zhao_honour
+
+NODE zhao_honour
+SPEAKER: mayorzhao
+SPEAK: We don't get too many folks coming to see us so it's an honour!
+CHOICE Well I'm just looking for.. -> zhao_favour
+
+NODE zhao_favour
+SPEAKER: mayorzhao
+SPEAK: WELL BEFORE YOU ASK ME FOR SOMETHING.. Allow Zhao to ask you for a favour.
+CHOICE [Sighs] -> zhao_brigade
+
+NODE zhao_brigade
+SPEAKER: mayorzhao
+SPEAK: I require a little issue resolving. I hired a plucky little Asian start up to begin the build on a few blocks of flats just outside the city, for the comrades in need.
+CHOICE [Continue listening] -> zhao_kim
+
+NODE zhao_kim
+SPEAKER: mayorzhao
+SPEAK: Well apparently Red Star Workers Brigade have ties to Mr Kim. They've been building the flats no issue, lovely.
+CHOICE [Continue listening] -> zhao_squatters
+
+NODE zhao_squatters
+SPEAKER: mayorzhao
+SPEAK: BUT NOW THEY WONT LEAVE. They're living in them! Please. Have a word, or several. Anything! Then we can talk about your request, you will go to the prom Cinderella.
+CHOICE What? -> zhao_west
+
+NODE zhao_west
+SPEAKER: mayorzhao
+SPEAK: GO! It's west from here. Take this for help!
+# ⚠ The pack of Red Star cigarettes is handed over HERE in the writing, and nothing hands it over
+# in the data — see the note above the DIALOGUE block. No -> : this ends the conversation.
+CHOICE Okay.

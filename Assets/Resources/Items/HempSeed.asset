@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxStack: 0
   HealHP: 2
   HealMana: 0
-  UseAnimationTrigger: 
+  UseAnimationTrigger: Consume

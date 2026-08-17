@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxStack: 20
   HealHP: 0
   HealMana: 15
-  UseAnimationTrigger: 
+  UseAnimationTrigger: Smoke

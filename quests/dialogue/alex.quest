@@ -1,0 +1,66 @@
+# alex — Alex's conversation, permanently.
+#
+# ⚠ THIS FILE OWNS ALEX'S CONVERSATION. One DIALOGUE block per npcId across the whole tree, so
+# every future Alex quest adds gated nodes HERE rather than starting a second file.
+#
+# ⚠ IT REGENERATES Assets/Data/Dialogue/Generated/Dialogue_alex.asset, WHICH ALREADY EXISTS AND
+# ALREADY WORKS. That asset was hand-authored, was played on 2026-08-16, and is bound BY GUID into
+# Prefabs/ModernBritain/Companions/CompanionHome_Alex.prefab. The importer loads-then-mutates, so
+# the GUID survives and the prefab keeps resolving — but the asset's contents are replaced
+# wholesale by this file every import. Anything you want kept must be written here.
+#   - The asset was renamed Dialogue_Alex -> Dialogue_alex on 2026-08-17, GUID intact, precisely so
+#     this file's lowercase npcId cannot collide with it. Do not rename it back.
+#   - Preset_Alex.Speaker was empty and was set to NPC_Alex the same day. Without it ResolveSpeaker
+#     returns null and every line here loses its portrait and name — silently.
+#
+# THE THREE STATES, gated on rush_hour:
+#   not started : he greets you and that is all. No hire offer. (Owner's decision, 2026-08-17.)
+#   active      : the Mad Fisherman has sent you. He joins FREE, once, as the worked example.
+#   complete    : the ordinary paid hire, £25, from here on.
+#
+# ⚠ ONE START NODE. A DialogueData has a single StartNodeId, so the opener below is heard in all
+# three states and the states are told apart by which CHOICE is gated in. This is the same
+# constraint daniel_pauls_quest_one and wtf_mosley live with. It is why "Easy there chap." is the
+# opener rather than either of the state-specific greetings.
+#
+# ⚠ THE FREE HIRE IS RE-TAKEABLE. Hire him free, dismiss him, and while rush_hour is still active
+# the free branch is offered again. Accepted deliberately rather than adding a "has ever been
+# hired" save field — the cost of the exploit is one companion the quest gives you anyway.
+
+DIALOGUE alex
+
+NODE start
+SPEAKER: alex
+SPEAK: Easy there chap.
+# Pre-quest: a greeting and nothing else. Gated not-started rather than left ungated, because an
+# ungated choice shows in EVERY state and would sit beside the hire branches.
+CHOICE Hey up.
+GATE: not-started rush_hour
+# During Rush Hour: the same words open the deal.
+CHOICE Hey up. -> alex_deal
+GATE: active rush_hour
+# After Rush Hour: the ordinary paid hire. These two lines are the ones the hand-authored asset
+# already carried, kept rather than rewritten.
+CHOICE Come with me .. chap
+GATE: complete rush_hour
+HIRE: alex
+CHOICE Nah I'm okay
+GATE: complete rush_hour
+
+NODE alex_deal
+SPEAKER: alex
+SPEAK: Easy there. Fisherman let me know the deal and I'm down to clown. Don't trust the Chinese as far as I can throw them.
+CHOICE Very kind of you. -> alex_charge
+
+NODE alex_charge
+SPEAKER: alex
+SPEAK: I normally charge too aswell so count yourself lucky. Anyone sparks me out though I'm off.
+CHOICE .. makes sense. -> alex_future
+
+NODE alex_future
+SPEAKER: alex
+SPEAK: After your jaunt in the orient if you need a hand in future holla at ya boy. Protein yoghurts ain't cheap.
+# No -> : this ends the conversation, and the hire resolves after it closes. 'free' waives
+# Companion_alex's PricePounds of 25 for this choice ONLY — the paid branch above is unaffected.
+CHOICE Grand, let's go.
+HIRE: alex free

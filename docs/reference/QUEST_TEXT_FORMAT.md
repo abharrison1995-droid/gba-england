@@ -1,19 +1,19 @@
 # Quest text format — authoring quests as plain text
 
 ```
-Last verified against: working tree, 2026-08-15
-Verification scope:    code + format. The importer (Assets/Editor/QuestTextImporter.cs) and
-                       validator (Assets/Editor/QuestContentValidator.cs) are written and
-                       brace-balanced but have NEVER been compiled or opened in the editor. Real
-                       .quest files now exist under quests/ — five quests plus two quests/dialogue/
-                       conversations — but nothing in this pipeline has been imported, so the parser
-                       and validator have never run against them. On 2026-08-15, traced by hand not
-                       run: the validator's cross-file pass (GRANT:/COMPLETE: gathered across quests/
-                       and quests/dialogue/) was corrected; multi-item COLLECT (a STAGE COLLECT
-                       carrying several item pairs) was added to the importer, QuestStage and the
-                       watcher; and a MERCHANT: <id> <buy|sell> choice directive was added to the
-                       importer.
-                       See docs/plans/QUEST_PIPELINE_PLAN.md.
+Last verified against: working tree, 2026-08-17
+Verification scope:    code + format. THE PIPELINE HAS RUN. On 2026-08-16 the owner imported
+                       successfully, writing 7 QuestDefinitions and two DialogueData assets — so
+                       the parser and validator compile and work on real files. That import also
+                       found the case-collision defect (a DIALOGUE block whose npcId differs only
+                       by case from an existing asset silently nulls the preset's Conversation);
+                       it was fixed the same day and the fix has NEVER RUN.
+                       Since then, brace-balanced but NOT compiled: a HIRE: <companionId> [free]
+                       choice directive in the importer, its validation in the validator, and the
+                       DialogueChoice.HireCompanionFree field it writes. First use is
+                       quests/dialogue/alex.quest.
+                       See docs/plans/QUEST_PIPELINE_PLAN.md and
+                       docs/plans/RUSH_HOUR_BUILD_LEDGER.md.
 ```
 
 ## The point
@@ -149,6 +149,7 @@ logged — wire it by hand.
 | `GATE: stage <questId> <index>` | Shows the choice only while the quest is active **and** sitting on stage `<index>` (0-based). |
 | `STAT: <name> <level>` | Requires the trait (STR / INT / Personality) at or above `level`. |
 | `MERCHANT: <merchantId> <buy\|sell>` | Picking the choice closes the chat and opens that merchant's shop. `<merchantId>` resolves to a `MerchantData` asset by filename (`Merchant_` prefix ignored, case-insensitive) or `MerchantName`. Give the choice no `-> id` — it ends the conversation. Gate it (e.g. `GATE: complete <questId>`) to unlock a shop only after a quest. |
+| `HIRE: <companionId> [free]` | Picking the choice hires that companion. `<companionId>` is a `CompanionDefinition.Id` under `Resources/Companions` — a **save key**, not a filename. Give the choice no `-> id`: it ends the conversation, because the hire spawns a follower into the running world and cannot happen while the pause holds `timeScale` at 0. The optional word `free` waives that companion's `PricePounds` **for this choice only**. |
 | `TEACHSPARK` | No colon. Teaches the first spell and opens the naming popup once the chat closes. |
 
 `GATE: stage` exists because `active` cannot tell one beat of a multi-stage quest from another —
@@ -163,6 +164,13 @@ reopens the popup forever. The validator warns.
 
 `GRANT:` and `GATE:` are the two ways one conversation branches per quest: a grant starts a
 quest, and a gate hides a choice until that quest is in the right state.
+
+⚠️ **`free` is per choice, because the price is not.** `PricePounds` lives on the
+`CompanionDefinition` and is shared by every hire of that companion, so there is no way to make one
+hire a gift except at the choice. This is what lets a quest give a companion away once and charge
+normally afterwards — `quests/dialogue/alex.quest` is the worked example. A second word that is not
+`free` is an **error**, not a silent drop: a dropped `free` would charge the player for something
+the writing calls a gift, and nothing would log it.
 
 ## Example
 

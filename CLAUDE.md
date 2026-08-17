@@ -754,6 +754,50 @@ id-less `PlayerSpawn`. All six are in `MapChunkRegistry`, which now lists twelve
   not the police station. `WantedManager`'s own comment already calls rerouting the arrest path a
   separate job.
 
+**Also outstanding — the `HIRE:` directive and Quest 8's text.** Committed 2026-08-17, never
+compiled:
+
+- **`DialogueChoice.HireCompanionFree` is appended**, initializer `false`, so every choice authored
+  before it deserializes exactly as it did. `DialogueManager.TryHireCompanion` now takes the flag
+  through to `CompanionManager.BeginContract`, which already had a `free` parameter nothing used.
+  The "Not enough money" toast is suppressed on a free hire, where it would be a lie.
+- **`HIRE: <companionId> [free]`** is a new `.quest` choice directive, the same shape as
+  `MERCHANT:`. ⚠️ **A second word that is not `free` is an error, never a silent drop** — a dropped
+  `free` charges the player for what the writing calls a gift, and nothing would log it. The
+  validator also resolves the id against `Resources/Companions`, so a typo fails at import rather
+  than mid-conversation.
+- ⚠️ **`Dialogue_Alex.asset` was renamed to `Dialogue_alex.asset`** — `git mv` in two hops, `.meta`
+  moved with it, **GUID `750c809e…` unchanged**. Without this, `quests/dialogue/alex.quest`'s
+  lowercase `DIALOGUE alex` block would have hit the **exact case-collision that nulled
+  `Preset_CouncillorMosley` and `Preset_Scrapman`**, on the one companion conversation known to
+  work. `ResolveAssetPath` was written to survive that and **still has not run**. *Confirm
+  `CompanionHome_Alex.prefab` still resolves its Conversation on first open.*
+  ⚠️ **`Dialogue_Alex_Follower.asset` is still PascalCase in the same folder** — a future
+  `DIALOGUE alex_follower` block would collide the same way.
+- ⚠️ **`Preset_Alex.Speaker` was empty and is now `NPC_Alex`.** `ResolveSpeaker` falls back to the
+  preset's own `Speaker`, so importing Alex's dialogue would have **stripped every line's portrait
+  and display name** with a clean console.
+- **Alex is now gated three ways on `rush_hour`** — greeting only before it, a **free** hire during
+  it, the ordinary £25 hire after. *He cannot be hired at all until Rush Hour completes*, which is
+  a deliberate change from "hireable from the start".
+- **`red_star_cigarettes` is a new `ItemData`**, hand-authored with a fresh GUID: Consumable,
+  `Stackable`, `MaxStack: 20`, no icon. The pack-of-20 needs **no new C#** —
+  `InventoryController.UseTooltipItem` spends exactly one per USE — and `SnarlboroughCig` already
+  used this shape. `HealMana: 15` and `Value: 18` are copied from it, **not specified by the
+  owner**.
+- **`UseAnimationTrigger` now reads `Smoke` on three smokeables and `Consume` on ten edibles.**
+  Neither animation exists; `PlayUseAnimation` ignores a trigger the controller does not declare,
+  so this is inert until the art lands. ⚠️ **No vape can ever play one** — all three are `Type: 8`
+  (Quest), and `UseTooltipItem` refuses non-Consumables outright.
+- **`quests/rush_hour.quest` is a beginning, not a whole quest**, and nothing it needs exists —
+  East York is not a chunk, Mayor Zhao has no preset or art, and no `ProximityDialogueTrigger`
+  component exists. ⚠️ **Zhao's line hands over the cigarettes and the pipeline cannot do that**: a
+  choice's `ITEM:` is a *requirement*, not a grant, and the only item payout is a quest `REWARD`
+  paid at completion.
+
+→ [docs/plans/RUSH_HOUR_BUILD_LEDGER.md](docs/plans/RUSH_HOUR_BUILD_LEDGER.md) for the full list
+and the six-step check.
+
 **Also outstanding — the name unification. It compiles; behaviour unexercised.** Committed
 2026-08-16, phases 1–4 (`b763080`, `44b0fd8`, `947ded5`, `0b9301f`):
 

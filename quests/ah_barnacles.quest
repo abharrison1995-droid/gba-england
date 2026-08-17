@@ -94,7 +94,9 @@ CHOICE Okay, right. I'll see what's up. -> mf_alex
 NODE mf_alex
 SPEAKER: madfisherman
 SPEAK: Before you get going though, have a chat with Alex at his place in London. He's not very handy but the lad's cheap and willing back ya for a couple quid.
-# Ends the chat and completes the quest, paying the £50 and 120 XP. Quest 8 is TBC, so nothing is
-# granted here yet — add  GRANT: rush_hour  to this choice when it exists.
+# Ends the chat, completes the quest (paying the £50 and 120 XP) and grants Quest 8 — the same
+# shape as gangbusters' hand-off into this one. Granting rush_hour here is also what unlocks Alex:
+# his conversation offers nothing but a greeting until this quest id exists and is active.
 CHOICE Sounds good.
 COMPLETE: ah_barnacles
+GRANT: rush_hour

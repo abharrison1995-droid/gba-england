@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   ItemID: vending_machine_fungus
   ItemName: Vending Machine Fungus
-  Description:
+  Description: Bet Darwin didn't see a Twix trying to grow legs eventually. Sell this for cash.
   Icon: {fileID: 21300000, guid: 34c9fe42adeaf74458cf2ee4e4d969c5, type: 3}
   Type: 7
   AllowedClasses:
@@ -26,4 +26,4 @@ MonoBehaviour:
   MaxStack: 20
   HealHP: 4
   HealMana: 2
-  UseAnimationTrigger:
+  UseAnimationTrigger: Consume

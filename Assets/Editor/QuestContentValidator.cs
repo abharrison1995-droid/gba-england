@@ -236,6 +236,18 @@ public static class QuestContentValidator
                     }
                     info.CompleteIds.Add(Value(line));
                     break;
+
+                case "HIRE:":
+                    // No QuestId guard, same as GRANT and COMPLETE: a hire choice lives in
+                    // dialogue, which in the split layout is a quests/dialogue/ file with no
+                    // QUEST block.
+                    if (!inDialogue || !inChoice)
+                    {
+                        problems.Add(new Problem(Severity.Error, $"{path}: HIRE outside a CHOICE - the importer rejects it."));
+                        break;
+                    }
+                    CheckHire(path, Value(line), problems);
+                    break;
             }
         }
 
@@ -281,6 +293,33 @@ public static class QuestContentValidator
                 problems.Add(new Problem(Severity.Error,
                     $"{path}: GATE stage {idx} for quest '{info.QuestId}', which has only {stageCount} stage(s) (0-{stageCount - 1}) - that choice can never show."));
         }
+    }
+
+    /// <summary>
+    /// Checks a <c>HIRE: &lt;companionId&gt; [free]</c> line.
+    ///
+    /// The id is resolved against <c>Resources/Companions</c> here rather than left to run time,
+    /// because <see cref="GBHEngland.Companions.CompanionManager.BeginContract"/> only discovers a
+    /// bad id when the player picks the choice — mid-conversation, as a console error nobody is
+    /// watching for. The word after the id may only be <c>free</c>.
+    /// </summary>
+    private static void CheckHire(string path, string value, List<Problem> problems)
+    {
+        string[] t = value.Split(new[] { ' ', '	' }, StringSplitOptions.RemoveEmptyEntries);
+        if (t.Length == 0)
+        {
+            problems.Add(new Problem(Severity.Error, $"{path}: HIRE with no companion id."));
+            return;
+        }
+
+        if (GBHEngland.Data.CompanionDatabase.Find(t[0]) == null)
+            problems.Add(new Problem(Severity.Error,
+                $"{path}: HIRE names companion '{t[0]}', which has no CompanionDefinition under Resources/Companions - the hire would fail silently when the choice is picked."));
+
+        if (t.Length > 2)
+            problems.Add(new Problem(Severity.Error, $"{path}: HIRE takes at most <companionId> free."));
+        else if (t.Length == 2 && t[1].ToLowerInvariant() != "free")
+            problems.Add(new Problem(Severity.Error, $"{path}: HIRE second word must be 'free', got '{t[1]}'."));
     }
 
     /// <summary>

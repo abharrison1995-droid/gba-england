@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   ItemID: big_blue
   ItemName: Big Blue
-  Description:
+  Description: Pretty "stiff" drink, I imagine.
   Icon: {fileID: 21300000, guid: e7b3587eb49b5bc419f200117531bb04, type: 3}
   Type: 8
   AllowedClasses:

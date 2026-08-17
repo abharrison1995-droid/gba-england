@@ -25,7 +25,7 @@ MonoBehaviour:
   MaxStack: 20
   HealHP: 0
   HealMana: 1
-  UseAnimationTrigger: 
+  UseAnimationTrigger: Smoke
   AttackBonus: 0
   PoisonResistance: 0
   Tradeable: 1

@@ -42,7 +42,7 @@ MonoBehaviour:
   NpcHeight: 1.76
   Roams: 0
   RoamRadius: 6
-  Speaker: {fileID: 0}
+  Speaker: {fileID: 11400000, guid: 79c17849c219457a9f36bc37bf32d90b, type: 2}
   AmbientLine: 
   Pickpocketable: 0
   PickpocketMinPounds: 5

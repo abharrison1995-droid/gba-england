@@ -352,7 +352,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6399cad2fc339a5bf2c3448b9a216a25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TurnHostileLine: 
+  TurnHostileLine: GWAFUACK YOURSELF DUDE!!!
   DisableInteractionWhenHostile: 1
 --- !u!1 &4820988931661113335
 GameObject:

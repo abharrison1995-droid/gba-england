@@ -107,6 +107,12 @@ public static class QuestTextImporter
         // neither is; DialogueValidator rejects a half-set pair.
         public string MerchantId;
         public MerchantActionType MerchantAction = MerchantActionType.None;
+        // A hire choice ends the conversation and starts a companion contract. HireFree waives
+        // the CompanionDefinition's price for this choice alone — the price is shared by every
+        // hire of that companion, so this is the only way one branch gives them away while
+        // another still charges.
+        public string HireCompanionId;
+        public bool HireFree;
         public bool HasNext; // a choice with no "-> id" ends the conversation
     }
 
@@ -491,6 +497,11 @@ public static class QuestTextImporter
                     ParseMerchant(Value(line), currentChoice, errors, lineNo);
                     break;
 
+                case "HIRE:":
+                    if (currentChoice == null) { Err("HIRE outside a CHOICE"); break; }
+                    ParseHire(Value(line), currentChoice, errors, lineNo);
+                    break;
+
                 default:
                     // Anything unrecognised is a likely typo — flag it rather than silently ignore.
                     Err($"unrecognised keyword '{keyword}'");
@@ -642,6 +653,26 @@ public static class QuestTextImporter
         }
     }
 
+    /// <summary>
+    /// <c>HIRE: &lt;companionId&gt; [free]</c> — the choice hires that companion when picked.
+    ///
+    /// The optional second token is the literal word <c>free</c>, which waives the
+    /// CompanionDefinition's PricePounds for this choice only. Anything else there is a typo and
+    /// is reported rather than ignored, because a silently-dropped 'free' would charge the player
+    /// for a hire the writing says is a gift — and nothing would log it.
+    /// </summary>
+    private static void ParseHire(string value, ParsedChoice choice, List<string> errors, int lineNo)
+    {
+        string[] t = value.Split(new[] { ' ', (char)9 }, StringSplitOptions.RemoveEmptyEntries);
+        if (t.Length < 1) { errors.Add($"line {lineNo}: HIRE needs <companionId> [free]"); return; }
+        choice.HireCompanionId = t[0];
+
+        if (t.Length == 1) return;
+        if (t.Length > 2) { errors.Add($"line {lineNo}: HIRE takes at most <companionId> free"); return; }
+        if (t[1].ToLowerInvariant() == "free") choice.HireFree = true;
+        else errors.Add($"line {lineNo}: HIRE second word must be 'free', got '{t[1]}'");
+    }
+
     private static ParsedChoice ParseChoice(string spec, List<string> errors, int lineNo)
     {
         var choice = new ParsedChoice();
@@ -784,7 +815,9 @@ public static class QuestTextImporter
                     RequiredStat = pc.RequiredStat,
                     RequiredStatLevel = pc.RequiredStatLevel,
                     Merchant = ResolveMerchant(pc.MerchantId, errors),
-                    MerchantAction = pc.MerchantAction
+                    MerchantAction = pc.MerchantAction,
+                    HireCompanionId = pc.HireCompanionId,
+                    HireCompanionFree = pc.HireFree
                 };
                 node.Choices.Add(choice);
             }
