@@ -65,8 +65,23 @@ has one; **none of the six exteriors do** — they ride on the pre-baked `Assets
 **Four buildings** went into London on 2026-08-16 — mansion, church, traphouse, bus station — so that
 NavMesh is badly stale and agents will path straight through all of them. Nothing warns you; enemies
 and Alex simply walk through walls. Route: open `Assets/c.unity`, confirm the London chunk instance
-is in the **Hierarchy**, then `Tools → World → Bake Navigation Mesh`. The console logs a vertex
-count; *"produced no surface"* means the chunk is not loaded in the scene.
+is in the **Hierarchy** (it already is — `Home_London_Prefab` is a prefab instance in the scene),
+then `Tools → World → Bake Navigation Mesh`. The console logs a vertex count; *"produced no
+surface"* means the chunk is not loaded in the scene. `Ctrl+S` afterwards — the bake writes static
+flags into the scene file.
+
+⚠️ **A vertex count is not proof the buildings were carved.** `EKNavMeshBaker.MarkHierarchy` marks
+an object either by a name allowlist (`Wall`, `Building`, `Prop`, `Floor`, `Path`, `Road`,
+`Asphalt`) **or** by a non-trigger collider *on that same object* — and the code's own comment calls
+the allowlist fragile for exactly this reason. The four arc buildings are glTF imports whose child
+meshes carry generated names, and each building's `BoxCollider` + `EnvironmentBlocker` sits on the
+**instance root**, not on the meshes, so they can miss both tests. The legacy bake voxelises
+*MeshRenderers* flagged Navigation Static, so an unmarked mesh contributes nothing. **Check by eye:**
+`Window → AI → Navigation`, show the NavMesh, and confirm each of the four buildings is a hole in
+the blue. If one is not, select its root in the Hierarchy (`abandoned+church+3d+model`,
+`Croyden+spartan+traphouse+3d+model`, `mosley+mansion+3d+model`, `Bus station`), tick **Static** at
+the top-right of the Inspector, choose **"Yes, change children"**, and re-bake. The colliders stop
+the player either way — this is only about where the AI believes it can walk.
 
 ⚠️ **Item 3 is not optional before item 4.** A portal drops the player at an arrival marker, and
 `MinMarkerClearance` is checked against the NavMesh — wiring doors onto a stale mesh means testing
@@ -529,11 +544,11 @@ reuses `bus_station_barnacles`.
   destroyed and rebuilt on every entry, so chest state resets by itself. ⚠️ **Quest 4 leaves two of
   these in the bag** and never consumes them, so a player arriving here starts at 2/10, not 0/10.
   Not a miscount — flagged so it doesn't look like one.
-- [ ] **Fill the `[TODO:]` lines** — nine **player** lines across the two files, four in Gangbusters
-  and five in Ah, Barnacles. Every NPC line the owner sent is in verbatim; only the player's side is
-  placeholder where the script had none. The quests import and run with them in place; they just
-  read as brackets on screen. The Mad Fisherman's `[...]` is the owner's own speechless beat, kept
-  verbatim, and is **not** a TODO.
+- [x] **Every `[TODO:]` line is written** (owner, 2026-08-17) — all six in Gangbusters and all
+  three in Ah, Barnacles, in verbatim. **`grep -rn "TODO" quests/` now returns only comment lines
+  about TODOs, and no placeholder anywhere in the tree.** The whole nine-quest arc is written prose
+  end to end. The Mad Fisherman's `[...]` is the owner's own speechless beat, kept verbatim, and
+  was never a TODO.
 
 ⚠️ **The Sludge Bomb has art and an animation state and does nothing.** Nothing decides what it
 fires or what it does on landing. That mechanic is an open question for the owner.

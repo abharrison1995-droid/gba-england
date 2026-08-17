@@ -36,7 +36,7 @@ OBJECTIVE: Find the Mad Fisherman.
 # never completes the quest itself, so the hand-in is the dialogue below.
 STAGE COLLECT bus_station_barnacles x10
 OBJECTIVE: Try going back to the abandoned bus station. Maybe next door is open now.
-WHENMET: [TODO: take the barnacles back to the Mad Fisherman.]
+WHENMET: Sort out the Mad Fisherman with his barnacles.
 
 REWARD
 POUNDS: 50
@@ -53,7 +53,7 @@ CHOICE Have you heard of Ralph and Sanjeet? Croydon Spartans? -> mf_barnacle
 GATE: stage ah_barnacles 0
 # Greys out until all ten are carried, and takes them on the pick. Remove `consume` if he should
 # only ever be shown them — the owner's script reads as a payment, so they are taken.
-CHOICE [TODO: hand over the barnacles] -> mf_return
+CHOICE There's the slimy bastards. Enjoy. -> mf_return
 GATE: stage ah_barnacles 1
 ITEM: bus_station_barnacles x10 consume
 CHOICE End Conversation.
@@ -84,7 +84,7 @@ CHOICE Brilliant. Bus barnacles again. Okay, I'll be back.
 NODE mf_return
 SPEAKER: madfisherman
 SPEAK: Arr, very nice there, lad. I knew you'd come back for me. Here's a little thing for you.
-CHOICE [TODO: take the reward] -> mf_eastyork
+CHOICE Great, cheers. -> mf_eastyork
 
 NODE mf_eastyork
 SPEAKER: madfisherman

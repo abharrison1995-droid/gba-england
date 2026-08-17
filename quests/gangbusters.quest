@@ -40,17 +40,17 @@ OBJECTIVE: Head to the trap house.
 # Stage 1 — the room is clear and he opens up. Intermediate TalkTo: advances on the interact, which
 # is fine — it is not the final stage and carries no hand-in.
 STAGE TALKTO trap_branch_manager
-OBJECTIVE: [TODO: the room is clear — the Trap Branch Manager wants a word.]
+OBJECTIVE: Right, that's them sorted. Better speak with this semi-important looking fella.
 
 # Stage 2 — the boss fight, started by HostileAfterDialogue when the conversation closes.
 STAGE KILL trap_branch_manager x1
-OBJECTIVE: [TODO: he will not talk. Put him down.]
+OBJECTIVE: Scrap the Branch Manager, he's gotta tell you where those two are.
 
 # Stage 3 (last) — he talks from the floor. MANUAL, not TALKTO: a TalkTo final stage completes on
 # the interact, before he says a word, and would skip the reveal entirely (same reasoning as
 # daniel_pauls_quest_one and wtf_mosley).
 STAGE MANUAL
-OBJECTIVE: [TODO: hear him out.]
+OBJECTIVE: See if he's more open to a conversation now you've split his domepiece.
 
 # Not specified by the owner — 60 XP is a placeholder chosen to sit between wtf_mosley's 30 and
 # ah_barnacles' 120. He pays in information, not cash.
@@ -69,7 +69,7 @@ SPEAKER: trapbranchmanager
 SPEAK: Oh man, that was a bit deep, weren't it? I'm just trying to get something started here.
 CHOICE Where's Ralph and Sanjeet? Just tell me. I don't wanna have to do anything. -> tbm_subway
 GATE: stage gangbusters 1
-CHOICE [TODO: press him again, from the floor] -> tbm_beaten
+CHOICE You either tell me where they are or I take you outside and go all American History X on you, your call mate. -> tbm_beaten
 GATE: stage gangbusters 3
 CHOICE End Conversation.
 
@@ -88,7 +88,7 @@ SPEAKER: trapbranchmanager
 SPEAK: No. Fuck off. Come on then.
 # No -> : this ends the conversation, which is what HostileAfterDialogue waits for before switching
 # his EnemyAI on. The stage-1 TalkTo has already advanced by this point.
-CHOICE [TODO: square up]
+CHOICE Good luck fighting me in that suit you cunt! *fight*
 
 # Reached only at stage 3 — i.e. only once he is on the floor.
 NODE tbm_beaten
@@ -96,6 +96,6 @@ SPEAKER: trapbranchmanager
 SPEAK: Well, I don't know. But if you go to the Mad Fisherman, he'll be able to tell you. The Mad Fisherman's the fella that got me on with them.
 # Ends the chat, completes Quest 6 and grants Quest 7 from one choice — the same shape as
 # dpq1_speed and dbb_chat.
-CHOICE [TODO: take the name and go]
+CHOICE For fucks sake, if this is a wild goose chase I'm coming back you suit and ski mask weirdo.
 COMPLETE: gangbusters
 GRANT: ah_barnacles
