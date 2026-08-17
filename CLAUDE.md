@@ -848,14 +848,16 @@ Committed 2026-08-17 on `claude/forage-asset-containers-ahhwdf`, never compiled:
   new component. `RespawnVisits` was **appended**, so an existing asset reads it as `0`, not as the
   initializer — both components treat `<= 0` as "use the default (3)", and
   `Container_Respawning.prefab` was given the key explicitly.
-- ⚠️ **`Container_Fixed` and `Container_Respawning` are placed at the ROOT of `c.unity`**, active, in
-  no chunk — `(-10.7, 0.52, 39.1)` and `(-22.9, 1.15, 40.6)`. A GUID scan that looked for the
-  *script* guid missed them, because a prefab instance references the *prefab's* guid. A scene-root
-  container is never destroyed and rebuilt, so its `Awake` runs once per scene load: looting
-  `Container_Respawning` now writes a cooldown that survives a restart, where before it forgot
-  everything. Its save key also names whichever chunk happened to be current at scene load, which is
-  not a chunk it belongs to. *Decide whether these two should be there at all* — leave, move into a
-  chunk prefab, or delete. Nothing here touched them.
+- ⚠️ **`c.unity` was hand-edited to delete two scene-root test containers.** `Container_Fixed` and
+  `Container_Respawning` were sitting active at the root of the scene, in no chunk. A GUID scan that
+  looked for the *script* guid missed them, because a prefab instance references the *prefab's*
+  guid. They mattered: a scene-root container is never destroyed and rebuilt, so its `Awake` runs
+  once per scene load, and `Container_Respawning` would have started writing a cooldown that
+  survived a restart under a save key naming a chunk it did not belong to. Removed on instruction —
+  two `!u!1001` documents and their two `SceneRoots.m_Roots` entries, **128 deletions and no
+  insertions**, nothing else in the scene referencing either. The two prefab *assets* are untouched
+  and remain as authoring templates. *Confirm on first open that the scene loads with exactly five
+  roots — SYSTEM, MANAGERS, ACTORS, ENVIRONMENT, UI — and no console error.*
 - **`SaveData.ContainerCooldowns` is appended.** *Load a save made before today and check it arrives
   with no error and every container fresh.* `BeginNewGame` clears the table — *loot a Respawning
   container, return to the title screen **without quitting**, start a New Game, and check it is
@@ -877,10 +879,10 @@ Committed 2026-08-17 on `claude/forage-asset-containers-ahhwdf`, never compiled:
   by the first authored container. No container is placed yet, so this is still the free moment.
 - **The trap, lock and quest-gate fields are declared and inert.** Every tooltip opens with
   "NOT WIRED" and the validator reports any that are set. Nothing reads them.
-- **No `WorldContainer` is placed anywhere, and none of the three 3D models exists yet** — the bush,
-  the vending machine and the bus wreckage still have to be made and imported. Until then the tool
-  can only be exercised against placeholder geometry, though the two scene-root `SpriteContainer`s
-  above are a ready-made rig for the save and cooldown checks.
+- **No container of either kind is placed anywhere now, and none of the three 3D models exists
+  yet** — the bush, the vending machine and the bus wreckage still have to be made and imported.
+  Until then the tool can only be exercised against placeholder geometry, and every save/cooldown
+  check needs a container authored first.
 - **The three forage items were retuned, ids untouched.** Barnacles and fungus are now Junk (sell
   to the fisherman); blueberries heal 5 HP / 8 mana. ⚠️ Their `ItemID`s appear as literals in three
   `.quest` files and `Import Quests` is an owed run — renaming one would make the importer write

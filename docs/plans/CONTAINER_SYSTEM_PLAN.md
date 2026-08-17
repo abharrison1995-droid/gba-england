@@ -44,9 +44,9 @@ every `Awake` in the new chunk runs synchronously inside that `Instantiate`, so 
 `ChunkManager.Instance.CurrentChunkData` during `Awake` sees **the chunk it just left**.
 
 `SpriteContainer.SetUpFixed` does exactly that, so a container inside a portal-reached chunk builds
-its save id as `"<origin chunk>/<name>"`. Latent only because no `DungeonPortal` exists yet — two
-`SpriteContainer`s ARE placed, at the root of `c.unity` (see §4.2.1), though being scene-root they
-never travel through a portal. The bus-station containers will, which is the whole use case.
+its save id as `"<origin chunk>/<name>"`. Latent today: no `DungeonPortal` exists, and the only two
+placed `SpriteContainer`s were scene-root test objects that have since been deleted (§4.2.1). The
+bus-station containers will be portal-reached, which is the whole use case.
 
 Six of the seven instantiate paths assign `CurrentChunkData` before instantiating and are correct.
 Only `TravelRoutine` does not. Moving the assignment earlier would destroy the abort safety, so the
@@ -100,40 +100,30 @@ field initializer.** Unity writes the initializer only when it next serializes t
 untouched asset would silently behave as the old mode. `Container_Respawning.prefab` is given
 `RespawnVisits: 3` explicitly rather than relying on that fallback.
 
-### 4.2.1 ⚠ Both container prefabs ARE placed — in `c.unity`, at scene root
+### 4.2.1 Two test containers were removed from `c.unity`
 
-An earlier draft of this plan said neither was placed anywhere. That was wrong, and the scan behind
-it was wrong: it searched for the **script** GUID, which finds the prefab assets but never a prefab
-*instance*, because an instance references the prefab's GUID instead. Searching the prefab GUIDs
-finds both, active, in the only gameplay scene:
+An earlier draft of this plan said neither `SpriteContainer` prefab was placed anywhere. That was
+wrong, and so was the scan behind it: it searched for the **script** GUID, which finds the prefab
+assets but never a prefab *instance*, because an instance references the prefab's GUID instead.
+Searching the prefab GUIDs found both, active, at the **root** of the only gameplay scene —
+`Container_Fixed` at `(-10.7, 0.52, 39.1)` and `Container_Respawning` at `(-22.9, 1.15, 40.6)`,
+in no chunk, alongside the five organisational roots (`SYSTEM`, `MANAGERS`, `ACTORS`,
+`ENVIRONMENT`, `UI`).
 
-| Object | `c.unity` | Parent | Position |
-|---|---|---|---|
-| `Container_Fixed` | `&623807398` | **scene root** | `(-10.7, 0.52, 39.1)` |
-| `Container_Respawning` | `&1621605433` | **scene root** | `(-22.9, 1.15, 40.6)` |
+They were test placements, and **both were deleted on the owner's instruction.** What that removed:
+two `!u!1001` `PrefabInstance` documents (58 and 70 lines) and their two `SceneRoots.m_Roots`
+entries. Nothing else in the scene referenced either — no stripped child documents existed, and
+each id appeared exactly once outside its own document. The edit is 128 deletions and **zero
+insertions**, and the five remaining roots all still resolve.
 
-Neither is inside a chunk prefab, and neither overrides `Mode` or `RespawnVisits`, so both take
-their prefab values.
+**The prefab assets themselves are untouched** and remain as authoring templates.
 
-**A scene-root container is not destroyed and rebuilt on a chunk transition**, so its `Awake` runs
-once per scene load rather than once per visit. That makes this a real behaviour change to a live
-object:
-
-- **Before:** `Container_Respawning` rolled its contents once at scene load and wrote nothing to the
-  save. Looting it left it empty for the rest of the session; an app restart gave fresh contents.
-- **After:** looting it writes a 3-visit cooldown into the save, so it is now remembered across
-  restarts until three chunk crossings have worked it off.
-
-⚠ **Its save key is `<whatever chunk was current at scene load>/Container_Respawning`, and the
-object does not belong to that chunk.** So the key it writes depends on where the session started,
-while the object itself never moves. `Container_Fixed` has always had this (it read
-`CurrentChunkData` in `Awake` before this branch too); it is newly true of `Container_Respawning`
-only because that mode now touches the save at all.
-
-Both look like test placements rather than authored content. **Nothing here moves or deletes them —
-that is the owner's call**, and editing `c.unity` to remove a placement is exactly the kind of
-change that should not be made on an assumption. The decision is: leave them, move them into a
-chunk prefab, or delete them.
+Why they mattered enough to check rather than leave: a scene-root container is never destroyed and
+rebuilt on a chunk transition, so its `Awake` runs once per scene load rather than once per visit.
+`Container_Respawning` used to roll its contents at scene load and write nothing to the save;
+under this branch it would have written a cooldown that survived a restart. Its save key would also
+have named whichever chunk happened to be current at scene load — not a chunk it belonged to, since
+it never moved. Deleting it removes both problems rather than documenting them.
 
 ### 4.3 New enums — index frozen by the first authored container
 
@@ -216,13 +206,11 @@ Exit Play mode and `Ctrl+S` first.
 6. **Shift-click run.** Three objects in one armed session → three distinct `SaveId`s.
 7. **The validator fires.** Force a duplicate `SaveId` and confirm it is named. Clear both loot
    sources and confirm that rule fires. Point `EmptyVisual` at the prefab root and confirm refusal.
-8. **The two containers already in `c.unity`.** Do this one FIRST — it needs no authoring at all.
-   Open `c.unity` and find `Container_Fixed` near `(-10.7, 0.52, 39.1)` and `Container_Respawning`
-   near `(-22.9, 1.15, 40.6)`, both at the root of the Hierarchy. Play, search each, and check the
-   console for the "no current chunk to build a save id from" warning — whether it fires depends on
-   whether `ChunkManager` has resolved a chunk before these root objects' `Awake` runs, and Unity
-   does not guarantee `Awake` order across scene roots. Then decide whether they should be there at
-   all (see §4.2.1); if they stay, they are the fastest rig for checks 10–16.
+8. **The scene still opens.** `c.unity` was edited by hand to delete the two scene-root test
+   containers (§4.2.1) — 128 deletions, no insertions. Open the scene and confirm Unity loads it
+   without error, that the Hierarchy shows exactly five roots (`SYSTEM`, `MANAGERS`, `ACTORS`,
+   `ENVIRONMENT`, `UI`), and that no `Container_Fixed` or `Container_Respawning` remains. Do this
+   before anything else — a scene that will not open makes every check below unreachable.
 9. **`Fixed` persists.** Loot it empty, cross a chunk edge, return, confirm still empty and showing
    `EmptyVisual`. Then quit, `Continue`, confirm still empty. **That last step is the only proof the
    save round-trips**, and it is the one most likely to fail. (The *portal* variant of this — check
