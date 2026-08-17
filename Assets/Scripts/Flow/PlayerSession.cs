@@ -53,6 +53,27 @@ namespace GBHEngland.Flow
         /// <summary>Read-only view for the saver. Enumeration order is not meaningful.</summary>
         public IEnumerable<string> LootedContainers => _lootedContainers;
 
+        /// <summary>
+        /// Restockable containers that have been emptied and are waiting to refill, keyed the same
+        /// way as <see cref="_lootedContainers"/> and mapped to the number of visits still owed.
+        ///
+        /// Same split as the looted set: a Dictionary at runtime because a chunk full of containers
+        /// asks "is this one waiting?" on every Awake, and a List&lt;ContainerCooldown&gt; on SaveData.
+        /// </summary>
+        private readonly Dictionary<string, int> _containerCooldowns = new Dictionary<string, int>();
+
+        /// <summary>
+        /// Read-only view for the saver, already shaped for the save file. Order is not meaningful.
+        /// </summary>
+        public IEnumerable<ContainerCooldown> ContainerCooldowns
+        {
+            get
+            {
+                foreach (var pair in _containerCooldowns)
+                    yield return new ContainerCooldown { Id = pair.Key, VisitsRemaining = pair.Value };
+            }
+        }
+
         [Header("Wallet")]
         [Tooltip("Pounds carried. Whole pounds only — there are no pence anywhere in the game.")]
         public int Pounds;
@@ -152,6 +173,10 @@ namespace GBHEngland.Flow
             // Same reason: without this a New Game started in the same app session would find
             // every bin the previous playthrough emptied still empty.
             _lootedContainers.Clear();
+
+            // And the same again for restockable containers, which would otherwise start the new
+            // run still sitting out the last run's cooldowns.
+            _containerCooldowns.Clear();
 
             // And the map starts blank again: none of the previous run's travels happened.
             _visitedChunks.Clear();
@@ -579,6 +604,121 @@ namespace GBHEngland.Flow
             foreach (string id in saved)
             {
                 if (!string.IsNullOrEmpty(id)) _lootedContainers.Add(id);
+            }
+        }
+
+        // ── Container cooldowns ─────────────────────────────────────────────────────────
+        // A restockable container empties, sits out a number of visits to its chunk, and refills.
+        // Chunks are destroyed and rebuilt on every visit, so "a visit" is the only clock the world
+        // already has — there is no in-chunk timer here and nothing below adds one.
+        //
+        // ⚠ Every id is save-key text and is compared verbatim. Never trim, lower-case or slugify:
+        // Manor_Cellars_Data has ChunkName "Manor Cellars", with a space.
+
+        /// <summary>
+        /// Starts a container's cooldown, replacing any it already had. A count at or below zero is
+        /// ignored rather than stored, since it would mean "already free".
+        /// </summary>
+        public void AddContainerCooldown(string containerId, int visits)
+        {
+            if (string.IsNullOrEmpty(containerId) || visits <= 0) return;
+            _containerCooldowns[containerId] = visits;
+        }
+
+        /// <summary>
+        /// True only while a container still owes visits. An entry sitting at zero reads as free,
+        /// which is what lets <see cref="DecrementContainerCooldowns"/> clamp instead of removing.
+        /// </summary>
+        public bool IsContainerOnCooldown(string containerId)
+        {
+            if (string.IsNullOrEmpty(containerId)) return false;
+            return _containerCooldowns.TryGetValue(containerId, out int remaining) && remaining > 0;
+        }
+
+        /// <summary>
+        /// Counts one visit against every container in a chunk, clamped at zero.
+        ///
+        /// ⚠ Clamps rather than removing on purpose. <see cref="IncrementContainerCooldowns"/> can
+        /// only undo a tick it can still see, and an aborted portal journey needs exactly that.
+        /// Pruning is <see cref="RemoveExpiredCooldowns"/>'s job and is never load-bearing.
+        ///
+        /// Two passes because a Dictionary cannot be written while it is being enumerated; the key
+        /// list is built fresh rather than kept as a parallel field, since this runs once per chunk
+        /// transition behind a loading screen and not in any Update path.
+        /// </summary>
+        public void DecrementContainerCooldowns(string chunkName)
+        {
+            if (string.IsNullOrEmpty(chunkName) || _containerCooldowns.Count == 0) return;
+
+            string prefix = chunkName + "/";
+            var touched = new List<string>();
+            foreach (var pair in _containerCooldowns)
+            {
+                if (pair.Key.StartsWith(prefix, StringComparison.Ordinal) && pair.Value > 0)
+                    touched.Add(pair.Key);
+            }
+
+            foreach (string id in touched)
+                _containerCooldowns[id] = _containerCooldowns[id] - 1;
+        }
+
+        /// <summary>
+        /// Gives back a visit to every container in a chunk — the compensating inverse of
+        /// <see cref="DecrementContainerCooldowns"/>, for a journey that was aborted after the tick.
+        /// Only touches entries that are still present, and never raises one past its original count
+        /// because the tick that lowered it is the only thing this undoes.
+        /// </summary>
+        public void IncrementContainerCooldowns(string chunkName)
+        {
+            if (string.IsNullOrEmpty(chunkName) || _containerCooldowns.Count == 0) return;
+
+            string prefix = chunkName + "/";
+            var touched = new List<string>();
+            foreach (var pair in _containerCooldowns)
+            {
+                if (pair.Key.StartsWith(prefix, StringComparison.Ordinal)) touched.Add(pair.Key);
+            }
+
+            foreach (string id in touched)
+                _containerCooldowns[id] = _containerCooldowns[id] + 1;
+        }
+
+        /// <summary>
+        /// Drops entries that have run out. Housekeeping only — <see cref="IsContainerOnCooldown"/>
+        /// already treats a spent entry as free — so this exists to stop the save file growing an
+        /// entry per container the player has ever emptied.
+        /// </summary>
+        public void RemoveExpiredCooldowns()
+        {
+            if (_containerCooldowns.Count == 0) return;
+
+            var spent = new List<string>();
+            foreach (var pair in _containerCooldowns)
+            {
+                if (pair.Value <= 0) spent.Add(pair.Key);
+            }
+
+            foreach (string id in spent) _containerCooldowns.Remove(id);
+        }
+
+        /// <summary>
+        /// Replace the cooldown table with a saved snapshot (load game).
+        ///
+        /// ⚠ Must run before the world is built, for the same reason as
+        /// <see cref="RestoreLootedContainers"/>: every container reads this in its own Awake, and a
+        /// chunk instantiated first would find an empty table and refill everything.
+        /// A null list is a pre-cooldown save and correctly leaves every container fresh.
+        /// </summary>
+        public void RestoreContainerCooldowns(List<ContainerCooldown> saved)
+        {
+            _containerCooldowns.Clear();
+            if (saved == null) return;
+
+            foreach (var entry in saved)
+            {
+                if (entry == null || string.IsNullOrEmpty(entry.Id) || entry.VisitsRemaining <= 0)
+                    continue;
+                _containerCooldowns[entry.Id] = entry.VisitsRemaining;
             }
         }
 
