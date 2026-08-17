@@ -16,14 +16,14 @@ MonoBehaviour:
   ItemName: Bus Station Barnacles
   Description:
   Icon: {fileID: 21300000, guid: 305fbaf167236dc47984b0440f3917ae, type: 3}
-  Type: 7
+  Type: 11
   AllowedClasses:
-  Value: 1
+  Value: 8
   Tradeable: 1
   Damage: 0
   Armor: 0
   Stackable: 1
-  MaxStack: 20
-  HealHP: 4
-  HealMana: 2
+  MaxStack: 99
+  HealHP: 0
+  HealMana: 0
   UseAnimationTrigger:

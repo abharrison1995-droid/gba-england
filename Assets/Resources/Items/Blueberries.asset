@@ -18,12 +18,12 @@ MonoBehaviour:
   Icon: {fileID: 21300000, guid: 9dd62ca91e19dc14684da0078e4ba792, type: 3}
   Type: 7
   AllowedClasses:
-  Value: 1
+  Value: 3
   Tradeable: 1
   Damage: 0
   Armor: 0
   Stackable: 1
   MaxStack: 20
-  HealHP: 4
-  HealMana: 2
+  HealHP: 5
+  HealMana: 8
   UseAnimationTrigger:
