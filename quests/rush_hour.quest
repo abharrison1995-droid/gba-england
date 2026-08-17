@@ -3,15 +3,19 @@
 # GRANTED BY: the Mad Fisherman's closing choice in quests/ah_barnacles.quest, node mf_alex — the
 # same choice that completes ah_barnacles. That file already pointed at East York and already sent
 # the player to Alex, so the hand-off needed no new prose.
-# COMPLETED BY: not written yet. See "UNWRITTEN" below.
+# COMPLETED BY: Mayor Zhao's last choice below, node zhao_west — which is also where the pack of
+# cigarettes is paid, because a quest REWARD is the only thing in the pipeline that can give the
+# player an item. That is why this quest is the journey and the pitch, and stops there.
 #
-# ⚠ THIS QUEST IS A BEGINNING, NOT A WHOLE QUEST. The owner supplied two journal lines and Mayor
-# Zhao's opening conversation on 2026-08-17. Everything past the squatters is unwritten, and the
-# words are the owner's — do not draft them.
+# ⚠ THIS IS ONE LEG, NOT THE WHOLE ERRAND. The owner supplied two journal lines and Zhao's opening
+# conversation on 2026-08-17; the second of those lines belongs to the squatters, which are now
+# Quest 9. One journal line is still owed here — see the TODO on stage 1. The words are the
+# owner's: do not draft them.
 #
-# ⚠ NOTHING THIS QUEST NEEDS EXISTS YET. East York is not a chunk, the flats are not a location,
-# Mayor Zhao has no PlacementPreset and no art, the Red Star Workers Brigade have no enemy prefab,
-# and red_star_cigarettes has no ItemData. The full list, with what each one blocks, is in
+# ⚠ ALMOST NOTHING THIS QUEST NEEDS EXISTS YET. East York is not a chunk, the flats are not a
+# location, Mayor Zhao has no PlacementPreset and no art, and the Red Star Workers Brigade have no
+# enemy prefab. red_star_cigarettes DOES exist (Resources/Items/RedStarCigarettes.asset, a stack of
+# 20) but has no icon. The full list, with what each one blocks, is in
 # docs/plans/RUSH_HOUR_BUILD_LEDGER.md. This file is importable today and will produce a
 # QuestDefinition, but the quest cannot be played until that ledger is worked through.
 #
@@ -28,22 +32,37 @@ LOCATION: East York, two chunks south through the slums.
 STAGE REACH east_york_gate
 OBJECTIVE: Get yourself to far off lands of… east York! Apparently the Chinese have deep roots here. Maybe someone can point me in the right direction here, I'll ask around.
 
-# Stage 1 — Zhao's favour. MANUAL, not KILL: what "have a word, or several" resolves to is not
-# written yet, and a KILL stage would decide it. Change this once the owner says how it ends.
+# Stage 1 (last) — hearing Zhao out. MANUAL, not TALKTO: a TalkTo final stage completes on the
+# interact, before he says a word, which would pay the cigarettes and end the quest as he opens his
+# mouth. Same reasoning as spark_of_talent and gangbusters.
 STAGE MANUAL
-OBJECTIVE: Find the North Korean squatters and show them how we protect our glorious landlords.
+OBJECTIVE: [TODO: one journal line for the beat between arriving in East York and the end of Zhao's pitch.]
 
+# ⚠ THE QUEST ENDS WHERE THE CIGARETTES CHANGE HANDS, and that is not a style choice.
+# A quest REWARD is the only way to give the player an item, and it pays once, on completion — a
+# DialogueChoice's ITEM: is a REQUIREMENT, not a grant. investigate_weird_vape.quest hit exactly
+# this wall with Daniel's Big Blue and solved it the same way: end the quest at the handover and
+# make the next leg its own quest. So Rush Hour is the journey to East York and Zhao's pitch;
+# the squatters are Quest 9.
+#
 # ⚠ UNWRITTEN, and deliberately absent rather than guessed at:
-#   - how the squatters resolve (a fight? a conversation? paying them off?)
+#   - the stage 1 objective above
+#   - Quest 9: the squatters, and how "have a word, or several" resolves — a fight? a conversation?
+#     paying them off? Its journal line already exists in the owner's text and is parked here so it
+#     is not lost: "Find the North Korean squatters and show them how we protect our glorious
+#     landlords."
 #   - Zhao's second conversation, where he honours the bargain and points at Ralph and Sanjeet
-#   - the stage that actually finds Ralph and Sanjeet, which is what the arc has been building to
-#   - whether Quest 9 is granted from here
-# Add the stages ABOVE this comment and the COMPLETE: below, once those lines exist.
+#   - the beat that actually finds Ralph and Sanjeet, which is what the arc has been building to
+# Add  GRANT: <quest 9 id>  beside the COMPLETE: below once Quest 9 exists.
 
-# Not specified by the owner. 150 XP is a placeholder chosen to sit above ah_barnacles' 120, since
-# this is a longer journey. No pounds: Zhao pays in a pack of cigarettes and a favour owed.
+# 150 XP is a placeholder chosen to sit above ah_barnacles' 120. No pounds: Zhao pays in a pack of
+# cigarettes and a favour owed.
 REWARD
 XP: 150
+# The pack of 20. This is what makes Zhao's "Take this for help!" true — it lands as the
+# conversation closes and the completion notice appears, which is the only moment the pipeline can
+# give an item at all.
+ITEM: red_star_cigarettes x20
 
 # ----------------------------------------------------------------------------------------
 # Mayor Zhao.
@@ -60,11 +79,8 @@ XP: 150
 # active AND sitting on stage 0. Reaching the marker advances the stage, which disarms the trigger
 # by itself and keeps it disarmed across saves.
 #
-# ⚠ ZHAO GIVES THE PLAYER A PACK OF CIGARETTES AND THE PIPELINE CANNOT DO THAT. A DialogueChoice's
-# ITEM: is a REQUIREMENT (carry it, optionally consume it), not a grant; the only item payout that
-# exists is a quest REWARD, which pays at completion, far too late. Options are a GIVE: directive
-# (new, and the mirror image of HIRE:), or a container at Zhao's feet. NOT DECIDED — the line below
-# is authored as though he hands them over, and until this is resolved he says it and gives nothing.
+# THE CIGARETTES ARE THE QUEST REWARD, paid as this conversation closes. See the REWARD block
+# above for why that is the only place they can come from.
 
 DIALOGUE mayorzhao
 
@@ -111,6 +127,7 @@ CHOICE What? -> zhao_west
 NODE zhao_west
 SPEAKER: mayorzhao
 SPEAK: GO! It's west from here. Take this for help!
-# ⚠ The pack of Red Star cigarettes is handed over HERE in the writing, and nothing hands it over
-# in the data — see the note above the DIALOGUE block. No -> : this ends the conversation.
+# No -> : this ends the conversation, completes the quest, and pays the reward — the 150 XP and the
+# pack of Red Star cigarettes Zhao just offered.
 CHOICE Okay.
+COMPLETE: rush_hour

@@ -1,7 +1,7 @@
 # Rush Hour — what does not exist yet
 
 ```
-Last verified against: working tree, 2026-08-17 (branch main, uncommitted)
+Last verified against: main @ 42c297d, 2026-08-17
 Verification scope:    Written by file inspection and GUID scan on 2026-08-17, the day the quest
                        text landed. NOTHING HERE HAS BEEN COMPILED OR OPENED IN UNITY. Every
                        "does not exist" was checked against the tree; every "would behave like X"
@@ -86,11 +86,12 @@ Also needs deciding at implementation time:
 - it must not fire while the player is mounted (the portal path already refuses for this reason);
 - whether it fires during combat.
 
-### 1.5 The Red Star Workers Brigade
+### 1.5 The Red Star Workers Brigade — Quest 9, not this one
 
-**No enemy prefab, no art subject, no `QuestActor.Key`.** Stage 1 is `MANUAL` precisely because it
-is not yet written whether they are fought, talked down or paid off — so what they need depends on
-a decision the owner has not made. If they are fought, that is a new art subject through
+**No enemy prefab, no art subject, no `QuestActor.Key`.** They moved out of Rush Hour when the
+cigarette handover forced this quest to end at Zhao's pitch (§2.0), so they now belong to an
+unwritten Quest 9 — which is also where the decision lives about whether they are fought, talked
+down or paid off. If they are fought, that is a new art subject through
 `Build Enemies From Generated Art`.
 
 ⚠️ **That tool rewrites every enemy prefab's YAML on its update path.** Run it on a clean tree,
@@ -100,6 +101,15 @@ hand-added components it would strip.
 ---
 
 ## 2 · Built today, and what is still owed on each
+
+### 2.0 The handover — settled
+
+Zhao gives the pack as `rush_hour`'s **quest reward**, paid as his conversation closes and the
+completion notice appears. That is the only moment the pipeline can give an item at all, and it is
+what forces this quest to end at the pitch rather than after the squatters.
+
+⚠️ **This is the constraint to remember for every future NPC who hands something over**: dialogue
+can *take* items and *check* for them, but only a completing quest can give one.
 
 ### 2.1 `red_star_cigarettes` — created, needs an icon and a number confirmed
 
@@ -183,13 +193,22 @@ display name** with nothing logged. Now points at `NPC_Alex`. One line changed i
 
 ## 4 · Still undecided — questions, not tasks
 
-- [ ] **How does Zhao hand over the cigarettes?** A `DialogueChoice`'s `ITEM:` is a *requirement*,
-      not a grant; the only item payout that exists is a quest `REWARD`, which pays at completion.
-      Either a `GIVE:` directive (the mirror of `HIRE:`, small) or a container at his feet. Until
-      then he says *"Take this for help!"* and gives nothing.
-- [ ] **How do the squatters resolve?** Stage 1 is `MANUAL` until this is answered.
+- [x] **How does Zhao hand over the cigarettes?** ✅ **Decided 2026-08-17: as the quest reward.**
+      A `DialogueChoice`'s `ITEM:` is a *requirement*, not a grant, and a quest `REWARD` pays once,
+      on completion — so **the quest has to end where the item changes hands.** No new directive;
+      `investigate_weird_vape.quest` already solved the identical problem with Daniel's Big Blue
+      the same way, and its header says so. Rush Hour is therefore **the journey and Zhao's pitch**,
+      completed by his last choice, paying 150 XP and `red_star_cigarettes ×20`.
+- [ ] ⚠️ **One journal line is owed** — the stage 1 objective, covering the beat between arriving
+      in East York and the end of Zhao's pitch. It is a `[TODO: ]` in the file and will show as
+      that placeholder in the journal if imported before it is written. **The only prose blocking
+      this quest.**
+- [ ] **Quest 9 — the squatters.** Their journal line is already written (*"Find the North Korean
+      squatters and show them how we protect our glorious landlords."*) and is parked in a comment
+      in `rush_hour.quest` so it is not lost. Owed: how *"have a word, or several"* resolves — a
+      fight, a conversation, or paying them off. Then add `GRANT: <quest 9 id>` beside the
+      `COMPLETE: rush_hour`.
 - [ ] **Zhao's second conversation** — honouring the bargain, pointing at Ralph and Sanjeet.
-- [ ] **Does Rush Hour grant a Quest 9?** `rush_hour.quest` has no `COMPLETE:` route yet.
 - [ ] **Does `£`/curly punctuation render?** The £ glyph question is open (CLAUDE.md §5 item 9) and
       the same applies to any smart quote. The owner's prose was normalised to straight quotes and
       apostrophes on the way in, which sidesteps it for these items.
