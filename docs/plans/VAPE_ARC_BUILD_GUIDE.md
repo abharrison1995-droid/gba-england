@@ -1,26 +1,31 @@
 # Vape Arc Build Guide — implementing the written quests
 
 ```
-Last verified against: working tree, 2026-08-16 late (branch main, commit e63886a)
-Verification scope:    PHASES 1a AND 2 ARE DONE. The art import ran and is confirmed good. The
-                       owner has since placed all four arc buildings in London — the abandoned
-                       church, Mosley's mansion, the Croyden Spartan traphouse and the bus station
-                       — and play-tested combat alongside ALEX, the first companion, against a
-                       placed Enemy_Spicehead. Several editor tool runs across 2026-08-16 prove
-                       Assembly-CSharp compiles; nothing below is a behaviour claim.
+Last verified against: working tree, 2026-08-17 (branch main, commit 54461fb + uncommitted prefabs)
+Verification scope:    THE PROSE IS FINISHED. All nine quests are written end to end; the last
+                       nine [TODO:] lines went in 2026-08-17 and grep finds no placeholder in
+                       quests/ outside _template.quest. Phases 1a and 2 are done, the four arc
+                       buildings stand in London, and ALEX has been played in a real fight.
+                       A PORTAL HAS BEEN PLAYED — Traphouse_Door, the project's first working
+                       DungeonPortal. The orphaned halves left by the reused-link-id tangle were
+                       deleted 2026-08-17 with Unity closed; the project now holds exactly TWO
+                       DungeonPortals, being the two ends of that one door. Verified by script-GUID
+                       scan of all five chunk prefabs, and --check-dangling exits 0.
                        STILL OWED, and all three block quest play:
-                         1. Import Quests has NOT been re-run. Only 7 of the 9 QuestDefinitions
-                            exist — gangbusters and ah_barnacles are missing — and
-                            Preset_MadFisherman.Conversation is still {fileID: 0}.
+                         1. Import Quests has NOT been re-run. Only 7 of the now-10 quest files
+                            have QuestDefinitions — gangbusters, ah_barnacles and rush_hour are
+                            missing — and Preset_MadFisherman.Conversation is still {fileID: 0}.
+                            That run is also the first exercise of the new HIRE: directive and of
+                            Alex's rewritten conversation.
                          2. The NavMesh is stale. Assets/c/NavMesh.asset predates all four
                             buildings and London has no RuntimeNavMeshBaker, so agents path
                             straight through them.
-                         3. NO DungeonPortal EXISTS ANYWHERE (verified by script-GUID scan). All
-                            four buildings are solid scenery. Nothing in the arc is enterable.
+                         3. Three of the four arc interiors are UNREACHABLE — the church, Mosley's
+                            basement and the bus station have no portal at either end. That blocks
+                            WTF Mosley, Check Out the Church, Weird Vape pt 1 and Ah, Barnacles.
                        Verified present and correct by file inspection, not by play: all six
                        Collect items resolve; Mosley, Scrap Man, Daniel and the geezer have their
                        Conversation wired. Daniel is still NOT placed — only his spawn marker.
-                       The five hand-authored interior shells have never been opened in Unity.
                        Phases 3, 5, 6, 7 remain unrun. Companion doc: the quest-script map.
 ```
 
@@ -46,6 +51,18 @@ happen.
    dialogue asset (so re-importing that asset updates him), but every other preset field was baked
    in at stamp time. If in doubt after import, delete and re-stamp.
 
+## Quest 8 — Rush Hour, added 2026-08-17
+
+The arc's text now runs one quest further than this guide covers. `quests/rush_hour.quest` holds
+Mayor Zhao's opening conversation and two journal beats; `quests/dialogue/alex.quest` gates Alex's
+recruitment behind it; and `ah_barnacles.quest` now grants it.
+
+⚠️ **It is a beginning, not a finished quest, and nothing it needs exists yet** — East York is not
+a chunk, Mayor Zhao has no preset and no art, the squatters have no prefab, and the proximity
+dialogue it is built around has no component. **Everything owed is in its own ledger:**
+[docs/plans/RUSH_HOUR_BUILD_LEDGER.md](docs/plans/RUSH_HOUR_BUILD_LEDGER.md). Do not start it from
+this guide — the phases below stop at Quest 7.
+
 ## The order
 
 `0 Prep → 1 Import → 2 Geezer → 3 Place NPCs → 4 Locations → 5 Populate → 6 Play-test → 7 Quests
@@ -56,9 +73,11 @@ happen.
 Everything downstream assumes them. Exit Play mode and `Ctrl+S` before starting.
 
 1. ~~`Tools → Art → Import Generated Art`~~ — ✅ **done**, 44 sheets at 86 px, walk cycle confirmed.
-2. **`Tools → Content → Import Quests`** — the owed re-run, which also picks up quests 6 and 7.
+2. **`Tools → Content → Import Quests`** — the owed re-run. Picks up quests 6 and 7 **and all nine of the newly written lines**.
 3. **`Tools → World → Bake Navigation Mesh`** — see below.
-4. **Wire the well** — phase 4, walkthrough included.
+4. **Author the three missing doors** — church, basement, bus station. The trap house is done and
+   played; the other three interiors have no portal at all now. Phase 4 carries the recipe, and it
+   is shorter than it was: only the London end of each needs aiming.
 
 ⚠️ **Why the bake.** `Home_London_Prefab` carries **no `RuntimeNavMeshBaker`**. Every interior shell
 has one; **none of the six exteriors do** — they ride on the pre-baked `Assets/c/NavMesh.asset`.
@@ -83,7 +102,7 @@ the blue. If one is not, select its root in the Hierarchy (`abandoned+church+3d+
 the top-right of the Inspector, choose **"Yes, change children"**, and re-bake. The colliders stop
 the player either way — this is only about where the AI believes it can walk.
 
-⚠️ **Item 3 is not optional before item 4.** A portal drops the player at an arrival marker, and
+⚠️ **The bake is not optional before the doors.** A portal drops the player at an arrival marker, and
 `MinMarkerClearance` is checked against the NavMesh — wiring doors onto a stale mesh means testing
 travel against pathing that does not match the world you can see.
 
@@ -93,10 +112,10 @@ travel against pathing that does not match the world you can see.
 |---|---|---|
 | **0 — Prep** | ✅ **Done** (agent, 2026-08-15/16) | 5 `ItemData` assets authored, 2 quest keys set. Hand-authored YAML, unopened in Unity. |
 | **1a — Art** | ✅ **Done** (owner, 2026-08-16) | 44 sheets at 86 px, all five class controllers on eight states. Walk cycle checked and good. |
-| **1b — Quests** | 🔴 **STILL OWED — blocks everything** | Only 7 of 9 `QuestDefinition`s exist. **Gangbusters and Ah, Barnacles are missing.** `Preset_MadFisherman.Conversation` is still `{fileID: 0}`. |
+| **1b — Quests** | 🔴 **STILL OWED — blocks everything** | Only 7 of 9 `QuestDefinition`s exist. **Gangbusters and Ah, Barnacles are missing.** `Preset_MadFisherman.Conversation` is still `{fileID: 0}`. The nine lines written 2026-08-17 are also only in the `.quest` files until this runs. |
 | **2 — Geezer** | 🟡 **Built & wired** (owner + agent, 2026-08-16) | Prefab exists, all components on, `Conversation` confirmed wired. Only the hostile line is left — **your words**. |
 | **3 — Place cast** | ⬜ Needs Unity | **Daniel has never been placed** — only `DanielPaulsSpawn`. Nothing in the arc works without him. Mosley, Scrap Man, Ralph & Sanjeet need re-stamping. |
-| **4 — Locations** | 🟡 **All four buildings placed** (owner, 2026-08-16) | Exteriors are in London. **No `DungeonPortal` exists anywhere in the project** — every one is solid scenery. Interiors are still bare boxes. |
+| **4 — Locations** | 🟡 **1 of 4 doors done — and played** (owner, 2026-08-17) | The trap house (`Traphouse_Door`) is a clean reciprocal pair and has carried a player. It is the project's only portal — the orphaned halves were deleted. Church, basement and bus station need **both ends**. Interiors are still bare boxes. |
 | **5 — Populate** | ⬜ Needs Unity | Enemies, quest keys, loot. All six Collect items verified present. |
 | **6 — Play-test** | ⬜ Needs Unity | — |
 | **7 — Quests 6-7** | 🟡 **Written, art in, not imported** (agent + owner, 2026-08-16) | Both quests authored and structurally checked. The boss prefab is the one build left; **no `Preset_TrapBranchManager` exists**. |
@@ -120,7 +139,7 @@ fail silently mid-arc.
 | `Preset_MadFisherman.Conversation` | 🔴 `{fileID: 0}` — the owed import is what fills it |
 | `Preset_TrapBranchManager` | 🔴 does not exist; Phase 7 builds it |
 | `QuestDefinition` count | 🔴 **7 of 9**; `gangbusters` and `ah_barnacles` never imported |
-| `DungeonPortal` instances, whole project | 🔴 **zero** |
+| `DungeonPortal` instances, whole project | ✅ **2 across 2 prefabs** — one clean pair, played (§Phase 4) |
 | `Assets/c/NavMesh.asset` | 🔴 stale against four buildings |
 
 ⚠️ **`Preset_CouncillorMosley.QuestKey` is blank, and that is correct — do not "fix" it.** No stage
@@ -303,21 +322,112 @@ and no falling through the floor** — you dress the existing prefab and wire a 
   well, the abandoned church, the Croyden Spartan traphouse, and the bus station (×2). The well is
   intended to carry the portal both ways — down into the cellar lab and back out of the same well.
 
+### Portal state as of 2026-08-17 — one clean pair, and nothing else
+
+**The trap-house door works. It has been played.** ✅ `Traphouse_Door` is the project's first
+`DungeonPortal` ever to carry a player, and the first real exercise of `TravelRoutine`'s
+arrival-marker lookup.
+
+**The orphaned halves left over from the `police_station_front` tangle were deleted agent-side on
+2026-08-17, with Unity closed.** The project now holds exactly **two** `DungeonPortal` components,
+which are the two ends of that one working door:
+
+| Prefab | What it holds now |
+|---|---|
+| `Home_London_Prefab` | `LocationLinks/Traphouse_Door/` — `Portal_Enter` → `Gang_Hideout_Data` / `Traphouse_Door_inside`, plus `PlayerSpawn_Traphouse_Door_outside` |
+| `Gang_Hideout_Prefab` | `LocationLinks/Traphouse_Door/` — `Portal_Exit` → `Home_London_Data` / `Traphouse_Door_outside`, plus `PlayerSpawn_Traphouse_Door_inside` |
+| `Abandoned_Church_Prefab` | no portal — back to the bare shell |
+| `Mosleys_Lab_Basement_Prefab` | no portal — back to the bare shell |
+| `Abandoned_Bus_Station_Prefab` | no portal — back to the bare shell |
+
+**How the deletion was verified.** 42 YAML documents removed across four prefabs; every child and
+parent reference in all five prefabs still resolves; no reference anywhere points at a deleted
+`fileID`; `--check-dangling` exits 0 with only the four documented sprite orphans. The strongest
+check is that **`Abandoned_Church_Prefab` and `Abandoned_Bus_Station_Prefab` now diff byte-clean
+against `HEAD`** — they are exactly the committed shells again. Backups of all five sit in the
+session scratchpad under `prefab-backup/`.
+
+⚠️ **Unity re-serialized `Mosleys_Lab_Basement_Prefab` this session**, converting its hand-authored
+`m_Name:` lines to Unity's `m_Name: ` form. That is not from the deletion, and it is good news: it
+is proof Unity **accepted the hand-authored YAML** for that shell rather than reimporting it into
+something different. The church and bus station had already been converted before the last commit.
+That clears the "first-open sanity check" for those three.
+
+#### ⚠️ Correction — the interior halves were never positioned, and that changes the plan
+
+An earlier revision of this guide said to recapture the interior door and marker poses with
+**From Selection** before deleting them, on the assumption that they had been aimed. **They had
+not.** Every deleted interior half sat at the chunk origin with identity rotation and its marker
+3.5 m along +Z — the tool's untouched defaults. There was nothing to preserve.
+
+⚠️ **The surviving trap-house interior end is at the origin too**, and only the London exterior end
+carries a real pose (`-70.2, 0, 57.2`, yaw ≈ 133°). That is *why* the trip works: you arrive in the
+middle of an empty grey box, which cannot be wrong. **It becomes wrong the moment `Gang_Hideout` is
+dressed** — the exit door and its arrival marker will be sitting in the middle of the room, quite
+possibly inside the traphouse model. **Reposition the interior end as part of dressing the
+interior, not before.** The same applies to every door authored from here.
+
+Consequence: re-authoring the three missing doors is simpler than it looked. Place the London end
+where the building is, leave the interior end on its defaults, and fix the interior pose when the
+room gets dressed.
+
+**Consequence for the arc, unchanged:** the church, the basement and the bus station still cannot be
+entered, which blocks **Check Out the Church**, **WTF Mosley**, **Weird Vape pt 1** and
+**Ah, Barnacles**. Only the trap house is reachable.
+
+- [x] **Trap house wired and played** (owner, 2026-08-17) — link id `Traphouse_Door`.
+- [x] **The tangled and orphaned groups deleted** (2026-08-17) — both stale `police_station_front`
+  groups and the untouched `abandoned_church` / `mosley_basement` interior halves.
+- [ ] **Author the church's door.** `Tools → Place → Portal Placement`, Link Id `abandoned_church`,
+  Exterior `Home_London_Data`, Interior `Abandoned_Church_Data`. Place the exterior door at the
+  church in London; leave the interior rows on their defaults.
+- [ ] **Author the basement's door** at the well — Link Id `mosley_basement`, Interior
+  `Mosleys_Lab_Basement_Data`. The long walkthrough below is written for exactly this one.
+- [ ] **Author the bus station's door** — Link Id `bus_station`, Interior
+  `Abandoned_Bus_Station_Data`, exterior at whichever of the two bus stations is the Quest 5 one.
+- [ ] **Re-validate.** `Portal Placement → Validate All Location Links`. You want zero errors and
+  four link ids appearing in exactly two prefabs each: `Traphouse_Door`, `abandoned_church`,
+  `mosley_basement`, `bus_station`.
+- [ ] **Reposition each interior door when its room is dressed** — including the trap house's.
+
+⚠️ **A one-way portal is not a soft-lock, but do not rely on that.** `TravelRoutine` was reordered
+on 2026-08-09 so nothing commits until the arrival marker resolves — an exit aimed at a marker that
+no longer exists refuses and logs a warning naming the chunk and the id. That path has still never
+run, and with the orphans deleted there is now nothing in the project that would exercise it.
+
+**Two habits that would have prevented all of this:**
+
+1. **Never reuse a Link Id.** The tool's update-in-place behaviour is the feature that lets you
+   nudge a door without duplicating it; it is also what silently rewires the wrong end.
+2. **Run the validator before *and* after every portal session.** It reads every chunk prefab and
+   costs nothing. It would have named the three-prefab collision the moment it appeared.
+
+**Marker ids are not save keys**, so renaming them is free — the save stores the chunk name and the
+player's position, never a spawn point id. The `ChunkName` values are untouched by any of this.
+`Traphouse_Door` is capitalised where the others are lower-case snake; that is cosmetic only, and
+**not worth a rename now that it is the one door proven to work.**
+
 ⚠️ **Exterior placement and interior dressing are two different jobs, and the same `.glb` serves
 both.** What is done is the *outside*: the building you walk up to, standing in London. What the
 checkboxes below ask for is the *inside*: dropping that same model into the bare `*_Prefab` shell so
 the interior is not a grey box. Neither one puts a door between them — that is the wiring step, and
-**no door exists anywhere yet.**
-- [ ] **Wire the well, both ways** — the full walkthrough is the next section. It is the arc's first
-  door and the **project's first `DungeonPortal` anywhere**, so it is also the first real exercise
-  of portal travel, the arrival-marker lookup and the validator.
+the section above is where the doors stand today.
+- [x] **The trap house is wired, both ways, and played** (owner, 2026-08-17) — `Traphouse_Door`.
+  The walkthrough in the next section is the recipe it was built from and is still the recipe for
+  every remaining door. It is the **project's first `DungeonPortal` anywhere** to carry a player,
+  so it is also the first real exercise of portal travel and the arrival-marker lookup.
+- [ ] **Dress the Gang Hideout** (`Gang_Hideout_Prefab`) — it is the trap-house interior and the
+  only one you can currently walk into, so it is the grey box the player actually sees. ⚠ Move
+  `Portal_Exit` and `PlayerSpawn_Traphouse_Door_inside` off the chunk origin as you do it — they sit
+  dead centre and will end up inside the model.
 - [ ] **Dress & wire the Abandoned Church** (`Abandoned_Church_Prefab`; model
   `abandoned+church+3d+model.glb` is imported):
   - Open the prefab, drop the church model in as a child (the placeholder box floor/walls stay — they
     give you the collider and NavMesh surface; scale/hide walls to taste once the model reads right).
-  - Wire a **London → church** linked pair, interior `Abandoned_Church`.
+  - Then author both ends of an `abandoned_church` pair.
 - [ ] **Dress & wire the Old Bus Station** (`Abandoned_Bus_Station_Prefab`; model
-  `bus+station+3d+model.glb`) — same recipe, interior `Abandoned_Bus_Station`.
+  `bus+station+3d+model.glb`) — same dressing recipe, and it needs **both** ends of a fresh
+  `bus_station` pair.
 - [ ] **`Portal Placement → Validate All Location Links`** (read-only). Clear every error — a
   non-reciprocal pair or broken arrival marker is a building you enter and can't leave.
 
@@ -449,11 +559,12 @@ sits *alongside* it, so one press sends you on two journeys. The tool deliberate
 - **Two refusals that are working as intended.** The portal refuses while you are riding anything —
   *"Get off the vehicle first."* — because a vehicle is a separate root that would be stranded in a
   chunk about to be destroyed. And every portal shares a 1.5 s cooldown, so you cannot bounce back.
-- ⚠️ **The wanted level does NOT clear going down the well.** That is the point of a fix that landed
-  2026-08-15 and has **never run**, because no portal existed to run it. The first trip down is its
-  first exercise: commit a crime in London, drop down the well, and check the knives readout does
-  *not* move and the console logs "Slipped indoors…". Walking out to `North_Wasteland` over a chunk
-  edge should still clear it.
+- ⚠️ **The wanted level does NOT clear going through a door.** That is the point of a fix that
+  landed 2026-08-15. The trap-house trip on 2026-08-17 ran `TravelRoutine`'s `Portal` branch for the
+  first time, so the code path has executed — but **the behaviour was not tested**, because the
+  playtest was not made with knives up. Still owed, at any door: commit a crime in London, step
+  inside, and check the knives readout does *not* move and the console logs "Slipped indoors…".
+  Walking out to `North_Wasteland` over a chunk edge should still clear it.
 - **Coming back up rebuilds London from the prefab.** `TravelRoutine` destroys and re-instantiates,
   so dropped items, dead NPCs and opened chests in London reset. Inventory and quest state are safe.
   Known and scoped out deliberately — see `BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md`.
@@ -617,12 +728,12 @@ the id **exactly**, including case. All six live ids do:
 
 | ChunkName | Status | Needs |
 |---|---|---|
-| `Mosleys Lab Basement` | shell ✓, **well placed in London** | Wire the pair (Phase 4a); then Tortured Neek + vape drop. Note the spaces — the asset is `Mosleys_Lab_Basement_Data` but the save key is not |
-| `Abandoned_Church` | shell ✓ (2026-08-16) | First-open check; drop church model in; door from London; a vape-dropping Neek |
-| `Abandoned_Bus_Station` | shell ✓ (2026-08-16) | First-open check; drop bus-station model in; door from London; 3 keyed Neeks + forage |
+| `Mosleys Lab Basement` | shell ✓, **well placed in London**, no portal | **Both ends owed** — author `mosley_basement` (Phase 4); then Tortured Neek + vape drop. Note the spaces — the asset is `Mosleys_Lab_Basement_Data` but the save key is not |
+| `Abandoned_Church` | shell ✓, no portal | Drop church model in; **both portal ends owed**; a vape-dropping Neek |
+| `Abandoned_Bus_Station` | shell ✓, no portal | Drop bus-station model in; **author a fresh `bus_station` pair**; 3 keyed Neeks + forage |
 | `Mosley_Mansion` | shell ✓ (2026-08-16) | Not required by this arc — ready for the WTF Mosley? finale if wanted |
 | `DP_Academy` | shell ✓ (2026-08-16) | Not required by this arc — Daniel's guild interior, optional |
-| `Gang_Hideout` | shell ✓ | **Quest 6.** Croyden traphouse model; door; keyed gang + the boss. Ralph & Sanjeet live here |
+| `Gang_Hideout` | shell ✓, **door done and played** | **Quest 6.** Croyden traphouse model, then move the interior door out of the room's centre; keyed gang + the boss. Ralph & Sanjeet live here |
 | `East_RetailPark` | exists | **Quest 7.** The chunk east of London — the Mad Fisherman goes here, subject to the fit question in Phase 7 |
 | East York `(0, -2)` | not built | **Quest 8.** Two chunks south, through `South_Slums`. Nothing exists yet |
 
