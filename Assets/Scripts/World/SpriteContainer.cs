@@ -109,9 +109,10 @@ namespace GBHEngland.World
         private void SetUpFixed()
         {
             var manager = ChunkManager.Instance;
-            string chunkName = manager != null && manager.CurrentChunkData != null
-                ? manager.CurrentChunkData.ChunkName
-                : null;
+            // ContentChunkName, never CurrentChunkData: this runs in Awake, and on the portal path
+            // the chunk is instantiated before CurrentChunkData is reassigned, so asking directly
+            // would build the id from the chunk the player just left.
+            string chunkName = manager != null ? manager.ContentChunkName : null;
 
             if (string.IsNullOrEmpty(chunkName))
             {

@@ -44,6 +44,31 @@ namespace GBHEngland.World
         public MapChunkData CurrentChunkData;
         public GameObject CurrentChunkInstance;
 
+        /// <summary>
+        /// The chunk whose prefab is being instantiated right now, or null outside that window.
+        ///
+        /// ⚠ This exists because <see cref="TravelRoutine"/> builds the destination and inspects it
+        /// for the arrival marker BEFORE committing anything — deliberately, so a broken marker id
+        /// leaves the world untouched. Every Awake in the new chunk runs synchronously inside that
+        /// Instantiate, so content reading <see cref="CurrentChunkData"/> during Awake sees the
+        /// chunk the player just LEFT. Moving the assignment earlier would destroy the abort
+        /// safety, so the answer is a second field and a resolver that prefers it.
+        ///
+        /// A property, not a serialized field: it is per-frame transient state with no business
+        /// being authorable, and a public field here would write an orphan key into c.unity.
+        /// </summary>
+        public MapChunkData ChunkBeingBuilt { get; private set; }
+
+        /// <summary>
+        /// The chunk that content instantiated right now belongs to. This is what anything running
+        /// in Awake must ask — never <see cref="CurrentChunkData"/> directly, which is only correct
+        /// on six of the seven paths that build a chunk.
+        /// </summary>
+        public string ContentChunkName =>
+            ChunkBeingBuilt != null ? ChunkBeingBuilt.ChunkName
+            : CurrentChunkData != null ? CurrentChunkData.ChunkName
+            : null;
+
         [Header("Save / Load")]
         [Tooltip("Every chunk that Save/Load needs to be able to find by name. A chunk missing from this list cannot be loaded even if the save names it.")]
         public MapChunkData[] AllChunks;
@@ -283,6 +308,13 @@ namespace GBHEngland.World
                 // instance the player actually lands in — and an abort only happens on an authoring
                 // error the validator already reports, so the rare path is the one paying.
                 GameObject previousInstance = CurrentChunkInstance;
+
+                // CurrentChunkData is still the origin chunk here and stays that way until the
+                // marker resolves below. Content in the candidate runs its Awake inside this
+                // Instantiate, so ChunkBeingBuilt is what tells it where it actually is — see the
+                // field's remarks. Cleared in the finally, so an abort or an exception cannot leave
+                // a stale value behind for the next thing that asks.
+                ChunkBeingBuilt = targetChunk;
                 GameObject candidate = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 candidate.name = targetChunk.ChunkPrefab.name;
 
@@ -352,6 +384,7 @@ namespace GBHEngland.World
             }
             finally
             {
+                ChunkBeingBuilt = null;
                 if (LoadingScreenUI)
                 {
                     LoadingScreenUI.alpha = 0f;
