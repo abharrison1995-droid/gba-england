@@ -1,0 +1,249 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_mayorzhao
+  m_EditorClassIdentifier: 
+  StartNodeId: start
+  Nodes:
+  - Id: start
+    Speaker: {fileID: 0}
+    DialogueText: KONICHIWA BROTHERMAN!
+    Choices:
+    - ChoiceText: Konichiwa?
+      NextNodeId: zhao_china
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_china
+    Speaker: {fileID: 0}
+    DialogueText: Yes my fine feathered friend! This is as close to China as you
+      can be without jetting off to Beijing herself!
+    Choices:
+    - ChoiceText: Understood, but konichiwa is Japanese.
+      NextNodeId: zhao_correction
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_correction
+    Speaker: {fileID: 0}
+    DialogueText: "OOOOOH OKAY. Who do you think knows real Chinese? Mayor Zhao or
+      \u2026 ? Yeah. So konichiwa foreigner!"
+    Choices:
+    - ChoiceText: "\u2026"
+      NextNodeId: zhao_honour
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_honour
+    Speaker: {fileID: 0}
+    DialogueText: We don't get too many folks coming to see us so it's an honour!
+    Choices:
+    - ChoiceText: Well I'm just looking for..
+      NextNodeId: zhao_favour
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_favour
+    Speaker: {fileID: 0}
+    DialogueText: WELL BEFORE YOU ASK ME FOR SOMETHING.. Allow Zhao to ask you for
+      a favour.
+    Choices:
+    - ChoiceText: '[Sighs]'
+      NextNodeId: zhao_brigade
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_brigade
+    Speaker: {fileID: 0}
+    DialogueText: I require a little issue resolving. I hired a plucky little Asian
+      start up to begin the build on a few blocks of flats just outside the city,
+      for the comrades in need.
+    Choices:
+    - ChoiceText: '[Continue listening]'
+      NextNodeId: zhao_kim
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_kim
+    Speaker: {fileID: 0}
+    DialogueText: Well apparently Red Star Workers Brigade have ties to Mr Kim. They've
+      been building the flats no issue, lovely.
+    Choices:
+    - ChoiceText: '[Continue listening]'
+      NextNodeId: zhao_squatters
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_squatters
+    Speaker: {fileID: 0}
+    DialogueText: BUT NOW THEY WONT LEAVE. They're living in them! Please. Have a
+      word, or several. Anything! Then we can talk about your request, you will go
+      to the prom Cinderella.
+    Choices:
+    - ChoiceText: What?
+      NextNodeId: zhao_west
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: zhao_west
+    Speaker: {fileID: 0}
+    DialogueText: GO! It's west from here. Take this for help!
+    Choices:
+    - ChoiceText: Okay.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: rush_hour
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0

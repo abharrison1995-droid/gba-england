@@ -17,4 +17,651 @@ MonoBehaviour:
   - Id: start
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
     DialogueText: Christ.. what have I done? You! no.. no.. leave me be...
+    Choices:
+    - ChoiceText: Come on what's up? Caught with the intern again?
+      NextNodeId: reveal_prompt
+      QuestGate: 1
+      QuestGateId: mosley_vape_quest_one
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Christ, I'm on it alright. *leaves*
+      NextNodeId: nag_one
+      QuestGate: 2
+      QuestGateId: mosley_vape_quest_one
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Right Mosley!
+      NextNodeId: wm_greet
+      QuestGate: 2
+      QuestGateId: wtf_mosley
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Don't gotta tell me twice. *leaves*
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: reveal_prompt
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: AH! I don't have time to care if you'll spread this. You've probably
+      noticed a bit of an uptick in uh...
+    Choices:
+    - ChoiceText: Nittys about the place?
+      NextNodeId: reveal_a
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Can you spit it out?
+      NextNodeId: reveal_b
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: reveal_a
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: YES! Well, no.. they're just misunderstood.. Anyway, I tried to
+      calm them down. I'd asked ChatJeeves LLM and.. well 3 hours laters I had the
+      vape of all vapes in my palm. I was told it'd chill the oiks down but fucking
+      hell old boy, they're anything but calm.
+    Choices:
+    - ChoiceText: Alright cool. And you're telling me because?
+      NextNodeId: ask_why_1
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Sounds tasty, a toot for me perchance old boy?
+      NextNodeId: ask_why_2
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: reveal_b
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Right okay. Had a chat with AI, came up with a little proto-type
+      chill out vape. Decided to test it out on a few of the local ruffians.
+    Choices:
+    - ChoiceText: Alright cool. And you're telling me because?
+      NextNodeId: ask_why_1
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Sounds tasty, a toot for me perchance old boy?
+      NextNodeId: ask_why_2
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: ask_why_1
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: I've spoken to Daniel, I know you can sling spells. I'll tell the
+      federalis if you don't help me out old boy. Give me a hand and there's a few
+      quid in it for you. Please! *eyes begin to tear up*
+    Choices:
+    - ChoiceText: Well since you asked nicely, go on then.
+      NextNodeId: end_accept
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: mosley_vape_quest_one
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Fuck off. *leaves*
+      NextNodeId: end_decline
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: ask_why_2
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: They're fucking zombies you fool. I'll tell you where they are
+      just get back the vape. If that get's out it's Black Mamba 2.0, this place
+      becomes Manchester.
+    Choices:
+    - ChoiceText: Uh oh.. maybe not then.. so what do you want from me?
+      NextNodeId: ask_why_1
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Ok I'm out *leaves*
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: end_accept
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Excellent. I've written the details in your little diary. I'll
+      be here when you're done. Go on then, chop chop!!!
     Choices: []
+  - Id: end_decline
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: AH! I'll be here if you change your mind. *weeps*
+    Choices: []
+  - Id: nag_one
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: COME ON CHAP! GET ME THAT VAPE AND DO NOT CHONG ON IT!
+    Choices:
+    - ChoiceText: Ooooookay.
+      NextNodeId: nag_two
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: nag_two
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: WHAT ARE YOU DOING??? I CAN PRACTICALLY HEAR THEM HUFFING ON THAT
+      VAPE FROM HERE CHAP HURRY!!!
+    Choices:
+    - ChoiceText: Mate how does a vape make them get like that? You slapping fent
+        in these?
+      NextNodeId: vape_returned
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 11400000, guid: 25ecbf4426e79c7a75bc0b81f832f7ae, type: 2}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 1
+      GrantQuestId: daniel_pauls_quest_one
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: mosley_vape_quest_one
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Gimme some time man.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: vape_returned
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Good man, sorting that out for me. You should get back to Daniel
+      Paul's. I hear he's in a spot of bother.
+    Choices:
+    - ChoiceText: Okay.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_greet
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Ey up, lad. How we doing? Have you spoke to Daniel Paul's?
+    Choices:
+    - ChoiceText: Mosley... where have you been getting these vapes from?
+      NextNodeId: wm_made
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_made
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: I made 'em. I asked the AI folks, and I made 'em myself. All my
+      own parts, all my own bits. But why?
+    Choices:
+    - ChoiceText: "Well, I just had a chat with Scrap Man, and he saw you out there
+        with Ralph and Sanjeet. He said you were buying a weird box of Chinese vapes\u2014"
+      NextNodeId: wm_thing
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_thing
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: No. Well, well, well, you see, the thing is...
+    Choices:
+    - ChoiceText: What?
+      NextNodeId: wm_toomuch
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_toomuch
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: It was just too much, old boy. The place has been going down the
+      tubes, and the Neeks, they were more and more rowdy. I just... I didn't know
+      what to do.
+    Choices:
+    - ChoiceText: Okay.
+      NextNodeId: wm_experiment
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_experiment
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: "I didn't know what to do. So I've seen online that the Chinese,
+      they've been using these vapes to sedate people, just make them comply. So
+      I thought, okay, I'll do that. But I couldn't put it through the coffers \u2014
+      the council would never sign off on it, and the people aren't gonna vote for
+      it. So... it was my own personal money. And, well, it was just an experiment.
+      That was it."
+    Choices:
+    - ChoiceText: But Mosley, why did you involve the Chinese? You hate the Chinese.
+      NextNodeId: wm_korean
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_korean
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Well, I didn't know they were Chinese. They told me it was Korean.
+      I asked, I said, this is Chinese, that looks Chinese. He said, don't be a racist
+      mate, that's Korean. Who am I to question? He's, you know, he wasn't white.
+    Choices:
+    - ChoiceText: Yeah, but Sanjeet, he sounds Indian or Pakistani. He doesn't sound
+        like he's an authority on China, Japan, Korea, you know?
+      NextNodeId: wm_same
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_same
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Well, it's all kind of the same, isn't it? Bit of this, bit of
+      that. I mean, you know...
+    Choices:
+    - ChoiceText: Alright, now that is a bit racist. Okay, never mind. Can you tell
+        me where Ralph and Sanjeet usually stay?
+      NextNodeId: wm_where
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: wm_where
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Well, I know they've got a little place near the abandoned bus
+      station. They might be there. That's near where I met them.
+    Choices:
+    - ChoiceText: Alright, I'll have a word. Cheers. Be careful with the Chinese-Korean
+        stuff, yeah? You're a councillor.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: gangbusters
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: wtf_mosley
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0

@@ -115,8 +115,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -134,10 +134,10 @@ TextureImporter:
       name: sheet_char_villager_black_walk_1
       rect:
         serializedVersion: 2
-        x: 65
+        x: 74
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -155,10 +155,10 @@ TextureImporter:
       name: sheet_char_villager_black_walk_2
       rect:
         serializedVersion: 2
-        x: 130
+        x: 148
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -176,10 +176,10 @@ TextureImporter:
       name: sheet_char_villager_black_walk_3
       rect:
         serializedVersion: 2
-        x: 195
+        x: 222
         y: 0
-        width: 65
-        height: 65
+        width: 74
+        height: 74
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -193,10 +193,52 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: sheet_char_villager_black_walk_4
+      rect:
+        serializedVersion: 2
+        x: 296
+        y: 0
+        width: 74
+        height: 74
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d024150d759675b449d00a824a839d5f
+      internalID: 1464948462
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sheet_char_villager_black_walk_5
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 0
+        width: 74
+        height: 74
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8a54a3bed27b0864882743d9c2bf66da
+      internalID: 344234745
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: a315f5feff003fd4cabc93038ae0ca97
     internalID: 0
     vertices: []
     indices: 
@@ -208,6 +250,8 @@ TextureImporter:
       sheet_char_villager_black_walk_1: 1784194609008929755
       sheet_char_villager_black_walk_2: -8995721926593648041
       sheet_char_villager_black_walk_3: 8244150346167119645
+      sheet_char_villager_black_walk_4: 1464948462
+      sheet_char_villager_black_walk_5: 344234745
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -337,10 +337,17 @@ the original GUIDs. All four live `DIALOGUE` ids now match their asset filenames
 *Confirm on next open that Unity accepts the renames without re-importing, and that the placed
 Mosley and Scrap Man in `Home_London_Prefab` still resolve their conversations.*
 
-**The importer itself was fixed the same day — never compiled.** Three changes in
-`QuestTextImporter.cs`, which protect the other sixteen PascalCase assets still on disk (including
-**`Dialogue_Ralph` and `Dialogue_Sanjeet`**, the cast of the unwritten Quest 6, which the next quest
-written would have hit):
+✅ **The importer fix works — proven 2026-08-17.** A full `Import Quests` run wrote all ten
+`QuestDefinition`s and rebuilt every generated `DialogueData`, and **`Preset_CouncillorMosley` and
+`Preset_Scrapman` came out holding the same `Conversation` GUIDs they went in with** — a byte-clean
+diff on both files. On the pre-fix code that run is exactly what nulled them. `Preset_Alex` went
+`{fileID: 0}` → `750c809e…` and `Preset_MadFisherman` `{fileID: 0}` → `fc8c91b6…`, so the reuse path
+resolves as well as the preserve path. **The `DIALOGUE ralph` collision test below is still worth
+running** — it is the only one of the three checks that has not now been answered by real use.
+
+**The three changes in `QuestTextImporter.cs`**, which protect the other sixteen PascalCase assets
+still on disk (including **`Dialogue_Ralph` and `Dialogue_Sanjeet`**, the cast of the unwritten
+Quest 6, which the next quest written would have hit):
 
 - **`ResolveAssetPath`** maps a desired path onto the real file when the two differ only by case,
   by enumerating the directory. ⚠️ It deliberately does **not** shortcut on `File.Exists` — on a
@@ -357,10 +364,10 @@ written would have hit):
 - **`SaveAsset` now tests `AssetDatabase.Contains(asset)`** rather than probing the path, so it can
   never dirty an object that is not the asset on disk.
 
-*Check on next open: re-import with an unchanged tree and confirm the four conversations keep their
-GUIDs; author a deliberate case-collision (a `DIALOGUE ralph` block) and confirm it updates
-`Dialogue_Ralph.asset` in place instead of nulling `Preset_Ralph.Conversation`; and force a
+*Still to check: author a deliberate case-collision (a `DIALOGUE ralph` block) and confirm it
+updates `Dialogue_Ralph.asset` in place instead of nulling `Preset_Ralph.Conversation`; and force a
 validation error in a `.quest` file to confirm the failure path logs errors rather than throwing.*
+The unchanged-tree re-import is answered — see above.
 
 **Also outstanding — four sprites in `c.unity` point at files that do not exist.** Three `Visual`
 SpriteRenderers on one missing texture, three on another, one more on a third, and the **PCSO**
@@ -723,6 +730,35 @@ below therefore needs content authoring before it can even be attempted:
 → [docs/reference/CHUNK_WORLD.md](docs/reference/CHUNK_WORLD.md) and
 [docs/reference/WORLD_AUTHORING_AND_NPCS.md](docs/reference/WORLD_AUTHORING_AND_NPCS.md).
 
+**Four London doors are authored, and two of them lead nowhere.** Committed 2026-08-17 from the
+owner's editor session, alongside the first successful `Import Quests` of all ten quests.
+
+Every `DungeonPortal` in the project, and where it lands:
+
+| Door, in `Home_London_Prefab` | Target chunk | Arrival marker | Return portal |
+|---|---|---|---|
+| Enter Traphouse | Gang_Hideout | `Traphouse_Door_inside` ✅ | ✅ Exit Traphouse |
+| Enter Mosley's Basement | Mosleys Lab Basement | `Mosley_Basement_Well_Door_inside` ✅ | ✅ Exit Mosley's Basement |
+| Enter Church | Abandoned_Church | `Abandoned_Church_Door_inside` ❌ **absent** | ❌ none |
+| Enter Station | Abandoned_Bus_Station | `Bus_Station_Main_Door_inside` ❌ **absent** | ❌ none |
+
+- ⚠️ **The church and bus station interiors were never touched.** Each still holds only the shell's
+  original id-less `PlayerSpawn` — no `LocationLinks` group, no `Portal_Exit`, no named marker. Their
+  London ends have `_outside` markers waiting for a return that does not exist. Finish both with a
+  `Tools → Place → Portal Placement` run reusing link ids `Abandoned_Church_Door` and
+  `Bus_Station_Main_Door`, which updates the London halves in place rather than adding more.
+- ✅ **This is the first real exercise of the 2026-08-09 `TravelRoutine` reorder**, and it should hold:
+  pressing USE at either broken door must leave the player standing where they are, with a console
+  warning naming the chunk and the missing id — **not** a black screen or a half-loaded chunk.
+  *Try both. A stranded player means the reorder did not take.*
+- **`Mosleys_Lab_Basement`'s interior end is positioned; `Gang_Hideout`'s is still at chunk origin**
+  on the placement tool's defaults, and must be moved when that interior is dressed.
+- **Daniel Pauls is placed** — `NPC_Daniel Pauls` replaces the old `DanielPaulsSpawn` marker, so
+  `spark_of_talent` finally has a giver in the world.
+- ⚠️ **`NPC_Ralph` and `NPC_Sanjeet` were removed from London.** They are the cast Quest 9 is meant to
+  build toward, and `Dialogue_Ralph.asset` / `Dialogue_Sanjeet.asset` are still on disk in PascalCase
+  — so a future `DIALOGUE ralph` block is still the untested collision case above.
+
 **Also outstanding — six empty interior shells, hand-authored YAML.** Committed 2026-08-09.
 `Quidland`, `FU_Sports`, `City_Hall`, `Police_Station`, `Gang_Hideout` and `The_Winchester` — each a
 `MapChunkData` plus a chunk prefab holding a floor, four walls, a `RuntimeNavMeshBaker` and one
@@ -770,8 +806,10 @@ compiled:
   moved with it, **GUID `750c809e…` unchanged**. Without this, `quests/dialogue/alex.quest`'s
   lowercase `DIALOGUE alex` block would have hit the **exact case-collision that nulled
   `Preset_CouncillorMosley` and `Preset_Scrapman`**, on the one companion conversation known to
-  work. `ResolveAssetPath` was written to survive that and **still has not run**. *Confirm
-  `CompanionHome_Alex.prefab` still resolves its Conversation on first open.*
+  work. ✅ **The import ran on 2026-08-17 and the rename held** — `Dialogue_alex.asset` was rewritten
+  in place on GUID `750c809e…` and `Preset_Alex.Conversation` now points at it. *Confirm
+  `CompanionHome_Alex.prefab` still resolves its Conversation on first open* — it binds the same
+  GUID, so it should, but that has not been looked at.
   ⚠️ **`Dialogue_Alex_Follower.asset` is still PascalCase in the same folder** — a future
   `DIALOGUE alex_follower` block would collide the same way.
 - ⚠️ **`Preset_Alex.Speaker` was empty and is now `NPC_Alex`.** `ResolveSpeaker` falls back to the

@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Alex
   NpcSprite: {fileID: 507946462143915687, guid: c34d960730da02d48a97a1f4eeed5805, type: 3}
   NpcController: {fileID: 9100000, guid: 5a8b37db74698634ba2f34f8c2f04e3c, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: 750c809ecc57405d8c04b8443b3c318b, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45

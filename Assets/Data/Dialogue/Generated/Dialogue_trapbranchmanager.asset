@@ -1,0 +1,191 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_trapbranchmanager
+  m_EditorClassIdentifier: 
+  StartNodeId: start
+  Nodes:
+  - Id: start
+    Speaker: {fileID: 0}
+    DialogueText: Oh man, that was a bit deep, weren't it? I'm just trying to get
+      something started here.
+    Choices:
+    - ChoiceText: Where's Ralph and Sanjeet? Just tell me. I don't wanna have to
+        do anything.
+      NextNodeId: tbm_subway
+      QuestGate: 4
+      QuestGateId: gangbusters
+      QuestGateStage: 1
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: You either tell me where they are or I take you outside and go
+        all American History X on you, your call mate.
+      NextNodeId: tbm_beaten
+      QuestGate: 4
+      QuestGateId: gangbusters
+      QuestGateStage: 3
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: End Conversation.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: tbm_subway
+    Speaker: {fileID: 0}
+    DialogueText: Well, I can't tell you that. But just know, all this place is is
+      a branch. It's just like a Subway. You're not gonna break up a Subway and ask
+      for Mr. Subway, are you?
+    Choices:
+    - ChoiceText: Well, yeah, I guess that would work. But you're not a sandwich
+        shop. You're a dealer.
+      NextNodeId: tbm_franchise
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: tbm_franchise
+    Speaker: {fileID: 0}
+    DialogueText: Oi, I'm just a branchy. I'm just a franchisee. Come on, mate.
+    Choices:
+    - ChoiceText: Come on, just tell me where they are.
+      NextNodeId: tbm_fight
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: tbm_fight
+    Speaker: {fileID: 0}
+    DialogueText: No. Fuck off. Come on then.
+    Choices:
+    - ChoiceText: Good luck fighting me in that suit you cunt! *fight*
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: tbm_beaten
+    Speaker: {fileID: 0}
+    DialogueText: Well, I don't know. But if you go to the Mad Fisherman, he'll be
+      able to tell you. The Mad Fisherman's the fella that got me on with them.
+    Choices:
+    - ChoiceText: For fucks sake, if this is a wild goose chase I'm coming back you
+        suit and ski mask weirdo.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: ah_barnacles
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: gangbusters
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0

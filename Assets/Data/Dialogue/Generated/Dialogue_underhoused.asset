@@ -38,6 +38,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Someone's been zappin' folk round here. That you, mate?
       NextNodeId: accuse_direct
@@ -58,6 +59,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: accuse_lightshow
     Speaker: {fileID: 0}

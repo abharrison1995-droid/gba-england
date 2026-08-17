@@ -11,22 +11,278 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
   m_Name: Dialogue_scrapman
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   StartNodeId: start
   Nodes:
   - Id: start
     Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
-    DialogueText: ANY OLD SCRAP IROOOOOOON?! ... ah shit, sorry mate didn't see ya. Got ote ya wanna get rid of?
+    DialogueText: Easy, what you doing 'ere?
     Choices:
-    - ChoiceText: Sell
-      NextNodeId:
-      Merchant: {fileID: 11400000, guid: 36ac2b5d7a4341eea6a5d70eee077fda, type: 2}
-      MerchantAction: 2
-    - ChoiceText: Leave
-      NextNodeId: farewell
+    - ChoiceText: Daniel Paul sent me. Can you check this out for him?
+      NextNodeId: iwv_inspect
+      QuestGate: 4
+      QuestGateId: investigate_weird_vape
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 11400000, guid: 52e9b25fafae4110a8500c7b9c9761c4, type: 2}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 1
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
       Merchant: {fileID: 0}
       MerchantAction: 0
-  - Id: farewell
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: '*Hand him the Big Blue*'
+      NextNodeId: dbb_react
+      QuestGate: 4
+      QuestGateId: deliver_the_big_blue
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 11400000, guid: 5ab0d89a223043a88d8030feb150a87b, type: 2}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 1
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: ANY OLD SCRAP IIIIIIIIRRROON?! .. Sorry lad, didn't see ya. Got
+        anything for me?
+      NextNodeId: 
+      QuestGate: 3
+      QuestGateId: deliver_the_big_blue
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 11400000, guid: 36ac2b5d7a4341eea6a5d70eee077fda, type: 2}
+      MerchantAction: 2
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Squeeze ya later.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: iwv_inspect
     Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
-    DialogueText: Ahh alright, in a bit.
-    Choices: []
+    DialogueText: '*Scrap Man inspects the vape.*'
+    Choices:
+    - ChoiceText: I found it on a pretty frenzied Neek at the old church.
+      NextNodeId: iwv_scratch
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: iwv_scratch
+    Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
+    DialogueText: I can help you out, but this back needs scratching first.
+    Choices:
+    - ChoiceText: Go on.
+      NextNodeId: iwv_bigblue_ask
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: iwv_bigblue_ask
+    Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
+    DialogueText: Big date coming up. Ask Daniel Paul to sort us out a Big Blue.
+    Choices:
+    - ChoiceText: Okay.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: dbb_react
+    Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
+    DialogueText: Ah, yes, buzzing. Can't believe it. You are an absolute legend.
+      Right then... yep, I'll let you know what's going on.
+    Choices:
+    - ChoiceText: Go on then.
+      NextNodeId: dbb_reveal1
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: dbb_reveal1
+    Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
+    DialogueText: So, Councillor Mosley's been doing a few dodgy dealings. I saw
+      him talking to Ralph and Sanjeet from the Spartans, and he was buying a box
+      of these weird looking vapes.
+    Choices:
+    - ChoiceText: Uh, right.
+      NextNodeId: dbb_reveal2
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: dbb_reveal2
+    Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
+    DialogueText: The boxes had these weird Chinese letters on. Shanghai and all
+      that jazz. So I assume it's some sort of weird import. I'm guessing that's
+      got something to do with the vapes, because I ain't seen them anywhere else
+      before, and they're the only characters shady enough to get involved with the
+      Chinese at the minute.
+    Choices:
+    - ChoiceText: Fuckin' hell.
+      NextNodeId: dbb_reveal3
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: dbb_reveal3
+    Speaker: {fileID: 11400000, guid: edfbeac3d87c4bb78f6e69d03c5a4fcb, type: 2}
+    DialogueText: You should hit up that little trap house out in the north. You
+      might get some answers from them, but I dunno. They ain't always there.
+    Choices:
+    - ChoiceText: Yeah, okay. Right, whatever. Sound. I'll go speak to Daniel Paul's.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0

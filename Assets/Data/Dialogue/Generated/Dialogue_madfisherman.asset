@@ -1,0 +1,263 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_madfisherman
+  m_EditorClassIdentifier: 
+  StartNodeId: start
+  Nodes:
+  - Id: start
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: Arrr. What do you want?
+    Choices:
+    - ChoiceText: Have you heard of Ralph and Sanjeet? Croydon Spartans?
+      NextNodeId: mf_barnacle
+      QuestGate: 4
+      QuestGateId: ah_barnacles
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: There's the slimy bastards. Enjoy.
+      NextNodeId: mf_return
+      QuestGate: 4
+      QuestGateId: ah_barnacles
+      QuestGateStage: 1
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 11400000, guid: 79e06e459b9e431b84624ccaa95c7980, type: 2}
+      RequiredItemQuantity: 10
+      ConsumeRequiredItem: 1
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: End Conversation.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: mf_barnacle
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: Tha's ye fellas. Yarr. Good barnacle hunters they are.
+    Choices:
+    - ChoiceText: Can you tell me where they're staying at the minute?
+      NextNodeId: mf_laugh
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: mf_laugh
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: '*The Mad Fisherman laughs maniacally.*'
+    Choices:
+    - ChoiceText: '[...]'
+      NextNodeId: mf_owt
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: mf_owt
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: Owt for nowt, you lot. Gen Deers or whatever.
+    Choices:
+    - ChoiceText: "Well\u2014"
+      NextNodeId: mf_price
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: mf_price
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: Ten bus barnacles, and I can help you.
+    Choices:
+    - ChoiceText: Brilliant. Bus barnacles again. Okay, I'll be back.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: mf_return
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: Arr, very nice there, lad. I knew you'd come back for me. Here's
+      a little thing for you.
+    Choices:
+    - ChoiceText: Great, cheers.
+      NextNodeId: mf_eastyork
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: mf_eastyork
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: So, all I can tell you is that Ralph and Sanjeet, they're staying
+      in East York at the minute. I know the Chinese are keeping them there nice
+      and cushy.
+    Choices:
+    - ChoiceText: Okay, right. I'll see what's up.
+      NextNodeId: mf_alex
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: mf_alex
+    Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
+    DialogueText: Before you get going though, have a chat with Alex at his place
+      in London. He's not very handy but the lad's cheap and willing back ya for
+      a couple quid.
+    Choices:
+    - ChoiceText: Sounds good.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: rush_hour
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: ah_barnacles
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0

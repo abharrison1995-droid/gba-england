@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f611db80a0d2341448c09c7c80cd9d1f, type: 3}
   m_Name: Preset_MadFisherman
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   Label: Mad Fisherman
   Category: 0
   Icon: {fileID: 1849707194109113509, guid: f7207c6d55148f64f9dbd9523cec3c96, type: 3}
@@ -19,7 +19,7 @@ MonoBehaviour:
   NpcName: Mad Fisherman
   NpcSprite: {fileID: 1849707194109113509, guid: f7207c6d55148f64f9dbd9523cec3c96, type: 3}
   NpcController: {fileID: 9100000, guid: 77fcad89a1923354a951f79388d1cde4, type: 2}
-  Conversation: {fileID: 0}
+  Conversation: {fileID: 11400000, guid: fc8c91b6f09d7fc4eb3b860691a06417, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
   Health: 45
@@ -36,14 +36,14 @@ MonoBehaviour:
   AddDoorVisual: 1
   DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
   Vehicle: {fileID: 0}
-  SpawnPointId:
+  SpawnPointId: 
   QuestKey: mad_fisherman
   ArtSubject: mad_fisherman
   NpcHeight: 1.55
   Roams: 0
   RoamRadius: 6
   Speaker: {fileID: 11400000, guid: a3b9ec1b7a1940328ccc4dc9751d19fd, type: 2}
-  AmbientLine:
+  AmbientLine: 
   Pickpocketable: 0
   PickpocketMinPounds: 5
   PickpocketMaxPounds: 25
@@ -51,5 +51,5 @@ MonoBehaviour:
   Region: 0
   PickpocketBand: {fileID: 0}
   EnemyLevel: 0
-  PortalTargetSpawnPointId:
+  PortalTargetSpawnPointId: 
   FollowerConversation: {fileID: 0}

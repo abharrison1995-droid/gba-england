@@ -39,6 +39,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Okay okay!
       NextNodeId: nudge
@@ -59,6 +60,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Cheers I guess.
       NextNodeId: reward
@@ -79,6 +81,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Fine.
       NextNodeId: done
@@ -99,6 +102,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Hey up.
       NextNodeId: dpq1_open
@@ -119,6 +123,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Check this out!
       NextNodeId: cotc_show
@@ -139,6 +144,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Oi.
       NextNodeId: iwv_bigblue
@@ -159,6 +165,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Here's the stuff.
       NextNodeId: iwv_brew
@@ -179,6 +186,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Well..
       NextNodeId: dbb_report
@@ -199,6 +207,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: End Conversation.
       NextNodeId: 
@@ -219,6 +228,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: offer_open
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -244,6 +254,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Not now, weirdo.
       NextNodeId: 
@@ -264,6 +275,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: research
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -290,6 +302,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
     - ChoiceText: Right. I'll leave you to it.
       NextNodeId: 
@@ -310,6 +323,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: sendoff
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -343,6 +357,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: teach
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -379,6 +394,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: dpq1_help
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -403,6 +419,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: dpq1_church
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -428,6 +445,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: dpq1_speed
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -453,6 +471,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: dpq1_close
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -478,6 +497,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: cotc_show
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -502,6 +522,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: cotc_scrapman
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -526,6 +547,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_bigblue
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -550,6 +572,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_bits
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -574,6 +597,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_guild
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -598,6 +622,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_list
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -623,6 +648,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_diary
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -648,6 +674,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_brew
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -673,6 +700,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_stir
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -698,6 +726,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_distill
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -723,6 +752,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: iwv_deliver
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -748,6 +778,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: dbb_report
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -774,6 +805,7 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0
   - Id: dbb_chat
     Speaker: {fileID: 11400000, guid: 9df529c97f3e3d84390ec14e27c41bbf, type: 2}
@@ -800,4 +832,5 @@ MonoBehaviour:
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 
+      HireCompanionFree: 0
       CompanionCommand: 0

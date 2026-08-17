@@ -1,529 +1,505 @@
-# The Royal Fight Arena
+# Castle Fight Arena
 
 ```
-Last updated:          2026-08-15 (plan only — nothing implemented)
-Verification scope:    Nothing here has been implemented. Every claim about existing code was read
-                       line by line from the working tree on `codex/quest-dialogue-split` on this
-                       date (ChunkManager, DungeonPortal, LocalTeleporter, TutorialSequence,
-                       Health, EnemyLevel, PlacementBuilders, DialogueManager, GameFlowController,
-                       SaveGameManager, WantedManager, EnemyNameplate, CompanionManager,
-                       QuestTextImporter). Preset_Neek, PlacementPresetLibrary.asset and the
-                       Castle's position in Home_London_Prefab were read from their YAML.
-                       Nothing was compiled or run — there is no compiler in the agent
-                       environment (CLAUDE.md §5).
+Last updated:          2026-08-17 (revised plan; nothing implemented)
+Verification scope:    Existing code and tracked assets were inspected on 2026-08-16/17.
+                       The castle hierarchy, current transition/save paths, EnemyAI fallback,
+                       Enemy_Neek loot component, kill-XP path, dialogue hooks, and registry were
+                       read from the working tree. Reference integrity passed with only the
+                       documented known dangling references. Nothing was compiled or run in
+                       Unity; this repository has no agent-side Unity or C# test environment.
 ```
 
-> **Phase 0 is a hard gate.** The arena is the first interior content in this project that
-> contains anything which *navigates*. Whether `RuntimeNavMeshBaker` produces a usable NavMesh
-> inside a portal-reached interior chunk has **never been tested** — the six shells committed
-> 2026-08-09 are empty boxes and nobody has walked an agent around one. The first bout is **two**
-> opponents, so it needs two agents pathing and avoiding each other, not one. If it does not work,
-> the arena is blocked behind
-> [BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md](BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md)
-> and no amount of arena code helps. **Prove it before building anything else.**
+> **Phase 0 remains a hard gate, but the old visual test was not sufficient.** `EnemyAI` falls
+> back to collision-aware transform movement when it is not on a NavMesh, so seeing two Neeks
+> chase the player does **not** prove that `RuntimeNavMeshBaker` worked. The gate passes only when
+> the runtime bake reports success, both opponents report `NavMeshAgent.isOnNavMesh`, they route
+> around an obstacle, and they avoid one another. If that cannot be demonstrated in Unity, stop
+> after the requested arena shell and fix navigation before building the match loop.
 
 ---
 
 ## Goal
 
-The **Royal Fight Arena**, under the castle in London, hosted by **Prince Mandrew**. He signs you
-up; you are taken into the castle interior and fight what he puts in front of you. Win and you
-take a small purse and climb a ladder of ranks, each carrying a title. Every rung is harder —
-higher-level opponents, then more of them at once, then both.
+Create a dedicated interior chunk and prefab titled **Castle Fight Arena**, reached by speaking
+to **Prince Mandrew outside the castle in Home London**. Agreeing to the next bout closes the
+conversation and sends the player directly into the arena. There is no interior lobby.
 
-The Oblivion arena is the reference for the *loop*, not the fiction: talk to the host, get sent
-into the pit, fight, come back out, talk again. Where Oblivion has ~21 matches, this has many more.
+A win pays one authored match purse, advances the ladder, and returns the player beside Mandrew.
+A defeat or voluntary forfeit returns them to the same place with no purse and no ladder change.
+The player enters alone, cannot use the arena to escape police, and cannot turn opponent loot or
+partial kills into an infinite farm.
 
-> ⚠ **Spelling check before anything is authored.** The brief said "Price Mandrew"; this plan uses
-> **Prince Mandrew** throughout, on the reading that it belongs with "Royal" and a castle. The name
-> ends up in a `PlacementPresetLibrary` key, a `DIALOGUE <npcId>` block and an asset filename — all
-> contracts — so correct it here first if the reading is wrong. Nothing depends on it yet.
+The Oblivion arena is the reference for the loop—host, bout, promotion, repeat—not for its fiction
+or number of matches.
 
-## Owner decisions (confirmed 2026-08-15)
+## Owner decisions
 
 | Decision | Chosen |
 |---|---|
-| Layout | **One chunk holding both lobby and pit.** Prince Mandrew stands in the lobby; each match is a `LocalTeleporter` hop into the pit and back, with no loading screen between bouts. |
-| Defeat | **Ejected to the lobby with no purse and no rank change.** A sanctioned bout must not read as "you died, load your save". |
-| Ladder authoring | **A plain-text `.arena` file plus an importer**, mirroring the `.quest` pipeline. |
-| First bout | **Two Neeks**, 15 XP. Purse in pounds is still an owner slot. |
-| Companions | **Refused at the door.** The pit is solo. |
+| Name | **Castle Fight Arena**. The prefab root and location/save key use this exact wording. |
+| Host | **Prince Mandrew**, positioned outside the existing castle in `Home_London_Prefab`. |
+| Entry | A terminal dialogue choice marked `ARENA`; agreement travels directly to the fight floor. |
+| Layout | One sealed arena room. **No lobby and no lobby↔pit `LocalTeleporter`.** |
+| Return | Victory, defeat, and forfeit all return beside Mandrew automatically. |
+| Defeat | No purse and no ladder advance; intercept ordinary death before the death screen. |
+| Vitals | Snapshot health, mana, and stamina before entry and restore that snapshot on every exit. The arena cannot be used as a free full heal. |
+| Rewards | Arena opponents grant **no ordinary kill XP and no corpse loot**. Only the completed match grants XP/pounds. |
+| Ladder | Inspector-authored three-match vertical slice first; plain-text `.arena` importer after the loop is proven. |
+| First bout | Two Neeks; **15 XP total for winning the bout**. Pounds remain an owner-authored slot. |
+| Companions | Refused before entry. The pit is solo. |
+| Wanted player | Refused before entry. Portal travel no longer launders wanted level, but unparented police must not leak into the arena. |
+| Mounted player | Refused before entry, matching `DungeonPortal` safety. |
 
-## What already exists, and what it costs us
+## Current state
 
-The arena is unusual in that the project's biggest known interior weakness is, here, a feature.
+Nothing arena-specific is implemented.
 
-**`ChunkManager.TravelRoutine` destroys and re-instantiates the destination chunk on every
-entry.** For an ordinary building interior that is a defect — it resets unsaved NPC, enemy and
-chest state, which is why CLAUDE.md says *do not ship reward-bearing interiors until the location
-cache lands*. The arena wants no carried state inside the chunk at all: a fresh pit every entry is
-the correct behaviour. **The arena therefore sidesteps that blocker rather than tripping it**, and
-this should be stated plainly in the commit message so nobody later reads it as a violation.
-
-| Piece | What it gives the arena |
-|---|---|
-| `Castle` empty at `(11.9, 0, 0)` in `Home_London_Prefab` | The building. Wall, turret and gothic-castle GLBs are already placed. It has no interior and no door. |
-| `DungeonPortal` + `MapChunkData` + `PlayerSpawnPoint` | The way in and out. Portal travel is the one canonical USE-driven door. |
-| `LocalTeleporter` + `SceneMarker` | The lobby↔pit hop, no chunk swap, no loading screen. Exactly the two-field component this needs. |
-| `TutorialSequence` | The precedent for a runtime controller parented to the chunk instance so it dies with the chunk. `ArenaMatchController` is the same shape. |
-| `EnemyLevel` + `EKVibe.Scaled*` | The whole difficulty curve. The prefab's authored stats are the level-1 baseline and the level multiplies them. Nothing new is needed to make an opponent harder. |
-| `Preset_Neek` | The first opponent, already authored: category `Enemy`, `EnemyPrefab` → `Enemy_Neek.prefab`, no overrides, **`Loot: []`**. The empty loot list means no `LootOnDeath` is attached, so "the pit drops nothing" comes free for Neek. |
-| `MerchantUI` + `Win95Skin` | The window pattern, including the pause-ordering trap it already paid for. |
-| `QuestTextImporter`'s `MERCHANT:` directive | Added 2026-08-15. The exact template for an `ARENA` choice directive — see below. |
-| `quests/dialogue/*.quest` | Dialogue-only files. Prince Mandrew owns a conversation and no quest, which is precisely what this folder was added for. |
-| `CompanionManager.HasActiveCompanion` | The companion refusal, one property. |
-
-**Not reusable, and worth saying:** `PlacementBuilders.BuildEnemy` is in `Assets/Editor/`, which is
-stripped from builds. Runtime enemy spawning has no shared recipe today — `TutorialSequence` hand-
-builds its bandit component by component, which is precisely how the tutorial cast ended up outside
-the preset system. **Do not repeat that.** See §EnemyFactory.
-
-**Two gaps in existing content this work has to close:**
-
-- ⚠ **`Preset_Neek` is not in `PlacementPresetLibrary`.** That asset holds three entries today —
-  `DanielPauls`, `TracksuitGeezer`, `alex`. The ladder resolves opponents by library key, so
-  Phase 1 adds a `neek` entry, and every later opponent subject adds one more.
-- ⚠ **`Enemy_Neek` has never been seen in play.** It is one of the six enemy prefabs on the
-  CLAUDE.md §5 ledger. The first bout is its debut as well as the arena's.
+- `Home_London_Prefab` contains a `Castle` group at `(11.9, 0, 0)`. It currently has twelve
+  castle-model prefab children plus scenery, with colliders and `EnvironmentBlocker`s. It has no
+  arena marker, Prince Mandrew, or `DungeonPortal`.
+- No Castle Fight Arena prefab, `MapChunkData`, ladder, match controller, Mandrew preset,
+  conversation, or art subject exists.
+- `MapChunkRegistry` contains the existing overworld/interior chunks, not the arena.
+- `PlacementPresetLibrary` has no `neek` key.
+- `DungeonPortal`/`ChunkManager.TravelTo` provides the correct chunk lifecycle, named arrival
+  marker validation, pause, camera snap, visited-location registration, and `Portal` wanted-state
+  notification. Arena entry should reuse `TravelTo`, not invent another chunk swap.
+- `Enemy_Neek.prefab` has a `LootOnDeath` component with a non-null loot band even though
+  `Preset_Neek.Loot` is empty. Empty preset loot is **not** proof that an arena spawn is clean.
+- `Health.Die` always calls `KillXP.AwardFor` after `OnDeath`. A player can otherwise kill one
+  opponent, lose the match, and repeat for unlimited partial-bout XP.
+- Prince Mandrew has no art subject or owner-written dialogue. Machinery may be scaffolded, but
+  quest/dialogue prose and ladder titles remain the owner's words.
 
 ---
 
-## Architecture
+## Player flow
 
-### The chunk
-
-One new `MapChunkData` + chunk prefab, built the same way as the six interior shells but **by an
-editor tool, not hand-authored YAML**. The six existing shells were written by hand because no
-Unity was available, and all twelve of their files are still unverified; there is no reason to add
-a thirteenth to that pile.
-
-```
-Royal_Arena  (MapChunkData, ChunkName "Royal Fight Arena")
-└─ Royal_Arena_Prefab
-   ├─ RuntimeNavMeshBaker            (on the root, as the shells have)
-   ├─ Lobby                          floor + walls
-   │  ├─ PlayerSpawn  id "arena_entrance"    ← arrival from London
-   │  ├─ SceneMarker  key "ArenaLobby"       ← where a match returns you
-   │  ├─ Portal_ToLondon (DungeonPortal → Home_London, marker "castle_door")
-   │  ├─ Gate (LocalTeleporter → "ArenaPitEntry", prompt on the portcullis)
-   │  └─ NPC_PrinceMandrew                   (stamped from a PlacementPreset)
-   └─ Pit                            floor + walls, open sand
-      ├─ SceneMarker  key "ArenaPitEntry"    ← where the player lands for a bout
-      └─ SceneMarker  keys "ArenaSpawn_1".."ArenaSpawn_4"   ← opponent spawn points
-```
-
-**Four spawn markers from day one**, not two. Rung 1 already needs two, and the ladder reaches four
-opponents; adding markers later means re-running the builder against a chunk prefab that has since
-been dressed by hand.
-
-And in `Home_London_Prefab`, one `DungeonPortal` at the castle gate targeting
-`Royal_Arena` / `arena_entrance`, plus a `PlayerSpawnPoint` id `castle_door` for the return trip.
-Both ends are authored with `Tools → Place → Portal Placement`, which creates the pair and adds
-both chunks to `MapChunkRegistry` — ⚠ **and which has itself never been opened**, so its first run
-is part of this work.
-
-⚠ **`"Royal Fight Arena"` becomes a save key the moment the player first walks in**, via
-`PlayerSession.MarkChunkVisited` → `SaveData.VisitedChunks`. Freeze the string now. The space is
-deliberate and follows the `"Manor Cellars"` precedent; do not later normalise it.
-
-### The match controller
-
-`ArenaMatchController` — runtime, `Assets/Scripts/World/`, instantiated by the FIGHT action and
-parented to `ChunkManager.CurrentChunkInstance`, so it dies with the chunk exactly as
-`TutorialSequence` does.
-
-```
-StartMatch(rank)
-  ├─ resolve ArenaMatch for rank from the ladder
-  ├─ teleport player to "ArenaPitEntry"
-  ├─ for each opponent entry: EnemyFactory.Spawn(preset, level, at "ArenaSpawn_n")
-  ├─ subscribe each Health.OnDeath
-  └─ live = true
-
-OnOpponentDown → if any remain, return; else Victory()
-
-Victory()
-  ├─ pay Pounds + XP
-  ├─ PlayerSession.ArenaRank = rank + 1
-  ├─ toast the new title
-  ├─ teleport player to "ArenaLobby"
-  └─ live = false
-
-Defeat()  ← called from GameFlowController.HandlePlayerDeath
-  ├─ ReviveFull()
-  ├─ destroy surviving opponents
-  ├─ teleport player to "ArenaLobby"
-  └─ live = false, no purse, no rank change
+```text
+Talk to Prince Mandrew outside the castle
+  -> choose the terminal ARENA agreement
+  -> dialogue closes and releases its PauseManager token
+  -> ArenaEntryCoordinator validates the request
+       not transitioning
+       player not wanted
+       player not mounted
+       no active companion
+       next ladder match exists
+       any future stake can be paid
+  -> snapshot health / mana / stamina
+  -> write a safe checkpoint in Home London beside Mandrew
+  -> set one pending match request
+  -> ChunkManager.TravelTo(Castle Fight Arena, "arena_player")
+  -> arena controller waits for a successful runtime NavMesh bake
+  -> spawn and activate the opponents
+  -> fight
+       victory -> match XP/pounds, ArenaWins++, restore entry vitals, return outside
+       defeat  -> no reward/rank, restore entry vitals, return outside
+       forfeit -> no reward/rank, restore entry vitals, return outside
+  -> ordinary arrival save in Home London persists the final result
 ```
 
-`live` is deliberately not saved. A match is a thing that happens between two saves, never across
-one — see the autosave trap below.
+The pending request is runtime-only and is never saved. If travel cannot start or its target
+cannot be validated, the request must be cleared and the player must remain outside with the
+pre-entry checkpoint intact.
 
-⚠ **Counting deaths, not corpses.** Subscribe to each opponent's `Health.OnDeath` and decrement a
-counter. Do not poll for surviving `EnemyAI` objects: `Health.Die` destroys the GameObject after
-the event when `DestroyOnDeath` is set, and a poll that runs on the wrong side of that frame ends
-the bout early or never.
+## The prefab and chunk
 
-### EnemyFactory
+Files and visible names:
 
-A new runtime `EnemyFactory` in `Assets/Scripts/World/`, mirroring `NpcFactory`: one description of
-what a placed enemy is, callable from both the running game and `Assets/Editor/`.
+- `Assets/Prefabs/Chunks/Castle_Fight_Arena_Prefab.prefab`
+- prefab root: `Castle Fight Arena`
+- `Assets/Data/Chunks/Castle_Fight_Arena_Data.asset`
+- `MapChunkData.ChunkName`: **`"Castle Fight Arena"`**
+- coordinates: an unused off-grid coordinate, cosmetic because there is no adjacency
+- `IsCity: false`; all four adjacency references null
+- `SuppressCheckpointSaves: true`
 
-It is a near-copy of `PlacementBuilders.ApplyEnemyOverrides` — instantiate `preset.EnemyPrefab`,
-apply `OverrideHealth`/`OverrideDamage`, attach `EnemyLevel`, attach `LootOnDeath` — and
-`PlacementBuilders.BuildEnemy` should then delegate to it so there is one recipe, not two. That
-delegation is the same move already made for NPCs and is worth doing in the same commit; doing it
-later means the two copies drift first.
+`"Castle Fight Arena"` becomes a save key as soon as a build can save it. Freeze the value now.
 
-⚠ **The trap that makes this non-obvious.** `Health.Awake` reads:
-
-```csharp
-GetComponent<EnemyLevel>()?.ApplyTo(this);
-CurrentHealth = MaxHealth;
+```text
+Castle Fight Arena
+├─ RuntimeNavMeshBaker
+├─ ArenaMatchController
+├─ Environment
+│  ├─ DirtyStoneFloor                 28 × 20 units
+│  ├─ Wall_North                      full height
+│  ├─ Wall_East                       full height
+│  ├─ CutawayWall_South               low visual wall + full collision boundary
+│  ├─ CutawayWall_West                low visual wall + full collision boundary
+│  ├─ NavigationTestObstacle          removable after Phase 0
+│  └─ ArenaLighting
+├─ PlayerSpawn_arena_player           PlayerSpawnPoint.Id = "arena_player"
+├─ OpponentSpawns
+│  ├─ ArenaSpawn_1                    SceneMarker
+│  ├─ ArenaSpawn_2
+│  ├─ ArenaSpawn_3
+│  └─ ArenaSpawn_4
+└─ ForfeitReturn                      routed through ArenaMatchController, not a raw portal
 ```
 
-`Instantiate` runs `Awake` **synchronously**, so a naive `Instantiate(prefab)` followed by
-`AddComponent<EnemyLevel>()` scales nothing at all — every arena opponent would spawn at level-1
-stats wearing a higher badge, and **nothing would log**. The editor path is immune only because
-`PrefabUtility.InstantiatePrefab` does not run `Awake` in edit mode and the component is serialized
-into the placed instance.
+Four opponent markers exist from the first build even though bout one needs two. Later ladder
+content can reach four bodies without rebuilding a prefab that has already been dressed.
 
-The fix: instantiate under a **deactivated holder**, add `EnemyLevel`, then activate. `Awake` and
-`Start` both run on that first activation.
+### Floor and isometric visibility
 
-⚠ And the corollary, which is the same mechanism as the chunk-root rule in CLAUDE.md §3: **an
-arena opponent must never be deactivated again after that.** `EnemyAI` starts its
-`PerceptionRoutine` only in `Start`, so a re-deactivated enemy is permanently blind. Destroy
-surviving opponents on defeat; do not pool them.
+The floor uses the existing 256×256 tileable
+`tex_ground_roadside_pavement_dark_worn_tile.png`: charcoal-grey rectangular slabs with mild
+grime. Create an arena-specific material referencing that texture with repeated UV tiling and a
+low-smoothness finish. Do not alter the shared material or texture settings, because they may be
+used by London scenery.
 
-### The ladder
+The fixed camera is pitch 30°, yaw -45°, orthographic size 4. Tall south/west walls can hide the
+player entirely. Those near-camera faces therefore use cutaway visuals while retaining solid
+collision; north/east may remain full height.
 
-Phase 1 uses a small Inspector-authored `ArenaLadder` ScriptableObject so the loop can be proven
-against three matches. Phase 3 replaces its *authoring surface* with a `.arena` text file and an
-importer that regenerates the same asset — the runtime type does not change, only where its
-contents come from. This is the shape the `.quest` pipeline already took, and that pipeline is now
-being used in anger across six quest files, which is good evidence it was the right call.
+### Creation tool
 
+Build the shell with `Tools > Content > Build Castle Fight Arena`. The editor tool:
+
+- creates the material, prefab, and chunk asset only when absent;
+- refuses to overwrite an existing arena prefab or material;
+- adds the chunk to `MapChunkRegistry` without duplicating it;
+- creates all markers and colliders in one pass;
+- uses `PrefabUtility` rather than hand-authored YAML;
+- reports the exact Project paths it created and the Phase 0 Unity test route.
+
+Once the prefab exists, later changes load and edit it in place with
+`PrefabUtility.LoadPrefabContents`; never delete/re-create it and mint a new GUID.
+
+## Runtime architecture
+
+### ArenaEntryCoordinator
+
+A runtime coordinator owns the transition boundary and the pending request. It is not parented to
+either chunk, because Home London is destroyed on entry and the arena is destroyed on return.
+
+Responsibilities:
+
+- find `"Castle Fight Arena"` and the Home London return chunk through `ChunkManager`/registry;
+- enforce wanted, mount, companion, transition, ladder, and future-stake rules;
+- snapshot entry vitals and checkpoint the player outside;
+- start `ChunkManager.TravelTo` with the exact `arena_player` marker;
+- expose a single pending match to the arena controller;
+- clear a failed or consumed request so a later arena load cannot start a stale match;
+- return to an exact `PlayerSpawnPoint` beside Mandrew, not a raw coordinate.
+
+Direct dialogue entry must repeat the safety currently living in `DungeonPortal.Travel`:
+`ChunkManager.TravelTo` itself does not reject a mounted player.
+
+### RuntimeNavMeshBaker readiness
+
+`RuntimeNavMeshBaker` needs an observable runtime result (`IsReady`/`BuildSucceeded`, or an
+equivalent callback). `ArenaMatchController` must not activate opponents until the bake has
+completed successfully.
+
+This is required for two independent reasons:
+
+1. `RuntimeNavMeshBaker.Start` and an arena controller's `Start` have no guaranteed relative
+   ordering.
+2. `EnemyAI.Start` calls `SnapToNavMesh` once. If it runs before the interior mesh exists, the AI
+   falls back to transform movement and never proves agent navigation worked.
+
+Failure must keep the player safe: show a system error, consume no match, and return outside.
+
+### EnemyFactory and shared configuration
+
+Runtime spawning and editor placement need one configuration recipe but **different
+instantiation mechanisms**:
+
+- runtime uses `Object.Instantiate` under an inactive holder;
+- editor placement keeps `PrefabUtility.InstantiatePrefab` so the placed object retains its
+  prefab link;
+- both call one runtime-safe configuration function for health/damage overrides, `EnemyLevel`,
+  quest key, loot policy, and arena marker.
+
+Do not make `PlacementBuilders` literally instantiate through the runtime factory; that would
+detach every editor placement from its source prefab.
+
+At runtime, instantiate every opponent beneath an inactive holder, configure it, and activate the
+holder only after the NavMesh is ready. `Health.Awake` reads `EnemyLevel` synchronously, so adding
+the level after an active `Instantiate` creates a higher badge over level-1 stats with no error.
+
+Arena spawn configuration must:
+
+- apply the preset's overrides as the level-1 baseline;
+- attach exactly one `EnemyLevel` before `Health.Awake`;
+- clear both `LootOnDeath.Loot` **and** `LootOnDeath.Band` on prefab-carried components;
+- prevent `KillXP.AwardFor` from granting ordinary kill XP, using an explicit arena/no-kill-XP
+  marker rather than a magic zero that later gets clamped to one;
+- parent every opponent to the arena chunk/holder so teardown destroys it;
+- never pool or deactivate an opponent after activation; destroy survivors on defeat/forfeit.
+
+### ArenaMatchController
+
+The controller is serialized on the arena prefab root and consumes the pending request only after
+the chunk and NavMesh are ready.
+
+```text
+BeginPendingMatch
+  -> validate pending match and all required markers
+  -> build every opponent inactive
+  -> subscribe to each Health.OnDeath
+  -> activate the opponent holder
+  -> live = true
+
+OnOpponentDeath
+  -> ignore when !live
+  -> decrement the explicit remaining count
+  -> only call Victory at zero
+
+Victory
+  -> set live = false first
+  -> grant authored match XP and pounds
+  -> increment PlayerSession.ArenaWins
+  -> restore entry vitals
+  -> return beside Mandrew
+
+Defeat / Forfeit
+  -> set live = false first
+  -> destroy or disable combat on surviving opponents
+  -> grant nothing and do not change ArenaWins
+  -> restore entry vitals
+  -> return beside Mandrew
 ```
-ArenaLadder  (ScriptableObject, Assets/Resources/ArenaLadder.asset)
+
+Count `Health.OnDeath` events; do not poll for corpses. `Health.Die` invokes the event before its
+delayed destroy, so a corpse poll can end early or never end depending on frame order.
+
+The `GameFlowController.HandlePlayerDeath` arena interception must run before police-arrest and
+ordinary death-screen handling. A live sanctioned match owns that zero-health event.
+
+### Vitals and the healing exploit
+
+The old full-revive proposal made Mandrew a free clinic: enter injured, lose immediately, return
+at full health. Snapshot `CurrentHealth`, `CurrentMana`, and `CurrentStamina` immediately before
+entry and restore those values on victory, defeat, and forfeit. Inventory changes—including used
+consumables—are not rolled back.
+
+### Checkpoint policy
+
+`ChunkManager.TravelRoutine` currently saves after every portal arrival. An arena arrival save is
+unsafe: reloading it would instantiate the room without a valid pending match and could leave the
+player sealed in an empty pit.
+
+Append `MapChunkData.SuppressCheckpointSaves` and enforce it centrally in `SaveGameManager.Save`,
+not at only one travel call site. Existing chunk assets read `false` and keep current behaviour.
+
+Entry writes the last safe checkpoint in Home London **before** travel. Return travel is allowed
+to autosave normally after the player reaches the outside marker, thereby persisting rewards and
+`ArenaWins`. `ContinueFromSave` should defensively redirect any transient-location save to Home
+London, covering development builds or future accidental callers.
+
+### Ladder and progress
+
+```text
+ArenaLadder
 └─ List<ArenaMatch>
-   ├─ Title          the rank earned by WINNING this match  ← owner's words
-   ├─ Pounds, XP     the purse
-   ├─ StakeCost      entry fee in pounds, 0 for free        (field exists from day one, default 0)
+   ├─ Title                 owner-written title earned by winning
+   ├─ Pounds                victory purse
+   ├─ XP                    total victory XP; ordinary kill XP is suppressed
+   ├─ StakeCost             present from day one, default 0
    └─ List<ArenaOpponent>
-      ├─ PresetKey   a PlacementPresetLibrary key (string)
-      ├─ Level       EnemyLevel to attach
-      └─ Count       how many
+      ├─ PresetKey          PlacementPresetLibrary key
+      ├─ Level
+      └─ Count
 ```
 
-⚠ **`ArenaLadder` lives in `Resources/`, so everything it references ships in every build.**
-`QuestDefinition`'s remarks spell out why that matters and the rule it produced: no `GameObject`,
-`Prefab`, `Sprite` or `AudioClip` field on a `Resources`-resident type, because one prefab
-reference drags its entire dependency graph in. **Opponents are therefore referenced by
-`PlacementPresetLibrary` key — a plain string — not by prefab.** That is the same indirection the
-tutorial characters already use, and it costs one library entry per opponent subject.
+`PlayerSession.ArenaWins` is the number of completed rungs and selects the next zero-based list
+entry. The first playable vertical slice must persist it because every bout now returns outside
+and destroys the arena controller. `SaveData` stores only `ArenaWins`; titles are derived from the
+ladder and can be rewritten without migration.
 
-**The title is not saved.** `SaveData` stores the rank as an integer and the title is looked up
-from the ladder on every read, exactly as the player's level is derived from `TotalXP` and never
-stored. The owner can rewrite every title in the game without a save migration.
+The ladder may live in `Resources` only with strings and scalar data—never prefab, sprite, audio,
+or `GameObject` references. Opponents resolve by `PlacementPresetLibrary` key.
 
-### Entry from dialogue
+### Prince Mandrew and dialogue
 
-Prince Mandrew's conversation is a **dialogue-only file**, `quests/dialogue/mandrew.quest`. He owns
-a conversation and no quest, which is exactly what that folder was added for on 2026-08-15. The
-file owns his conversation permanently: every future line he says goes in it, gated, because each
-import regenerates `Dialogue_Mandrew.asset` wholesale.
+Prince Mandrew is a normal `PlacementPreset` NPC placed outside the castle in
+`Home_London_Prefab`, beside a `PlayerSpawnPoint` with an exact stable id such as
+`castle_arena_return`. The precise placement must be checked visually in Prefab Mode; the castle
+YAML proves the group exists but does not safely identify its intended front doorway.
 
-The hook is a new **`ARENA` choice directive** in `QuestTextImporter`, modelled directly on the
-`MERCHANT:` directive added the same day:
+His conversation lives in `quests/dialogue/mandrew.quest`. Add a bare terminal directive:
 
-```
-CHOICE [TODO: ask for a bout]
+```text
+CHOICE [OWNER-WRITTEN AGREEMENT]
 ARENA
 ```
 
-Bare, with no argument — there is one arena, and unlike `MERCHANT:` there is no paired action to
-name. That also means there is no half-set-pair for `DialogueValidator` to reject, which is the
-check `MERCHANT:` had to be careful about. Like a merchant choice it takes no `-> id`: it ends the
-conversation.
+The importer appends `DialogueChoice.StartsArena = true`. `DialogueManager` closes the
+conversation first, then calls the coordinator, preserving the merchant pause-ordering rule.
+There is no Arena window in the first slice: the agreement itself begins the bout. A bout card or
+rank window is optional later polish.
 
-It sets one appended field on `DialogueChoice`, and `DialogueManager.OnChoiceSelected` gets one
-branch that mirrors the merchant branch verbatim:
-
-```csharp
-// A shop owns its own modal pause. Close the conversation first so its pause token is
-// released, then let the arena window acquire one; doing this in the other order
-// leaves the world one Push ahead when the window closes.
-if (choice != null && choice.OpensArena)
-{
-    EndDialogue();
-    UI.ArenaUI.Show();
-    return;
-}
-```
-
-⚠ That ordering is not a style preference. It is a bug the merchant work already paid for once, and
-it is written into CLAUDE.md as an outstanding verification item. Copy the shape, copy the comment.
-
-### The window
-
-`ArenaUI`, Win95-skinned like `MerchantUI`. Shows: current title and rank, the next opponent(s) and
-their levels, the purse, and FIGHT / LEAVE. Refusals live here, all in one place, each with the
-owner's own line:
-
-| Refusal | Check | Why |
-|---|---|---|
-| Wanted level above 0 | `WantedManager.Instance.CurrentKnives > 0` | See the laundering trap below. Also good fiction. |
-| A companion is following | `CompanionManager.Instance.HasActiveCompanion` | The pit is solo — owner's decision. **Live, not hypothetical: Alex ships as of `ab2d6c5`.** |
-| Ladder exhausted | rank past the last rung | The player has cleared everything. |
-| Cannot pay `StakeCost` | `PlayerSession.Pounds` | Only once a stake is authored above 0. |
+Dialogue, refusal wording, promotion titles, and Mandrew's spoken lines are owner-authored. Code
+and importer work may provide structural placeholders but must not invent the prose.
 
 ---
 
-## Traps
+## Silent-failure and exploit checklist
 
-Each of these is a silent failure — nothing throws, nothing logs.
+1. **Fallback movement masquerading as NavMesh.** Chase motion alone does not pass Phase 0;
+   inspect bake success and `isOnNavMesh` on both agents.
+2. **Spawn-before-bake ordering.** Opponents activate only after the baker reports success.
+3. **Enemy level added too late.** Configure under an inactive parent before `Health.Awake`.
+4. **Prefab-carried loot.** Neek already has a loot band; clear fixed loot and band explicitly.
+5. **Partial-kill XP farming.** Arena combatants award no ordinary kill XP, including on a bout
+   the player later loses.
+6. **Unsafe checkpoint inside the pit.** Suppress saves centrally for the arena and checkpoint
+   outside before entry.
+7. **Free healing.** Restore entry vitals, never `ReviveFull` as the arena outcome.
+8. **Mounted direct entry.** Dialogue entry must reproduce the portal's mount refusal.
+9. **Wanted/police leakage.** The current `ChunkTravelKind.Portal` path correctly retains wanted
+   level; refuse entry because police are unparented and should not share the arena origin.
+10. **Companion leakage.** Reject before travel rather than trying to hide or suspend a follower.
+11. **Stale pending request.** Consume or clear it exactly once on success, abort, or timeout.
+12. **Rank survives only in a dead controller.** Store `ArenaWins` in `PlayerSession` from the
+    first playable loop and append it to the save.
+13. **Double outcome.** Set `live = false` before reward, revive, destroy, or travel calls.
+14. **No escape from a broken bout.** The forfeit interaction returns safely even when an enemy
+    cannot be reached; a NavMesh/spawn authoring failure auto-returns instead of starting.
+15. **Isometric wall occlusion.** Cut away the south/west visuals while keeping collision.
 
-### 1. The arrival autosave puts a save inside the pit
+## Mapping table—serialized and save-key changes
 
-`TravelRoutine` calls `SaveGameManager.Save()` on arrival. So walking through the castle door
-writes a checkpoint whose `ChunkName` is `Royal Fight Arena`. Quit there and reload, and
-`SaveGameManager.LoadWorld` rebuilds the arena chunk with **no `ArenaMatchController`** — it was
-parented to the destroyed instance and nothing re-creates it. If the save was taken mid-bout the
-player reloads sealed in the pit with no opponents, no exit and no reason for any of it.
+Nothing is renamed, reordered, or removed. Every existing-type change is appended.
 
-**Fix, in two layers:**
-
-- **Append `bool NoAutosave` to `MapChunkData`** and have `TravelRoutine` skip its `Save()` for a
-  chunk carrying it. Appending a serialized field is safe; the twelve existing `MapChunkData`
-  assets read `false` and behave exactly as today (CLAUDE.md §3).
-- **Save before travelling**, in the portal's own path, so the last checkpoint is London *outside*
-  the castle. Losing a bout then costs nothing but the walk back in.
-- **Belt and braces:** `GameFlowController.ContinueFromSave` redirects a save whose chunk carries
-  `NoAutosave` to London. This recovers a save file already written by an earlier build, which the
-  first two layers cannot.
-
-### 2. Ducking into the arena launders the wanted level
-
-`WantedManager.OnChunkTransition` clears `CurrentKnives` outright when the player moves from a
-chunk with `IsCity` set into one without it. `Royal_Arena` will have `IsCity: 0`, so **commit a
-crime, walk through the castle door, walk back out clean.** Free laundering, with a police cooldown
-applied to London as a bonus.
-
-The chosen fix is the entry refusal above: **the arena will not take you while you are wanted.**
-That gates the exploit and dodges the separate question of whether police — which `WantedManager`
-spawns *unparented*, so they survive the chunk swap — should be able to follow you into a bout.
-
-⚠ **This hole is not new and is not the arena's.** All six interior shells committed 2026-08-09
-have `IsCity: 0` and are reached by portal, so every one of them launders the wanted level the same
-way the moment a door is wired to it. That is a pre-existing defect this work merely walks past;
-fixing it properly is a `WantedManager` job (an interior is not "the wilderness") and is being
-handled separately.
-
-### 3. `EnemyLevel` added after `Instantiate` does nothing
-
-Covered under EnemyFactory above. Repeated here because it is the one that produces a high badge
-over a level-1 opponent with an empty console.
-
-### 4. NavMesh inside an interior chunk is unproven
-
-`c.unity` registers `Assets/c/NavMesh.asset` for the life of the scene, every chunk instantiates at
-the origin, and every interior carries its own `RuntimeNavMeshBaker`. Whether an agent can actually
-path inside a portal-reached interior has never been observed, because no interior has ever
-contained anything that paths. **This is Phase 0 and it gates everything.**
-
-### 5. Loot on death vs. the purse
-
-If arena opponents keep their preset `Loot`, the pit becomes a farm and the ladder stops being the
-economy. `Preset_Neek` has `Loot: []` so rung 1 is already clean, **but that is luck, not a
-guarantee** — the moment a subject with loot joins the roster the pit becomes farmable. Make it
-explicit: `EnemyFactory` takes a "suppress loot" flag which the arena sets and the World Palette
-does not. The purse and the title are the reward.
-
-### 6. `DialogueChoice` is serialized into every generated asset
-
-The new field is **appended, never inserted**, same rule that `QuestGateType.ActiveAtStage = 4`,
-`MerchantActionType` and every other addition to that class followed.
-
----
-
-## Mapping table — serialized and save-key changes
-
-Nothing here is a rename. Every entry is an append, and the append-only rule is what makes each of
-them safe to read back from an existing asset or save.
-
-| Type | Change | What an existing asset/save reads | Migration |
+| Type | Change | Existing data reads | Migration |
 |---|---|---|---|
-| `SaveData` | append `int ArenaRank` | `0` — unranked, never fought | none |
-| `MapChunkData` | append `bool NoAutosave` | `false` — autosaves as today | none |
-| `DialogueChoice` | append `bool OpensArena` | `false` — no arena branch | none |
-| `PlacementPresetLibrary` | new entry `neek`, then one per opponent subject | untouched | none |
-| — new — | `ArenaLadder`, `ArenaMatch`, `ArenaOpponent` | n/a | n/a |
-| — new — | `Royal_Arena_Data.ChunkName` = `"Royal Fight Arena"` | **new save key — freeze before first save** | n/a |
+| `SaveData` | append `int ArenaWins` | `0`—no bouts won | none |
+| `PlayerSession` | add runtime `ArenaWins`, reset in `BeginNewGame`, restore on Continue | fresh runtime state | restore explicitly |
+| `MapChunkData` | append `bool SuppressCheckpointSaves` | `false`—all current chunks save normally | none |
+| `DialogueChoice` | append `bool StartsArena` | `false`—all current choices unchanged | none |
+| `PlacementPresetLibrary` | new `neek` entry, then one per arena subject | current entries untouched | none |
+| new types | `ArenaLadder`, `ArenaMatch`, `ArenaOpponent`, match/coordinator components | n/a | n/a |
+| new save key | `Castle_Fight_Arena_Data.ChunkName = "Castle Fight Arena"` | n/a | freeze before first save |
 
-**No existing field is renamed, reordered or removed**, so no `[FormerlySerializedAs]` is needed
-anywhere in this work. If that stops being true, this table is what must be rewritten first.
+The save writer must copy `PlayerSession.ArenaWins` to `SaveData`; Continue must restore it after
+`BeginNewGame` has reset the session. Missing either side silently resets progress. A New Game
+started in the same app session must also reset it to zero.
 
 ---
 
 ## Phases
 
-Each is a single-concern commit, plan → implement → review per CLAUDE.md §6.
+Each phase is reviewed before the next. Do not commit or push unless requested.
 
-### Phase 0 — prove the NavMesh (gate)
+### Phase 0—requested shell and honest NavMesh gate
 
-No arena code. Build a throwaway: stamp **two** `Enemy_Neek` into `Quidland_Prefab` (an existing
-shell), wire a `DungeonPortal` from London to it with `Tools → Place → Portal Placement`, walk in,
-and see whether they chase you and path around each other. **If they stand still, stop and report —
-the arena is blocked behind the chunk-lifetime work and nothing below is worth writing.**
+1. Add the idempotent-create editor builder.
+2. Create the **Castle Fight Arena** prefab contract, dirty tiled stone material, chunk data,
+   registry entry, cutaway walls, player marker, four opponent markers, test obstacle, and forfeit
+   anchor.
+3. Add observable bake readiness/success to `RuntimeNavMeshBaker` if needed for an honest test.
+4. In Unity with Play mode stopped, temporarily place two Neeks in the arena, enter through a
+   temporary development route, then start Play mode.
+5. Confirm bake success, both `NavMeshAgent.isOnNavMesh`, obstacle routing, mutual avoidance, and
+   no console errors. Remove the temporary opponents/route and save the prefab.
 
-Two, not one, because rung 1 is two: agent-vs-agent avoidance inside a small interior is a separate
-question from whether a single agent can path at all.
+**Gate:** if any agent is off-mesh or only using fallback motion, stop. The shell still satisfies
+the prefab request, but match implementation is blocked until navigation is corrected.
 
-This also gets four other unverified things exercised for free: the portal travel path, the Portal
-Placement tool's first ever run, `MapChunkRegistry` being accepted by Unity, and `Enemy_Neek`'s
-debut.
+### Phase 1—safe playable vertical slice
 
-Discard the throwaway afterwards.
+- `ArenaEntryCoordinator` and pending-request lifecycle.
+- Shared enemy configuration + runtime factory with inactive-holder ordering.
+- Explicit arena combatant policy suppressing fixed loot, loot bands, and ordinary kill XP.
+- `ArenaMatchController`, victory, defeat interception, forfeit, automatic outside return.
+- Entry-vital snapshot/restore.
+- `SuppressCheckpointSaves`, outside pre-bout checkpoint, defensive load redirect.
+- `ArenaWins` runtime state, reset, save, and restore.
+- Three Inspector-authored matches; first is two level-1 Neeks and 15 total match XP.
+- A temporary mechanical start hook is allowed only until Mandrew's owner-written dialogue exists.
 
-### Phase 1 — the chunk and the loop
+**Exit:** win rung 1, return outside, trigger the temporary start hook again, and receive rung 2;
+lose and forfeit without
+reward/rank; save/reload still offers the correct next rung; partial kills grant no XP or loot.
 
-- `Tools → Content → Build Royal Arena Chunk` — an editor tool creating the `MapChunkData`, the
-  chunk prefab, its two rooms, markers and four spawn points. Creates only; refuses to overwrite,
-  so it stays out of Danger Zone.
-- Portal pair London ↔ arena; `PlayerSpawnPoint castle_door` in London.
-- `EnemyFactory`, with `PlacementBuilders.BuildEnemy` delegating to it.
-- `PlacementPresetLibrary` entry `neek`.
-- `ArenaMatchController`, `ArenaLadder` with **three** matches, no UI — FIGHT is a plain dialogue
-  choice for now.
-- The two autosave layers (`MapChunkData.NoAutosave`, save-before-travel).
+### Phase 2—Prince Mandrew entry
 
-**Exit criterion:** walk in, talk, fight two Neeks, win, get paid 15 XP, land back in the lobby,
-fight rung 2. No window, no ranks, no persistence.
+- Create and wire `Preset_PrinceMandrew`.
+- Add `castle_arena_return` marker and place Mandrew outside the castle in Prefab Mode.
+- Append `DialogueChoice.StartsArena`.
+- Add `ARENA` parsing/validation and the dialogue-manager branch.
+- Import the owner-written `quests/dialogue/mandrew.quest`.
+- Remove the temporary mechanical start hook.
+- Exercise wanted, mounted, companion, exhausted-ladder, and future-stake refusals.
 
-### Phase 2 — ranks, defeat, the window and the dialogue hook
+**Exit:** talk to Mandrew outside, agree, travel directly into the bout, and return beside him for
+all three outcomes without pause imbalance.
 
-- `SaveData.ArenaRank`, restored in `GameFlowController.ContinueFromSave` alongside the other
-  session restores.
-- The `HandlePlayerDeath` hook: a live match takes the ejection path instead of `DeathScreenUI`.
-- `ArenaUI` (Win95), `DialogueChoice.OpensArena`, the `DialogueManager` branch, the `ARENA`
-  importer directive, and the four refusals.
-- `quests/dialogue/mandrew.quest` — structure and gating scaffolded, **words the owner's**.
-- Titles read from the ladder and toasted on promotion.
+### Phase 3—`.arena` authoring pipeline and fuller ladder
 
-### Phase 3 — the `.arena` pipeline and the full ladder
+- `arena/ladder.arena`, format reference, importer, and validator.
+- `Tools > Content > Import Arena Ladder` and `Validate Arena Ladder`.
+- Validate contiguous ranks, non-empty owner titles, positive rewards/counts, resolvable enemy
+  preset keys, enemy categories/prefabs, and no match exceeding four spawn markers.
+- Expand only after the first three matches have been play-tested.
 
-- A repo-root `arena/ladder.arena`, a format doc, `ArenaTextImporter`, `ArenaContentValidator`, and
-  `Tools → Content → Import Arena Ladder` / `Validate Arena Ladder`.
-- Validator rules: every `PresetKey` resolves in `PlacementPresetLibrary`; every referenced preset
-  is category `Enemy` and has an `EnemyPrefab`; ranks are contiguous from 1; every match has a
-  non-empty title and at least one opponent; `Count` never exceeds the number of `ArenaSpawn_n`
-  markers in the chunk prefab.
-- The full ladder authored — see the shape below.
+### Phase 4—optional polish
 
-### Phase 4 — polish, if wanted
+- Bout/rank card window before agreement.
+- Crowd and ambience.
+- Champion introductions and named opponents.
+- Wagers/stakes after transaction ordering is designed and tested.
+- Top-rank unique item and bag-window rank readout.
 
-Wagering on your own bout, a crowd, champion bouts with a named opponent and their own arrival
-line, an arena-only reward item at the top rung, a rank readout in the bag window.
+## Ladder shape—proposal, not authored content
 
----
+Rung 1 is fixed: two Neeks and 15 total match XP. Pounds and all titles are owner slots.
 
-## Ladder shape — a starting proposal, not a decision
-
-Rung 1 is fixed by the owner: **two Neeks, 15 XP.** Everything below it is a proposal.
-
-The roster is seven subjects. A forty-rung ladder built from seven enemies has to escalate along
-three axes or it will feel like the same fight forty times — and since rung 1 already starts at two
-opponents, count is the *later* axis, not the first:
-
-| Rungs | Opponents | Level | What changes |
+| Rungs | Opponents | Level | Purpose |
 |---|---|---|---|
-| 1–6 | 2 | 1 → 3 | Each subject introduced against a familiar count. |
-| 7–14 | 2–3 | 3 → 6 | First mixed pairs, first third body. |
-| 15–24 | 3 | 6 → 10 | Level does the work. |
-| 25–34 | 3–4 | 10 → 15 | Four at once needs all four spawn markers. |
-| 35–40 | 4 + champions | 14 → 20 | Named opponents well above the curve. |
+| 1–6 | 2 | 1 → 3 | Introduce subjects at a stable count. |
+| 7–14 | 2–3 | 3 → 6 | Mixed pairs and the first third body. |
+| 15–24 | 3 | 6 → 10 | Let level scaling carry difficulty. |
+| 25–34 | 3–4 | 10 → 15 | Use all four authored markers. |
+| 35–40 | 4/champions | 14 → 20 | Endgame combinations and named bouts. |
 
-Levels multiply through `EKVibe.EnemyHealthPerLevel` (0.35) and `EnemyDamagePerLevel` (0.25), so a
-level-20 opponent has ~7.65× the health and ~5.75× the damage of the level-1 prefab. Against
-`MaxPlayerLevel` 25 that is roughly the right shape, but **it is arithmetic, not playtesting.**
+With ordinary kill XP suppressed, the `XP` field is the total progression payout and can be
+balanced directly. This replaces the old accidental ~65 XP first bout (two normal kills plus a
+15 XP match award) with the intended 15 XP total.
 
-⚠ **The purse is a garnish, not the reward — check this is intended.** `EKVibe.KillXPBase` is 25,
-so two level-1 Neeks already pay about **50 XP in kill XP** before the arena's own purse is added.
-The 15 XP match reward is therefore roughly a quarter of what the bout pays anyway, and rung 1
-totals ~65 XP against the 100 needed for level 2. That may be exactly right — the fight is the
-reward and the purse is a nod — but it is worth knowing rather than discovering. The **pounds**
-purse for rung 1 is still an owner slot, and it is the number with room to carry weight.
+## Art and owner-authored content
 
-⚠ **Titles are the owner's words.** The importer scaffolds a `TITLE:` slot per rung; it does not
-fill them. Same rule as quest and dialogue prose (CLAUDE.md §3).
+- Prince Mandrew needs an art subject before he is more than a temporary reused villager visual.
+- His dialogue, refusal lines, promotion messages, and every rank title need owner text.
+- The arena floor needs no new bitmap: reuse the existing 256×256 worn dark pavement tile through
+  an arena-specific material.
+- Tortured Neek still has only idle art; exclude him from the first ladder or accept sliding and no
+  death pose as a known art gap.
 
----
+## Unity verification route
 
-## Art asks
+Agent-side `python Tools/asset_reachability.py --check-dangling` verifies references only. It does
+not prove compilation, prefab parsing, NavMesh, visuals, or play behaviour. The following requires
+Unity and a human:
 
-Nothing is blocking, but three things are worth knowing:
-
-- **Prince Mandrew has no subject.** He needs one to be anything other than a reskinned villager.
-  [../art/ART_QUEUE.md](../art/ART_QUEUE.md) is where that ask belongs.
-- **The arena interior is a bare box** until it is dressed, exactly like the six shells —
-  `mat_dungeon_wall` and `mat_dungeon_floor` are placeholders. A sand floor and a stone ring would
-  carry the whole fiction; that is a materials job, not a sheet job.
-- **Tortured Neek has only an idle sheet.** He will slide and has no death pose. Either keep him
-  off the ladder for now or accept it — an art gap, not a defect.
-
----
-
-## Verification
-
-Per CLAUDE.md §5: **nothing below can be checked without the editor.** What can be run agent-side
-is reference integrity only, and it proves nothing about whether any of this works:
-
-```bash
-python Tools/asset_reachability.py --check-dangling
-```
-
-Routes for the owner, once each phase lands:
-
-1. **Phase 0 gate.** Portal into `Quidland`, stand in front of the two stamped Neeks. Both should
-   chase and neither should shove the other through a wall. Standing still means no NavMesh and the
-   plan stops here.
-2. **The door.** Walk to the castle in London, press USE, arrive in the lobby facing the marker's
-   blue arrow. Walk back out and arrive at `castle_door`, not at the origin.
-3. **The first bout.** Talk to Prince Mandrew, FIGHT, land in the pit, kill both Neeks, take 15 XP,
-   land back in the lobby. Check the purse readout moves and the £ glyph renders rather than showing
-   a missing-glyph box (CLAUDE.md §5 item 9).
-4. **Both deaths counted.** Kill one Neek and check the bout does **not** end. Ending on the first
-   kill means the controller is polling for survivors instead of counting `OnDeath`.
-5. **The level actually applied.** Author rung 3 at level 8 and check the opponent is visibly
-   tougher than rung 1's, *and* that its nameplate badge reads 8. A badge reading 8 over an
-   opponent that dies in two hits is the `Instantiate`/`Awake` trap — the deactivated-holder step
-   was lost.
-6. **Defeat.** Lose a bout deliberately. Expect the lobby, full health, no purse, no rank change —
-   **not** the death screen.
-7. **The autosave.** Enter the arena, quit to desktop mid-bout, relaunch, Continue. Expect to
-   arrive in London outside the castle. Arriving inside the pit means `NoAutosave` is not being
-   read.
-8. **Laundering.** Get to 1 knife, walk to the castle door, press USE. Expect a refusal. Being let
-   in — and coming out clean — means the entry gate is not wired.
-9. **Rank persistence.** Win two bouts, save, reload, and check Prince Mandrew still offers rung 3.
-   Then load a save made *before* today and check it arrives unranked at rung 1 rather than
-   failing.
-10. **The window's pause.** Open Prince Mandrew's chat, pick FIGHT, close the arena window, and
-    check the world is not frozen. A freeze is the merchant pause-ordering bug, repeated.
-11. **Companion refusal.** Hire Alex, walk to Prince Mandrew, and check FIGHT refuses rather than
-    letting a follower into the pit.
-12. **The dialogue file owns his conversation.** Re-run `Tools → Content → Import Quests` and check
-    `Dialogue_Mandrew.asset` regenerates with the arena choice intact — an `ARENA` directive lost in
-    a re-import is the failure mode that folder's wholesale-regeneration rule creates.
-
----
+1. Run `Tools > Content > Build Castle Fight Arena` with Play mode stopped. Run it a second time
+   and confirm it refuses to overwrite rather than minting new GUIDs.
+2. Open the prefab and confirm one root, 28×20 dirty tiled floor, solid boundaries, cutaway
+   south/west visuals, player marker, four opponent markers, and arena material.
+3. Run the Phase 0 test and inspect bake success plus `isOnNavMesh` on **both** agents. Chase motion
+   alone is a failure to verify.
+4. Check both agents route around the test obstacle and do not overlap or shove through walls.
+5. Talk to Mandrew outside while healthy, injured, wanted, mounted, and with Alex following.
+6. Win: both deaths are required, no corpse menu opens, only 15 XP is paid, pounds pay once,
+   `ArenaWins` advances once, entry vitals return, and arrival is beside Mandrew.
+7. Lose after killing one opponent: no kill XP, loot, purse, or rank; entry vitals return.
+8. Forfeit: same no-reward outcome and safe return.
+9. Quit mid-bout and Continue: arrive at the pre-bout Home London checkpoint, never an empty pit.
+10. Win two bouts, reload, and receive rung 3. Start a New Game in the same app session and receive
+    rung 1, proving reset and restore both exist.
+11. Check no tall near-camera wall hides the player at the south/west edges.
+12. Re-import quests and confirm Mandrew's `ARENA` action survives generated-asset replacement.
 
 ## Explicitly out of scope
 
-- **Chunk suspend/resume.** The arena wants a fresh pit each entry, so it needs none of
-  [BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md](BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md).
-  It does not advance that plan either.
-- **Fixing the interior wanted-level hole.** Gated around, not fixed; handled separately.
-- **Rerouting arrest to the police station.** Unrelated and already noted elsewhere.
-- **Arena-specific loot tables.** Phase 4 at the earliest; the purse is the economy until then.
+- General building-interior suspend/resume and location caching. The arena is intentionally fresh
+  per bout and never suspended.
+- A physical castle door or explorable castle lobby. Mandrew's agreement is the entry point.
+- Rerouting arrest or making police follow into interiors.
+- Arena corpse loot or arena-specific loot tables; the purse is authoritative.
+- Full ladder prose, dialogue, titles, and Mandrew art without owner input.
