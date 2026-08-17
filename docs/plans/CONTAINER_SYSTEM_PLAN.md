@@ -44,9 +44,9 @@ every `Awake` in the new chunk runs synchronously inside that `Instantiate`, so 
 `ChunkManager.Instance.CurrentChunkData` during `Awake` sees **the chunk it just left**.
 
 `SpriteContainer.SetUpFixed` does exactly that, so a container inside a portal-reached chunk builds
-its save id as `"<origin chunk>/<name>"`. Latent — no `SpriteContainer` is placed anywhere and no
-`DungeonPortal` exists — but the bus-station containers are portal-reached, which is the whole use
-case.
+its save id as `"<origin chunk>/<name>"`. Latent only because no `DungeonPortal` exists yet — two
+`SpriteContainer`s ARE placed, at the root of `c.unity` (see §4.2.1), though being scene-root they
+never travel through a portal. The bus-station containers will, which is the whole use case.
 
 Six of the seven instantiate paths assign `CurrentChunkData` before instantiating and are correct.
 Only `TravelRoutine` does not. Moving the assignment earlier would destroy the abort safety, so the
@@ -95,10 +95,45 @@ later silently resets every cooldown.
 | `SpriteContainer` | `int RespawnVisits` | `EKVibe.DefaultContainerRespawnVisits` (3) | **0** — see the warning below |
 
 ⚠ **Appending an int to a component whose assets already exist gives those assets `0`, not the
-field initializer.** Unity writes the initializer only when it next serializes the object. Two
-`SpriteContainer` prefabs exist (`Container_Fixed`, `Container_Respawning`) and neither is placed
-anywhere, so nothing is at risk today — but `RespawnVisits <= 0` must be treated as "use the
-default" rather than "respawn instantly", or an untouched asset silently behaves as the old mode.
+field initializer.** Unity writes the initializer only when it next serializes the object. So
+`RespawnVisits <= 0` is treated as "use the default" rather than "respawn instantly", or an
+untouched asset would silently behave as the old mode. `Container_Respawning.prefab` is given
+`RespawnVisits: 3` explicitly rather than relying on that fallback.
+
+### 4.2.1 ⚠ Both container prefabs ARE placed — in `c.unity`, at scene root
+
+An earlier draft of this plan said neither was placed anywhere. That was wrong, and the scan behind
+it was wrong: it searched for the **script** GUID, which finds the prefab assets but never a prefab
+*instance*, because an instance references the prefab's GUID instead. Searching the prefab GUIDs
+finds both, active, in the only gameplay scene:
+
+| Object | `c.unity` | Parent | Position |
+|---|---|---|---|
+| `Container_Fixed` | `&623807398` | **scene root** | `(-10.7, 0.52, 39.1)` |
+| `Container_Respawning` | `&1621605433` | **scene root** | `(-22.9, 1.15, 40.6)` |
+
+Neither is inside a chunk prefab, and neither overrides `Mode` or `RespawnVisits`, so both take
+their prefab values.
+
+**A scene-root container is not destroyed and rebuilt on a chunk transition**, so its `Awake` runs
+once per scene load rather than once per visit. That makes this a real behaviour change to a live
+object:
+
+- **Before:** `Container_Respawning` rolled its contents once at scene load and wrote nothing to the
+  save. Looting it left it empty for the rest of the session; an app restart gave fresh contents.
+- **After:** looting it writes a 3-visit cooldown into the save, so it is now remembered across
+  restarts until three chunk crossings have worked it off.
+
+⚠ **Its save key is `<whatever chunk was current at scene load>/Container_Respawning`, and the
+object does not belong to that chunk.** So the key it writes depends on where the session started,
+while the object itself never moves. `Container_Fixed` has always had this (it read
+`CurrentChunkData` in `Awake` before this branch too); it is newly true of `Container_Respawning`
+only because that mode now touches the save at all.
+
+Both look like test placements rather than authored content. **Nothing here moves or deletes them —
+that is the owner's call**, and editing `c.unity` to remove a placement is exactly the kind of
+change that should not be made on an assumption. The decision is: leave them, move them into a
+chunk prefab, or delete them.
 
 ### 4.3 New enums — index frozen by the first authored container
 
@@ -181,27 +216,35 @@ Exit Play mode and `Ctrl+S` first.
 6. **Shift-click run.** Three objects in one armed session → three distinct `SaveId`s.
 7. **The validator fires.** Force a duplicate `SaveId` and confirm it is named. Clear both loot
    sources and confirm that rule fires. Point `EmptyVisual` at the prefab root and confirm refusal.
-8. **`Fixed` persists.** Blocked behind authoring a `DungeonPortal`, which has never existed in this
-   project. Once wired: loot it empty, cross a chunk edge, return, confirm still empty and showing
+8. **The two containers already in `c.unity`.** Do this one FIRST — it needs no authoring at all.
+   Open `c.unity` and find `Container_Fixed` near `(-10.7, 0.52, 39.1)` and `Container_Respawning`
+   near `(-22.9, 1.15, 40.6)`, both at the root of the Hierarchy. Play, search each, and check the
+   console for the "no current chunk to build a save id from" warning — whether it fires depends on
+   whether `ChunkManager` has resolved a chunk before these root objects' `Awake` runs, and Unity
+   does not guarantee `Awake` order across scene roots. Then decide whether they should be there at
+   all (see §4.2.1); if they stay, they are the fastest rig for checks 10–16.
+9. **`Fixed` persists.** Loot it empty, cross a chunk edge, return, confirm still empty and showing
    `EmptyVisual`. Then quit, `Continue`, confirm still empty. **That last step is the only proof the
-   save round-trips**, and it is the one most likely to fail.
-9. **The portal path uses the right chunk name.** Loot a `Fixed` container reached *by portal*, quit,
+   save round-trips**, and it is the one most likely to fail. (The *portal* variant of this — check
+   10 — still needs a `DungeonPortal`, which has never existed in this project.)
+10. **The portal path uses the right chunk name.** Loot a `Fixed` container reached *by portal*, quit,
    reload, confirm still empty. If it refills, the resolver did not take — and nothing will say so.
    Cross-check by reading `LootedContainers` in `savegame.json`: it must read
-   `Abandoned_Bus_Station/<SaveId>`, not `Home_London/<SaveId>`.
-10. **`Respawning` counts down.** `RespawnVisits = 2`, loot it, return once (still empty), return
+   `Abandoned_Bus_Station/<SaveId>`, not `Home_London/<SaveId>`. **Blocked until a `DungeonPortal`
+   is authored** — none exists in the project.
+11. **`Respawning` counts down.** `RespawnVisits = 2`, loot it, return once (still empty), return
     again (full). Read `ContainerCooldowns` in the JSON between the two.
-11. **A reload does not advance a cooldown.** Loot one, save, quit, reload twice, still empty.
-12. **A pre-feature save loads.** Hand-delete the `ContainerCooldowns` key and `Continue`. Must
+12. **A reload does not advance a cooldown.** Loot one, save, quit, reload twice, still empty.
+13. **A pre-feature save loads.** Hand-delete the `ContainerCooldowns` key and `Continue`. Must
     arrive with no error and every container fresh.
-13. **New Game in the same app session.** Loot a `Respawning` container, return to the title screen
+14. **New Game in the same app session.** Loot a `Respawning` container, return to the title screen
     without quitting, start a New Game, confirm it is fresh. This is the `BeginNewGame` clear, and
     it fails silently.
-14. **The visual swap.** `EmptyVisual` on, `FullVisual` off after the close — and correct on arrival
+15. **The visual swap.** `EmptyVisual` on, `FullVisual` off after the close — and correct on arrival
     in a chunk where the container is already spent.
-15. **A half-emptied container reopens** with the rest still inside, and records nothing.
-16. **An empty roll retires it.** Expected behaviour, not a bug — searching it counts.
-17. **The prompt reaches the HUD**, and a container behind a wall does not steal the prompt from
+16. **A half-emptied container reopens** with the rest still inside, and records nothing.
+17. **An empty roll retires it.** Expected behaviour, not a bug — searching it counts.
+18. **The prompt reaches the HUD**, and a container behind a wall does not steal the prompt from
     something nearer (`PlayerInteractor` is distance-only, no line of sight).
 
 ---
