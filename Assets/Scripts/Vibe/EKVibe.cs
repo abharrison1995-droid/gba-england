@@ -142,14 +142,68 @@ namespace GBHEngland.Vibe
         /// <summary>XP paid for killing a level-1 enemy.</summary>
         public const int KillXPBase = 25;
 
-        /// <summary>Enemy MaxHealth multiplier per level above 1.</summary>
+        /// <summary>
+        /// Level above which enemy scaling switches from the front-loaded early slope to a much gentler
+        /// late slope. Levels 1 through this value inclusive are completely unaffected by the late-slope
+        /// constants below — both enemies placed anywhere in the project today (Level 3 in
+        /// Home_London_Prefab, Level 4 in Mosleys_Lab_Basement_Prefab) sit inside this range.
+        /// </summary>
+        public const int EnemyScalingEarlyLevelCap = 5;
+
+        /// <summary>
+        /// Enemy MaxHealth multiplier per level above 1, for levels 1 through EnemyScalingEarlyLevelCap
+        /// inclusive — the front-loaded early slope. Value and meaning unchanged from before this comment
+        /// was written: both enemies placed anywhere in the project today (Level 3 in Home_London_Prefab,
+        /// Level 4 in Mosleys_Lab_Basement_Prefab) sit inside this range and are completely unaffected by
+        /// the late-slope split below.
+        ///
+        /// A previous retune attempt (worktree commit 921ebd7, never merged) replaced this single slope
+        /// with a flat "early jump" plus a much gentler continuing rate, on the premise that this formula
+        /// made a Level 2-4 enemy "barely distinguishable from an unleveled one (~9% tougher)". That
+        /// premise was arithmetically false: under this same 0.35 constant, a Level 3 enemy is +70% HP
+        /// (45→77) and Level 4 is +105% (45→92), not +9%. Built on that error, its own numbers actually
+        /// dropped those two placed enemies to 67 HP and 70 HP — a real nerf, moving away from "strong and
+        /// scary early" rather than toward it. Superseded; do not resurrect its constants.
+        ///
+        /// The real problem was never the early game — it was the high end, where this slope alone reaches
+        /// +840% (423 HP off a 45 baseline) by the level cap of 25. EnemyHealthPerLevelLate is what bounds
+        /// that; this constant is unchanged.
+        /// </summary>
         public const float EnemyHealthPerLevel = 0.35f;
 
-        /// <summary>Enemy damage multiplier per level above 1.</summary>
+        /// <summary>
+        /// Continuing MaxHealth growth rate for levels above EnemyScalingEarlyLevelCap. Chosen against the
+        /// player's own ~5.5%/level average HP growth (PlayerClass.GrowthPerLevel) so enemies keep gaining
+        /// ground on the player rather than flattening to parity, while staying under a quarter of the
+        /// early 0.35 rate so the level-25 multiplier bounds to ~4.0x (+300%) instead of the old 9.4x
+        /// (+840%) — still meaningfully ahead of the player's own ~2.33x growth multiple by the cap.
+        /// </summary>
+        public const float EnemyHealthPerLevelLate = 0.08f;
+
+        /// <summary>
+        /// Enemy Damage multiplier per level, levels 1-EnemyScalingEarlyLevelCap. Unchanged; see
+        /// EnemyHealthPerLevel's comment for why.
+        /// </summary>
         public const float EnemyDamagePerLevel = 0.25f;
 
-        /// <summary>Kill-XP multiplier per enemy level above 1.</summary>
+        /// <summary>
+        /// Continuing Damage growth rate above EnemyScalingEarlyLevelCap, at roughly the same ratio to
+        /// EnemyHealthPerLevelLate (0.06/0.08 = 0.75) that the early slopes already use (0.25/0.35 ≈ 0.71).
+        /// </summary>
+        public const float EnemyDamagePerLevelLate = 0.06f;
+
+        /// <summary>
+        /// Enemy kill-XP multiplier per level, levels 1-EnemyScalingEarlyLevelCap. Unchanged; see
+        /// EnemyHealthPerLevel's comment for why.
+        /// </summary>
         public const float EnemyXPPerLevel = 0.5f;
+
+        /// <summary>
+        /// Continuing kill-XP growth rate above EnemyScalingEarlyLevelCap, at roughly the same ratio to
+        /// EnemyHealthPerLevelLate (0.11/0.08 ≈ 1.375) that the early slopes already use (0.5/0.35 ≈ 1.43),
+        /// so a scarier high-level enemy still pays out proportionally more.
+        /// </summary>
+        public const float EnemyXPPerLevelLate = 0.11f;
 
         /// <summary>
         /// Effective armour equal to this halves incoming damage. A *balance* constant: raising or
@@ -238,20 +292,29 @@ namespace GBHEngland.Vibe
         }
 
         /// <summary>
-        /// The one shared scaling shape: <c>baseValue * (1 + K * (level - 1))</c>. The prefab's
-        /// authored value is always the level-1 baseline.
+        /// The shared enemy-scaling shape: piecewise-linear, using earlyPerLevel for levels 1 through
+        /// EnemyScalingEarlyLevelCap and a much gentler latePerLevel beyond it. Continuous at the
+        /// breakpoint by construction (both segments evaluate to the same multiplier exactly at the cap).
+        /// At level==1, both earlySteps and lateSteps are 0, so the multiplier is exactly 1 — no special
+        /// case needed, unlike a flat-jump formula would require.
         /// </summary>
-        private static int Scaled(int baseValue, int level, float perLevel)
+        private static int Scaled(int baseValue, int level, float earlyPerLevel, float latePerLevel)
         {
-            int clamped = Mathf.Max(1, level);
-            return Mathf.RoundToInt(baseValue * (1f + perLevel * (clamped - 1)));
+            int steps = Mathf.Max(1, level) - 1;
+            int earlySteps = Mathf.Min(steps, EnemyScalingEarlyLevelCap - 1);
+            int lateSteps = Mathf.Max(steps - earlySteps, 0);
+            float multiplier = 1f + earlyPerLevel * earlySteps + latePerLevel * lateSteps;
+            return Mathf.RoundToInt(baseValue * multiplier);
         }
 
-        public static int ScaledHealth(int baseHealth, int level) => Scaled(baseHealth, level, EnemyHealthPerLevel);
+        public static int ScaledHealth(int baseHealth, int level) =>
+            Scaled(baseHealth, level, EnemyHealthPerLevel, EnemyHealthPerLevelLate);
 
-        public static int ScaledDamage(int baseDamage, int level) => Scaled(baseDamage, level, EnemyDamagePerLevel);
+        public static int ScaledDamage(int baseDamage, int level) =>
+            Scaled(baseDamage, level, EnemyDamagePerLevel, EnemyDamagePerLevelLate);
 
-        public static int ScaledKillXP(int baseXp, int level) => Scaled(baseXp, level, EnemyXPPerLevel);
+        public static int ScaledKillXP(int baseXp, int level) =>
+            Scaled(baseXp, level, EnemyXPPerLevel, EnemyXPPerLevelLate);
 
         /// <summary>
         /// Player melee base damage before weapon, equipment bonus and the MeleeDamageMultiplier perk:
