@@ -39,6 +39,7 @@ namespace GBHEngland.UI
 
         private CharacterData _boundCharacter;
         private bool _subscribedToInventory;
+        private bool _pendingPerkPointCheck;
 
         private void Awake()
         {
@@ -131,19 +132,18 @@ namespace GBHEngland.UI
         }
 
         /// <summary>
-        /// Toasts when a level-up actually pays a perk point.
+        /// Forces the perk window open when a level-up actually pays a perk point.
         ///
         /// Gated on the point count moving — points come every second level, so firing on every
-        /// level-up would promise a point on odd levels that the curve does not pay.
+        /// level-up would force the window open on odd levels that the curve does not pay. The
+        /// actual open is deferred to <see cref="Update"/> via <see cref="_pendingPerkPointCheck"/>
+        /// rather than called directly here, so several level-ups fired in one
+        /// <c>PlayerSession.GrantXP</c> call coalesce into at most one window-open.
         /// </summary>
         private void HandleLevelUp(int newLevel)
         {
             if (EKVibe.PerkPointsAtLevel(newLevel) <= EKVibe.PerkPointsAtLevel(newLevel - 1)) return;
-            if (UIManager.Instance == null) return;
-
-            // ⚠ PLACEHOLDER. The wording is the owner's own work (CLAUDE.md §3) — replace the
-            // whole string, do not decorate it.
-            UIManager.Instance.ShowToast("[perk point earned - owner to write]");
+            _pendingPerkPointCheck = true;
         }
 
         /// <summary>Perk spends can change the Armor line, the same way equipping a shield does.</summary>
@@ -288,6 +288,26 @@ namespace GBHEngland.UI
 
         private void Update()
         {
+            // Deferred rather than opened straight from HandleLevelUp: PlayerSession.GrantXP can
+            // fire OnLevelUp several times in one call for a single big XP award, and
+            // PerkWindowUI.Open() has no re-entrancy guard — two opens in the same frame would
+            // push PauseManager twice for one closed-once window, leaving the game permanently
+            // frozen after the player closes it, silently. Checked ahead of the bag toggle below
+            // so a pending forced-open wins over the player pressing I in the same frame. The
+            // !PauseManager.IsPaused guard means it waits harmlessly — re-armed by any further
+            // level-up — until nothing else is paused, so it never force-closes dialogue or the
+            // bag itself.
+            if (_pendingPerkPointCheck)
+            {
+                var flow = GBHEngland.Flow.GameFlowController.Instance;
+                bool inGameplay = flow == null || flow.State == GBHEngland.Flow.GameFlowState.Playing;
+                if (inGameplay && !GBHEngland.Systems.PauseManager.IsPaused)
+                {
+                    _pendingPerkPointCheck = false;
+                    PerkWindowUI.Open();
+                }
+            }
+
             if (Input.GetKeyDown(KeyCode.I))
             {
                 // Only in gameplay — toggling on Title/Death would strand a pushed pause

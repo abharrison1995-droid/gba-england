@@ -495,7 +495,10 @@ code-reviewed against its plan, never compiled:
   permanently. *Load the same save twice in one sitting and check the stats read identically the
   second time.* This is the failure most likely to go unnoticed.
 - **No perk assets exist yet**, so the perk window has only ever had an empty state to draw.
-  Prose is the owner's: grep `[no perks written yet` and `[perk point earned`.
+  Prose is the owner's: grep `[no perks written yet`. The placeholder toast that used to fire on
+  a point-granting level-up (`[perk point earned…`) is gone — `InventoryController.HandleLevelUp`
+  now forces `PerkWindowUI` open instead, coalesced through a deferred flag so several level-ups
+  in one XP grant open it at most once.
 - **`SaveData.PerkIds` is appended.** An id that no longer resolves is deliberately **kept**, so
   the point stays spent rather than being silently refunded.
 - **Traits do not auto-grow** — only HP and resource. Deliberate: `CombatController` reads
