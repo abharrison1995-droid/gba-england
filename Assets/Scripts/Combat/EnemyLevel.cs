@@ -28,8 +28,27 @@ namespace GBHEngland.Combat
                  "baseline; this multiplies them up from there. 1 changes nothing.")]
         public int Level = 1;
 
-        [Tooltip("XP a kill pays at level 1, scaled up by EKVibe.EnemyXPPerLevel per level above.")]
+        [Tooltip("Tick to override the XP a kill pays, instead of following EKVibe.KillXPBase live.")]
+        public bool OverrideBaseXP = false;
+
+        [Tooltip("Only read when OverrideBaseXP is ticked. XP a kill pays at level 1, scaled up by " +
+                 "EKVibe.EnemyXPPerLevel per level above.")]
         public int BaseXP = EKVibe.KillXPBase;
+
+        /// <summary>
+        /// The level-1 XP baseline this enemy actually pays: the authored override when
+        /// <see cref="OverrideBaseXP"/> is set, otherwise the live <see cref="EKVibe.KillXPBase"/>, so a
+        /// later retune of that constant is picked up by every enemy that never asked to diverge from it.
+        ///
+        /// <see cref="BaseXP"/> by itself is not a live reference — it is a plain field initializer, which
+        /// Unity bakes into serialized YAML the moment a placed instance is authored, a frozen copy rather
+        /// than a pointer to the constant. OverrideBaseXP is what makes that copy inert until an author
+        /// deliberately opts in. Four EnemyLevel instances placed before this field existed
+        /// (Home_London_Prefab x1, Mosleys_Lab_Basement_Prefab x3) have no OverrideBaseXP key in their
+        /// YAML at all, so they deserialize it as Unity's default, false — no hand-edit needed, and they
+        /// immediately track the live constant instead of staying pinned to the 25 they were baked with.
+        /// </summary>
+        public int ResolvedBaseXP => OverrideBaseXP ? BaseXP : EKVibe.KillXPBase;
 
         private bool _applied;
 
