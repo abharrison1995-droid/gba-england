@@ -1,7 +1,8 @@
 # Verification ledger — what's never been seen by a compiler or an editor
 
-**Last verified against:** `main` @ 2026-08-18 (moved out of `CLAUDE.md` §5, content unchanged in
-substance, tightened in wording; the mobile HUD layout pass added the same day).
+**Last verified against:** `main` @ 2026-08-18. `CLAUDE.md` §5 was trimmed to point here in
+`2153bc9`, but this file itself was never committed until the mobile HUD layout pass landed it —
+closing that gap is part of this pass's docs commit.
 
 Owned by [CLAUDE.md](../../CLAUDE.md) §5, which explains *why* this exists: there is no C#
 compiler, no Unity, and no test framework in the agent environment, so this file is the honest
@@ -99,24 +100,6 @@ point compile. It proves nothing about their behaviour.**
   otherwise).
 
 ### Wallet, quests, dialogue
-- **Quest titles now resolve from the definition** (2026-08-18, never compiled). `DialogueManager`
-  was substituting the raw quest id when a choice had no authored title, and because the id is a
-  non-empty string it defeated `StartQuest`'s own fallback to `QuestDefinition.Title` — so every
-  dialogue-granted quest read `spark_of_talent` in the tracker and journal. All 111 generated
-  choices leave `GrantQuestTitle` blank, so this hit everything. *Check the tracker reads
-  "Serendipity!" and the journal "Ah, Barnacles".*
-  ⚠️ **`QuestProgress.Title` is persisted in `savegame.json`**, so the grant-path fix alone would
-  have left existing saves ugly forever. `RestoreQuests` now re-resolves a title equal to the id
-  from the definition on load. *Load the 2026-08-17 playthrough save and check the already-granted
-  quests read properly — that path is the retroactive repair and is the more likely of the two to
-  be wrong.* A title that differs from the id is left alone, so a bespoke dialogue title still wins.
-- **The world level badge is bigger** (2026-08-18, never compiled). ⚠️ The number was parented
-  *inside* the 0.28-scaled badge quad in both `EnemyNameplate` and `PlayerHealthBar`, so it rendered
-  at 0.28 × its font size — growing the quad alone would not have fixed it. Both now parent the
-  number to the plate root. Three new `EKVibe` constants: `LevelBadgeSize` 0.42,
-  `LevelBadgeFontSize` 2.0, `LevelBadgeOffsetX` −0.62. *Check the number is centred on the badge and
-  not overlapping the enemy's name — the offset tracks the size and must move out as it grows.*
-  Nameplates are still combat-gated (aggro, or player within `SightRadius`); that was left alone.
 - **The wallet has never run.** Pickpocket a civilian, get arrested, reload a save. Check the bag
   readout tracks all three and a pre-today save loads at £0 rather than failing.
 - **Blank-name fallback never run.** `PlayerSession.BeginNewGame` should turn a blank name box into
