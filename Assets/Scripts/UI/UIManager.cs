@@ -36,7 +36,6 @@ namespace GBHEngland.UI
         public TextMeshProUGUI PlayerStaminaText;
         public TextMeshProUGUI LevelText;
         public TextMeshProUGUI LocationTimeText;
-        public TextMeshProUGUI WantedKnivesText;
 
         [Header("Combat Log")]
         public TextMeshProUGUI CombatLogText;
@@ -52,6 +51,11 @@ namespace GBHEngland.UI
         [Tooltip("The Interact HUD button itself — disabled/hidden when nothing is in range.")]
         public GameObject InteractButtonRoot;
 
+        [Header("Wanted meter")]
+        [Tooltip("The single knife glyph the 5-icon wanted meter is built from. Wired by hand in " +
+                 "the Inspector — with no sprite the meter is not built at all.")]
+        public Sprite WantedKnifeIcon;
+
         private readonly Queue<string> _logLines = new Queue<string>();
         private float _playerHpMax = 100f;
         private float _playerMpMax = 50f;
@@ -60,6 +64,10 @@ namespace GBHEngland.UI
         /// <summary>The 4 spell-slot button backgrounds + labels, refreshed to show bound spells.</summary>
         private readonly Image[] _spellSlotImages = new Image[4];
         private readonly TextMeshProUGUI[] _spellSlotLabels = new TextMeshProUGUI[4];
+
+        /// <summary>The 5 knife icons of the wanted meter, left to right. Null until
+        /// <see cref="EnsureWantedMeter"/> has run, and left null entirely if it bailed.</summary>
+        private readonly Image[] _wantedKnifeIcons = new Image[5];
 
         /// <summary>
         /// The crouch button's background and label. Unlike the spell slots these are not polled
@@ -80,6 +88,7 @@ namespace GBHEngland.UI
         private void Start()
         {
             EnsureJournalButton();
+            EnsureWantedMeter();
             EnsureStaminaBar();
             BuildActionButtons();
             RestyleSceneHudButtons();
@@ -509,10 +518,84 @@ namespace GBHEngland.UI
                 LocationTimeText.text = $"{location}; Day {day}, {clock}";
         }
 
+        /// <summary>
+        /// Builds the 5-icon wanted meter across the top-centre of the HUD. Replaces a
+        /// "Knives: n" label that was never wired in c.unity, so the wanted level — the single
+        /// most consequential number in the GTA layer — had no readout at all.
+        ///
+        /// Idempotent by name, the same way <see cref="EnsureJournalButton"/> is: a second call
+        /// finds the container and returns.
+        ///
+        /// ⚠ No sprite means no meter. There is deliberately no blank-square fallback — five grey
+        /// boxes across the top of the screen read as a layout bug rather than as a missing
+        /// assignment, and the warning below is the only thing that would say otherwise.
+        /// </summary>
+        private void EnsureWantedMeter()
+        {
+            Transform parent = FindChildRecursive(transform, "HUDPanel") ?? transform;
+            if (parent.Find("WantedMeter") != null) return;      // idempotent
+
+            if (WantedKnifeIcon == null)
+            {
+                Debug.LogWarning("UIManager: WantedKnifeIcon is unassigned — the wanted meter was " +
+                                 "not built. Assign Assets/Art/Generated/ui/spr_ui_wanted_knife.png " +
+                                 "to UIManager.WantedKnifeIcon in the Inspector.");
+                return;
+            }
+
+            const float IconSize = 72f, IconPitch = 86f;
+
+            var meter = new GameObject("WantedMeter", typeof(RectTransform));
+            meter.transform.SetParent(parent, false);
+            var mrt = (RectTransform)meter.transform;
+            mrt.anchorMin = mrt.anchorMax = new Vector2(0.5f, 1f);
+            mrt.pivot = new Vector2(0.5f, 1f);
+            mrt.anchoredPosition = new Vector2(0f, -10f);
+            mrt.sizeDelta = new Vector2(IconPitch * 4f + IconSize, IconSize);
+
+            for (int i = 0; i < _wantedKnifeIcons.Length; i++)
+            {
+                var iconGo = new GameObject("WantedKnife" + i, typeof(RectTransform));
+                iconGo.transform.SetParent(mrt, false);
+                var irt = (RectTransform)iconGo.transform;
+                irt.anchorMin = irt.anchorMax = new Vector2(0f, 1f);
+                irt.pivot = new Vector2(0f, 1f);
+                irt.sizeDelta = new Vector2(IconSize, IconSize);
+                irt.anchoredPosition = new Vector2(i * IconPitch, 0f);
+
+                var img = iconGo.AddComponent<Image>();
+                img.sprite = WantedKnifeIcon;
+                img.preserveAspect = true;
+                img.raycastTarget = false;
+                _wantedKnifeIcons[i] = img;
+            }
+
+            // WantedManager may or may not exist yet; either way the meter must not start blank-
+            // looking-but-actually-unpainted, so paint the current level (or 0) once here.
+            UpdateKnivesUI(Systems.WantedManager.Instance != null
+                ? Systems.WantedManager.Instance.CurrentKnives
+                : 0);
+
+            // The combat log is authored at (0,-12) under the same top-centre anchor, which is
+            // exactly where the meter now sits. Moving it here — rather than in the scene — keeps
+            // the two coordinated in one place, so resizing the meter above can't silently start
+            // overlapping the log again.
+            if (CombatLogPanel != null)
+                CombatLogPanel.anchoredPosition = new Vector2(0f, -144f);
+        }
+
+        /// <summary>
+        /// Paints the wanted meter. Unlit knives are dimmed rather than hidden, so a wanted level
+        /// of 2 still reads as "2 of 5" instead of "2 of however many there are".
+        /// </summary>
         public void UpdateKnivesUI(int knives)
         {
-            if (WantedKnivesText != null)
-                WantedKnivesText.text = $"Knives: {knives}";
+            knives = Mathf.Clamp(knives, 0, _wantedKnifeIcons.Length);
+            for (int i = 0; i < _wantedKnifeIcons.Length; i++)
+            {
+                if (_wantedKnifeIcons[i] == null) continue;
+                _wantedKnifeIcons[i].color = i < knives ? Color.white : new Color(1f, 1f, 1f, 0.18f);
+            }
         }
 
         /// <summary>EK combat log style: "> Elite Bandit hits you, 14-7=7"</summary>
@@ -539,7 +622,9 @@ namespace GBHEngland.UI
             var go = new GameObject("Toast", typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var rt = (RectTransform)go.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.8f);
+            // 0.72, not 0.8: the combat log now sits at y -144 under the top-centre anchor, and a
+            // toast at 0.8 lands on its last line.
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.72f);
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = new Vector2(960, 60);
 
