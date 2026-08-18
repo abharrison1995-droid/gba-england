@@ -215,6 +215,13 @@ namespace GBHEngland.UI
             PlayerPortrait.preserveAspect = true;
             PlayerPortrait.raycastTarget = false;
             Win95Skin.StyleSunken(PlayerPortrait);
+
+            // StyleSunken appends four Win95Skin.Edge strips as children, and children draw in
+            // sibling order — so the bevel lands on top of LevelBadge, which the scene authored
+            // first, and a grey line crosses the badge. Push the badge back to the end. Nothing is
+            // moved or resized: this is purely draw order, and the badge's own rect is untouched.
+            Transform badge = PlayerPortrait.transform.Find("LevelBadge");
+            if (badge != null) badge.SetAsLastSibling();
         }
 
         /// <summary>
@@ -313,11 +320,15 @@ namespace GBHEngland.UI
             var cluster = mpTrack != null ? mpTrack.parent as RectTransform : null;
             if (mpTrack == null || cluster == null) return;
 
-            // Two authored bar heights below the mana bar. The cluster's authored pitch is 28 — HP
-            // at y -22, MP at -58, the concealment bar at -86, MP and concealment contiguous — so
-            // -56 leaves the concealment slot empty and puts stamina directly beneath it. The gap
-            // is visible while stealth is sidelined; closing it is a change to this one number.
-            const float BarPitch = 28f;
+            // One bar pitch below the mana bar. HPTrack is authored at y -22 and MPTrack at -58, so
+            // the cluster's real pitch is 36, and -36 puts stamina at -94: HP, MP and SP equally
+            // spaced down the same column. The panel is 116 tall and the bar is 28, so -94 still
+            // sits inside it — which is why nothing here grows the panel any more.
+            //
+            // ⚠ The inactive ConcealmentBar is authored at -86 in the same column and would overlap
+            // this. It is switched off in c.unity, so nothing is drawn over anything today, but
+            // whoever brings stealth back has to place it rather than assume a slot is waiting.
+            const float BarPitch = 36f;
 
             var track = new GameObject("StaminaTrack", typeof(RectTransform), typeof(Image));
             var trackRt = (RectTransform)track.transform;
@@ -327,7 +338,7 @@ namespace GBHEngland.UI
             trackRt.anchorMax = mpTrack.anchorMax;
             trackRt.pivot = mpTrack.pivot;
             trackRt.sizeDelta = mpTrack.sizeDelta;
-            trackRt.anchoredPosition = mpTrack.anchoredPosition + new Vector2(0f, -BarPitch * 2f);
+            trackRt.anchoredPosition = mpTrack.anchoredPosition + new Vector2(0f, -BarPitch);
 
             var trackImage = track.GetComponent<Image>();
             // The empty channel behind the fill: the same amber darkened, alpha kept at 1 — a plain
@@ -368,11 +379,6 @@ namespace GBHEngland.UI
             tmp.enableWordWrapping = false;
             tmp.overflowMode = TextOverflowModes.Overflow;
             PlayerStaminaText = tmp;
-
-            // The cluster has to grow or the new bar hangs outside its panel — and the safe-area
-            // fitter and the 1.6x scale both work from this rect.
-            if (TopLeftPortraitPanel != null)
-                TopLeftPortraitPanel.sizeDelta += new Vector2(0f, BarPitch);
         }
 
         private static void StretchToParent(RectTransform rt)
