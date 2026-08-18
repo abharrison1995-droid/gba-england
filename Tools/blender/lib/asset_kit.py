@@ -191,6 +191,81 @@ def export_glb(path, objects=None):
     print(f"[asset_kit] export -> {path}")
 
 
+def make_box(name, w, d, h, at=(0, 0, 0)):
+    """Axis-aligned box, dimensions baked into the mesh (object transform stays
+    identity). `at` is the bottom-centre of the box. Front face is -Y."""
+    import bmesh
+    mesh = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    for v in bm.verts:
+        v.co.x = v.co.x * w + at[0]
+        v.co.y = v.co.y * d + at[1]
+        v.co.z = (v.co.z + 0.5) * h + at[2]
+    bm.to_mesh(mesh)
+    bm.free()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    return obj
+
+
+def map_faces_to_region(obj, region, atlas_size, only=None):
+    """UV-map faces onto an atlas region (x, y, w, h in pixels, bottom-left
+    origin). Each face's own bounding rectangle fills the region, projected by
+    its dominant normal axis so walls, roofs and floors all land upright.
+
+    only: optional predicate(face) -> bool to restrict which faces map.
+    """
+    x, y, w, h = region
+    s = atlas_size
+    mesh = obj.data
+    if not mesh.uv_layers:
+        mesh.uv_layers.new(name="UVMap")
+    uv = mesh.uv_layers.active.data
+    verts = mesh.vertices
+    for face in mesh.polygons:
+        if only is not None and not only(face):
+            continue
+        n = face.normal
+        ax, ay, az = abs(n.x), abs(n.y), abs(n.z)
+        if az >= ax and az >= ay:      # roof/floor
+            proj = (lambda co: (co.x, co.y)) if n.z > 0 else \
+                   (lambda co: (co.x, -co.y))
+        elif ay >= ax:                 # front (-Y) / back (+Y)
+            proj = (lambda co: (-co.x, co.z)) if n.y > 0 else \
+                   (lambda co: (co.x, co.z))
+        else:                          # right (+X) / left (-X)
+            # screen-right for a viewer facing the face is (-n) x up
+            proj = (lambda co: (co.y, co.z)) if n.x > 0 else \
+                   (lambda co: (-co.y, co.z))
+        pts = {li: proj(verts[mesh.loops[li].vertex_index].co)
+               for li in face.loop_indices}
+        us = [p[0] for p in pts.values()]
+        vs = [p[1] for p in pts.values()]
+        u0, u1 = min(us), max(us)
+        v0, v1 = min(vs), max(vs)
+        du = (u1 - u0) or 1.0
+        dv = (v1 - v0) or 1.0
+        # Half-pixel inset so nearest filtering never samples the
+        # neighbouring atlas region at a face's edge.
+        for li, (pu, pv) in pts.items():
+            uv[li].uv = ((x + 0.5 + (pu - u0) / du * (w - 1.0)) / s,
+                         (y + 0.5 + (pv - v0) / dv * (h - 1.0)) / s)
+
+
+def join(objects, name):
+    """Join objects into one (UVs survive); returns the joined object."""
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in objects:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()
+    joined = bpy.context.view_layer.objects.active
+    joined.name = name
+    joined.data.name = name
+    return joined
+
+
 def report_stats(obj):
     mesh = obj.data
     tris = sum(len(p.vertices) - 2 for p in mesh.polygons)
