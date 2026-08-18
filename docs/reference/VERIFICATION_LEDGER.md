@@ -1,8 +1,8 @@
 # Verification ledger — what's never been seen by a compiler or an editor
 
-**Last verified against:** `main` @ 2026-08-18. `CLAUDE.md` §5 was trimmed to point here in
-`2153bc9`, but this file itself was never committed until the mobile HUD layout pass landed it —
-closing that gap is part of this pass's docs commit.
+**Last verified against:** `main` @ 2026-08-18, added by the mobile HUD layout pass. `CLAUDE.md`
+§5 still carries its own inline copy of this material as of this commit — trimming it down to a
+pointer here is separate doc-hygiene work, not part of this pass, and hasn't landed on `main` yet.
 
 Owned by [CLAUDE.md](../../CLAUDE.md) §5, which explains *why* this exists: there is no C#
 compiler, no Unity, and no test framework in the agent environment, so this file is the honest
