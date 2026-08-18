@@ -68,6 +68,9 @@ crashlytics-build.properties
 # Never commit your own user-specific editor state
 /UserSettings/
 
+# Blender pipeline render/export output — regenerable from the asset scripts
+Tools/out/
+
 # OS / archive junk (from unzipping asset packs on macOS)
 .DS_Store
 **/.DS_Store
