@@ -75689,13 +75689,13 @@ MonoBehaviour:
   PlayerStaminaText: {fileID: 0}
   LevelText: {fileID: 1364272123}
   LocationTimeText: {fileID: 1263529525}
-  WantedKnivesText: {fileID: 0}
   CombatLogText: {fileID: 1348187918}
   MaxCombatLogLines: 5
   CompanionHUDTemplate: {fileID: 0}
   CompanionHUDContainer: {fileID: 0}
   InteractPromptText: {fileID: 1265676141}
   InteractButtonRoot: {fileID: 1900378293}
+  WantedKnifeIcon: {fileID: 0}
 --- !u!114 &1081454736
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79750,6 +79750,7 @@ MonoBehaviour:
   - {fileID: 3605244389615645810, guid: 7fa32b38de6cc494ea1410c004c38394, type: 3}
   - {fileID: 8502864655699647956, guid: dc03bded7af2bb445b05a2ba43406311, type: 3}
   SpawnRadius: 15
+  KnifeDecayInterval: 60
 --- !u!4 &1131037515
 Transform:
   m_ObjectHideFlags: 0
