@@ -33,6 +33,14 @@ Two coupled meters:
 - **Knives (0–5)** — the wanted level. `SpikeKnives()` raises it and calls `SpawnPlod()`, which
   instantiates `PolicePrefabs[Knives-1]` near the player. All five tiers are assigned in the
   scene: PCSO → Bobby → Armed Response → Occult Agent → Occult Commander.
+  ⚠ **2026-08-18: Knives now decays, GTA-star style.** `WantedManager.Update()` ticks a private
+  timer whenever `CurrentKnives > 0` and drops one Knife every `KnifeDecayInterval` seconds
+  (60s default) — `SpikeKnives()` resets the timer to 0, so re-offending restarts the countdown
+  rather than letting an old crime's fade finish it off. This is independent of, and does not
+  replace, the instant full-clear paths below (edge-crossing evasion, a pint, an arrest) — those
+  still wipe to 0 outright. Nothing gates decay on being out of police sight or out of the city;
+  it ticks flat, everywhere, all the time `CurrentKnives > 0`. That is a simplification, not a
+  design decision — tighten it if flat decay reads as too forgiving mid-chase.
 - **Concealment (0–100)** — regenerates at `ConcealmentRecoveryRate`/sec. `DrainConcealment(amount)`
   lowers it; hitting zero resets it to full and spikes Knives.
 

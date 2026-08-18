@@ -29,6 +29,11 @@ namespace GBHEngland.Systems
         public GameObject[] PolicePrefabs;
         public float SpawnRadius = 15f;
 
+        [Header("Decay")]
+        [Tooltip("Seconds of no fresh offense before one Knife fades, GTA-star style. Resets to 0 every time SpikeKnives fires, so re-offending restarts the countdown.")]
+        public float KnifeDecayInterval = 60f;
+        private float _knifeDecayTimer;
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -47,6 +52,17 @@ namespace GBHEngland.Systems
                 CurrentConcealment += ConcealmentRecoveryRate * Time.deltaTime;
                 if (CurrentConcealment > MaxConcealment) CurrentConcealment = MaxConcealment;
                 UpdateConcealmentUI();
+            }
+
+            if (CurrentKnives > 0)
+            {
+                _knifeDecayTimer += Time.deltaTime;
+                if (_knifeDecayTimer >= KnifeDecayInterval)
+                {
+                    _knifeDecayTimer = 0f;
+                    CurrentKnives--;
+                    UpdateUIIndicator();
+                }
             }
         }
 
@@ -77,6 +93,8 @@ namespace GBHEngland.Systems
         /// </summary>
         public void SpikeKnives()
         {
+            _knifeDecayTimer = 0f;
+
             if (CurrentKnives < 5)
             {
                 CurrentKnives++;

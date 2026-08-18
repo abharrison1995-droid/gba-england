@@ -162,6 +162,14 @@ point compile. It proves nothing about their behaviour.**
   crime in London, step through a door, knives should **not** drop (console: "Slipped indoors…");
   walk out over a chunk edge, knives **should** clear ("Evaded Police"). Untouched: a portal leading
   *into* a city walks past an active lockout, since only `OnPlayerHitEdge` consults it.
+- **Knives now decay over time** (2026-08-18, never compiled). `WantedManager.Update()` drops one
+  Knife every `KnifeDecayInterval` seconds (60s default) while `CurrentKnives > 0`;
+  `SpikeKnives()` resets the timer, so a fresh offense restarts the countdown rather than letting
+  an old one's fade finish it off. Check: commit one crime, wait ~60s doing nothing else, the top
+  knife should dim and the HUD meter update on its own with no player input. Then check the reset:
+  spike to 2, wait 40s, spike again, the fade should restart from 0 rather than firing at the
+  20s-remaining mark. Flat and ungated — ticks the same whether the player is in a firefight or
+  hiding in an alley; that's a placeholder simplification, not a tested design choice.
 - **`HIRE: <companionId> [free]`** quest directive and Quest 8's text (committed 2026-08-17). Alex is
   now gated three ways on `rush_hour` (greeting only before, free hire during, £25 hire after) —
   confirm he can't be hired before Rush Hour completes. `Dialogue_Alex.asset` was renamed to
