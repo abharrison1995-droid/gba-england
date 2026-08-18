@@ -499,7 +499,8 @@ code-reviewed against its plan, never compiled:
 - **`SaveData.PerkIds` is appended.** An id that no longer resolves is deliberately **kept**, so
   the point stays spent rather than being silently refunded.
 - **Traits do not auto-grow** — only HP and resource. Deliberate: `CombatController` reads
-  `Strength*2+5`, so growing Strength would retune the whole enemy roster at once.
+  `Strength + EKVibe.MeleeDamageStrengthOffset`, so growing Strength would retune the whole enemy
+  roster at once.
 
 **Also outstanding — XP and levels, phases 1–2, none of it exercised.** Merged 2026-08-08,
 code-reviewed against its plan, never compiled:
