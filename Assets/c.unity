@@ -75695,7 +75695,7 @@ MonoBehaviour:
   CompanionHUDContainer: {fileID: 0}
   InteractPromptText: {fileID: 1265676141}
   InteractButtonRoot: {fileID: 1900378293}
-  WantedKnifeIcon: {fileID: 0}
+  WantedKnifeIcon: {fileID: 21300000, guid: 2eca0b3dc311eda4ab49ead3d381bf07, type: 3}
 --- !u!114 &1081454736
 MonoBehaviour:
   m_ObjectHideFlags: 0
