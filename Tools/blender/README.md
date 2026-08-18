@@ -44,6 +44,72 @@ Produces `out/prop_barrel.glb` and `out/prop_barrel_preview.png` (isometric
 Workbench render at the game camera's 30° pitch / 45° yaw, flat-lit — a fair
 preview of the in-game look).
 
+## The 2D branch: sprite sheets from a proxy rig
+
+Same architecture, same runner, different output. A **subject** is a script in
+`sprites/`; `lib/sprite_kit.py` builds a segmented humanoid, poses it from
+parametric functions, and renders one PNG per frame through a fixed
+orthographic camera. `Tools/pack_sprites.py` (plain CPython + Pillow, no
+Blender) packs those into the sheet + sidecar JSON that `ART_PIPELINE.md`
+specifies.
+
+```
+python Tools/blender/bpy_runner.py Tools/blender/sprites/char_proxy.py
+python Tools/pack_sprites.py proxy
+```
+
+Writes `art_incoming/sheet_char_proxy_<action>.png` + `.json`, ready for
+`Tools → Art → Import Generated Art`.
+
+```
+lib/sprite_kit.py        # rig, poses, camera, render (runs inside Blender)
+sprites/char_proxy.py    # the template subject — copy this per character
+out/sprites/<subj>/<action>/frame_NN.png + manifest.json
+Tools/pack_sprites.py    # frames -> sheet + sidecar, and the contract checks
+```
+
+### Why this shape
+
+- **Regeneration is the point.** Pose functions are parametric in `(frame_index,
+  frame_count)`, so changing a frame count resamples the *same* motion rather
+  than authoring a new one. A 6-frame walk and a 10-frame walk are the same
+  walk, one sampled finer.
+- **Scale is deterministic.** `fit_camera_to_poses` samples every pose function
+  at a fixed rate (`FIT_SAMPLES`), never at the declared frame counts, so
+  `ortho_scale` depends only on the rig and the camera. Verified: a subject
+  re-rendered at 6 and at 10 frames fits to the same `1.727`. This is what
+  keeps every sheet of a subject — and every subject of the same height —
+  drawn at one scale, which is exactly what the importer's body-width check
+  measures.
+- **The baseline is pinned in camera space, not world Z.** At the contract's
+  30° pitch the pixel-lowest point is whichever ground contact is nearest the
+  camera, so in a walk it alternates feet. Snapping world Z left 23 px of
+  drift against an importer that demands 0; snapping in camera space gives 0.
+- **Checks run before Unity.** `pack_sprites.py` measures baseline drift, cell
+  fill and body-width-vs-idle — the same things `ArtImportTool` refuses on —
+  and exits 1 without writing. A failure costs seconds instead of an editor
+  round trip.
+
+### Adding a subject
+
+Copy `sprites/char_proxy.py`, set `SUBJECT`, `WORLD_HEIGHT` (it must equal
+`WorldActorVisual.Height` — player 1.8, adult NPC 1.55, child 1.3) and
+`COLORS`. Frame counts default to the `ART_PIPELINE.md` §8 table.
+
+To drive it from a photorealistic source instead of flat boxes, cut the source
+into per-part PNGs with alpha and pass `part_images={"torso": "...", ...}` to
+`render_subject`; each part becomes a camera-facing textured card and animates
+identically. That path switches the engine to Cycles automatically (Workbench
+ignores material alpha) and is **rendered but not yet exercised on real art**.
+
+### Actions
+
+`idle`, `walk`, `attack` and `hurt` have pose functions today. `death`, `roll`,
+`knockback` and `cycle` are declared shape-changing in both `sprite_kit.py` and
+`pack_sprites.py` — exempt from ground-snapping and from the baseline/fill
+checks — but **have no pose function yet**; adding one is a function in `POSES`
+and nothing else. Keep those two lists in step.
+
 ## Conventions every asset script must follow
 
 - 1 unit = 1 metre. NPCs are 1.55 m, the player 1.8 m — scale props to that.
