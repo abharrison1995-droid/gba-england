@@ -171,6 +171,7 @@ preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLi
 | Title screen, character creator, their layout and art | the two `Assets/Editor/*ScreenSetup.cs` / `*CreatorSetup.cs` builders — no reference doc; the anchors and the reasons for them are commented at each call site, because they are only true of the code that writes them |
 | Git, asset pruning, `.gitattributes`, project naming | [docs/reference/REPO_HYGIENE.md](docs/reference/REPO_HYGIENE.md) |
 | Generating art (the art agent's contract) | [ART_PIPELINE.md](ART_PIPELINE.md) + [docs/art/ART_QUEUE.md](docs/art/ART_QUEUE.md) |
+| Building a 3D model (band 6 buildings, props) | [Tools/blender/README.md](Tools/blender/README.md) — or invoke the `model-author` skill |
 | What to work on next | [docs/README.md](docs/README.md) → `docs/plans/` |
 
 ---

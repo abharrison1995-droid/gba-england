@@ -31,6 +31,7 @@ reads, so anything perishable in it would rot faster than anywhere else. Current
 | [`ART_PIPELINE.md`](../ART_PIPELINE.md) (repo root) | The **contract** with the art agent: resolution, chroma key, sheet layout, sidecar JSON, naming. Stable. |
 | [art/ART_QUEUE.md](art/ART_QUEUE.md) | The **only** live record of what art is delivered, outstanding or cancelled. |
 | [art/SHEET_WORKFLOW.md](art/SHEET_WORKFLOW.md) | The single-frame generation and local tiling workflow, and the failures that produced it. |
+| [`Tools/blender/README.md`](../Tools/blender/README.md) (repo root) | The **3D model** pipeline — procedural Blender scripts, the band 6 delivery route. Sprites are none of its business. |
 
 The art status matrix is **derived, not maintained by hand**:
 
