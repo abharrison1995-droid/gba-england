@@ -62,6 +62,13 @@ namespace GBHEngland.Systems
                     _knifeDecayTimer = 0f;
                     CurrentKnives--;
                     UpdateUIIndicator();
+
+                    // The police already spawned via SpikeKnives don't vanish on their own — without
+                    // this, the meter reads "not wanted" while officers spawned earlier are still
+                    // hunting the player. ClearWanted() despawns them for the instant-clear paths;
+                    // decay reaching 0 needs the same, since it's read the same way by the player.
+                    if (CurrentKnives == 0)
+                        DespawnPolice();
                 }
             }
         }

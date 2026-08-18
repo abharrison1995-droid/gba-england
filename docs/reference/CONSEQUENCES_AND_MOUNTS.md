@@ -73,10 +73,15 @@ so until 2026-08-18 the wanted level had no on-screen readout whatsoever, and `U
 wrote to nothing. Any older claim that a knife number was visible on the HUD was describing a
 field, not a thing the player could see.
 
-### Evasion: only walking out of town shakes the police
+### Evasion: only walking out of town shakes the police *instantly*
+
+This section is about the one **instant, full-clear** path via a chunk change. It's no longer the
+only way Knives goes down at all — see the decay bullet above, which fades one Knife at a time on
+its own timer. The two don't overlap: this is a chunk-transition hook, decay is a per-frame
+`Update()` tick, and either can fire independently of the other.
 
 `WantedManager.OnChunkTransition(previous, new, travelKind)` is the one place a chunk change can
-wipe the wanted level. It fires when **all three** hold:
+wipe the wanted level outright. It fires when **all three** hold:
 
 1. `previous.IsCity` and not `new.IsCity` — you left a city for somewhere that isn't one;
 2. `CurrentKnives > 0`;
