@@ -36,7 +36,6 @@ namespace GBHEngland.UI
         public TextMeshProUGUI PlayerStaminaText;
         public TextMeshProUGUI LevelText;
         public TextMeshProUGUI LocationTimeText;
-        public TextMeshProUGUI WantedKnivesText;
 
         [Header("Combat Log")]
         public TextMeshProUGUI CombatLogText;
@@ -52,6 +51,11 @@ namespace GBHEngland.UI
         [Tooltip("The Interact HUD button itself — disabled/hidden when nothing is in range.")]
         public GameObject InteractButtonRoot;
 
+        [Header("Wanted meter")]
+        [Tooltip("The single knife glyph the 5-icon wanted meter is built from. Wired by hand in " +
+                 "the Inspector — with no sprite the meter is not built at all.")]
+        public Sprite WantedKnifeIcon;
+
         private readonly Queue<string> _logLines = new Queue<string>();
         private float _playerHpMax = 100f;
         private float _playerMpMax = 50f;
@@ -60,6 +64,10 @@ namespace GBHEngland.UI
         /// <summary>The 4 spell-slot button backgrounds + labels, refreshed to show bound spells.</summary>
         private readonly Image[] _spellSlotImages = new Image[4];
         private readonly TextMeshProUGUI[] _spellSlotLabels = new TextMeshProUGUI[4];
+
+        /// <summary>The 5 knife icons of the wanted meter, left to right. Null until
+        /// <see cref="EnsureWantedMeter"/> has run, and left null entirely if it bailed.</summary>
+        private readonly Image[] _wantedKnifeIcons = new Image[5];
 
         /// <summary>
         /// The crouch button's background and label. Unlike the spell slots these are not polled
@@ -80,6 +88,7 @@ namespace GBHEngland.UI
         private void Start()
         {
             EnsureJournalButton();
+            EnsureWantedMeter();
             EnsureStaminaBar();
             BuildActionButtons();
             RestyleSceneHudButtons();
@@ -206,6 +215,13 @@ namespace GBHEngland.UI
             PlayerPortrait.preserveAspect = true;
             PlayerPortrait.raycastTarget = false;
             Win95Skin.StyleSunken(PlayerPortrait);
+
+            // StyleSunken appends four Win95Skin.Edge strips as children, and children draw in
+            // sibling order — so the bevel lands on top of LevelBadge, which the scene authored
+            // first, and a grey line crosses the badge. Push the badge back to the end. Nothing is
+            // moved or resized: this is purely draw order, and the badge's own rect is untouched.
+            Transform badge = PlayerPortrait.transform.Find("LevelBadge");
+            if (badge != null) badge.SetAsLastSibling();
         }
 
         /// <summary>
@@ -304,11 +320,15 @@ namespace GBHEngland.UI
             var cluster = mpTrack != null ? mpTrack.parent as RectTransform : null;
             if (mpTrack == null || cluster == null) return;
 
-            // Two authored bar heights below the mana bar. The cluster's authored pitch is 28 — HP
-            // at y -22, MP at -58, the concealment bar at -86, MP and concealment contiguous — so
-            // -56 leaves the concealment slot empty and puts stamina directly beneath it. The gap
-            // is visible while stealth is sidelined; closing it is a change to this one number.
-            const float BarPitch = 28f;
+            // One bar pitch below the mana bar. HPTrack is authored at y -22 and MPTrack at -58, so
+            // the cluster's real pitch is 36, and -36 puts stamina at -94: HP, MP and SP equally
+            // spaced down the same column. The panel is 116 tall and the bar is 28, so -94 still
+            // sits inside it — which is why nothing here grows the panel any more.
+            //
+            // ⚠ The inactive ConcealmentBar is authored at -86 in the same column and would overlap
+            // this. It is switched off in c.unity, so nothing is drawn over anything today, but
+            // whoever brings stealth back has to place it rather than assume a slot is waiting.
+            const float BarPitch = 36f;
 
             var track = new GameObject("StaminaTrack", typeof(RectTransform), typeof(Image));
             var trackRt = (RectTransform)track.transform;
@@ -318,7 +338,7 @@ namespace GBHEngland.UI
             trackRt.anchorMax = mpTrack.anchorMax;
             trackRt.pivot = mpTrack.pivot;
             trackRt.sizeDelta = mpTrack.sizeDelta;
-            trackRt.anchoredPosition = mpTrack.anchoredPosition + new Vector2(0f, -BarPitch * 2f);
+            trackRt.anchoredPosition = mpTrack.anchoredPosition + new Vector2(0f, -BarPitch);
 
             var trackImage = track.GetComponent<Image>();
             // The empty channel behind the fill: the same amber darkened, alpha kept at 1 — a plain
@@ -359,11 +379,6 @@ namespace GBHEngland.UI
             tmp.enableWordWrapping = false;
             tmp.overflowMode = TextOverflowModes.Overflow;
             PlayerStaminaText = tmp;
-
-            // The cluster has to grow or the new bar hangs outside its panel — and the safe-area
-            // fitter and the 1.6x scale both work from this rect.
-            if (TopLeftPortraitPanel != null)
-                TopLeftPortraitPanel.sizeDelta += new Vector2(0f, BarPitch);
         }
 
         private static void StretchToParent(RectTransform rt)
@@ -509,10 +524,84 @@ namespace GBHEngland.UI
                 LocationTimeText.text = $"{location}; Day {day}, {clock}";
         }
 
+        /// <summary>
+        /// Builds the 5-icon wanted meter across the top-centre of the HUD. Replaces a
+        /// "Knives: n" label that was never wired in c.unity, so the wanted level — the single
+        /// most consequential number in the GTA layer — had no readout at all.
+        ///
+        /// Idempotent by name, the same way <see cref="EnsureJournalButton"/> is: a second call
+        /// finds the container and returns.
+        ///
+        /// ⚠ No sprite means no meter. There is deliberately no blank-square fallback — five grey
+        /// boxes across the top of the screen read as a layout bug rather than as a missing
+        /// assignment, and the warning below is the only thing that would say otherwise.
+        /// </summary>
+        private void EnsureWantedMeter()
+        {
+            Transform parent = FindChildRecursive(transform, "HUDPanel") ?? transform;
+            if (parent.Find("WantedMeter") != null) return;      // idempotent
+
+            if (WantedKnifeIcon == null)
+            {
+                Debug.LogWarning("UIManager: WantedKnifeIcon is unassigned — the wanted meter was " +
+                                 "not built. Assign Assets/Art/Generated/ui/spr_ui_wanted_knife.png " +
+                                 "to UIManager.WantedKnifeIcon in the Inspector.");
+                return;
+            }
+
+            const float IconSize = 72f, IconPitch = 86f;
+
+            var meter = new GameObject("WantedMeter", typeof(RectTransform));
+            meter.transform.SetParent(parent, false);
+            var mrt = (RectTransform)meter.transform;
+            mrt.anchorMin = mrt.anchorMax = new Vector2(0.5f, 1f);
+            mrt.pivot = new Vector2(0.5f, 1f);
+            mrt.anchoredPosition = new Vector2(0f, -10f);
+            mrt.sizeDelta = new Vector2(IconPitch * 4f + IconSize, IconSize);
+
+            for (int i = 0; i < _wantedKnifeIcons.Length; i++)
+            {
+                var iconGo = new GameObject("WantedKnife" + i, typeof(RectTransform));
+                iconGo.transform.SetParent(mrt, false);
+                var irt = (RectTransform)iconGo.transform;
+                irt.anchorMin = irt.anchorMax = new Vector2(0f, 1f);
+                irt.pivot = new Vector2(0f, 1f);
+                irt.sizeDelta = new Vector2(IconSize, IconSize);
+                irt.anchoredPosition = new Vector2(i * IconPitch, 0f);
+
+                var img = iconGo.AddComponent<Image>();
+                img.sprite = WantedKnifeIcon;
+                img.preserveAspect = true;
+                img.raycastTarget = false;
+                _wantedKnifeIcons[i] = img;
+            }
+
+            // WantedManager may or may not exist yet; either way the meter must not start blank-
+            // looking-but-actually-unpainted, so paint the current level (or 0) once here.
+            UpdateKnivesUI(Systems.WantedManager.Instance != null
+                ? Systems.WantedManager.Instance.CurrentKnives
+                : 0);
+
+            // The combat log is authored at (0,-12) under the same top-centre anchor, which is
+            // exactly where the meter now sits. Moving it here — rather than in the scene — keeps
+            // the two coordinated in one place, so resizing the meter above can't silently start
+            // overlapping the log again.
+            if (CombatLogPanel != null)
+                CombatLogPanel.anchoredPosition = new Vector2(0f, -144f);
+        }
+
+        /// <summary>
+        /// Paints the wanted meter. Unlit knives are dimmed rather than hidden, so a wanted level
+        /// of 2 still reads as "2 of 5" instead of "2 of however many there are".
+        /// </summary>
         public void UpdateKnivesUI(int knives)
         {
-            if (WantedKnivesText != null)
-                WantedKnivesText.text = $"Knives: {knives}";
+            knives = Mathf.Clamp(knives, 0, _wantedKnifeIcons.Length);
+            for (int i = 0; i < _wantedKnifeIcons.Length; i++)
+            {
+                if (_wantedKnifeIcons[i] == null) continue;
+                _wantedKnifeIcons[i].color = i < knives ? Color.white : new Color(1f, 1f, 1f, 0.18f);
+            }
         }
 
         /// <summary>EK combat log style: "> Elite Bandit hits you, 14-7=7"</summary>
@@ -539,7 +628,9 @@ namespace GBHEngland.UI
             var go = new GameObject("Toast", typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var rt = (RectTransform)go.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.8f);
+            // 0.72, not 0.8: the combat log now sits at y -144 under the top-centre anchor, and a
+            // toast at 0.8 lands on its last line.
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.72f);
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = new Vector2(960, 60);
 
@@ -633,8 +724,13 @@ namespace GBHEngland.UI
         }
 
         /// <summary>
-        /// Small always-visible HUD button (top-right, under the location text) that opens
-        /// the quest journal. Built at runtime; sits inside HUDPanel so it hides with the HUD.
+        /// Small always-visible HUD button that opens the quest journal. Built at runtime; sits
+        /// inside HUDPanel so it hides with the HUD.
+        ///
+        /// Top-<i>left</i>, below the portrait cluster — not top-right, where it used to sit. The
+        /// wanted meter now runs across the top centre and the right-hand column is the action
+        /// cluster's, so the left edge under the bars is the only place left that isn't a thumb
+        /// rest during play.
         /// </summary>
         private void EnsureJournalButton()
         {
@@ -644,9 +740,9 @@ namespace GBHEngland.UI
             var btn = new GameObject("JournalButton", typeof(RectTransform));
             btn.transform.SetParent(parent, false);
             var rt = (RectTransform)btn.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(1, 1);
-            rt.pivot = new Vector2(1, 1);
-            rt.anchoredPosition = new Vector2(-24, -120);
+            rt.anchorMin = rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = new Vector2(16, -216);
             rt.sizeDelta = new Vector2(72, 56);
             btn.AddComponent<Image>();
             var bagBtn = btn.AddComponent<Button>();
@@ -732,6 +828,10 @@ namespace GBHEngland.UI
         /// Builds the bottom-right action controls in code: a vertical column of 4 spell buttons
         /// (ability slots 0-3), the big ATK melee button, and repositions USE beside ATK. Replaces
         /// the old scene cluster + quick-slot bar so the layout lives in one place and is easy to tweak.
+        ///
+        /// ⚠ The panel is a full stretch, not a zero-size rect pinned to the bottom-right corner.
+        /// It has to be: CRO now anchors to the bottom-<i>left</i> so it can sit over the joystick,
+        /// and a child can only anchor to a corner its parent actually has.
         /// </summary>
         private void BuildActionButtons()
         {
@@ -744,42 +844,66 @@ namespace GBHEngland.UI
             var panel = new GameObject("ActionButtons", typeof(RectTransform));
             panel.transform.SetParent(hud, false);
             var prt = (RectTransform)panel.transform;
-            prt.anchorMin = prt.anchorMax = new Vector2(1f, 0f);
-            prt.pivot = new Vector2(1f, 0f);
-            prt.anchoredPosition = Vector2.zero;
-            prt.sizeDelta = Vector2.zero;
+            prt.anchorMin = Vector2.zero;
+            prt.anchorMax = Vector2.one;
+            prt.pivot = new Vector2(0.5f, 0.5f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
+
+            var rightEdge = new Vector2(1f, 0f);
 
             // ATK — big melee button, bottom-right.
             CreateActionButton(panel.transform, "ATK", HUDActionButton.ActionKind.Attack, 0,
-                new Vector2(130f, 130f), new Vector2(-24f, 30f));
+                new Vector2(165f, 165f), new Vector2(-24f, 30f), rightEdge);
 
             // 4 spell slots, vertical column above ATK, right-aligned.
-            const float size = 100f, gap = 12f, baseY = 175f;
+            const float size = 125f, gap = 12f, baseY = 215f;
             for (int i = 0; i < 4; i++)
             {
                 float y = baseY + i * (size + gap);
                 var b = CreateActionButton(panel.transform, (i + 1).ToString(),
                     HUDActionButton.ActionKind.Ability, i, new Vector2(size, size),
-                    new Vector2(-24f, y));
+                    new Vector2(-24f, y), rightEdge);
                 _spellSlotImages[i] = b.GetComponent<Image>();
                 _spellSlotLabels[i] = b.GetComponentInChildren<TextMeshProUGUI>();
             }
 
-            // CRO — crouch toggle, third in the bottom row: ATK, USE, CRO reading right to left.
-            // Same size as USE and permanently visible, unlike USE, which hides with its prompt.
+            // CRO — crouch toggle, moved to the left thumb, centred directly above the joystick.
+            // Permanently visible, unlike USE, which hides with its prompt.
             var crouch = CreateActionButton(panel.transform, "CRO", HUDActionButton.ActionKind.Crouch, 0,
-                new Vector2(110f, 110f), new Vector2(-424f, 40f));
+                new Vector2(130f, 130f), CrouchButtonPosition(130f), new Vector2(0f, 0f));
             _crouchButtonImage = crouch.GetComponent<Image>();
             _crouchButtonLabel = crouch.GetComponentInChildren<TextMeshProUGUI>();
             RefreshCrouchButton();
 
-            // DGE — dodge roll, fourth in the bottom row: ATK, USE, CRO, DGE reading right to left.
-            // Keeps CRO's size and its 200 px pitch, so on the 1920-wide reference it spans
-            // x 1186-1296 — clear of the joystick, which lives against the opposite edge.
+            // DGE — dodge roll, immediately left of USE in the bottom-right row: ATK, USE, DGE
+            // reading right to left. 361 = USE's 205 + its 140 width + a 16 px gap.
             CreateActionButton(panel.transform, "DGE", HUDActionButton.ActionKind.Dodge, 0,
-                new Vector2(110f, 110f), new Vector2(-624f, 40f));
+                new Vector2(140f, 140f), new Vector2(-361f, 40f), rightEdge);
 
             RepositionInteractButton();
+        }
+
+        /// <summary>
+        /// Where CRO goes: horizontally centred over the joystick, 24 px above its top edge.
+        ///
+        /// Computed from the joystick's live rect rather than hardcoded, because the joystick's
+        /// size is authored in c.unity and is the kind of thing that gets retuned in the Inspector
+        /// — a literal here would drift off it silently the first time that happened. Both rects
+        /// use anchor and pivot (0,0), so the joystick's anchoredPosition is its bottom-left corner
+        /// and no pivot correction is needed.
+        ///
+        /// The fallback matches a 280 px joystick at (40,40), which is what the scene holds.
+        /// </summary>
+        private Vector2 CrouchButtonPosition(float buttonSize)
+        {
+            var joyRt = Joystick != null ? Joystick.GetComponent<RectTransform>() : null;
+            if (joyRt == null) return new Vector2(120f, 344f);
+
+            Vector2 joyPos = joyRt.anchoredPosition;
+            Vector2 joySize = joyRt.sizeDelta;
+            return new Vector2(joyPos.x + (joySize.x - buttonSize) * 0.5f,
+                               joyPos.y + joySize.y + 24f);
         }
 
         /// <summary>
@@ -808,15 +932,20 @@ namespace GBHEngland.UI
             }
         }
 
+        /// <summary>
+        /// Builds one action button. <paramref name="anchor"/> is required rather than defaulted to
+        /// the old bottom-right, and drives both the anchors and the pivot, so a caller cannot
+        /// place a button against one corner while measuring it from another.
+        /// </summary>
         private GameObject CreateActionButton(Transform parent, string label, HUDActionButton.ActionKind kind,
-            int abilityIndex, Vector2 size, Vector2 pos)
+            int abilityIndex, Vector2 size, Vector2 pos, Vector2 anchor)
         {
             var go = new GameObject(kind == HUDActionButton.ActionKind.Ability ? $"Spell{abilityIndex}" : label,
                 typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var rt = (RectTransform)go.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
-            rt.pivot = new Vector2(1f, 0f);
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = anchor;
             rt.anchoredPosition = pos;
             rt.sizeDelta = size;
 
@@ -843,7 +972,7 @@ namespace GBHEngland.UI
             return go;
         }
 
-        /// <summary>Moves USE in line with ATK, ~half an inch to its left, a touch smaller.</summary>
+        /// <summary>Moves USE in line with ATK, immediately to its left, a touch smaller.</summary>
         private void RepositionInteractButton()
         {
             EnsureInteractUI();
@@ -854,8 +983,8 @@ namespace GBHEngland.UI
                 {
                     rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
                     rt.pivot = new Vector2(1f, 0f);
-                    rt.sizeDelta = new Vector2(110f, 110f);
-                    rt.anchoredPosition = new Vector2(-224f, 40f);
+                    rt.sizeDelta = new Vector2(140f, 140f);
+                    rt.anchoredPosition = new Vector2(-205f, 40f);
                 }
             }
             if (InteractPromptText != null)
@@ -866,7 +995,7 @@ namespace GBHEngland.UI
                     prt.anchorMin = prt.anchorMax = new Vector2(1f, 0f);
                     prt.pivot = new Vector2(1f, 0f);
                     prt.sizeDelta = new Vector2(260f, 36f);
-                    prt.anchoredPosition = new Vector2(-149f, 158f); // just above USE
+                    prt.anchoredPosition = new Vector2(-160f, 200f); // just above USE
                     InteractPromptText.alignment = TextAlignmentOptions.Center;
                 }
             }

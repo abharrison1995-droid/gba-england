@@ -31,14 +31,15 @@ Verification scope:   code and asset/scene YAML read directly. No compiler, no U
 >    `m_IsActive: 0` in `c.unity` and nothing activates it, so the stray duplicate `MPFill` inside
 >    it renders nothing today. **Nothing in this plan touches either.** §2 finding 2 and §10.3
 >    check 3 are rewritten accordingly.
-> 3. **The bar pitch is 28, not 36.** HPTrack sits at y −22, MPTrack −58, ConcealmentBar −86:
->    the authored pitches are 36 then 28, and MP/Concealment are contiguous edge to edge. The
->    stamina track goes at **MP − 56 (y −114)**, continuing that stack below the concealment slot,
->    and `TopLeftPortraitPanel` grows **116 → 144**, not 152.
+> 3. **The bar pitch is 36.** HPTrack sits at y −22 and MPTrack at −58, so the stamina track goes
+>    at **MP − 36 (y −94)** and the three bars are equally spaced down the column.
+>    `TopLeftPortraitPanel` is 116 tall and the bar is 28, so −94 sits inside it and the panel does
+>    **not** grow. *(Superseded the original "MP − 56 (y −114), panel 116 → 144" during the
+>    2026-08-18 mobile HUD pass, which is the state of the code today.)*
 >
-> One consequence of 2 + 3 together, accepted knowingly: the concealment slot (−72 to −100) stays
-> reserved and empty, so there is a 28 px gap between the mana and stamina bars until the stealth
-> pass fills it. Moving the stamina bar up is a one-constant change if that reads badly.
+> One consequence, accepted knowingly: `ConcealmentBar` is authored at −86 in the same column and
+> is overlapped by the stamina bar's slot. It is `m_IsActive: 0`, so nothing is drawn over anything
+> today — but the stealth pass has to place the bar somewhere rather than find a gap waiting.
 
 Owner's brief, verbatim goals: add a third HUD bar for stamina; make the dodge roll cost 50% of
 stamina; make stamina regenerate slowly; stop mana regenerating automatically; HP and mana are
@@ -322,7 +323,7 @@ Young Driller (55 max), Mr Hood (60), Stabmeister (50), Bunda Basher (40), Dynam
 | File | Change | Why |
 |---|---|---|
 | `Assets/Scripts/Combat/CombatController.cs` | **Regen:** delete the mana half of `RegenResources` (`:222-228`), `_manaRegenCarry` (`:88`), `ManaRegenPerSecond` (`:69-70`), `_baseManaRegen` (`:92`, captured `:123`), and the regen write `ManaRegenPerSecond = _baseManaRegen * …` (`:275`). Rewrite the stamina half to `_staminaRegenCarry += StaminaRegenPercentPerSecond * mult * max / 100f * Time.deltaTime`, where `mult` is `PlayerSession.Instance?.ResourceRegenMultiplier ?? 1f` read at tick time; delete `StaminaRegenPerSecond` (`:71-72`), `_baseStaminaRegen` (`:93`, `:124`) and the `:276` write. **Dodge:** append `RollStaminaPercent = 50f` beside the other `Roll*` fields; new `private int CurrentRollCost` = `PlayerData != null ? Max(1, FloorToInt(PlayerData.MaxManaStamina * RollStaminaPercent / 100f)) : RollStaminaCost`; `PerformDodge` reads it once into a local and uses it at the check (`:641`) and the spend (`:657`). Keep `"Not enough Stamina."` verbatim. Rewrite the `RollStaminaCost` tooltip (`:48-50`) — its "at 7/s regen 14 repays in two seconds" reasoning is dead. **HUD:** one line in `PushHud` (`:285-295`): `UpdatePlayerStamina(CurrentStamina, PlayerData != null ? PlayerData.MaxManaStamina : 50)` — the same max expression the mana push already uses | The economy |
-| `Assets/Scripts/UI/UIManager.cs` | Append `PlayerStaminaFill` and `PlayerStaminaText` after `PlayerConcealmentText` (`:27-36` block). New `EnsureStaminaBar()`, called from `Start()` beside `BuildActionButtons` (`:75-82`): builds `StaminaTrack` under `TopLeftPortraitPanel` by copying `MPTrack`'s anchors/pivot/anchoredPosition/sizeDelta (via `PlayerManaFill.transform.parent`), sets `anchoredPosition.y -= 56` (**two authored 28 px bar heights** below MP — one slot reserved for the sidelined concealment bar at −86, then stamina at −114, continuing the contiguous MP/Concealment stack; derivation in a comment), adds a dark-amber track `Image`, adds `StaminaFill` child stretched 0→1 in `EKVibe.StaminaBar`, `raycastTarget = false`, assigns `PlayerStaminaFill`; then grows `TopLeftPortraitPanel.sizeDelta.y` by 28 (116 → 144). New `UpdatePlayerStamina(int current, int max)` mirroring `UpdatePlayerMana` (`:200-208`) but with **int-compare caching** (`_shownStamina`, `_shownStaminaMax`, the `_shownLevel` pattern at `:167`) so it never allocates a string on an unchanged frame; label built lazily by the existing `EnsureBarLabel` (`:297-320`) as `"SPText"` | The bar, runtime-built — **no scene edit** |
+| `Assets/Scripts/UI/UIManager.cs` | Append `PlayerStaminaFill` and `PlayerStaminaText` after `PlayerConcealmentText` (`:27-36` block). New `EnsureStaminaBar()`, called from `Start()` beside `BuildActionButtons` (`:75-82`): builds `StaminaTrack` under `TopLeftPortraitPanel` by copying `MPTrack`'s anchors/pivot/anchoredPosition/sizeDelta (via `PlayerManaFill.transform.parent`), sets `anchoredPosition.y -= 36` (**one authored bar pitch** below MP — HP −22, MP −58, stamina −94, equally spaced; derivation in a comment), adds a dark-amber track `Image`, adds `StaminaFill` child stretched 0→1 in `EKVibe.StaminaBar`, `raycastTarget = false`, assigns `PlayerStaminaFill`. `TopLeftPortraitPanel` is left alone — −94 already fits inside its authored 116. New `UpdatePlayerStamina(int current, int max)` mirroring `UpdatePlayerMana` (`:200-208`) but with **int-compare caching** (`_shownStamina`, `_shownStaminaMax`, the `_shownLevel` pattern at `:167`) so it never allocates a string on an unchanged frame; label built lazily by the existing `EnsureBarLabel` (`:297-320`) as `"SPText"` | The bar, runtime-built — **no scene edit** |
 | `Assets/Scripts/Vibe/EKVibe.cs` | Append `public static readonly Color StaminaBar` beside `HealthBar`/`ManaBar` (`:30-37`) — amber, in the `XpBar`/`LevelBadge` family but a distinct constant so they can diverge. Suggested `(0.85f, 0.7f, 0.15f, 1f)`; implementer may darken for the track fill (computed, no second constant) | The one new colour; code constant, not serialized |
 | `Assets/Scripts/Data/PerkData.cs` | Edit the `ResourceRegenPercent` **remark text only** (`:33` area) to say stamina-only. The enum member, its index and its name do not move | Q4 documentation |
 | `Assets/Scripts/Flow/PlayerSession.cs` | Edit the `ResourceRegenMultiplier` doc comment (`:349-350`) to say stamina-only | Q4 documentation |
@@ -428,11 +429,12 @@ Ranked by how quietly it fails.
    `EnsureStaminaBar` copies `MPTrack`'s rect — MPTrack is never re-parented, unlike
    `ConcealmentBar`, whose rect is only stable until its first update wraps it. Reading
    `ConcealmentBar`'s rect at build time instead would be the quiet layout bug; do not.
-6. **Panel growth vs. the cluster scale ceiling.** Growing `TopLeftPortraitPanel` 116→144 px
-   tall moves its *bottom* edge (pivot is top-left, verified in scene YAML); the 1.75 ceiling in
-   `EKVibe.cs:56-67` constrains the *right* edge (combat-log overlap), so 1.6 stays legal. The
-   bottom edge at 144×1.6 ≈ 230 px from the top clears the joystick (bottom-anchored) on the
-   1920×1080 reference. Reasoned, not measured — §10.3 check 2 looks at it.
+6. **The panel does not grow.** At the corrected pitch the stamina track spans −80 to −108, inside
+   `TopLeftPortraitPanel`'s authored 116, so nothing resizes it — which also removes a
+   non-idempotent `sizeDelta +=` that ran once per `EnsureStaminaBar` call. The 1.75 ceiling in
+   `EKVibe.cs:56-67` constrains the panel's *right* edge (combat-log overlap), so 1.6 stays legal,
+   and 116×1.6 ≈ 186 px from the top clears the joystick (bottom-anchored) on the 1920×1080
+   reference. Reasoned, not measured — §10.3 check 2 looks at it.
 7. **The two existing bars allocate a string every frame** (`UIManager.cs:197`, `:207` — `text =
    $"{…}"` inside `Update`, via `PushHud`). Known, pre-existing, **not fixed here**: fixing them
    changes two working bars in the same commit as a new one, and the diff stops being reviewable
@@ -504,19 +506,20 @@ pre-change save round-trips.
 1. **It compiles.** Open Unity, wait for the recompile, **Window → General → Console**, Clear,
    confirm no red. Nothing below means anything until this passes.
 2. **The third bar.** Play from the title screen, start a New Game (any class — Young Driller
-   reads 55). Top-left cluster: under the green concealment bar there is now an **amber** bar
-   reading `55 / 55`. Check it does not overlap the combat log on the right and does not reach the
-   joystick. Then **Window → General → Device Simulator**, landscape, a notched device: the cluster
-   grew downward ~58 px — confirm the safe-area fitter still keeps it clear. If the bar is missing
+   reads 55). Top-left cluster: directly under the blue mana bar, one bar-pitch down, there is now
+   an **amber** bar reading `55 / 55`, evenly spaced with the two above it. Check it does not
+   overlap the combat log on the right and does not reach the joystick. Then **Window → General →
+   Device Simulator**, landscape, a notched device: the cluster is unchanged in height (the panel
+   no longer grows) — confirm the safe-area fitter still keeps it clear. If the bar is missing
    entirely, `PlayerManaFill` was unbound and `EnsureStaminaBar` skipped itself — look for its
    warning in the Console.
 3. **The concealment bar is expected to be absent — do not chase it.** `ConcealmentBar` is
-   disabled in the scene and stealth is sidelined for its own pass (§2 row 2). There will be a
-   28 px gap between the mana and stamina bars where its slot is reserved. Nothing in this pass
-   touches it, including the stray `MPFill` inside it, which renders nothing while its parent is
-   off. **Not a phase-1 defect.**
-4. **The roll economy.** Hold a direction and press **Space** (or the **DGE** button, fourth from
-   the right on the bottom row — built at runtime, visible only in Play at
+   disabled in the scene and stealth is sidelined for its own pass (§2 row 2). There is no gap
+   left for it: the stamina bar occupies the space it was authored in, and the stealth pass will
+   have to place it. Nothing in this pass touches it, including the stray `MPFill` inside it,
+   which renders nothing while its parent is off. **Not a phase-1 defect.**
+4. **The roll economy.** Hold a direction and press **Space** (or the **DGE** button, third from
+   the right on the bottom row — ATK, USE, DGE — built at runtime, visible only in Play at
    `UI/UICanvas/HUDPanel/ActionButtons/DGE`). On a Young Driller the amber bar should read
    **55 → 28** on the first roll and **28 → 1** on the second. Third press: refused with
    "Not enough Stamina." Then wait: roughly 3 points a second return — one roll back after ~10 s,
