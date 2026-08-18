@@ -253,6 +253,15 @@ namespace GBHEngland.Vibe
 
         public static int ScaledKillXP(int baseXp, int level) => Scaled(baseXp, level, EnemyXPPerLevel);
 
+        /// <summary>
+        /// Player melee base damage before weapon, equipment bonus and the MeleeDamageMultiplier perk:
+        /// BaseTraits.Strength + this offset. +1 was chosen so every starting class lands under 10 — the
+        /// roster's highest starting Strength is 8 (Stabmeister, BundaBasher), landing at 9 — while
+        /// strictly preserving Strength's ordering. Was Strength*2+5, which put the roster at 11-21 and
+        /// let a fresh character one- or two-shot early enemies before any weapon or perk was involved.
+        /// </summary>
+        public const int MeleeDamageStrengthOffset = 1;
+
         // --- Traffic and car theft ---
         // Appended at the very end, per §7. These are the global tuning dials for the ambient
         // traffic and hotwire systems; per-car values (ride speed, traffic speed, wires, clock)

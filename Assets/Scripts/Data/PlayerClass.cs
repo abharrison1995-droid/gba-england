@@ -115,12 +115,12 @@ namespace GBHEngland.Data
         /// The Tudor from 160 HP to 376 and Dynamo from 80 resource to 200.
         /// </summary>
         /// <remarks>
-        /// ⚠️ Traits deliberately do not grow. Melee damage is <c>Strength * 2 + 5</c>, so even
-        /// +1 Strength a level would have a level-25 Young Driller swinging for 67 before weapon or
-        /// perks against 19 at level 1 — that retunes the entire enemy roster in one go. Traits are
-        /// perk territory in v1. If trait growth is wanted later, the honest shape is a point every
-        /// N levels rather than a per-level integer, and the enemy damage/health constants in
-        /// <c>EKVibe</c> need revisiting in the same change.
+        /// ⚠️ Traits deliberately do not grow. Melee damage is
+        /// <c>Strength + EKVibe.MeleeDamageStrengthOffset</c>, so even +1 Strength a level would have a
+        /// level-25 Young Driller swinging for 32 before weapon or perks against 8 at level 1 — that
+        /// retunes the entire enemy roster in one go. Traits are perk territory in v1. If trait growth
+        /// is wanted later, the honest shape is a point every N levels rather than a per-level integer,
+        /// and the enemy damage/health constants in <c>EKVibe</c> need revisiting in the same change.
         /// </remarks>
         public static LevelGrowth GrowthPerLevel(PlayerClass c)
         {

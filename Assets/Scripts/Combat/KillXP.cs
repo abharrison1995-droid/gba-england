@@ -52,7 +52,7 @@ namespace GBHEngland.Combat
             // none it is a flat level-1 kill, which is what every enemy in the game is today.
             var level = victim.GetComponent<EnemyLevel>();
             int amount = level != null
-                ? EKVibe.ScaledKillXP(level.BaseXP, level.Level)
+                ? EKVibe.ScaledKillXP(level.ResolvedBaseXP, level.Level)
                 : EKVibe.KillXPBase;
             amount = Mathf.Max(1, Mathf.RoundToInt(amount * multiplier));
 

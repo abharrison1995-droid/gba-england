@@ -596,7 +596,9 @@ namespace GBHEngland.Combat
                     hitCenter = transform.position + facing * Vector3.Distance(transform.position, AttackPoint.position);
 
                 int hitCount = Physics.OverlapSphereNonAlloc(hitCenter, hitRadius, _hitResults);
-                int damage = PlayerData != null ? PlayerData.BaseTraits.Strength * 2 + 5 : 10;
+                int damage = PlayerData != null
+                    ? PlayerData.BaseTraits.Strength + EKVibe.MeleeDamageStrengthOffset
+                    : 6; // PlayerData unbound — 6 matches the default CoreTraits Strength (5) + the same offset.
 
                 // Equipped weapon adds its Damage on top of the Strength roll.
                 var session = Flow.PlayerSession.Instance;
