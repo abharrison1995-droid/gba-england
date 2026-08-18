@@ -1,11 +1,15 @@
 # Consequences, police, stealth, mounts and vehicles
 
 ```
-Last verified against: working tree, 2026-08-15
-Verification scope:    code; tracked prefab YAML. Mounting, dismounting, the boost, the prompt
-                       flip and the data-driven spawner were play-tested in an earlier editor
-                       session. The IsPolice defect below is read from prefab YAML and has NOT
-                       been observed in play. The snitch removal is verified by GUID search and
+Last verified against: working tree, 2026-08-18
+Verification scope:    code; tracked prefab YAML. The 5-icon wanted meter and the CRO button's
+                       move to the joystick (both 2026-08-18) are code-review only — never
+                       compiled, never seen in the editor, and the meter cannot render at all
+                       until spr_ui_wanted_knife.png is imported and wired by hand. The rest of
+                       this scope is carried over unchanged from the 2026-08-15 pass.
+                       Mounting, dismounting, the boost, the prompt flip and the data-driven
+                       spawner were play-tested in an earlier editor session. The IsPolice defect
+                       below is read from prefab YAML and has NOT been observed in play. The snitch removal is verified by GUID search and
                        `--check-dangling` only. The pickpocket minigame is code-review only —
                        no compiler and no editor have seen either, and no LootBand asset exists
                        yet, so the band path has never been taken. The traffic and car theft
@@ -38,9 +42,28 @@ single most load-bearing line in the whole consequence loop.
 
 `WantedManager.ClearWanted()` clears both meters **and despawns the police**, and it has to:
 `SpawnPlod` instantiates officers unparented at the scene root, so they survive a chunk
-transition. A version that only zeroed the meters dropped the HUD knife readout to zero and left
-Armed Response hunting the player. `PubInteractable` and `GameFlowController.ArrestRoutine` both
-still clear inline and are unaffected.
+transition. A version that only zeroed the meters left Armed Response hunting a player the meters
+said was clean. `PubInteractable` and `GameFlowController.ArrestRoutine` both still clear inline
+and are unaffected.
+
+### Where the player sees it
+
+**A row of five knife icons across the top centre of the HUD**, built at runtime by
+`UIManager.EnsureWantedMeter` and painted by `UIManager.UpdateKnivesUI(int)`. Lit knives are full
+white; unspent ones are the same sprite at alpha 0.18, so two knives reads as "two of five" rather
+than "two of however many there are". Three call sites drive it — `WantedManager.UpdateUIIndicator`
+(the only one that pushes a real level), `PubInteractable` and `GameFlowController.ArrestRoutine`,
+which both push a hard 0.
+
+⚠ **The meter is not built at all unless `UIManager.WantedKnifeIcon` is assigned** (the sprite is
+`Assets/Art/Generated/ui/spr_ui_wanted_knife.png`). There is deliberately no blank-square
+fallback: five grey boxes read as a layout bug, whereas nothing plus the console warning
+`"UIManager: WantedKnifeIcon is unassigned"` names the actual problem.
+
+This replaced a `WantedKnivesText` label that was **never wired** — `{fileID: 0}` in `c.unity` —
+so until 2026-08-18 the wanted level had no on-screen readout whatsoever, and `UpdateKnivesUI`
+wrote to nothing. Any older claim that a knife number was visible on the HUD was describing a
+field, not a thing the player could see.
 
 ### Evasion: only walking out of town shakes the police
 
@@ -130,7 +153,8 @@ codebase in any form. Do not read the remaining concealment plumbing as a half-b
 
 Crouch is reachable on mobile: the HUD has a **CRO** button
 (`HUDActionButton.ActionKind.Crouch` → `UIManager.OnCrouchPressed` →
-`StealthController.ToggleStealth`), built in code beside ATK and USE. It shows its state —
+`StealthController.ToggleStealth`), built in code and sitting directly above the joystick, under
+the left thumb rather than in the right-hand action row. It shows its state —
 `EKVibe.ButtonBrownActive` and the label **STAND** while crouched — repainted by
 `UIManager.RefreshCrouchButton`, which `ToggleStealth` calls, so the key and the button can never
 disagree. `KeyCode.C` still works and is how it gets tested in the editor. This is also what makes
