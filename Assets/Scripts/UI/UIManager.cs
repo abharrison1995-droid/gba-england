@@ -718,8 +718,13 @@ namespace GBHEngland.UI
         }
 
         /// <summary>
-        /// Small always-visible HUD button (top-right, under the location text) that opens
-        /// the quest journal. Built at runtime; sits inside HUDPanel so it hides with the HUD.
+        /// Small always-visible HUD button that opens the quest journal. Built at runtime; sits
+        /// inside HUDPanel so it hides with the HUD.
+        ///
+        /// Top-<i>left</i>, below the portrait cluster — not top-right, where it used to sit. The
+        /// wanted meter now runs across the top centre and the right-hand column is the action
+        /// cluster's, so the left edge under the bars is the only place left that isn't a thumb
+        /// rest during play.
         /// </summary>
         private void EnsureJournalButton()
         {
@@ -729,9 +734,9 @@ namespace GBHEngland.UI
             var btn = new GameObject("JournalButton", typeof(RectTransform));
             btn.transform.SetParent(parent, false);
             var rt = (RectTransform)btn.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(1, 1);
-            rt.pivot = new Vector2(1, 1);
-            rt.anchoredPosition = new Vector2(-24, -120);
+            rt.anchorMin = rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = new Vector2(16, -216);
             rt.sizeDelta = new Vector2(72, 56);
             btn.AddComponent<Image>();
             var bagBtn = btn.AddComponent<Button>();
