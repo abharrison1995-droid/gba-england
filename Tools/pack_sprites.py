@@ -45,23 +45,27 @@ CATEGORY_PREFIX = {
 }
 
 
+# Alpha STRICTLY above this counts as drawn — ArtImportTool.MeasureCells does
+# `if (px[...].a <= 8) continue;`. Shared with sprite_kit's ALPHA_THRESHOLD so
+# the renderer pins the baseline on the same pixel the checker measures.
+ALPHA_FLOOR = 8
+
+# ArtImportTool reduces to 48 px per world unit, and scales the measured drift
+# to that before judging it. A 2 px wobble on a 512 px cell is 0.3 px in game.
+PIXELS_PER_WORLD_UNIT = 48
+
+# The importer's own thresholds, mirrored. Keep these equal to the constants in
+# Assets/Editor/ArtImportTool.cs — a checker stricter than the thing it
+# predicts rejects art that would have imported perfectly well.
+MAX_NARROWNESS = 1.4      # reference width / this sheet's width
+MAX_HEIGHT_RATIO = 1.15   # taller / shorter, against the idle sheet
+MAX_DRIFT_AT_FINAL_SIZE = 2.0
+
+
 def bbox_of(img):
-    """Opaque bounding box, or None if the frame is empty."""
+    """Opaque bounding box (alpha > ALPHA_FLOOR), or None if empty."""
     alpha = img.getchannel("A")
-    return alpha.getbbox()
-
-
-def mean_opaque_width(img, threshold=8):
-    """Mean width of the opaque region over rows that have any opacity."""
-    alpha = img.getchannel("A")
-    w, h = alpha.size
-    px = alpha.load()
-    widths = []
-    for y in range(h):
-        xs = [x for x in range(w) if px[x, y] >= threshold]
-        if xs:
-            widths.append(xs[-1] - xs[0] + 1)
-    return sum(widths) / len(widths) if widths else 0.0
+    return alpha.point(lambda a: 255 if a > ALPHA_FLOOR else 0).getbbox()
 
 
 def load_frames(action_dir):
@@ -74,55 +78,67 @@ def load_frames(action_dir):
     return manifest, [Image.open(p).convert("RGBA") for p in paths]
 
 
-def measure(frames, action):
-    """Return (report_lines, failures, stats) for one action's frames."""
+def measure(frames, action, world_height):
+    """Mirror ArtImportTool.MeasureCells + CheckFrameAlignment for one action.
+
+    Width and height are the mean *bounding box* fractions across frames — the
+    importer takes left/right over the whole cell, not a per-row mean.
+    """
     lines, failures = [], []
     boxes = [bbox_of(f) for f in frames]
     if any(b is None for b in boxes):
         failures.append(f"{action}: frame(s) rendered empty — nothing in view")
         return lines, failures, {}
 
-    cell_h = frames[0].size[1]
-    cell_w = frames[0].size[0]
+    cell_w, cell_h = frames[0].size
     if len({f.size for f in frames}) != 1:
         failures.append(f"{action}: frames are not all the same size")
 
     baselines = [b[3] for b in boxes]            # bottom edge = feet
     drift = max(baselines) - min(baselines)
-    fills = [(b[3] - b[1]) / cell_h for b in boxes]
-    widths = [mean_opaque_width(f) / cell_w for f in frames]
-    stats = {"fill": sum(fills) / len(fills),
-             "width": sum(widths) / len(widths),
-             "drift": drift}
+    stats = {
+        "height": sum((b[3] - b[1]) for b in boxes) / len(boxes) / cell_h,
+        "width": sum((b[2] - b[0]) for b in boxes) / len(boxes) / cell_w,
+        "drift": drift,
+        "drift_final": drift * world_height * PIXELS_PER_WORLD_UNIT / cell_h,
+    }
 
-    lines.append(f"  {action:9s} drift {drift:2d} px   "
-                 f"fill {stats['fill']:.0%}   width {stats['width']:.0%}")
+    lines.append(f"  {action:9s} drift {drift:2d} px "
+                 f"({stats['drift_final']:.2f} px at final size)   "
+                 f"height {stats['height']:.0%}   width {stats['width']:.0%}")
 
-    if action not in SHAPE_CHANGING:
-        if drift != 0:
+    if stats["drift_final"] >= MAX_DRIFT_AT_FINAL_SIZE:
+        if action in SHAPE_CHANGING:
+            lines.append(f"    feet move {drift} px — expected for {action}")
+        else:
             failures.append(
-                f"{action}: baseline drifts {drift} px across frames — the "
-                f"figure bobs. Non-exempt actions must be 0.")
-        if not 0.80 <= stats["fill"] <= 0.95:
-            failures.append(
-                f"{action}: figure fills {stats['fill']:.0%} of cell height; "
-                f"the contract wants ~90%. Adjust the `fill` argument to "
-                f"render_subject.")
+                f"{action}: feet move {drift} px between frames "
+                f"({stats['drift_final']:.1f} px at final size) — it will bob.")
     return lines, failures, stats
 
 
-def pack_action(subject, action_dir, category, check_only, idle_width=None):
+def pack_action(subject, action_dir, category, check_only, reference=None):
     manifest, frames = load_frames(action_dir)
     action = manifest["action"]
-    lines, failures, stats = measure(frames, action)
+    lines, failures, stats = measure(frames, action, manifest["worldHeight"])
 
-    if idle_width and stats.get("width"):
-        ratio = idle_width / stats["width"]
-        if ratio > 1.4:
+    # Both cross-sheet checks are against the subject's own idle, which is the
+    # importer's reference pose. Absolute cell fill is NOT checked: the
+    # importer has no such rule, and inventing one here rejected art that
+    # would have imported fine.
+    if reference and stats.get("width"):
+        narrowness = reference["width"] / stats["width"]
+        if narrowness > MAX_NARROWNESS:
             failures.append(
-                f"{action}: body is {ratio:.2f}x narrower than idle (limit "
-                f"1.4x) — the importer will refuse it. Check the camera "
-                f"azimuth matches idle's.")
+                f"{action}: {narrowness:.1f}x narrower than idle (limit "
+                f"{MAX_NARROWNESS}x) — drawn at a different angle.")
+        if action not in SHAPE_CHANGING and stats.get("height"):
+            hi = max(reference["height"], stats["height"])
+            lo = min(reference["height"], stats["height"])
+            if lo > 0 and hi / lo > MAX_HEIGHT_RATIO:
+                failures.append(
+                    f"{action}: differs from idle in height by {hi / lo:.2f}x "
+                    f"(limit {MAX_HEIGHT_RATIO}x).")
 
     for line in lines:
         print(line)
@@ -204,12 +220,12 @@ def main():
                 print(f"ERROR: no action '{args.action}' for '{subject}'")
                 return 2
 
-        idle_width = None
+        reference = None
         for adir in action_dirs:
             stats, failures = pack_action(
-                subject, adir, args.category, args.check, idle_width)
-            if adir.name == "idle":
-                idle_width = stats.get("width")
+                subject, adir, args.category, args.check, reference)
+            if adir.name == "idle" and stats:
+                reference = stats
             all_failures += failures
 
     if all_failures:

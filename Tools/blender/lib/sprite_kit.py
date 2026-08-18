@@ -92,14 +92,11 @@ PARTS = [
 LEG_LENGTH = 0.44  # hip pivot z minus foot sole, as a fraction of H
 
 
-def build_proxy_rig(height, colors=None, part_images=None):
-    """Build the segmented humanoid. Returns {part_name: object}.
+def build_proxy_rig(height, colors=None):
+    """Build the flat-colour segmented humanoid. Returns {part_name: object}.
 
     colors: {color_key: (r, g, b)} overriding DEFAULT_COLORS.
-    part_images: {part_name: png_path} — replaces that part's box with a
-    camera-facing textured card (the photo-staging seam, see make_part_card).
-    Parts with an image need engine="CYCLES" in render_subject for the alpha
-    to render.
+    For the photo-cutout equivalent see build_cutout_rig.
     """
     palette = dict(DEFAULT_COLORS)
     if colors:
@@ -110,16 +107,11 @@ def build_proxy_rig(height, colors=None, part_images=None):
     rig = {}
     for name, parent, pivot, box, ckey in PARTS:
         sx, sy, z0, z1, cx = box
-        if part_images and name in part_images:
-            obj = make_part_card(name, part_images[name],
-                                 height=(z1 - z0) * height,
-                                 at=(cx * height, pivot[1] * height, z0 * height))
-        else:
-            obj = kit.make_box(name, sx * height, sy * height,
-                               (z1 - z0) * height,
-                               at=(cx * height, pivot[1] * height, z0 * height))
-            obj.data.materials.append(mat)
-            kit.paint_faces(obj, lambda f, i=keys.index(ckey): i, n)
+        obj = kit.make_box(name, sx * height, sy * height,
+                           (z1 - z0) * height,
+                           at=(cx * height, pivot[1] * height, z0 * height))
+        obj.data.materials.append(mat)
+        kit.paint_faces(obj, lambda f, i=keys.index(ckey): i, n)
         # Origin at the joint so rotation_euler rotates about it.
         bpy.context.scene.cursor.location = Vector(pivot) * height
         bpy.ops.object.select_all(action="DESELECT")
@@ -136,49 +128,197 @@ def build_proxy_rig(height, colors=None, part_images=None):
     return rig
 
 
-def make_part_card(name, image_path, height, at, azimuth_deg=-45.0):
-    """The photo-staging seam: a body part as a flat textured card.
+# Which end of a cut part its joint sits at, and how far toward the camera it
+# draws. Depth decides overlap: arms in front of the coat, head in front of the
+# collar. Without it the torso card's top edge drew across the face.
+CUTOUT_PIVOT = {
+    "pelvis": "top", "torso": "bottom", "head": "bottom",
+    "arm_u": "top", "arm_l": "top",
+    "thigh": "top", "shin": "top", "foot": "top",
+}
+CUTOUT_DEPTH = {           # metres toward the camera; larger = nearer
+    "arm_l": 0.09, "arm_u": 0.07, "head": 0.04,
+    "foot": 0.03, "shin": 0.02, "thigh": 0.01,
+    "torso": 0.0, "pelvis": -0.01,
+}
 
-    Cut a photorealistic source image into per-part PNGs (with alpha) once per
-    subject; each card is sized to the part's height, keeps the image's aspect,
-    and faces the camera azimuth so it never renders edge-on. The rig then
-    animates the photo exactly like the boxes — classic paper-doll cutout.
+
+def _part_kind(name):
+    return name.split(".")[0]
+
+
+# Card object name -> silhouette probe points in that object's local space.
+# A card's mesh is a rectangle, but what renders is the alpha shape inside it,
+# and the two diverge the moment the card rotates: the rectangle's lowest
+# corner is usually transparent. Snapping and fitting on the rectangle left
+# 18 px of baseline drift. These probes are what the geometry checks use
+# instead, so they measure the pixels that actually appear.
+_SILHOUETTE = {}
+
+
+# Must match Tools/pack_sprites.py ALPHA_FLOOR (8/255) — see the note there.
+ALPHA_THRESHOLD = 8.0 / 255.0
+
+
+def _silhouette_probes(img, u0, u1, v0, v1, height, depth,
+                       samples=4096, threshold=ALPHA_THRESHOLD):
+    """Outline points of an image's opaque region, in card-local coordinates."""
+    w, h = img.size
+    px = list(img.pixels)  # RGBA floats, rows bottom-up
+
+    def alpha(x, y):
+        return px[((y * w) + x) * 4 + 3]
+
+    def to_local(x, y):
+        u = u0 + (x + 0.5) / w * (u1 - u0)
+        v = v0 + (y + 0.5) / h * (v1 - v0)
+        return Vector((u * height, -depth, v * height))
+
+    # Sample EVERY column and row, not a fixed count. Sub-sampling leaves the
+    # true lowest point between probes, and the size of that miss changes with
+    # the card's rotation — which showed up as an irreducible 1-2 px of
+    # baseline drift no amount of threshold-matching would remove.
+    pts = []
+    for x in range(0, w, max(1, w // samples)):
+        col = [y for y in range(h) if alpha(x, y) >= threshold]
+        if col:
+            pts.append(to_local(x, col[0]))
+            pts.append(to_local(x, col[-1]))
+    for y in range(0, h, max(1, h // samples)):
+        row = [x for x in range(w) if alpha(x, y) >= threshold]
+        if row:
+            pts.append(to_local(row[0], y))
+            pts.append(to_local(row[-1], y))
+    return pts
+
+
+def make_part_card(name, image_path, u0, u1, v0, v1, height, depth=0.0):
+    """A body part as a flat textured card, in the rig's local screen plane.
+
+    Local X is screen-right and local Z is up, so the card is built exactly
+    where cut_parts.py found it in the source image. build_cutout_rig then
+    rotates the whole hierarchy so local X lands on the camera's right axis —
+    which is what keeps every card facing the camera while local-Y rotations
+    (the `ry` the pose functions write) swing limbs within the screen plane.
     """
     img = bpy.data.images.load(str(Path(image_path).resolve()))
-    aspect = img.size[0] / img.size[1]
-    w = height * aspect
 
     import bmesh
     mesh = bpy.data.meshes.new(name)
     bm = bmesh.new()
-    # Card in the plane whose normal is the camera's horizontal direction.
-    a = math.radians(azimuth_deg)
-    right = Vector((-math.sin(a), math.cos(a), 0.0))  # screen-right in world
-    verts = []
-    for u, v in ((-0.5, 0.0), (0.5, 0.0), (0.5, 1.0), (-0.5, 1.0)):
-        p = Vector(at) + right * (u * w) + Vector((0, 0, v * height))
-        verts.append(bm.verts.new(p))
+    corners = ((u0, v0), (u1, v0), (u1, v1), (u0, v1))
+    verts = [bm.verts.new((u * height, -depth, v * height))
+             for u, v in corners]
     bm.faces.new(verts)
     uvl = bm.loops.layers.uv.new("UVMap")
-    for loop, uv in zip(bm.faces[:][0].loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
+    for loop, uv in zip(bm.faces[:][0].loops,
+                        ((0, 0), (1, 0), (1, 1), (0, 1))):
         loop[uvl].uv = uv
     bm.to_mesh(mesh)
     bm.free()
 
+    # Unlit: the source photo already carries its own lighting, and the scene
+    # has no lamps — a Principled BSDF here renders every card black. Emission
+    # mixed with Transparent by the image's alpha reproduces the source pixels
+    # exactly and cuts out cleanly, which is what a digitised sprite wants.
     mat = bpy.data.materials.new(f"{name}_card")
     mat.use_nodes = True
     nodes, links = mat.node_tree.nodes, mat.node_tree.links
-    bsdf = nodes["Principled BSDF"]
+    nodes.remove(nodes["Principled BSDF"])
+    out = nodes["Material Output"]
     tex = nodes.new("ShaderNodeTexImage")
     tex.image = img
-    links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-    links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
+    tex.interpolation = "Closest"
+    emit = nodes.new("ShaderNodeEmission")
+    transp = nodes.new("ShaderNodeBsdfTransparent")
+    mix = nodes.new("ShaderNodeMixShader")
+    links.new(tex.outputs["Color"], emit.inputs["Color"])
+    links.new(tex.outputs["Alpha"], mix.inputs["Fac"])
+    links.new(transp.outputs["BSDF"], mix.inputs[1])
+    links.new(emit.outputs["Emission"], mix.inputs[2])
+    links.new(mix.outputs["Shader"], out.inputs["Surface"])
     mat.blend_method = "CLIP"
     mesh.materials.append(mat)
 
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.scene.collection.objects.link(obj)
+    _SILHOUETTE[obj.name] = _silhouette_probes(img, u0, u1, v0, v1,
+                                               height, depth)
     return obj
+
+
+def build_cutout_rig(height, parts, azimuth=-45.0):
+    """Paper-doll rig from cut_parts.py output. Returns {part_name: object}.
+
+    Every card is placed at the u/v the cutter measured, so unposed the rig
+    reassembles the source image. The whole hierarchy hangs off a root empty
+    rotated (azimuth + 90) about Z: that puts local X on the camera's right
+    axis, so cards face the camera, and local Y on the camera's view axis, so
+    the pose functions' `ry` swings limbs in the screen plane.
+
+    ⚠ This is a 2D cutout, not a 3D figure. A card cannot foreshorten, so the
+    view angle is whatever the source was photographed at, and large rotations
+    (a full attack swing) read as a flat cardboard hinge. Subtle motion — idle,
+    a modest walk — is what it is good for.
+    """
+    missing = [p for p, _, *_ in PARTS if p not in parts]
+    if missing:
+        print(f"[sprite_kit] WARNING: no cut image for {missing} — "
+              f"those parts will be absent from every frame")
+
+    root = bpy.data.objects.new("cutout_root", None)
+    bpy.context.scene.collection.objects.link(root)
+    root.rotation_euler = (0.0, 0.0, math.radians(azimuth + 90.0))
+
+    rig = {}
+    for name, parent, *_ in PARTS:
+        spec = parts.get(name)
+        if spec is None:
+            continue
+        kind = _part_kind(name)
+        u0, u1 = spec["u0"], spec["u1"]
+        v0, v1 = spec["v0"], spec["v1"]
+        obj = make_part_card(name, spec["path"], u0, u1, v0, v1, height,
+                             depth=CUTOUT_DEPTH.get(kind, 0.0))
+        # Joint position: hanging limbs rotate about their top edge, the head
+        # and torso about their bottom. Arms pivot at the shoulder — the edge
+        # nearest the body centre — not at the middle of the sleeve.
+        at_top = CUTOUT_PIVOT.get(kind, "top") == "top"
+        pv = (v1 if at_top else v0) * height
+        if kind in ("arm_u", "arm_l"):
+            pu = (u1 if name.endswith(".R") else u0) * height
+        else:
+            pu = (u0 + u1) / 2.0 * height
+        # The card is still unrotated here — the root's rotation only applies
+        # once it is parented — so the cursor takes the UNROTATED pivot.
+        bpy.context.scene.cursor.location = Vector((pu, 0.0, pv))
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+        # Probes were measured when local space was world space; origin_set has
+        # just moved the origin under them, so rebase into the new local space.
+        inv = obj.matrix_world.inverted()
+        _SILHOUETTE[obj.name] = [inv @ p for p in _SILHOUETTE[obj.name]]
+        rig[name] = obj
+
+    for name, parent, *_ in PARTS:
+        if name not in rig:
+            continue
+        obj = rig[name]
+        if parent and parent in rig:
+            # Cancel the parent's transform so the card keeps the position it
+            # was cut at; the parent's *rotations* still propagate.
+            obj.parent = rig[parent]
+            obj.matrix_parent_inverse = rig[parent].matrix_world.inverted()
+        else:
+            # Root: deliberately NO parent inverse. The whole point of the root
+            # is to rotate the rig into the camera plane, and a parent inverse
+            # here would cancel exactly that rotation, leaving every card
+            # edge-on to the camera.
+            obj.parent = root
+    rig["_root"] = root
+    return rig
 
 
 # ---------------------------------------------------------------------------
@@ -327,11 +467,20 @@ def setup_camera(height, azimuth=-45.0, pitch=30.0):
 def _rig_world_verts(rig):
     """Every rig vertex in world space, after constraints/parenting resolve."""
     deps = bpy.context.evaluated_depsgraph_get()
-    for obj in rig.values():
+    for name, obj in rig.items():
+        # Underscore entries are rig scaffolding (the cutout root empty), which
+        # carries no geometry.
+        if name.startswith("_") or obj.type != "MESH":
+            continue
         ev = obj.evaluated_get(deps)
         mw = ev.matrix_world
-        for v in ev.data.vertices:
-            yield mw @ v.co
+        probes = _SILHOUETTE.get(obj.name)
+        if probes:
+            for p in probes:
+                yield mw @ p
+        else:
+            for v in ev.data.vertices:
+                yield mw @ v.co
 
 
 def fit_camera_to_poses(rig, cam, actions, height, fill=0.88,
@@ -394,8 +543,13 @@ def setup_render(resolution=512, engine="BLENDER_WORKBENCH"):
         shading.light = "FLAT"
         shading.color_type = "TEXTURE"
     elif engine == "CYCLES":
-        scene.cycles.samples = 32
+        # The cards are pure emission/transparent, so there is nothing to
+        # converge — one sample is exact and keeps a sheet to a few seconds.
+        scene.cycles.samples = 1
         scene.cycles.use_denoising = False
+        # Cards overlap in depth (arm in front of torso); without enough
+        # transparent bounces the far ones vanish behind their own cutouts.
+        scene.cycles.transparent_max_bounces = 32
     scene.render.film_transparent = True
     scene.render.resolution_x = resolution
     scene.render.resolution_y = resolution
@@ -422,13 +576,15 @@ def apply_pose(rig, pose, height, cam=None, ground_snap=True, baseline_v=0.0):
     Shape-changing actions (roll, knockback, death) pass ground_snap=False:
     leaving the ground is the pose, and they are exempt from the check.
     """
-    for obj in rig.values():
+    for name, obj in rig.items():
+        if name.startswith("_"):
+            continue  # the cutout root's rotation IS the rig's orientation
         obj.rotation_euler = (0.0, 0.0, 0.0)
     rig["pelvis"].location = (0.0, 0.0, 0.0)
     for name, value in pose.items():
         # Underscore keys are rig-level scalars (e.g. _pelvis_lift), not
         # per-part euler triples — filter before unpacking.
-        if name.startswith("_"):
+        if name.startswith("_") or name not in rig:
             continue
         rx, ry, rz = value
         rig[name].rotation_euler = (math.radians(rx),
@@ -478,7 +634,10 @@ def render_subject(subject, world_height, colors=None, part_images=None,
                    category="characters"):
     """One call per subject script: build, aim, render every action."""
     kit.reset_scene()
-    rig = build_proxy_rig(world_height, colors=colors, part_images=part_images)
+    if part_images:
+        rig = build_cutout_rig(world_height, part_images, azimuth=azimuth)
+    else:
+        rig = build_proxy_rig(world_height, colors=colors)
     actions = actions or DEFAULT_ACTIONS
     cam = setup_camera(world_height, azimuth=azimuth, pitch=pitch)
     baseline_v = fit_camera_to_poses(rig, cam, actions, world_height, fill=fill)

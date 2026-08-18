@@ -84,11 +84,67 @@ Tools/pack_sprites.py    # frames -> sheet + sidecar, and the contract checks
 - **The baseline is pinned in camera space, not world Z.** At the contract's
   30° pitch the pixel-lowest point is whichever ground contact is nearest the
   camera, so in a walk it alternates feet. Snapping world Z left 23 px of
-  drift against an importer that demands 0; snapping in camera space gives 0.
-- **Checks run before Unity.** `pack_sprites.py` measures baseline drift, cell
-  fill and body-width-vs-idle — the same things `ArtImportTool` refuses on —
-  and exits 1 without writing. A failure costs seconds instead of an editor
+  drift; snapping in camera space gives 0.
+- **Checks run before Unity.** `pack_sprites.py` exits 1 without writing when a
+  sheet would be refused, so a failure costs seconds instead of an editor
   round trip.
+
+### The checks mirror ArtImportTool — do not make them stricter
+
+`pack_sprites.py` reimplements `MeasureCells` / `CheckFrameAlignment` /
+`CheckSubjectConsistency` from `Assets/Editor/ArtImportTool.cs`. The constants
+are duplicated at the top of the file and **must stay equal to the C#**:
+
+| Rule | Threshold | Notes |
+|---|---|---|
+| Opaque pixel | alpha **> 8** | strictly greater, as the C# does |
+| Baseline drift | ≥ **2 px at final size** | `drift × worldHeight × 48 ÷ frameHeight`, *not* raw pixels |
+| Body width vs idle | > **1.4×** narrower | idle is the reference sheet |
+| Body height vs idle | > **1.15×** | shape-changing actions exempt |
+
+There is **no absolute cell-fill rule.** An earlier version of this checker
+invented one ("must fill ~90%") and rejected four sheets the importer would
+have accepted. The ~90% figure in `ART_PIPELINE.md` is drawing guidance for a
+generation agent; the importer only ever compares a sheet to its own idle.
+
+Likewise, drift is judged *after* reduction to 48 px/unit. A 2 px wobble on a
+512 px cell is 0.29 px in game, which the importer reports as "negligible at
+final size" and imports. Chasing it to a literal 0 is chasing rasterisation.
+
+## The photo-cutout path (`part_images`)
+
+Prototyped end to end on `sprites/char_mandrew.py`:
+
+```
+python Tools/cut_parts.py art_incoming/frames/mandrew_idle_1.png mandrew
+python Tools/blender/bpy_runner.py Tools/blender/sprites/char_mandrew.py
+python Tools/pack_sprites.py mandrew
+```
+
+`cut_parts.py` keys the magenta backdrop, despills the anti-aliased fringe,
+and slices the figure into 13 parts by the anatomical `BANDS` table, recording
+each part's real position as `u/v` fractions of figure height. `build_cutout_rig`
+rebuilds those as textured cards, so unposed the rig reassembles the source.
+
+**⚠ It is a 2D paper doll, not a 3D figure.** Cards cannot foreshorten, so:
+
+- The whole hierarchy hangs off a root empty rotated `azimuth + 90°` about Z.
+  That puts local X on the camera's right axis (cards face the camera) and
+  local Y on the view axis (the pose functions' `ry` swings limbs *in the
+  screen plane*). The root deliberately gets **no** `matrix_parent_inverse` —
+  that would cancel the very rotation it exists to apply.
+- Cards need explicit depth (`CUTOUT_DEPTH`) or they draw in cut order. Without
+  it the torso card's top edge painted the jacket collar across the face.
+- Geometry checks use `_SILHOUETTE` probes, not the card rectangles. A rotated
+  rectangle's lowest corner is usually transparent, which is worth 18 px of
+  phantom drift.
+- **Limbs that overlap the body in the source have no silhouette of their own.**
+  An arm cut from against the jacket is a fully opaque rectangle, and at large
+  swings it reads as a rotating black block. Subtle motion (idle, a modest
+  walk) is what this path is good for; a full attack swing is not.
+
+Bands are tuned to a front-on standing figure. A differently posed source needs
+its own set — pass `--bands` a JSON override rather than editing the default.
 
 ### Adding a subject
 
