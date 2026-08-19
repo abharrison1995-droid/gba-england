@@ -323,13 +323,12 @@ namespace GBHEngland.UI
         /// the bar cannot go missing on a scene that predates it.
         ///
         /// ⚠ The fill gets a track of its own that holds nothing else, and the readout is built
-        /// here and assigned rather than left to <see cref="EnsureBarLabel"/>. That is deliberate:
-        /// <see cref="EnsureDedicatedTrack"/> decides a fill needs wrapping by testing
-        /// `parent.childCount == 1`, and a label added beside the fill takes that count to 2 — at
-        /// which point the fill gets wrapped in a track sized to whatever fraction it was showing
-        /// at the time, and the bar can never grow past it again. Structuring it this way means
-        /// the wrapper returns at its first check, forever. (The same shape bites HPFill and
-        /// MPFill today — see the note in <see cref="EnsureDedicatedTrack"/>.)
+        /// here and assigned rather than left to <see cref="EnsureBarLabel"/> — SPText is a sibling
+        /// of StaminaFillTrack, not of StaminaFill itself, so the fill's own parent never gains a
+        /// second child no matter how many times this runs. <see cref="EnsureDedicatedTrack"/> now
+        /// decides a fill needs wrapping by the parent's name rather than its child count, which
+        /// fixed the equivalent trap for HPFill and MPFill too — see the note there — but this
+        /// bar was built to avoid ever needing that fix in the first place.
         /// </summary>
         private void EnsureStaminaBar()
         {
@@ -485,23 +484,26 @@ namespace GBHEngland.UI
         ///
         /// Wrapping rather than fixing the scene keeps this correct for any bar wired later, and
         /// costs nothing when the scene is already right. It is self-limiting: after wrapping, the
-        /// fill is an only child, so every later call returns at the first check.
+        /// fill is an only child of its new track, so every later call sees that track's name and
+        /// returns at the first check.
         ///
-        /// ⚠ **Known defect, not fixed here.** The `childCount == 1` test is also true of a track
-        /// that holds the fill and nothing else *yet*. <see cref="EnsureBarLabel"/> then adds the
-        /// readout beside the fill, taking the count to 2, so the NEXT call wraps a fill that
-        /// never needed wrapping — and the new track inherits the anchors the fill is currently
-        /// showing, which is its fill fraction. If that first paint was not full, the bar is
-        /// permanently capped at that fraction and can never grow back. HPFill and MPFill both
-        /// take this path; it is invisible in the common case because the first paint is a full
-        /// bar (anchorMax.x = 1), and it would show as "the health bar tops out at a third" after
-        /// loading a save at low health. Fixing it means changing two working bars and belongs in
-        /// its own pass. <see cref="EnsureStaminaBar"/> is built so it cannot be reached.
+        /// ⚠ **Fixed defect, worth knowing the shape of.** This used to test
+        /// `parent.childCount == 1` rather than the parent's name. <see cref="EnsureBarLabel"/>
+        /// adds the readout as a sibling of the fill after its first paint, taking that count from
+        /// 1 to 2 — so the SECOND call here saw a track that already existed and wrapped it again
+        /// anyway, inheriting the anchors the fill happened to be showing at that moment as the new
+        /// track's permanent width. If that first paint was not full, the bar was capped at that
+        /// fraction forever. HPFill and MPFill both took this path; it was invisible in the common
+        /// case because the first paint is a full bar (anchorMax.x = 1), and it would show as "the
+        /// health bar tops out at a third" after loading a save at low health. The name check below
+        /// is immune to what <see cref="EnsureBarLabel"/> does, because every track this method or
+        /// <see cref="EnsureStaminaBar"/> creates is suffixed "Track" and the scene's own HPTrack
+        /// and MPTrack already were, so nothing here depends on how many children live inside one.
         /// </summary>
         private static void EnsureDedicatedTrack(Image fill)
         {
             Transform parent = fill.transform.parent;
-            if (parent == null || parent.childCount == 1) return;   // already has a track of its own
+            if (parent == null || parent.name.EndsWith("Track")) return;   // already a dedicated track
 
             var fillRt = fill.rectTransform;
 
