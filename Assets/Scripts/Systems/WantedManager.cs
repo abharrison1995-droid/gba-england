@@ -153,12 +153,19 @@ namespace GBHEngland.Systems
             
             var player = GBHEngland.Combat.CombatController.Instance;
             if (player == null) return;
-            
-            // Randomly spawn around player. A real implementation should use NavMesh.SamplePosition.
+
+            // Randomly spawn around the player, then snap to the NavMesh — the same pattern
+            // CompanionManager uses to place a companion beside the player. A random offset alone
+            // can land inside geometry; falling back to the player's own position (rather than
+            // the unsampled point) keeps a failed sample from spawning an officer in a wall.
             Vector3 randomOffset = Random.insideUnitSphere * SpawnRadius;
             randomOffset.y = 0;
             Vector3 spawnPos = player.transform.position + randomOffset;
-            
+            if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out UnityEngine.AI.NavMeshHit navHit, 4f, UnityEngine.AI.NavMesh.AllAreas))
+                spawnPos = navHit.position;
+            else
+                spawnPos = player.transform.position;
+
             Transform parent = ChunkManager.Instance != null && ChunkManager.Instance.CurrentChunkInstance != null
                 ? ChunkManager.Instance.CurrentChunkInstance.transform
                 : null;
