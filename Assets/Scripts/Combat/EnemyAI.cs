@@ -52,6 +52,8 @@ namespace GBHEngland.Combat
         private float _nextAttackTime;
         private bool _isAttacking;
         private bool _isKnockedBack;
+        private Coroutine _attackRoutine;
+        private Coroutine _knockbackRoutine;
         private readonly RaycastHit[] _losHits = new RaycastHit[8];
         private readonly Dictionary<Object, float> _speedModifiers = new Dictionary<Object, float>();
         private float _speedProduct = 1f;
@@ -86,6 +88,9 @@ namespace GBHEngland.Combat
                 _selfHealth.OnTakeDamage.AddListener(OnDamaged);
                 _selfHealth.OnDeath.AddListener(OnDied);
             }
+
+            if (GetComponent<LootOnDeath>() == null)
+                gameObject.AddComponent<LootOnDeath>();
 
             _agent.speed = EffectiveMoveSpeed;
             _agent.angularSpeed = 360f;
@@ -187,6 +192,8 @@ namespace GBHEngland.Combat
 
         private void OnDied()
         {
+            StopAllCoroutines();
+            _target = null;
             SetAnimatorTrigger("Death");
         }
 
@@ -395,7 +402,7 @@ namespace GBHEngland.Combat
             if (col.GetComponentInParent<EnvironmentBlocker>() != null) return true;
             // Fallback for older scenes without the component
             string n = col.gameObject.name;
-            return n == "Wall" || n.StartsWith("Wall") || n == "Body" || n == "Roof" || n == "Beam" || n == "DungeonProp";
+            return n.Contains("Wall") || n.Contains("Cutaway") || n.Contains("Boundary") || n == "Body" || n == "Roof" || n == "Beam" || n == "DungeonProp";
         }
 
         private void ChaseAndAttack()
@@ -503,7 +510,7 @@ namespace GBHEngland.Combat
             if (_visual != null)
                 _visual.PlayMeleeSwing();
 
-            StartCoroutine(AttackRoutine());
+            _attackRoutine = StartCoroutine(AttackRoutine());
         }
 
         private IEnumerator AttackRoutine()
@@ -550,6 +557,7 @@ namespace GBHEngland.Combat
             // Brief follow-through before the enemy can move again
             yield return new WaitForSeconds(0.15f);
             _isAttacking = false;
+            _attackRoutine = null;
         }
 
         /// <summary>
@@ -598,7 +606,21 @@ namespace GBHEngland.Combat
             if (_selfHealth != null && _selfHealth.IsDead) return;
             dir.y = 0f;
             if (dir.sqrMagnitude < 0.0001f || distance <= 0f) return;
-            StartCoroutine(KnockbackRoutine(dir.normalized, distance));
+
+            if (_attackRoutine != null)
+            {
+                StopCoroutine(_attackRoutine);
+                _attackRoutine = null;
+            }
+            _isAttacking = false;
+
+            if (_knockbackRoutine != null)
+            {
+                StopCoroutine(_knockbackRoutine);
+                _knockbackRoutine = null;
+            }
+
+            _knockbackRoutine = StartCoroutine(KnockbackRoutine(dir.normalized, distance));
         }
 
         private IEnumerator KnockbackRoutine(Vector3 dir, float distance)
@@ -659,6 +681,7 @@ namespace GBHEngland.Combat
                     SnapToNavMesh();
                 }
                 _isKnockedBack = false;
+                _knockbackRoutine = null;
             }
         }
 

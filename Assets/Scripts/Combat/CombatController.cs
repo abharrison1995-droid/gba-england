@@ -123,6 +123,12 @@ namespace GBHEngland.Combat
         /// </summary>
         public bool IsInvulnerable => Time.time < _invulnerableUntil;
 
+        /// <summary>Grants temporary invulnerability (i-frames) for the specified duration.</summary>
+        public void GrantInvulnerability(float seconds)
+        {
+            _invulnerableUntil = Mathf.Max(_invulnerableUntil, Time.time + seconds);
+        }
+
         private void Awake()
         {
             Instance = this;
@@ -452,6 +458,12 @@ namespace GBHEngland.Combat
 
         private void HandleMovement()
         {
+            if (MountController.Current != null && MountController.Current.CurrentVehicle != null && MountController.Current.CurrentVehicle.DrivesItself)
+            {
+                ApplyLocomotionAnimation(0f);
+                return;
+            }
+
             Vector2 input = ReadMoveInput();
             if (input.sqrMagnitude < 0.0001f)
             {
@@ -537,7 +549,7 @@ namespace GBHEngland.Combat
         /// Joystick and WASD share the same screen-space axes:
         /// up = toward top of screen, left = toward left of screen.
         /// </summary>
-        private Vector2 ReadMoveInput()
+        public Vector2 ReadMoveInput()
         {
             Vector2 keyboard = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
             Vector2 stick = Joystick != null ? Joystick.InputVector : Vector2.zero;
@@ -549,7 +561,7 @@ namespace GBHEngland.Combat
             return keyboard;
         }
 
-        private static Vector3 GetScreenRelativeMoveDirection(Vector2 input)
+        public static Vector3 GetScreenRelativeMoveDirection(Vector2 input)
         {
             Vector3 forward;
             Vector3 right;
@@ -580,7 +592,7 @@ namespace GBHEngland.Combat
         #region Melee Combat
         public void PerformMeleeAttack()
         {
-            if (_isAttacking || _isDead) return;
+            if (_isAttacking || _isRolling || _isKnockedBack || _isDead) return;
             if (BlockedByRiding()) return;
 
             StartCoroutine(MeleeHitboxRoutine(MeleeHitDelay, MeleeRecovery));
@@ -646,7 +658,7 @@ namespace GBHEngland.Combat
 
                 // Origin at waist height in 3D isometric space
                 Vector3 sphereCenter = transform.position + Vector3.up * (EKVibe.CharacterHeight * 0.5f);
-                int hitCount = Physics.OverlapSphereNonAlloc(sphereCenter, reach, _hitResults, ~0, QueryTriggerInteraction.Ignore);
+                int hitCount = Physics.OverlapSphereNonAlloc(sphereCenter, reach, _hitResults, ~0, QueryTriggerInteraction.Collide);
                 int baseDamage = PlayerData != null
                     ? PlayerData.BaseTraits.Strength + EKVibe.MeleeDamageStrengthOffset
                     : 6; // PlayerData unbound — 6 matches the default CoreTraits Strength (5) + the same offset.
@@ -676,6 +688,7 @@ namespace GBHEngland.Combat
                     // Parent lookup so child colliders still resolve; set dedupes multi-collider enemies
                     Health targetHealth = enemyCol.GetComponentInParent<Health>();
                     if (targetHealth == null || targetHealth.IsDead) continue;
+                    if (targetHealth.GetComponent<CompanionAI>() != null) continue;
                     if (!_hitThisSwing.Add(targetHealth)) continue;
 
                     // Closest point on enemy collider for distance / point-blank check
@@ -1068,11 +1081,23 @@ namespace GBHEngland.Combat
         public void ReviveFull()
         {
             int max = _health != null ? _health.MaxHealth : (PlayerData != null ? PlayerData.MaxHealth : 100);
-            if (_health != null) _health.Revive(max);
+            if (_health != null)
+            {
+                _health.Revive(max);
+            }
+            else
+            {
+                foreach (var col in GetComponentsInChildren<Collider>(true))
+                    col.enabled = true;
+            }
             CurrentHealth = max;
             CurrentMana = PlayerData != null ? PlayerData.MaxManaStamina : 50;
             CurrentStamina = CurrentMana;
             _isDead = false;
+            _isAttacking = false;
+            _isRolling = false;
+            _isKnockedBack = false;
+            _invulnerableUntil = 0f;
         }
         #endregion
 
@@ -1108,7 +1133,7 @@ namespace GBHEngland.Combat
 
         public void TryCastAbility(int slotIndex)
         {
-            if (_isAttacking || _isDead) return;
+            if (_isAttacking || _isRolling || _isKnockedBack || _isDead) return;
             if (BlockedByRiding()) return;
             if (EquippedAbilities == null || slotIndex < 0 || slotIndex >= EquippedAbilities.Count) return;
 

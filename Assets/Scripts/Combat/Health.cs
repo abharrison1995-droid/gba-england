@@ -134,6 +134,8 @@ namespace GBHEngland.Combat
         public void Revive(int health)
         {
             CurrentHealth = Mathf.Clamp(health, 1, MaxHealth);
+            foreach (var col in GetComponentsInChildren<Collider>(true))
+                col.enabled = true;
         }
 
         private void Die()
@@ -143,20 +145,24 @@ namespace GBHEngland.Combat
 
             OnDeath?.Invoke();
 
-            // After the event so LootOnDeath still opens its menu first, and before the early
-            // return below so an enemy authored not to be destroyed still pays out.
+            // After the event and before any return below so an enemy authored not to be destroyed still pays out.
             KillXP.AwardFor(this);
 
-            if (!DestroyOnDeath)
-                return;
-
-            // Corpse must stop fighting and blocking immediately, not after the destroy delay
+            // Corpse must stop fighting and blocking immediately, not after any destroy delay
             var ai = GetComponent<EnemyAI>();
             if (ai != null) ai.enabled = false;
             var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (agent != null) agent.enabled = false;
             foreach (var col in GetComponentsInChildren<Collider>())
                 col.enabled = false;
+
+            // If LootOnDeath is present, it manages corpse container interactions and decay lifecycle
+            var loot = GetComponent<LootOnDeath>();
+            if (loot != null)
+                return;
+
+            if (!DestroyOnDeath)
+                return;
 
             Destroy(gameObject, DestroyDelay);
         }

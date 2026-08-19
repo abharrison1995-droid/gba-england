@@ -20,6 +20,7 @@ namespace GBHEngland.Combat
         public static void AwardFor(Health victim)
         {
             if (victim == null) return;
+            if (victim.GetComponent<ArenaEnemy>() != null) return;
 
             // Nobody is on record as having dealt the last blow: an environmental death, or damage
             // routed through an overload that does not attribute.
