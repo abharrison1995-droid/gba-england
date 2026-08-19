@@ -872,8 +872,7 @@ namespace GBHEngland.Flow
             return total;
         }
 
-        public int EffectiveMagicDamage() =>
-            (RuntimeStats != null ? RuntimeStats.MagicDamageBonus : 0) + TotalMagicDamageBonus();
+        public int EffectiveMagicDamage() => TotalMagicDamageBonus();
 
         /// <summary>Passive health regeneration per second from gear (e.g. Crown of Vitality).</summary>
         public float TotalHealthRegenPerSecond()
