@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 576818d21cddd674195aebc002e8ca98, type: 3}
+  m_Name: FightPitConfig
+  m_EditorClassIdentifier: 
+  Rounds:
+  - Opponents:
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    Purse: 5
+  - Opponents:
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    Purse: 5
+  - Opponents:
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    Purse: 5
+  - Opponents:
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    - PresetKey: OG
+      BaseLevel: 2
+    Purse: 10
+  - Opponents:
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    - PresetKey: Spicehead
+      BaseLevel: 1
+    - PresetKey: OG
+      BaseLevel: 2
+    Purse: 10
+  - Opponents:
+    - PresetKey: Spicehead
+      BaseLevel: 2
+    - PresetKey: Spicehead
+      BaseLevel: 2
+    Purse: 15
+  - Opponents:
+    - PresetKey: Tainted
+      BaseLevel: 3
+    - PresetKey: Neek
+      BaseLevel: 1
+    Purse: 20
+  - Opponents:
+    - PresetKey: Tainted
+      BaseLevel: 4
+    - PresetKey: Neek
+      BaseLevel: 2
+    Purse: 20
+  - Opponents:
+    - PresetKey: Tainted
+      BaseLevel: 4
+    - PresetKey: Tainted
+      BaseLevel: 4
+    Purse: 25
+  - Opponents:
+    - PresetKey: Tainted
+      BaseLevel: 5
+    - PresetKey: Tainted
+      BaseLevel: 5
+    - PresetKey: Neek
+      BaseLevel: 3
+    Purse: 35
+  FirstCompletionBonus: 100
