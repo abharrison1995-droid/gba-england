@@ -170,14 +170,20 @@ namespace GBHEngland.Combat
             int count = Physics.OverlapSphereNonAlloc(position, radius, AreaHits, ~0,
                 QueryTriggerInteraction.Ignore);
             AreaVictims.Clear();
-            for (int i = 0; i < count; i++)
+            try
             {
-                Health health = AreaHits[i] != null ? AreaHits[i].GetComponentInParent<Health>() : null;
-                if (health == null || health.IsDead || !AreaVictims.Add(health)) continue;
-                if (health.GetComponent<EnemyAI>() == null) continue; // no player/companion friendly fire
-                DealDamage(caster, health, ability.BaseDamage, shout);
+                for (int i = 0; i < count; i++)
+                {
+                    Health health = AreaHits[i] != null ? AreaHits[i].GetComponentInParent<Health>() : null;
+                    if (health == null || health.IsDead || !AreaVictims.Add(health)) continue;
+                    if (health.GetComponent<EnemyAI>() == null) continue; // no player/companion friendly fire
+                    DealDamage(caster, health, ability.BaseDamage, shout);
+                }
             }
-            AreaVictims.Clear();
+            finally
+            {
+                AreaVictims.Clear();
+            }
         }
 
         private static void ResolveSludge(CombatController caster, AbilityData ability, Health target,
