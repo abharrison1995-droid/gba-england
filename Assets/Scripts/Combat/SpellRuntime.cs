@@ -11,6 +11,7 @@ namespace GBHEngland.Combat
     /// <summary>Executes the data-driven spell effect after CombatController pays its cost.</summary>
     public static class SpellRuntime
     {
+        private static readonly RaycastHit[] ProjectileHits = new RaycastHit[16];
         private static readonly Collider[] AreaHits = new Collider[48];
         private static readonly HashSet<Health> AreaVictims = new HashSet<Health>();
 
@@ -93,7 +94,57 @@ namespace GBHEngland.Combat
                 if (target != null && !target.IsDead)
                     destination = target.transform.position + Vector3.up * 0.65f;
 
-                position = Vector3.MoveTowards(position, destination, speed * Time.deltaTime);
+                Vector3 delta = destination - position;
+                float dist = delta.magnitude;
+                float step = speed * Time.deltaTime;
+                float moveDist = Mathf.Min(dist, step);
+
+                if (moveDist > 0.0001f)
+                {
+                    Vector3 dir = delta / dist;
+                    int hitCount = Physics.RaycastNonAlloc(position, dir, ProjectileHits, moveDist, ~0,
+                        QueryTriggerInteraction.Ignore);
+
+                    RaycastHit closestHit = default;
+                    float closestDist = float.MaxValue;
+                    bool hitSomething = false;
+                    Health hitHealth = null;
+
+                    for (int i = 0; i < hitCount; i++)
+                    {
+                        RaycastHit hit = ProjectileHits[i];
+                        Collider col = hit.collider;
+                        if (col == null) continue;
+                        if (col.transform == caster.transform || col.transform.IsChildOf(caster.transform)) continue;
+                        if (col.GetComponentInParent<CombatController>() != null) continue;
+
+                        Health h = col.GetComponentInParent<Health>();
+                        if (h != null)
+                        {
+                            if (h == caster.GetComponent<Health>() || h.IsDead) continue;
+                            if (h.GetComponent<CompanionAI>() != null || col.GetComponentInParent<CompanionAI>() != null) continue;
+                        }
+
+                        if (hit.distance < closestDist)
+                        {
+                            closestDist = hit.distance;
+                            closestHit = hit;
+                            hitSomething = true;
+                            hitHealth = h;
+                        }
+                    }
+
+                    if (hitSomething)
+                    {
+                        position = closestHit.point;
+                        target = hitHealth;
+                        reached = true;
+                        break;
+                    }
+
+                    position += dir * moveDist;
+                }
+
                 if (projectile != null) projectile.position = position;
                 if ((position - destination).sqrMagnitude <= 0.01f)
                 {

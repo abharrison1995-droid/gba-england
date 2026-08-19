@@ -8,7 +8,7 @@ namespace GBHEngland.Combat
     /// </summary>
     public sealed class TimedSpellStatus : MonoBehaviour
     {
-        private enum StatusKind { Armour, PlayerSpeed, EnemySpeed }
+        public enum StatusKind { Armour, PlayerSpeed, EnemySpeed }
 
         private StatusKind _kind;
         private CombatController _player;
@@ -16,9 +16,29 @@ namespace GBHEngland.Combat
         private float _expiresAt;
         private bool _cleared;
 
+        public static TimedSpellStatus FindExisting(Transform target, StatusKind kind)
+        {
+            if (target == null) return null;
+            var statuses = target.GetComponentsInChildren<TimedSpellStatus>(true);
+            for (int i = 0; i < statuses.Length; i++)
+            {
+                if (statuses[i]._kind == kind && !statuses[i]._cleared)
+                    return statuses[i];
+            }
+            return null;
+        }
+
         public static TimedSpellStatus ApplyArmour(CombatController player, int bonus, float duration)
         {
             if (player == null || bonus <= 0 || duration <= 0f) return null;
+            TimedSpellStatus existing = FindExisting(player.transform, StatusKind.Armour);
+            if (existing != null)
+            {
+                existing._expiresAt = Time.time + duration;
+                player.SetTemporaryArmour(existing, bonus);
+                return existing;
+            }
+
             TimedSpellStatus status = Create(player.transform, "IronSkin", duration);
             status._kind = StatusKind.Armour;
             status._player = player;
@@ -30,6 +50,14 @@ namespace GBHEngland.Combat
             float duration)
         {
             if (player == null || multiplier <= 0f || duration <= 0f) return null;
+            TimedSpellStatus existing = FindExisting(player.transform, StatusKind.PlayerSpeed);
+            if (existing != null)
+            {
+                existing._expiresAt = Time.time + duration;
+                player.SetSpeedMultiplier(existing, multiplier);
+                return existing;
+            }
+
             TimedSpellStatus status = Create(player.transform, "LightFeet", duration);
             status._kind = StatusKind.PlayerSpeed;
             status._player = player;
@@ -40,6 +68,14 @@ namespace GBHEngland.Combat
         public static TimedSpellStatus ApplyEnemySpeed(EnemyAI enemy, float multiplier, float duration)
         {
             if (enemy == null || multiplier <= 0f || duration <= 0f) return null;
+            TimedSpellStatus existing = FindExisting(enemy.transform, StatusKind.EnemySpeed);
+            if (existing != null)
+            {
+                existing._expiresAt = Time.time + duration;
+                enemy.SetSpeedMultiplier(existing, multiplier);
+                return existing;
+            }
+
             TimedSpellStatus status = Create(enemy.transform, "SludgeBolt", duration);
             status._kind = StatusKind.EnemySpeed;
             status._enemy = enemy;
