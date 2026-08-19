@@ -613,6 +613,13 @@ namespace GBHEngland.Combat
             if (_isAttacking || _isRolling || _isKnockedBack || _isDead) return;
             if (BlockedByRiding()) return;
 
+            // Swinging a weapon is not sneaking. Same call PerformDodge makes and for the same
+            // reason — routed through ToggleStealth so the sprite tint, the toast and the CRO
+            // button all come back in step, rather than duplicating half of what it does here.
+            var stealth = StealthController.Instance;
+            if (stealth != null && stealth.IsCrouched)
+                stealth.ToggleStealth();
+
             StartCoroutine(MeleeHitboxRoutine(MeleeHitDelay, MeleeRecovery));
         }
 
@@ -1221,6 +1228,11 @@ namespace GBHEngland.Combat
                 if (UIManager.Instance != null)
                     UIManager.Instance.ShowToast("Easy with the spells there Potter, not around the plebs yeah?");
             }
+
+            // Casting is not sneaking either — same call and same reasoning as PerformMeleeAttack.
+            var stealth = StealthController.Instance;
+            if (stealth != null && stealth.IsCrouched)
+                stealth.ToggleStealth();
 
             StartCoroutine(CastAbilityRoutine(ability));
         }
