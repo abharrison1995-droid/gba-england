@@ -182,12 +182,14 @@ public static class DiscoverEnglandSetup
         var gvr = gateVisual.GetComponent<Renderer>();
         gvr.sharedMaterial = MakeFallbackMat(new Color(0.35f, 0.22f, 0.12f));
 
-        // Chunk edges (full chunk size) — locked until tutorial complete
-        float edge = EKVibe.ChunkSize * 0.5f - 1f; // ~109
-        CreateEdge("NorthEdge", root.transform, new Vector3(0, 1, edge), new Vector3(EKVibe.ChunkSize, 5, 2), Direction.North);
-        CreateEdge("SouthEdge", root.transform, new Vector3(0, 1, -edge), new Vector3(EKVibe.ChunkSize, 5, 2), Direction.South);
-        CreateEdge("EastEdge", root.transform, new Vector3(edge, 1, 0), new Vector3(2, 5, EKVibe.ChunkSize), Direction.East);
-        CreateEdge("WestEdge", root.transform, new Vector3(-edge, 1, 0), new Vector3(2, 5, EKVibe.ChunkSize), Direction.West);
+        // Chunk edges — triggers sit at ±110.2 (depth 0.8, inner face at 109.8) so the player
+        // must reach the physical perimeter before the transition fires. Boundary walls at
+        // ±110.5 backstop any edge ChunkManager declines.
+        float edge = EKVibe.ChunkSize * 0.5f + 0.2f; // 110.2
+        CreateEdge("NorthEdge", root.transform, new Vector3(0, 1, edge), new Vector3(EKVibe.ChunkSize, 4, 0.8f), Direction.North);
+        CreateEdge("SouthEdge", root.transform, new Vector3(0, 1, -edge), new Vector3(EKVibe.ChunkSize, 4, 0.8f), Direction.South);
+        CreateEdge("EastEdge", root.transform, new Vector3(edge, 1, 0), new Vector3(0.8f, 4, EKVibe.ChunkSize), Direction.East);
+        CreateEdge("WestEdge", root.transform, new Vector3(-edge, 1, 0), new Vector3(0.8f, 4, EKVibe.ChunkSize), Direction.West);
 
         // Path hint slab pointing east (toward London)
         GameObject path = GameObject.CreatePrimitive(PrimitiveType.Cube);

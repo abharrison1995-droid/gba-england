@@ -7,14 +7,14 @@ using UnityEngine;
 ///
 /// Run via: Tools → World → Add Chunk Boundary Walls
 ///
-/// The edge triggers sit at ±109 and are only 2 units deep, and the ground plane stops at ±110.
-/// Any crossing ChunkManager declines — a dead end, a city lockout, the tutorial lock, the
-/// post-arrival grace window — used to leave the player walking straight through the trigger and
-/// off the world, with no kill floor to catch them. These walls are the physical backstop.
+/// The edge triggers sit at ±110.2 with a depth of 0.8 (inner face at ±109.8), and the ground
+/// plane stops at ±110. The boundary walls sit at ±110.5 (inner face at ±110), so the player
+/// contacts the trigger and the wall almost simultaneously. Where a neighbour exists, the
+/// transition fires before the wall can block movement. Where no neighbour exists — a dead end,
+/// a city lockout, the tutorial lock, the post-arrival grace window — the wall prevents the
+/// player from walking off the world.
 ///
-/// Where a neighbour exists the crossing is triggered on entering at 108, long before the wall at
-/// 110 is reached, so they are inert on every working crossing. They sit on the very edge of the
-/// ground plane and are not marked navigation static, so they take no part in the NavMesh bake.
+/// Not marked navigation static, so they take no part in the NavMesh bake.
 ///
 /// Idempotent: walls are matched by name, so re-running updates existing ones rather than stacking
 /// duplicates. Prefabs are edited in place via LoadPrefabContents/SaveAsPrefabAsset — never deleted
@@ -35,9 +35,10 @@ public static class ChunkBoundaryWallTool
     /// the edge of the floor, so they get blocked and fall anyway, which is the entire failure the
     /// wall exists to prevent.
     ///
-    /// It also leaves the player still inside the edge trigger (108→110) while blocked, so
-    /// OnTriggerStay keeps re-offering the crossing: when a city lockout expires or the grace
-    /// window passes, they go through without having to back up and walk in again.
+    /// The edge triggers now overlap with the wall (inner face at ±109.8, wall inner face at ±110),
+    /// so the player contacts both nearly at the same instant. Where a crossing is accepted, the
+    /// transition fires before the wall fully arrests movement; where it is declined, OnTriggerStay
+    /// keeps re-offering the crossing while the player stands blocked by the wall.
     /// </summary>
     private const float WallDistance = 110f + WallThickness * 0.5f;
 
@@ -58,6 +59,34 @@ public static class ChunkBoundaryWallTool
         ("BoundaryWall_South", new Vector3(0f, WallCentreY, -WallDistance), new Vector3(WallLength, WallHeight, WallThickness)),
         ("BoundaryWall_East",  new Vector3( WallDistance, WallCentreY, 0f), new Vector3(WallThickness, WallHeight, WallLength)),
         ("BoundaryWall_West",  new Vector3(-WallDistance, WallCentreY, 0f), new Vector3(WallThickness, WallHeight, WallLength)),
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+    //  Edge Trigger Geometry
+    // ═══════════════════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Centre of the edge trigger, just outside the ground plane. The trigger's inner face
+    /// lands at ±109.8 so the player must physically reach the perimeter before a crossing fires.
+    /// </summary>
+    private const float EdgeTriggerDistance = 110.2f;
+
+    /// <summary>Depth of each edge trigger volume along the direction of travel.</summary>
+    private const float EdgeTriggerDepth = 0.8f;
+
+    /// <summary>Height of each edge trigger volume.</summary>
+    private const float EdgeTriggerHeight = 4f;
+
+    /// <summary>
+    /// Expected edge trigger names, keyed by <see cref="GBHEngland.World.Direction"/>.
+    /// DiscoverEnglandSetup creates these; we refresh their geometry here.
+    /// </summary>
+    private static readonly (string Name, Vector3 Position, Vector3 Size)[] EdgeTriggers =
+    {
+        ("NorthEdge", new Vector3(0f, 1f,  EdgeTriggerDistance), new Vector3(220f, EdgeTriggerHeight, EdgeTriggerDepth)),
+        ("SouthEdge", new Vector3(0f, 1f, -EdgeTriggerDistance), new Vector3(220f, EdgeTriggerHeight, EdgeTriggerDepth)),
+        ("EastEdge",  new Vector3( EdgeTriggerDistance, 1f, 0f), new Vector3(EdgeTriggerDepth, EdgeTriggerHeight, 220f)),
+        ("WestEdge",  new Vector3(-EdgeTriggerDistance, 1f, 0f), new Vector3(EdgeTriggerDepth, EdgeTriggerHeight, 220f)),
     };
 
     [MenuItem("Tools/World/Add Chunk Boundary Walls")]
@@ -86,8 +115,11 @@ public static class ChunkBoundaryWallTool
                     else updated++;
                 }
 
+                int edgesRefreshed = RefreshEdgeTriggers(contents.transform);
+
                 PrefabUtility.SaveAsPrefabAsset(contents, path);
-                report.Add($"{System.IO.Path.GetFileNameWithoutExtension(path)}: {added} added, {updated} already present");
+                string edgeNote = edgesRefreshed > 0 ? $", {edgesRefreshed} edge trigger(s) refreshed" : "";
+                report.Add($"{System.IO.Path.GetFileNameWithoutExtension(path)}: {added} added, {updated} already present{edgeNote}");
             }
             finally
             {
@@ -137,5 +169,35 @@ public static class ChunkBoundaryWallTool
         box.center = Vector3.zero;
 
         return created;
+    }
+
+    /// <summary>
+    /// Repositions and resizes existing <see cref="GBHEngland.World.ChunkEdge"/> trigger colliders
+    /// to match the current geometry constants. Only updates edges that already exist — creation
+    /// is owned by DiscoverEnglandSetup.
+    ///
+    /// Returns the number of edge triggers that were refreshed.
+    /// </summary>
+    private static int RefreshEdgeTriggers(Transform root)
+    {
+        int refreshed = 0;
+        foreach (var edge in EdgeTriggers)
+        {
+            Transform existing = root.Find(edge.Name);
+            if (existing == null) continue;
+
+            existing.localPosition = edge.Position;
+            existing.localRotation = Quaternion.identity;
+
+            var box = existing.GetComponent<BoxCollider>();
+            if (box != null)
+            {
+                box.size = edge.Size;
+                box.center = Vector3.zero;
+            }
+
+            refreshed++;
+        }
+        return refreshed;
     }
 }

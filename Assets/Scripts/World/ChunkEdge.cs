@@ -13,12 +13,13 @@ namespace GBHEngland.World
             TryCross(other);
         }
 
-        // Enter alone loses the crossing whenever ChunkManager declines it — the post-arrival
-        // grace window, a city lockout, the tutorial lock. The player then walks through the
-        // 2-unit trigger and off the ground, which ends at +/-110, and Enter never fires again.
-        // Stay re-offers the crossing every physics tick until it is accepted or the player
-        // leaves. ChunkManager's own _isTransitioning / grace guards dedupe the repeats, and
-        // arrival always lands 12 units clear of any trigger, so this cannot ping-pong.
+        // Enter alone loses the crossing whenever ChunkManager declines it — a city lockout,
+        // the tutorial lock, the post-arrival grace window. The boundary wall at ±110 now
+        // stops forward movement while the trigger (inner face at ±109.8) keeps the player
+        // inside its volume, so Stay re-offers the crossing every physics tick until it is
+        // accepted or the player backs away. ChunkManager's own _isTransitioning / grace
+        // guards dedupe the repeats, and arrival always lands 3.5 units clear of the
+        // perimeter trigger, so this cannot ping-pong.
         private void OnTriggerStay(Collider other)
         {
             TryCross(other);
@@ -26,8 +27,14 @@ namespace GBHEngland.World
 
         private void TryCross(Collider other)
         {
-            // Only trigger if the player hits the edge
-            if (other.CompareTag("Player") || other.GetComponent<GBHEngland.Combat.CombatController>() != null)
+            // Trigger if the player hits the edge, or if a vehicle currently ridden by the player hits the edge
+            bool isPlayer = other.CompareTag("Player") || other.GetComponent<GBHEngland.Combat.CombatController>() != null;
+            bool isRiddenVehicle = MountController.IsPlayerRiding && MountController.Current != null &&
+                                   MountController.Current.CurrentVehicle != null &&
+                                   (other.transform.IsChildOf(MountController.Current.CurrentVehicle.transform) ||
+                                    other.gameObject == MountController.Current.CurrentVehicle.gameObject);
+
+            if (isPlayer || isRiddenVehicle)
             {
                 // No Debug.Log here — from OnTriggerStay it would spam every physics tick.
                 if (ChunkManager.Instance != null)

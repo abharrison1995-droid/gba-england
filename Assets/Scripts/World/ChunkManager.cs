@@ -69,9 +69,9 @@ namespace GBHEngland.World
         private float _nextDeadEndWarningAt = 0f;
         private const float DeadEndWarningCooldown = 3f;
 
-        // Arrival always lands 12 units clear of every trigger, so this only needs to cover the
-        // teleport itself — not a walk back. A full second made turning straight around after a
-        // crossing eat the return trip and drop you off the edge.
+        // Arrival lands 3.5 units clear of the perimeter (at ±106.5) — well inside the
+        // ±109.8 trigger face — so this grace only needs to cover the teleport itself and
+        // any residual physics overlap from the frame of arrival.
         private const float EdgeTriggerGrace = 0.25f;
 
         // Last-resort net: nothing should get under the ground plane at y=0, but a gap in a
@@ -183,6 +183,10 @@ namespace GBHEngland.World
                 && (GBHEngland.Flow.PlayerSession.Instance == null
                     || !GBHEngland.Flow.PlayerSession.Instance.TutorialComplete))
             {
+                // Throttle: the player is now pinned against the boundary wall inside the
+                // trigger volume, so OnTriggerStay re-fires every physics tick.
+                if (Time.unscaledTime < _nextDeadEndWarningAt) return;
+                _nextDeadEndWarningAt = Time.unscaledTime + DeadEndWarningCooldown;
                 ShowWarning("The Manor Cellars exits are sealed. Clear the cellars and use the gate.");
                 if (GBHEngland.UI.UIManager.Instance != null)
                     GBHEngland.UI.UIManager.Instance.LogCombat("Exits locked — find the manor gate.");
@@ -196,6 +200,9 @@ namespace GBHEngland.World
                 // Check if target chunk is locked out
                 if (targetChunk.IsCity && _cityLockoutTimers.ContainsKey(targetChunk.Coordinates))
                 {
+                    // Throttle: same reason as tutorial lock above.
+                    if (Time.unscaledTime < _nextDeadEndWarningAt) return;
+                    _nextDeadEndWarningAt = Time.unscaledTime + DeadEndWarningCooldown;
                     float remainingTime = _cityLockoutTimers[targetChunk.Coordinates];
                     ShowWarning($"Cannot enter {targetChunk.ChunkName}. Police activity active for {Mathf.CeilToInt(remainingTime)}s.");
                     return;
@@ -501,15 +508,18 @@ namespace GBHEngland.World
         private void RepositionPlayerForTransition(Direction travelDir)
         {
             float mapSize = EKVibe.ChunkSize;
-            // Must clear the new chunk's own edge-trigger depth (2 units) by a wide margin,
-            // or we spawn straight back inside a trigger that bounces us right back out.
-            float buffer = 12f;
+            // The edge triggers sit at ±110.2 (depth 0.8, inner face at ±109.8).
+            // A 3.5-unit inward offset lands the player at ±106.5 — roughly three steps
+            // from the perimeter, well clear of the 109.8 trigger face even accounting for
+            // the player collider radius (~0.5). The 0.25 s unscaled grace period
+            // (_nextEdgeTriggerAllowedAt) provides additional anti-loop cover.
+            float buffer = 3.5f;
             float limit = mapSize / 2f - buffer;
 
             // The lateral coordinate carries over from where the player crossed, so crossing
-            // near a corner used to drop them inside the new chunk's *perpendicular* edge
+            // near a corner could drop them inside the new chunk's *perpendicular* edge
             // trigger — a chain teleport where that neighbour exists, a dead trigger where it
-            // doesn't. Clamping to the same buffer keeps arrivals clear of all four edges.
+            // doesn't. Clamping to the same limit keeps arrivals clear of all four edges.
             Vector3 pos = PlayerTransform.position;
             switch(travelDir)
             {
