@@ -90,6 +90,7 @@ namespace GBHEngland.UI
             EnsureJournalButton();
             EnsureWantedMeter();
             EnsureStaminaBar();
+            RetireConcealmentBar();
             BuildActionButtons();
             RestyleSceneHudButtons();
             PreparePlayerPortraitFrame();
@@ -249,20 +250,34 @@ namespace GBHEngland.UI
             PlayerPortrait.enabled = true;
         }
 
+        private int _shownHp = -1;
+        private int _shownHpMax = -1;
+
         public void UpdatePlayerHealth(int current, int max)
         {
+            if (current == _shownHp && max == _shownHpMax) return;
+            _shownHp = current;
+            _shownHpMax = max;
+
             _playerHpMax = Mathf.Max(1, max);
-            SetBarFill(PlayerHealthFill, current / _playerHpMax);
+            SetBarFill(PlayerHealthFill, (float)current / _playerHpMax);
 
             EnsureBarLabel(ref PlayerHealthText, PlayerHealthFill, "HPText");
             if (PlayerHealthText != null)
                 PlayerHealthText.text = $"{Mathf.Max(0, current)} / {(int)_playerHpMax}";
         }
 
+        private int _shownMp = -1;
+        private int _shownMpMax = -1;
+
         public void UpdatePlayerMana(int current, int max)
         {
+            if (current == _shownMp && max == _shownMpMax) return;
+            _shownMp = current;
+            _shownMpMax = max;
+
             _playerMpMax = Mathf.Max(1, max);
-            SetBarFill(PlayerManaFill, current / _playerMpMax);
+            SetBarFill(PlayerManaFill, (float)current / _playerMpMax);
 
             EnsureBarLabel(ref PlayerManaText, PlayerManaFill, "MPText");
             if (PlayerManaText != null)
@@ -389,14 +404,35 @@ namespace GBHEngland.UI
             rt.offsetMax = Vector2.zero;
         }
 
+        /// <summary>
+        /// Deactivates the legacy 100/100 ConcealmentBar from the HUD. The wanted level is now
+        /// exclusively represented by the 5-knives meter (EnsureWantedMeter / UpdateKnivesUI).
+        /// </summary>
+        private void RetireConcealmentBar()
+        {
+            if (PlayerConcealmentFill != null)
+            {
+                if (PlayerConcealmentFill.transform.parent != null &&
+                    PlayerConcealmentFill.transform.parent.name.Contains("Concealment"))
+                {
+                    PlayerConcealmentFill.transform.parent.gameObject.SetActive(false);
+                }
+                PlayerConcealmentFill.gameObject.SetActive(false);
+            }
+            if (PlayerConcealmentText != null)
+                PlayerConcealmentText.gameObject.SetActive(false);
+
+            Transform concealmentBar = FindChildRecursive(transform, "ConcealmentBar");
+            if (concealmentBar != null)
+                concealmentBar.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// Legacy wanted/concealment meter update. The wanted meter is now represented by the
+        /// knives meter (UpdateKnivesUI). This is a no-op to preserve caller signatures.
+        /// </summary>
         public void UpdatePlayerConcealment(float current, float max)
         {
-            _playerConcealmentMax = Mathf.Max(1, max);
-            SetBarFill(PlayerConcealmentFill, current / _playerConcealmentMax);
-
-            EnsureBarLabel(ref PlayerConcealmentText, PlayerConcealmentFill, "ConcealmentText");
-            if (PlayerConcealmentText != null)
-                PlayerConcealmentText.text = $"{Mathf.Max(0, (int)current)} / {(int)_playerConcealmentMax}";
         }
 
         /// <summary>
