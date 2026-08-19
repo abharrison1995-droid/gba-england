@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc51ae09f9646d48896705b87b1ac3f, type: 3}
+  m_Name: CrownOfVitality
+  m_EditorClassIdentifier: 
+  ItemID: crown_vitality
+  ItemName: Crown of Vitality
+  Description: A crown adorned with pulsating blood-rubies. Grants +40 Max HP and passive health regeneration (1 HP every 6 seconds). (Grand Champion Reward: Only 1 Crown may be chosen per save file!)
+  Icon: {fileID: 0}
+  Type: 2
+  AllowedClasses: []
+  Value: 500
+  Tradeable: 0
+  Damage: 0
+  Armor: 3
+  Stackable: 0
+  MaxStack: 0
+  HealHP: 0
+  HealMana: 0
+  UseAnimationTrigger: 
+  AttackBonus: 0
+  PoisonResistance: 0
+  FireResistance: 0
+  HealthRegenPerSecond: 0.16666
+  MaxHealthBonus: 40
+  MaxManaBonus: 0
+  MagicDamageBonus: 0
+  IsUniqueCrown: 1

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc51ae09f9646d48896705b87b1ac3f, type: 3}
+  m_Name: QuailEggs
+  m_EditorClassIdentifier: 
+  ItemID: quail_eggs
+  ItemName: Royal Quail Eggs
+  Description: Delicate royal quail eggs. Stacks up to 10 and heals 15 HP each when consumed. Sold in bundles of 10. (Unlocked at Arena Wave 7)
+  Icon: {fileID: 0}
+  Type: 7
+  AllowedClasses: []
+  Value: 8
+  Tradeable: 1
+  Damage: 0
+  Armor: 0
+  Stackable: 1
+  MaxStack: 10
+  HealHP: 15
+  HealMana: 0
+  UseAnimationTrigger: 
+  AttackBonus: 0
+  PoisonResistance: 0
+  FireResistance: 0
+  HealthRegenPerSecond: 0
+  MaxHealthBonus: 0
+  MaxManaBonus: 0
+  MagicDamageBonus: 0
+  IsUniqueCrown: 0

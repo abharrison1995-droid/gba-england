@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc51ae09f9646d48896705b87b1ac3f, type: 3}
+  m_Name: RoyalArcanistStaff
+  m_EditorClassIdentifier: 
+  ItemID: royal_arcanist_staff
+  ItemName: Royal Arcanist Staff
+  Description: A staff of polished royal oak tipped with pure quartz that amplifies spellcasting potency and mana. (Unlocked at Arena Wave 7)
+  Icon: {fileID: 0}
+  Type: 0
+  AllowedClasses: []
+  Value: 240
+  Tradeable: 1
+  Damage: 8
+  Armor: 0
+  Stackable: 0
+  MaxStack: 0
+  HealHP: 0
+  HealMana: 0
+  UseAnimationTrigger: 
+  AttackBonus: 0
+  PoisonResistance: 0
+  FireResistance: 0
+  HealthRegenPerSecond: 0
+  MaxHealthBonus: 0
+  MaxManaBonus: 15
+  MagicDamageBonus: 4
+  IsUniqueCrown: 0

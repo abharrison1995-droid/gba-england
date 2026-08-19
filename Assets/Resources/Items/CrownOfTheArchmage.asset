@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc51ae09f9646d48896705b87b1ac3f, type: 3}
+  m_Name: CrownOfTheArchmage
+  m_EditorClassIdentifier: 
+  ItemID: crown_archmage
+  ItemName: Crown of the Archmage
+  Description: An ethereal crown infused with sorcerous ley energy. Grants +40 Max Mana and +5 Magic Damage across all spells. (Grand Champion Reward: Only 1 Crown may be chosen per save file!)
+  Icon: {fileID: 0}
+  Type: 2
+  AllowedClasses: []
+  Value: 500
+  Tradeable: 0
+  Damage: 0
+  Armor: 2
+  Stackable: 0
+  MaxStack: 0
+  HealHP: 0
+  HealMana: 0
+  UseAnimationTrigger: 
+  AttackBonus: 0
+  PoisonResistance: 0
+  FireResistance: 0
+  HealthRegenPerSecond: 0
+  MaxHealthBonus: 0
+  MaxManaBonus: 40
+  MagicDamageBonus: 5
+  IsUniqueCrown: 1
