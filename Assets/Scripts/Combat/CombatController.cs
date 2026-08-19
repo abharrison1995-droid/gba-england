@@ -98,6 +98,7 @@ namespace GBHEngland.Combat
         private bool _isAttacking;
         private bool _isRolling;
         private bool _isKnockedBack;
+        private Coroutine _knockbackRoutine;
         private float _nextRollTime;
         private float _invulnerableUntil;
         private bool _isDead;
@@ -957,7 +958,21 @@ namespace GBHEngland.Combat
             if (_isDead) return;
             dir.y = 0f;
             if (dir.sqrMagnitude < 0.0001f || distance <= 0f) return;
-            StartCoroutine(KnockbackRoutine(dir.normalized, distance));
+
+            // Defense in depth against a second landed hit starting a second slide while one is
+            // already running. The slide's own i-frames (above) close the main window that let
+            // that happen, but two knockback-capable enemies hitting in the same frame could still
+            // both land. Mirrors EnemyAI.ApplyKnockback's own guard: stop the old routine and reset
+            // its flag by hand rather than trust its finally ran first, then replace it — whichever
+            // slide finishes now sets _isKnockedBack false only for the routine it actually owns.
+            if (_knockbackRoutine != null)
+            {
+                StopCoroutine(_knockbackRoutine);
+                _knockbackRoutine = null;
+            }
+            _isKnockedBack = false;
+
+            _knockbackRoutine = StartCoroutine(KnockbackRoutine(dir.normalized, distance));
         }
 
         private IEnumerator KnockbackRoutine(Vector3 dir, float distance)
@@ -977,6 +992,13 @@ namespace GBHEngland.Combat
                 // Harmless when the controller has neither parameter — both helpers check first.
                 ClearAnimatorTrigger("Hit");
                 SetAnimatorTrigger("Knockback");
+
+                // The slide itself is also an i-frame window, not just its aftermath. The hit that
+                // triggered this knockback only landed because the player was NOT invulnerable a
+                // moment ago, so without this a second attacker can land a free hit mid-slide, before
+                // KnockbackRecoveryIFrames even starts. Mathf.Max so a longer window already running
+                // (e.g. a roll's own i-frames) is never shortened.
+                _invulnerableUntil = Mathf.Max(_invulnerableUntil, Time.time + KnockbackSlideDuration);
 
                 // Once, at the start — same reasoning as RollRoutine: per-step zeroing would
                 // suspend gravity and leave the player hovering off a kerb.
@@ -1012,6 +1034,7 @@ namespace GBHEngland.Combat
             finally
             {
                 _isKnockedBack = false;
+                _knockbackRoutine = null;
             }
         }
         #endregion
