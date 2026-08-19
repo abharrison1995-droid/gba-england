@@ -121,10 +121,13 @@ namespace GBHEngland.World
             // their feet — sidestepping out of the lane must not let it drive off mid-attempt.
             if (_hotwiring) return;
 
-            // A hotwire-locked car drives straight through — it got away.
+            // A hotwire-locked car gets away, but must still not clip through the car ahead on
+            // its own route — brake for its leader without falling into the normal held/pause
+            // branch below, which would defeat the point of fleeing.
             if (_hotwireLocked && Time.time < _lockoutUntil)
             {
-                Drive();
+                if (!LeaderTooClose())
+                    Drive();
                 return;
             }
 
