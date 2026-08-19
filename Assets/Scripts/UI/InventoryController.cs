@@ -115,6 +115,7 @@ namespace GBHEngland.UI
                 PlayerSession.Instance.OnXPChanged -= HandleXPChanged;
                 PlayerSession.Instance.OnLevelUp -= HandleLevelUp;
                 PlayerSession.Instance.OnPerksChanged -= HandlePerksChanged;
+                PlayerSession.Instance.OnStatsChanged -= HandleStatsChanged;
             }
         }
 
@@ -128,6 +129,7 @@ namespace GBHEngland.UI
             PlayerSession.Instance.OnXPChanged += HandleXPChanged;
             PlayerSession.Instance.OnLevelUp += HandleLevelUp;
             PlayerSession.Instance.OnPerksChanged += HandlePerksChanged;
+            PlayerSession.Instance.OnStatsChanged += HandleStatsChanged;
             _subscribedToInventory = true;
         }
 
@@ -148,6 +150,11 @@ namespace GBHEngland.UI
 
         /// <summary>Perk spends can change the Armor line, the same way equipping a shield does.</summary>
         private void HandlePerksChanged()
+        {
+            if (IsOpen) RefreshUI();
+        }
+
+        private void HandleStatsChanged()
         {
             if (IsOpen) RefreshUI();
         }
@@ -533,6 +540,9 @@ namespace GBHEngland.UI
             RefreshEquipmentSlots();
             RefreshCurrency();
             RefreshLevel();
+
+            if (_boundCharacter == null && PlayerSession.Instance != null)
+                _boundCharacter = PlayerSession.Instance.RuntimeStats;
 
             if (_boundCharacter == null) return;
 

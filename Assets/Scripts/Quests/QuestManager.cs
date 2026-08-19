@@ -28,6 +28,23 @@ namespace GBHEngland.Quests
         public int StageProgress;
         [Tooltip("Set once QuestConditionWatcher has paid out this quest's reward, so it pays once.")]
         public bool RewardsClaimed;
+
+        /// <summary>
+        /// Human-readable title with fallback to QuestDefinition.Title or formatted Id.
+        /// Properties are not serialized by JsonUtility, so this does not affect save format.
+        /// </summary>
+        public string DisplayTitle
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Title) && !Title.Contains("_")) return Title;
+                var def = QuestDatabase.Find(Id);
+                if (def != null && !string.IsNullOrEmpty(def.Title)) return def.Title;
+                return !string.IsNullOrEmpty(Title)
+                    ? (Title.Contains("_") ? QuestManager.FormatFallbackTitle(Title) : Title)
+                    : QuestManager.FormatFallbackTitle(Id);
+            }
+        }
     }
 
     /// <summary>
@@ -127,7 +144,9 @@ namespace GBHEngland.Quests
             // tracker reads Objective. If the granting dialogue left one blank, fall back to the
             // definition's own fields (QuestDefinition.Title/Giver/Location and
             // Stages[0].Objective) so the journal and tracker never show an empty line.
-            string resolvedTitle = string.IsNullOrEmpty(title) && def != null ? def.Title : title;
+            string resolvedTitle = !string.IsNullOrEmpty(title) && title != id
+                ? (title.Contains("_") ? FormatFallbackTitle(title) : title)
+                : (def != null && !string.IsNullOrEmpty(def.Title) ? def.Title : (string.IsNullOrEmpty(title) || title == id ? FormatFallbackTitle(id) : title));
             string resolvedObjective = string.IsNullOrEmpty(objective) && def != null
                 && def.Stages != null && def.Stages.Count > 0
                 ? def.Stages[0].Objective : objective;
@@ -230,10 +249,12 @@ namespace GBHEngland.Quests
 
             if (q == null)
             {
+                QuestDefinition def = QuestDatabase.Find(id);
+                string resolvedTitle = def != null && !string.IsNullOrEmpty(def.Title) ? def.Title : FormatFallbackTitle(id);
                 _quests.Add(new QuestProgress
                 {
                     Id = id,
-                    Title = id,
+                    Title = resolvedTitle,
                     Objective = "",
                     IsActive = false,
                     IsComplete = true
@@ -279,10 +300,36 @@ namespace GBHEngland.Quests
                 foreach (var q in saved)
                 {
                     if (q != null && !string.IsNullOrEmpty(q.Id))
+                    {
+                        // Heal saved records where Title was saved as the raw id or contains underscores
+                        if (string.IsNullOrEmpty(q.Title) || q.Title == q.Id || q.Title.Contains("_"))
+                        {
+                            QuestDefinition def = QuestDatabase.Find(q.Id);
+                            if (def != null && !string.IsNullOrEmpty(def.Title))
+                                q.Title = def.Title;
+                            else
+                                q.Title = FormatFallbackTitle(!string.IsNullOrEmpty(q.Title) ? q.Title : q.Id);
+                        }
                         _quests.Add(q);
+                    }
                 }
             }
             OnQuestsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Human-readable fallback formatter for quest ids (e.g. "daniel_pauls_quest_one" -> "Daniel Pauls Quest One").
+        /// </summary>
+        public static string FormatFallbackTitle(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return "Quest";
+            string[] words = id.Replace('_', ' ').Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (words[i].Length > 0)
+                    words[i] = char.ToUpperInvariant(words[i][0]) + (words[i].Length > 1 ? words[i].Substring(1) : "");
+            }
+            return string.Join(" ", words);
         }
 
         /// <summary>

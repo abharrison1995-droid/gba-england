@@ -120,16 +120,40 @@ namespace GBHEngland.Data
                  "stop fighting, or dismiss). The conversation ends on the pick. None means no command.")]
         public CompanionCommandType CompanionCommand = CompanionCommandType.None;
 
+        [Header("Fight Pit (Optional)")]
+        public bool IsFightPitContinue;
+        public bool IsFightPitCashOut;
+        public bool StartsFightPit;
+
         public bool MeetsRequirement(CoreTraits playerTraits)
         {
             if (string.IsNullOrEmpty(RequiredStat)) return true;
+            if (playerTraits == null) return false;
 
-            // Simple mock evaluation
-            if (RequiredStat == "STR" && playerTraits.Strength >= RequiredStatLevel) return true;
-            if (RequiredStat == "INT" && playerTraits.Intelligence >= RequiredStatLevel) return true;
-            if (RequiredStat == "Personality" && playerTraits.Awareness >= RequiredStatLevel) return true;
-
-            return false;
+            switch (RequiredStat.Trim().ToUpperInvariant())
+            {
+                case "STR":
+                case "STRENGTH":
+                    return playerTraits.Strength >= RequiredStatLevel;
+                case "END":
+                case "ENDURANCE":
+                    return playerTraits.Endurance >= RequiredStatLevel;
+                case "AGI":
+                case "AGILITY":
+                    return playerTraits.Agility >= RequiredStatLevel;
+                case "INT":
+                case "INTELLIGENCE":
+                    return playerTraits.Intelligence >= RequiredStatLevel;
+                case "AWA":
+                case "AWARENESS":
+                case "PERSONALITY":
+                    return playerTraits.Awareness >= RequiredStatLevel;
+                case "PER":
+                case "PERCEPTION":
+                    return playerTraits.Perception >= RequiredStatLevel;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>

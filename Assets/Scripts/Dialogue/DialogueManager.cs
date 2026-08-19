@@ -109,7 +109,10 @@ namespace GBHEngland.Dialogue
                 MainDialogueText.text = node.DialogueText;
 
             foreach (Transform child in ChoicesContainer)
+            {
+                child.gameObject.SetActive(false);
                 Destroy(child.gameObject);
+            }
 
             if (node.Choices == null || node.Choices.Count == 0)
             {
@@ -274,7 +277,7 @@ namespace GBHEngland.Dialogue
             {
                 Quests.QuestManager.Instance.StartQuest(
                     choice.GrantQuestId,
-                    string.IsNullOrEmpty(choice.GrantQuestTitle) ? choice.GrantQuestId : choice.GrantQuestTitle,
+                    choice.GrantQuestTitle,
                     choice.GrantQuestObjective,
                     giver: _currentSpeakerName,
                     location: choice.GrantQuestLocation);
@@ -332,6 +335,25 @@ namespace GBHEngland.Dialogue
                 CompanionCommandType command = choice.CompanionCommand;
                 EndDialogue();
                 ApplyCompanionCommand(command);
+                return;
+            }
+
+            if (choice != null && choice.StartsFightPit)
+            {
+                EndDialogue();
+                Combat.FightPitEntryCoordinator.Ensure().TryEnterPit();
+                return;
+            }
+            if (choice != null && choice.IsFightPitContinue)
+            {
+                EndDialogue();
+                Combat.FightPitController.ActiveInstance?.ContinueToNextRound();
+                return;
+            }
+            if (choice != null && choice.IsFightPitCashOut)
+            {
+                EndDialogue();
+                Combat.FightPitController.ActiveInstance?.CashOutAndExit();
                 return;
             }
 

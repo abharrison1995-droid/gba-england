@@ -58,7 +58,7 @@ namespace GBHEngland.UI
 
             if (!show) return;
 
-            if (TitleText != null) TitleText.text = q.Title;
+            if (TitleText != null) TitleText.text = q.DisplayTitle;
             if (ObjectiveText != null) ObjectiveText.text = q.Objective;
 
             ApplyCollapse();

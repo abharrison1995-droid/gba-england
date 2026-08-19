@@ -56,7 +56,7 @@ namespace GBHEngland.UI
         private void Open(QuestProgress quest)
         {
             if (IsOpen) return;
-            _titleText.text = quest.Title;
+            _titleText.text = quest.DisplayTitle;
             _bodyText.text = quest.Objective;
             _root.SetActive(true);
             Systems.PauseManager.Push();
@@ -298,7 +298,7 @@ namespace GBHEngland.UI
                 ? new Color(0f, 0f, 0f, 0.45f)
                 : Win95Skin.FieldText;
 
-            var titleTmp = QuestUIBuilder.CreateTMP("Title", row.transform, q.Title, titleColor, 24,
+            var titleTmp = QuestUIBuilder.CreateTMP("Title", row.transform, q.DisplayTitle, titleColor, 24,
                 TextAlignmentOptions.TopLeft, resolved ? FontStyles.Strikethrough | FontStyles.Bold : FontStyles.Bold);
             QuestUIBuilder.Stretch(titleTmp.gameObject, Vector2.zero, Vector2.one);
             titleTmp.rectTransform.offsetMin = new Vector2(16, 66);
@@ -527,7 +527,7 @@ namespace GBHEngland.UI
             if (q == null || _detailView == null) return;
 
             bool resolved = q.IsComplete;
-            _dTitle.text = q.Title;
+            _dTitle.text = q.DisplayTitle;
             _dTitle.fontStyle = resolved ? FontStyles.Bold | FontStyles.Strikethrough : FontStyles.Bold;
             _dStatus.text = resolved ? "RESOLVED" : "ACTIVE";
             _dStatus.color = resolved

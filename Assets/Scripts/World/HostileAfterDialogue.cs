@@ -31,6 +31,10 @@ namespace GBHEngland.World
                  "appearing on someone actively trying to kill you.")]
         public bool DisableInteractionWhenHostile = true;
 
+        [Tooltip("If set, this NPC will only turn hostile if this quest is currently active. " +
+                 "If the quest has not been started or is complete, the NPC remains peaceful.")]
+        public string RequiredQuestId;
+
         private bool _hostile;
         private bool _watching;
 
@@ -71,6 +75,14 @@ namespace GBHEngland.World
         public void TurnHostile()
         {
             if (_hostile) return;
+
+            // If a quest is required, only turn hostile while that quest is actively in progress
+            if (!string.IsNullOrEmpty(RequiredQuestId))
+            {
+                if (Quests.QuestManager.Instance == null || !Quests.QuestManager.Instance.IsActive(RequiredQuestId))
+                    return;
+            }
+
             _hostile = true;
 
             if (DisableInteractionWhenHostile)

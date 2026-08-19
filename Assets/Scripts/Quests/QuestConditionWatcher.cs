@@ -129,6 +129,7 @@ namespace GBHEngland.Quests
         {
             EnsureSubscribed();
             EnsureSessionSubscribed();
+            ApplyPending();
             PollChunk();
 
             if (_rebindNeeded)
@@ -137,7 +138,6 @@ namespace GBHEngland.Quests
                 Rebind();
             }
 
-            ApplyPending();
             PollReach();
             ScanRewards();
         }
@@ -363,6 +363,7 @@ namespace GBHEngland.Quests
                     case QuestConditionType.TalkTo:
                         if (b.TalkFired)
                         {
+                            if (Dialogue.DialogueManager.IsDialogueOpen) break;
                             b.TalkFired = false;
                             AdvanceStage(b);
                         }

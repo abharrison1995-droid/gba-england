@@ -354,6 +354,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TurnHostileLine: GWAFUACK YOURSELF DUDE!!!
   DisableInteractionWhenHostile: 1
+  RequiredQuestId: spark_of_talent
 --- !u!1 &4820988931661113335
 GameObject:
   m_ObjectHideFlags: 0
