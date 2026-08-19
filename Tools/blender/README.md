@@ -54,16 +54,19 @@ Blender) packs those into the sheet + sidecar JSON that `ART_PIPELINE.md`
 specifies.
 
 ```
-python Tools/blender/bpy_runner.py Tools/blender/sprites/char_proxy.py
-python Tools/pack_sprites.py proxy
+python Tools/blender/bpy_runner.py Tools/blender/sprites/<subject>.py
+python Tools/pack_sprites.py <subject>
 ```
 
-Writes `art_incoming/sheet_char_proxy_<action>.png` + `.json`, ready for
-`Tools → Art → Import Generated Art`.
+Writes `art_incoming/sheet_char_<subject>_<action>.png` + `.json`, ready for
+`Tools → Art → Import Generated Art`. ⚠️ **The reference template
+(`sprites/char_proxy.py`) has been removed** — there is currently no
+checked-in subject script to copy. The next subject authored from scratch
+should follow the shape described below and become the new template.
 
 ```
 lib/sprite_kit.py        # rig, poses, camera, render (runs inside Blender)
-sprites/char_proxy.py    # the template subject — copy this per character
+sprites/<subject>.py     # a subject script — none currently checked in
 out/sprites/<subj>/<action>/frame_NN.png + manifest.json
 Tools/pack_sprites.py    # frames -> sheet + sidecar, and the contract checks
 ```
@@ -113,12 +116,14 @@ final size" and imports. Chasing it to a literal 0 is chasing rasterisation.
 
 ## The photo-cutout path (`part_images`)
 
-Prototyped end to end on `sprites/char_mandrew.py`:
+Prototyped end to end on a subject script named `sprites/char_mandrew.py`,
+since removed as an obsolete template — the commands below show the shape a
+photo-cutout subject follows, not a file that exists on disk today:
 
 ```
-python Tools/cut_parts.py art_incoming/frames/mandrew_idle_1.png mandrew
-python Tools/blender/bpy_runner.py Tools/blender/sprites/char_mandrew.py
-python Tools/pack_sprites.py mandrew
+python Tools/cut_parts.py art_incoming/frames/<subject>_idle_1.png <subject>
+python Tools/blender/bpy_runner.py Tools/blender/sprites/char_<subject>.py
+python Tools/pack_sprites.py <subject>
 ```
 
 `cut_parts.py` keys the magenta backdrop, despills the anti-aliased fringe,
@@ -148,7 +153,9 @@ its own set — pass `--bands` a JSON override rather than editing the default.
 
 ### Adding a subject
 
-Copy `sprites/char_proxy.py`, set `SUBJECT`, `WORLD_HEIGHT` (it must equal
+Copy an existing subject script (there is currently none checked in — the
+former reference template `sprites/char_proxy.py` was removed as obsolete),
+set `SUBJECT`, `WORLD_HEIGHT` (it must equal
 `WorldActorVisual.Height` — player 1.8, adult NPC 1.55, child 1.3) and
 `COLORS`. Frame counts default to the `ART_PIPELINE.md` §8 table.
 
