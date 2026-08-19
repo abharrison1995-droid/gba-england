@@ -101,6 +101,14 @@ namespace GBHEngland.Combat
         private Coroutine _knockbackRoutine;
         private float _nextRollTime;
         private float _invulnerableUntil;
+        /// <summary>
+        /// True only during the dodge roll's own i-frame sub-window — a narrower thing than
+        /// <see cref="IsInvulnerable"/>, which is also true during the passive knockback slide and
+        /// its recovery. Exists purely so <see cref="Health"/> can tell "the player actively dodged
+        /// that" from "the player happened to be recovering from being hit" and pick its floating
+        /// text accordingly, without the invulnerability system itself needing two timestamps.
+        /// </summary>
+        private bool _isActivelyDodging;
         private bool _isDead;
         private readonly Collider[] _hitResults = new Collider[32];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
@@ -123,6 +131,14 @@ namespace GBHEngland.Combat
         /// nothing has to clear anything.
         /// </summary>
         public bool IsInvulnerable => Time.time < _invulnerableUntil;
+
+        /// <summary>
+        /// True only inside the roll's own i-frame sub-window — read by <see cref="Health"/> to
+        /// decide whether a refused hit was an actual dodge (worth a "Dodged!" toast) or just a
+        /// miss during passive knockback-slide/recovery invulnerability, which is not the same
+        /// player action and should not read as one.
+        /// </summary>
+        public bool IsActivelyDodging => _isActivelyDodging;
 
         /// <summary>Grants temporary invulnerability (i-frames) for the specified duration.</summary>
         public void GrantInvulnerability(float seconds)
@@ -207,6 +223,7 @@ namespace GBHEngland.Combat
             _isAttacking = false;
             _isRolling = false;
             _isKnockedBack = false;
+            _isActivelyDodging = false;
             _invulnerableUntil = 0f;
         }
 
@@ -899,7 +916,9 @@ namespace GBHEngland.Combat
                     // Re-armed each step rather than set once up front, so a roll cut short leaves
                     // no invulnerability running past its end. The 1.5x margin covers the gap to the
                     // next physics step.
-                    if (elapsed >= RollIFrameStart && elapsed < RollIFrameStart + RollIFrameDuration)
+                    bool inIFrameWindow = elapsed >= RollIFrameStart && elapsed < RollIFrameStart + RollIFrameDuration;
+                    _isActivelyDodging = inIFrameWindow;
+                    if (inIFrameWindow)
                         _invulnerableUntil = Mathf.Max(_invulnerableUntil,
                             Time.time + Time.fixedDeltaTime * 1.5f);
 
@@ -910,6 +929,7 @@ namespace GBHEngland.Combat
             finally
             {
                 _isRolling = false;
+                _isActivelyDodging = false;
             }
         }
 
@@ -1090,6 +1110,7 @@ namespace GBHEngland.Combat
             // flags here does not stop a running coroutine, so both are needed.
             _isRolling = false;
             _isKnockedBack = false;
+            _isActivelyDodging = false;
             _invulnerableUntil = 0f;
             _rb.velocity = Vector3.zero;
             if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", 0f);
@@ -1122,6 +1143,7 @@ namespace GBHEngland.Combat
             _isAttacking = false;
             _isRolling = false;
             _isKnockedBack = false;
+            _isActivelyDodging = false;
             _invulnerableUntil = 0f;
         }
         #endregion

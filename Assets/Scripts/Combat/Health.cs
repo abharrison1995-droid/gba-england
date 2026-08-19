@@ -84,7 +84,12 @@ namespace GBHEngland.Combat
             // traps — respect i-frames without having to know they exist.
             if (_combat != null && _combat.IsInvulnerable)
             {
-                FloatingDamageText.Spawn(transform.position, "Dodged!", EKVibe.TextLight);
+                // IsInvulnerable also covers the passive knockback slide and its recovery window,
+                // which are not something the player did — only the active roll earns the "Dodged!"
+                // toast. A miss during passive recovery stays silent rather than claiming a dodge
+                // that didn't happen.
+                if (_combat.IsActivelyDodging)
+                    FloatingDamageText.Spawn(transform.position, "Dodged!", EKVibe.TextLight);
                 return false;
             }
 
