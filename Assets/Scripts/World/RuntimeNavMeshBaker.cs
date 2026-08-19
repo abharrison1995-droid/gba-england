@@ -20,6 +20,9 @@ namespace GBHEngland.World
         public float AgentClimb = 0.5f;
         public float AgentSlope = 45f;
 
+        public bool IsReady { get; private set; }
+        public event System.Action OnBakeComplete;
+
         private NavMeshDataInstance _instance;
         private NavMeshData _data;
 
@@ -39,6 +42,8 @@ namespace GBHEngland.World
             if (sources.Count == 0)
             {
                 Debug.LogWarning($"RuntimeNavMeshBaker on {name}: no geometry to bake.");
+                IsReady = true;
+                OnBakeComplete?.Invoke();
                 return;
             }
 
@@ -55,6 +60,9 @@ namespace GBHEngland.World
             _data = NavMeshBuilder.BuildNavMeshData(settings, sources, bounds, transform.position, transform.rotation);
             if (_data != null)
                 _instance = NavMesh.AddNavMeshData(_data);
+
+            IsReady = true;
+            OnBakeComplete?.Invoke();
         }
 
         private void OnDestroy()
