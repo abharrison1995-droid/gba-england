@@ -129,6 +129,7 @@ namespace GBHEngland.Flow
 
         public void StartNewGame(string characterName, PlayerClass playerClass)
         {
+            Systems.WantedManager.Instance?.ClearWanted();
             EnsureSession();
             EnsureQuestManager();
             QuestManager.Instance.ClearAll();
@@ -198,6 +199,7 @@ namespace GBHEngland.Flow
             SaveData data = SaveGameManager.ReadSaveData();
             if (data == null) return false;
 
+            Systems.WantedManager.Instance?.ClearWanted();
             EnsureSession();
             EnsureQuestManager();
 
@@ -234,6 +236,9 @@ namespace GBHEngland.Flow
             // than accumulates — and BindPlayerToSession below still runs after both, so the load
             // path pushes the final figures onto the player.
             PlayerSession.Instance.RestorePerkIds(data.PerkIds);
+            PlayerSession.Instance.PitTournamentWon = data.PitTournamentWon;
+            PlayerSession.Instance.HighestPitRound = data.HighestPitRound;
+            PlayerSession.Instance.HasPurchasedRoyalCrown = data.HasPurchasedRoyalCrown;
             // Backfill for pre-wiki saves: chunks already visited grant their location entries
             // silently, so a veteran save opens a populated encyclopedia without a toast storm.
             foreach (string chunkName in PlayerSession.Instance.VisitedChunks)
@@ -302,8 +307,13 @@ namespace GBHEngland.Flow
 
             if (ChunkManager != null && ManorCellarsChunk != null && ManorCellarsChunk.ChunkPrefab != null)
             {
+                MapChunkData previousChunk = ChunkManager.CurrentChunkData;
+
                 if (ChunkManager.CurrentChunkInstance != null)
                     Destroy(ChunkManager.CurrentChunkInstance);
+
+                Systems.WantedManager.Instance?.OnChunkTransition(
+                    previousChunk, ManorCellarsChunk, ChunkTravelKind.Portal);
 
                 ChunkManager.CurrentChunkData = ManorCellarsChunk;
                 PlayerSession.Instance?.MarkChunkVisited(ManorCellarsChunk.ChunkName);
@@ -368,6 +378,13 @@ namespace GBHEngland.Flow
             // (where it dies with the chunk) and restores the player's speed and visuals
             // before the respawn.
             World.MountController.Current?.Dismount();
+
+            // Arena interception — catches death during combat AND between-round dialogue
+            if (FightPitController.ActiveInstance != null)
+            {
+                FightPitController.ActiveInstance.HandlePlayerDefeat();
+                return;
+            }
 
             // ── Check for arrest ──
             var player = CombatController.Instance;
@@ -508,8 +525,13 @@ namespace GBHEngland.Flow
                 return;
             }
 
+            MapChunkData previousChunk = ChunkManager.CurrentChunkData;
+
             if (ChunkManager.CurrentChunkInstance != null)
                 Destroy(ChunkManager.CurrentChunkInstance);
+
+            Systems.WantedManager.Instance?.OnChunkTransition(
+                previousChunk, LondonChunk, ChunkTravelKind.Portal);
 
             ChunkManager.CurrentChunkData = LondonChunk;
             PlayerSession.Instance?.MarkChunkVisited(LondonChunk.ChunkName);

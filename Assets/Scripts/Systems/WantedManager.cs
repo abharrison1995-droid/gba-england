@@ -134,7 +134,7 @@ namespace GBHEngland.Systems
         /// Destroys every police officer in the scene. FindObjectsOfType allocates and walks the
         /// whole hierarchy, so this belongs to one-shot events only — never an Update path (§4).
         /// </summary>
-        private void DespawnPolice()
+        public void DespawnPolice()
         {
             foreach (var enemy in FindObjectsOfType<GBHEngland.Combat.EnemyAI>())
             {
@@ -159,7 +159,10 @@ namespace GBHEngland.Systems
             randomOffset.y = 0;
             Vector3 spawnPos = player.transform.position + randomOffset;
             
-            Instantiate(prefab, spawnPos, Quaternion.identity);
+            Transform parent = ChunkManager.Instance != null && ChunkManager.Instance.CurrentChunkInstance != null
+                ? ChunkManager.Instance.CurrentChunkInstance.transform
+                : null;
+            Instantiate(prefab, spawnPos, Quaternion.identity, parent);
             
             if (GBHEngland.UI.UIManager.Instance != null)
             {
@@ -215,8 +218,7 @@ namespace GBHEngland.Systems
                 ChunkManager.Instance.ApplyCityLockout(previousChunk, cooldown);
 
                 // Clear wanted level
-                CurrentKnives = 0;
-                UpdateUIIndicator();
+                ClearWanted();
             }
             // If entering a new City while already wanted, notoriety persists.
             else if (!previousChunk.IsCity && newChunk.IsCity)

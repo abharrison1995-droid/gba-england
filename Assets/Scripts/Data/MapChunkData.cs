@@ -66,5 +66,9 @@ namespace GBHEngland.Data
         [Tooltip("Rideable vehicles spawned into this chunk each time it loads. Author them with " +
                  "Tools > Place > Vehicle Placement rather than by hand.")]
         public List<VehicleSpawn> VehicleSpawns = new List<VehicleSpawn>();
+
+        [Header("Save Suppression")]
+        [Tooltip("When true, ChunkManager skips checkpoint autosave on arrival.")]
+        public bool SuppressCheckpointSaves;
     }
 }

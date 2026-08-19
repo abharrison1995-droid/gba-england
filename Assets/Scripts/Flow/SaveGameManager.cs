@@ -115,6 +115,15 @@ namespace GBHEngland.Flow
         // The player-authored shout belongs to Spark. Old saves read null and restore the existing
         // "Spark Out" default through PlayerSession.SanitizeSpellName.
         public string SpellName;
+
+        // Appended for Castle Fight Pit tournament: true after first 10-round victory.
+        public bool PitTournamentWon;
+
+        // Appended for Arena Personal Best wave reached.
+        public int HighestPitRound;
+
+        // Appended for Royal Crowns: true once 1 of the 3 unique crowns is bought.
+        public bool HasPurchasedRoyalCrown;
     }
 
     /// <summary>
@@ -125,8 +134,10 @@ namespace GBHEngland.Flow
     public static class SaveGameManager
     {
         private static string SavePath => Path.Combine(Application.persistentDataPath, "savegame.json");
+        private static string TempSavePath => Path.Combine(Application.persistentDataPath, "savegame.json.tmp");
+        private static string BackupSavePath => Path.Combine(Application.persistentDataPath, "savegame.json.bak");
 
-        public static bool HasSave => File.Exists(SavePath);
+        public static bool HasSave => File.Exists(SavePath) || File.Exists(BackupSavePath);
 
         public static void Save()
         {
@@ -143,6 +154,9 @@ namespace GBHEngland.Flow
             data.Pounds = session != null ? session.Pounds : 0;
             data.TotalXP = session != null ? session.TotalXP : 0;
             data.SpellName = session != null ? session.SpellName : PlayerSession.DefaultSpellName;
+            data.PitTournamentWon = session != null && session.PitTournamentWon;
+            data.HighestPitRound = session != null ? session.HighestPitRound : 0;
+            data.HasPurchasedRoyalCrown = session != null && session.HasPurchasedRoyalCrown;
 
             Vector3 pos = player.transform.position;
             data.ChunkName = chunkMgr.CurrentChunkData.ChunkName;
@@ -202,9 +216,23 @@ namespace GBHEngland.Flow
                 data.PerkIds.AddRange(session.SpentPerkIds);
             }
 
+            Save(data);
+        }
+
+        public static void Save(SaveData data)
+        {
+            if (data == null) return;
             try
             {
-                File.WriteAllText(SavePath, JsonUtility.ToJson(data));
+                File.WriteAllText(TempSavePath, JsonUtility.ToJson(data));
+
+                if (File.Exists(SavePath))
+                {
+                    File.Copy(SavePath, BackupSavePath, overwrite: true);
+                }
+
+                File.Copy(TempSavePath, SavePath, overwrite: true);
+                File.Delete(TempSavePath);
             }
             catch (Exception e)
             {
@@ -212,13 +240,14 @@ namespace GBHEngland.Flow
             }
         }
 
-        /// <summary>Parses the save file; null if missing or corrupt.</summary>
-        public static SaveData ReadSaveData()
+        private static SaveData TryReadPath(string path)
         {
-            if (!HasSave) return null;
+            if (!File.Exists(path)) return null;
             try
             {
-                var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(SavePath));
+                string json = File.ReadAllText(path);
+                if (string.IsNullOrWhiteSpace(json)) return null;
+                var data = JsonUtility.FromJson<SaveData>(json);
                 // Legacy save-key migration: the hub chunk was renamed Home_Alvaston -> Home_London.
                 if (data != null && data.ChunkName == "Home_Alvaston")
                     data.ChunkName = "Home_London";
@@ -226,9 +255,34 @@ namespace GBHEngland.Flow
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"SaveGameManager: unreadable save — {e.Message}");
+                Debug.LogWarning($"SaveGameManager: unreadable save at {path} — {e.Message}");
                 return null;
             }
+        }
+
+        /// <summary>Parses the save file; null if missing or corrupt.</summary>
+        public static SaveData ReadSaveData()
+        {
+            if (!HasSave) return null;
+
+            SaveData data = TryReadPath(SavePath);
+            if (data == null && File.Exists(BackupSavePath))
+            {
+                Debug.LogWarning("SaveGameManager: primary save corrupted or missing, recovering from backup...");
+                data = TryReadPath(BackupSavePath);
+                if (data != null)
+                {
+                    try
+                    {
+                        File.Copy(BackupSavePath, SavePath, overwrite: true);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"SaveGameManager: failed to restore backup to primary save path — {e.Message}");
+                    }
+                }
+            }
+            return data;
         }
 
         /// <summary>
@@ -256,6 +310,7 @@ namespace GBHEngland.Flow
             if (chunkMgr.CurrentChunkInstance != null)
                 UnityEngine.Object.Destroy(chunkMgr.CurrentChunkInstance);
 
+            Data.MapChunkData previousChunk = chunkMgr.CurrentChunkData;
             chunkMgr.CurrentChunkData = chunk;
             PlayerSession.Instance?.MarkChunkVisited(chunk.ChunkName);
             // Silent: loading a save must not pop a toast for the chunk it lands in.
@@ -277,6 +332,9 @@ namespace GBHEngland.Flow
             player.CurrentMana = data.Mana;
             player.CurrentStamina = data.Stamina;
 
+            Systems.WantedManager.Instance?.ClearWanted();
+            Systems.WantedManager.Instance?.OnChunkTransition(previousChunk, chunk, ChunkTravelKind.Portal);
+
             return true;
         }
 
@@ -286,6 +344,10 @@ namespace GBHEngland.Flow
             {
                 if (File.Exists(SavePath))
                     File.Delete(SavePath);
+                if (File.Exists(TempSavePath))
+                    File.Delete(TempSavePath);
+                if (File.Exists(BackupSavePath))
+                    File.Delete(BackupSavePath);
             }
             catch (Exception e)
             {

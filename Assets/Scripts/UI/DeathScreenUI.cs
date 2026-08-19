@@ -94,6 +94,7 @@ namespace GBHEngland.UI
         private void OnNewGame()
         {
             SaveGameManager.ClearSave();
+            WantedManager.Instance?.ClearWanted();
             Hide();
 
             if (GameFlowController.Instance != null)
@@ -112,8 +113,12 @@ namespace GBHEngland.UI
                 Data.MapChunkData home = chunkMgr.FindChunkByName("Home_London");
                 if (home != null && home.ChunkPrefab != null)
                 {
+                    Data.MapChunkData previousChunk = chunkMgr.CurrentChunkData;
+
                     if (chunkMgr.CurrentChunkInstance != null)
                         Destroy(chunkMgr.CurrentChunkInstance);
+
+                    WantedManager.Instance?.OnChunkTransition(previousChunk, home, ChunkTravelKind.Portal);
 
                     chunkMgr.CurrentChunkData = home;
                     PlayerSession.Instance?.MarkChunkVisited(home.ChunkName);
