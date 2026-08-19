@@ -26,14 +26,16 @@ thing keeping editor code out of builds · no Git LFS.
 
 ---
 
-## Two agents work in this repo
+## Agents in this repo
 
-| Agent | Job | Writes to |
-|---|---|---|
-| **Claude Code** | All code, Unity assets, scene and prefab work. Reads `CLAUDE.md`. | `Assets/`, `Tools/`, `docs/`, git |
-| **Art agent** (Antigravity/Gemini) | Generates sprites and sheets. Reads `ART_PIPELINE.md`. | `art_incoming/` **only** |
+Two tools, each capable of a role chosen per task — not two fixed identities.
 
-### If you are the art agent
+| Agent | Role | Reads | Writes to |
+|---|---|---|---|
+| **Claude Code** | Implementation — all code, Unity assets, scene and prefab work. | `CLAUDE.md` | `Assets/`, `Tools/`, `docs/`, git |
+| **Antigravity** (Gemini, Claude Opus and the other models it hosts) | Either role below, chosen per task. | `GEMINI.md`, then `ART_PIPELINE.md` or `CLAUDE.md` | Art mode: `art_incoming/` **only**. Implementation mode: `Assets/`, `Tools/`, `docs/`, git — same as Claude Code. |
+
+### If you are Antigravity, generating art
 
 **You produce image files and their sidecar JSON into `art_incoming/`. Nothing else.**
 
@@ -64,6 +66,13 @@ art deliverable at all; they are Unity-side chunk prefabs.
 If a **supported 2D** request is ambiguous, write your question into the asset's `.json` as a
 `"question"` field and produce your best attempt anyway. Do not guess at project structure.
 **Unsupported asset classes are the exception: ask and stop.**
+
+### If you are Antigravity, implementing
+
+Same rules as Claude Code, in full — read [CLAUDE.md](CLAUDE.md) and follow it exactly. There is no
+separate rulebook for Antigravity doing implementation work; every hard rule in this file and in
+`CLAUDE.md` binds both tools equally. `GEMINI.md` carries one extra thing Claude Code does not
+need: an internal plan → implement → review model rotation to use inside Antigravity itself.
 
 ### If you are Claude Code
 
