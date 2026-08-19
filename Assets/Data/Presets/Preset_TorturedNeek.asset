@@ -25,7 +25,9 @@ MonoBehaviour:
   Health: 45
   OverrideDamage: 0
   Damage: 7
-  Loot: []
+  Loot:
+  - Item: {fileID: 11400000, guid: 25ecbf4426e79c7a75bc0b81f832f7ae, type: 2}
+    Quantity: 1
   ChestName: Chest
   ChestVisualPrefab: {fileID: 0}
   ChestLoot: []
@@ -37,7 +39,7 @@ MonoBehaviour:
   DoorVisualColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
   Vehicle: {fileID: 0}
   SpawnPointId: 
-  QuestKey: 
+  QuestKey: tortured_neek
   ArtSubject: 
   NpcHeight: 0
   Roams: 0

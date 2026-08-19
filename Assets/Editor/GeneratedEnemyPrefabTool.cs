@@ -94,7 +94,7 @@ public static class GeneratedEnemyPrefabTool
         // been written yet (CLAUDE.md §14's open question): planned as the Mosley quest target,
         // but nothing currently grants or completes a quest keyed on it.
         new EnemySpec("torturedneek", $"{PrefabFolder}/Enemy_TorturedNeek.prefab", "Tortured Neek",
-            "Tortured Neek", 45, 7, "torturedneek"),
+            "Tortured Neek", 45, 7, "tortured_neek"),
 
         // The Spark of Talent tutorial's twitchy geezer, converted from the runtime-spawned
         // character MagicTutorial.cs used to build. Health 40, Damage 8, RangedCaster with a 7 m
