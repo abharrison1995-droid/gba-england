@@ -62,6 +62,7 @@ namespace GBHEngland.World
         private List<Vector2IntCoords> _activeLockoutKeys = new List<Vector2IntCoords>();
 
         private bool _isTransitioning = false;
+        public bool IsTransitioning => _isTransitioning;
         private float _nextEdgeTriggerAllowedAt = 0f;
 
         // ChunkEdge re-offers a crossing every physics tick via OnTriggerStay, so anything that
