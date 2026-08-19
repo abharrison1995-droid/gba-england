@@ -16,10 +16,10 @@ MonoBehaviour:
   Nodes:
   - Id: start
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Christ.. what have I done? You! no.. no.. leave me be...
+    DialogueText: Yes? What is it, chap? I'm under an immense amount of stress here.
     Choices:
-    - ChoiceText: Come on what's up? Caught with the intern again?
-      NextNodeId: reveal_prompt
+    - ChoiceText: Are you alright? You look like you've seen a ghost.
+      NextNodeId: intro_panic
       QuestGate: 1
       QuestGateId: mosley_vape_quest_one
       QuestGateStage: 0
@@ -39,7 +39,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Christ, I'm on it alright. *leaves*
+    - ChoiceText: About that vape situation in the basement...
       NextNodeId: nag_one
       QuestGate: 2
       QuestGateId: mosley_vape_quest_one
@@ -60,7 +60,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Right Mosley!
+    - ChoiceText: Right, Mosley! We need to talk about where those vapes came from.
       NextNodeId: wm_greet
       QuestGate: 2
       QuestGateId: wtf_mosley
@@ -81,7 +81,74 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Don't gotta tell me twice. *leaves*
+    - ChoiceText: How are things holding up with the council?
+      NextNodeId: idle_council
+      QuestGate: 3
+      QuestGateId: wtf_mosley
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Just passing by.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: intro_panic
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: Christ... what have I done? You! No... no, please, leave me be!
+    Choices:
+    - ChoiceText: Come on, what's up? Caught with the intern again?
+      NextNodeId: reveal_prompt
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+    - ChoiceText: Suit yourself.
       NextNodeId: 
       QuestGate: 0
       QuestGateId: 
@@ -104,10 +171,10 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: reveal_prompt
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: AH! I don't have time to care if you'll spread this. You've probably
-      noticed a bit of an uptick in uh...
+    DialogueText: Agh! I don't have time to care if you leak this to the press. You've
+      probably noticed an uptick in... undesirable behaviour around here?
     Choices:
-    - ChoiceText: Nittys about the place?
+    - ChoiceText: You mean the nitties losing their minds?
       NextNodeId: reveal_a
       QuestGate: 0
       QuestGateId: 
@@ -128,7 +195,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Can you spit it out?
+    - ChoiceText: Can you just spit it out?
       NextNodeId: reveal_b
       QuestGate: 0
       QuestGateId: 
@@ -151,12 +218,12 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: reveal_a
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: YES! Well, no.. they're just misunderstood.. Anyway, I tried to
-      calm them down. I'd asked ChatJeeves LLM and.. well 3 hours laters I had the
-      vape of all vapes in my palm. I was told it'd chill the oiks down but fucking
-      hell old boy, they're anything but calm.
+    DialogueText: YES! Well, no... they're just misunderstood constituents. Anyway,
+      I tried to calm them down. I asked ChatJeeves LLM, and three hours later I
+      had a prototype calming vape. I was told it would pacify the oiks, but bloody
+      hell old boy, they've gone completely feral!
     Choices:
-    - ChoiceText: Alright cool. And you're telling me because?
+    - ChoiceText: Right, and why are you telling me this?
       NextNodeId: ask_why_1
       QuestGate: 0
       QuestGateId: 
@@ -177,7 +244,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Sounds tasty, a toot for me perchance old boy?
+    - ChoiceText: Sounds tasty. A toot for me perchance, old boy?
       NextNodeId: ask_why_2
       QuestGate: 0
       QuestGateId: 
@@ -200,10 +267,10 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: reveal_b
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Right okay. Had a chat with AI, came up with a little proto-type
-      chill out vape. Decided to test it out on a few of the local ruffians.
+    DialogueText: Right, fine. Had a consult with an AI assistant, whipped up a prototype
+      chill-out vape, and tested it on a few local ruffians.
     Choices:
-    - ChoiceText: Alright cool. And you're telling me because?
+    - ChoiceText: Right, and why are you telling me this?
       NextNodeId: ask_why_1
       QuestGate: 0
       QuestGateId: 
@@ -224,7 +291,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Sounds tasty, a toot for me perchance old boy?
+    - ChoiceText: Sounds tasty. A toot for me perchance, old boy?
       NextNodeId: ask_why_2
       QuestGate: 0
       QuestGateId: 
@@ -247,11 +314,12 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: ask_why_1
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: I've spoken to Daniel, I know you can sling spells. I'll tell the
-      federalis if you don't help me out old boy. Give me a hand and there's a few
-      quid in it for you. Please! *eyes begin to tear up*
+    DialogueText: "I've spoken to Daniel Pauls \u2014 I know you've got magical capabilities.
+      I'll report you to the Old Bill if you don't help me clean this up! Help me
+      recover the prototype and there's a handsome sum in it for you. Please! *eyes
+      begin to tear up*"
     Choices:
-    - ChoiceText: Well since you asked nicely, go on then.
+    - ChoiceText: Well, since you asked nicely... go on then.
       NextNodeId: end_accept
       QuestGate: 0
       QuestGateId: 
@@ -272,7 +340,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Fuck off. *leaves*
+    - ChoiceText: Bugger off.
       NextNodeId: end_decline
       QuestGate: 0
       QuestGateId: 
@@ -295,11 +363,11 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: ask_why_2
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: They're fucking zombies you fool. I'll tell you where they are
-      just get back the vape. If that get's out it's Black Mamba 2.0, this place
-      becomes Manchester.
+    DialogueText: They're bloody rabid, you fool! I'll tell you where they are, just
+      fetch back that vape! If word gets out, it's Black Mamba 2.0 and this place
+      becomes Manchester!
     Choices:
-    - ChoiceText: Uh oh.. maybe not then.. so what do you want from me?
+    - ChoiceText: Right, maybe not then. What exactly do you need done?
       NextNodeId: ask_why_1
       QuestGate: 0
       QuestGateId: 
@@ -320,7 +388,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Ok I'm out *leaves*
+    - ChoiceText: I'm out.
       NextNodeId: 
       QuestGate: 0
       QuestGateId: 
@@ -343,18 +411,18 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: end_accept
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Excellent. I've written the details in your little diary. I'll
-      be here when you're done. Go on then, chop chop!!!
+    DialogueText: Splendid! I've marked the cellar details in your journal. I'll
+      be right here waiting. Chop chop, old boy!
     Choices: []
   - Id: end_decline
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: AH! I'll be here if you change your mind. *weeps*
+    DialogueText: Agh! I'll be right here weeping if you change your mind!
     Choices: []
   - Id: nag_one
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: COME ON CHAP! GET ME THAT VAPE AND DO NOT CHONG ON IT!
+    DialogueText: COME ON CHAP! GET ME THAT VAPE AND DO NOT TAKE A PUFF ON IT!
     Choices:
-    - ChoiceText: Ooooookay.
+    - ChoiceText: Keep your hair on, I'm working on it.
       NextNodeId: nag_two
       QuestGate: 0
       QuestGateId: 
@@ -377,11 +445,10 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: nag_two
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: WHAT ARE YOU DOING??? I CAN PRACTICALLY HEAR THEM HUFFING ON THAT
-      VAPE FROM HERE CHAP HURRY!!!
+    DialogueText: WHAT ARE YOU WAITING FOR?! I CAN PRACTICALLY HEAR THEM HUFFING
+      IT FROM HERE!
     Choices:
-    - ChoiceText: Mate how does a vape make them get like that? You slapping fent
-        in these?
+    - ChoiceText: Here's your vape. What did you put in this, chemical weapons?
       NextNodeId: vape_returned
       QuestGate: 0
       QuestGateId: 
@@ -402,7 +469,7 @@ MonoBehaviour:
       HireCompanionId: 
       HireCompanionFree: 0
       CompanionCommand: 0
-    - ChoiceText: Gimme some time man.
+    - ChoiceText: Just give me a bit more time.
       NextNodeId: 
       QuestGate: 0
       QuestGateId: 
@@ -425,10 +492,10 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: vape_returned
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Good man, sorting that out for me. You should get back to Daniel
-      Paul's. I hear he's in a spot of bother.
+    DialogueText: "Good man! Splendid work. Now, you should get back over to Daniel
+      Pauls \u2014 I hear he's in a spot of bother near the church."
     Choices:
-    - ChoiceText: Okay.
+    - ChoiceText: On my way.
       NextNodeId: 
       QuestGate: 0
       QuestGateId: 
@@ -451,9 +518,9 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_greet
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Ey up, lad. How we doing? Have you spoke to Daniel Paul's?
+    DialogueText: Ey up, lad! How are we doing? Have you spoken to Daniel Pauls?
     Choices:
-    - ChoiceText: Mosley... where have you been getting these vapes from?
+    - ChoiceText: Mosley... where did you actually get those vapes from?
       NextNodeId: wm_made
       QuestGate: 0
       QuestGateId: 
@@ -476,11 +543,11 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_made
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: I made 'em. I asked the AI folks, and I made 'em myself. All my
-      own parts, all my own bits. But why?
+    DialogueText: I made them! I asked the AI engine, sourced the components myself.
+      Why do you ask?
     Choices:
-    - ChoiceText: "Well, I just had a chat with Scrap Man, and he saw you out there
-        with Ralph and Sanjeet. He said you were buying a weird box of Chinese vapes\u2014"
+    - ChoiceText: Scrap Man saw you buying a crate of Chinese-stamped vapes from
+        Ralph and Sanjeet.
       NextNodeId: wm_thing
       QuestGate: 0
       QuestGateId: 
@@ -503,9 +570,9 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_thing
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: No. Well, well, well, you see, the thing is...
+    DialogueText: No... well, you see... the nuance of the situation is...
     Choices:
-    - ChoiceText: What?
+    - ChoiceText: Out with it, Mosley.
       NextNodeId: wm_toomuch
       QuestGate: 0
       QuestGateId: 
@@ -528,11 +595,10 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_toomuch
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: It was just too much, old boy. The place has been going down the
-      tubes, and the Neeks, they were more and more rowdy. I just... I didn't know
-      what to do.
+    DialogueText: It was just too much, old boy! The borough's going down the tubes,
+      the Neeks were rioting, and I didn't know what else to do!
     Choices:
-    - ChoiceText: Okay.
+    - ChoiceText: Go on.
       NextNodeId: wm_experiment
       QuestGate: 0
       QuestGateId: 
@@ -555,14 +621,11 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_experiment
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: "I didn't know what to do. So I've seen online that the Chinese,
-      they've been using these vapes to sedate people, just make them comply. So
-      I thought, okay, I'll do that. But I couldn't put it through the coffers \u2014
-      the council would never sign off on it, and the people aren't gonna vote for
-      it. So... it was my own personal money. And, well, it was just an experiment.
-      That was it."
+    DialogueText: I read online that overseas authorities use sedating vapours for
+      crowd pacification. The council would never approve the budget, so I used my
+      personal allowance! It was purely an off-the-books civic trial!
     Choices:
-    - ChoiceText: But Mosley, why did you involve the Chinese? You hate the Chinese.
+    - ChoiceText: But Mosley, you bought them off street gangs. Why?
       NextNodeId: wm_korean
       QuestGate: 0
       QuestGateId: 
@@ -585,12 +648,12 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_korean
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Well, I didn't know they were Chinese. They told me it was Korean.
-      I asked, I said, this is Chinese, that looks Chinese. He said, don't be a racist
-      mate, that's Korean. Who am I to question? He's, you know, he wasn't white.
+    DialogueText: Well, they assured me it was high-grade Korean import! I questioned
+      the labels, but Sanjeet told me not to be culturally insensitive. Who was I
+      to argue?
     Choices:
-    - ChoiceText: Yeah, but Sanjeet, he sounds Indian or Pakistani. He doesn't sound
-        like he's an authority on China, Japan, Korea, you know?
+    - ChoiceText: Sanjeet is from Birmingham, Mosley. He's not an East Asian import
+        authority.
       NextNodeId: wm_same
       QuestGate: 0
       QuestGateId: 
@@ -613,11 +676,11 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_same
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Well, it's all kind of the same, isn't it? Bit of this, bit of
-      that. I mean, you know...
+    DialogueText: Well, it's all rather exotic to me, isn't it? Bit of this, bit
+      of that...
     Choices:
-    - ChoiceText: Alright, now that is a bit racist. Okay, never mind. Can you tell
-        me where Ralph and Sanjeet usually stay?
+    - ChoiceText: Right, let's stop before you dig a deeper hole. Where are Ralph
+        and Sanjeet holing up?
       NextNodeId: wm_where
       QuestGate: 0
       QuestGateId: 
@@ -640,11 +703,10 @@ MonoBehaviour:
       CompanionCommand: 0
   - Id: wm_where
     Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
-    DialogueText: Well, I know they've got a little place near the abandoned bus
-      station. They might be there. That's near where I met them.
+    DialogueText: They operate out of a trap house near the abandoned bus station
+      up north. That's where we concluded our transaction.
     Choices:
-    - ChoiceText: Alright, I'll have a word. Cheers. Be careful with the Chinese-Korean
-        stuff, yeah? You're a councillor.
+    - ChoiceText: I'll pay them a visit. Try to stay out of trouble, Councillor.
       NextNodeId: 
       QuestGate: 0
       QuestGateId: 
@@ -660,6 +722,32 @@ MonoBehaviour:
       GrantQuestLocation: 
       TeachSpark: 0
       CompleteQuestId: wtf_mosley
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+  - Id: idle_council
+    Speaker: {fileID: 11400000, guid: 3d22b009a9dc50a2679df5e6754db9d3, type: 2}
+    DialogueText: I'm keeping a low profile, old boy. If the Standards Committee
+      catches wind of any of this, I'll be managing bins in Croydon.
+    Choices:
+    - ChoiceText: Probably for the best.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 0
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
       Merchant: {fileID: 0}
       MerchantAction: 0
       HireCompanionId: 

@@ -19,68 +19,62 @@
 #                            stage-3 beats; completed at iwv_deliver, which grants part 2)
 #   deliver_the_big_blue   - quests/deliver_the_big_blue.quest   (Quest 4 pt 2: Daniel's report;
 #                            completed at dbb_chat, which also grants Quest 5)
-#
-# The "done" node is the post-quest state and is expected to grow: as Daniel gains more quests,
-# add a new gated choice on NODE start rather than rewriting his farewell.
-#
-# All of Daniel Pauls' player lines are the owner's own words, written in on 2026-08-15. No
-# [TODO: ] blanks remain in this file.
-#
-# Requires the ActiveAtStage gate and the TEACHSPARK directive — see
-# docs/reference/QUEST_TEXT_FORMAT.md.
 
 DIALOGUE danielpauls
 
-# Daniel opens with the same line at every beat; which branch is offered depends on quest state.
-# The four spark_of_talent gates are mutually exclusive, so exactly one of THEM can ever be
-# visible at once. The daniel_pauls_quest_one gate is not exclusive with them: that quest is only
-# granted once spark_of_talent is complete, so while it is active the player sees its branch and
-# the post-spark farewell together.
+# Neutral root hub: Daniel greets neutrally on every interaction, and gated choices branch
+# into quest-specific dialogues without re-playing the intro monologue.
 NODE start
 SPEAKER: danielpauls
-SPEAK: David Blaine was my 3rd ever student. Second was a fella named Jesus. Now he didn't learn too much, I didn't know spanish and he wasn't great with English but he was a good trier.
-CHOICE Uh what? -> offer_open
+SPEAK: Alright lad, what's occurring?
+CHOICE Who are you then? -> intro_blaine
 GATE: not-started spark_of_talent
-CHOICE Okay okay! -> nudge
+CHOICE About that oddball... -> nudge
 GATE: stage spark_of_talent 0
-CHOICE Cheers I guess. -> reward
+CHOICE I found him. Something weird happened. -> reward
 GATE: stage spark_of_talent 1
-CHOICE Fine. -> done
-GATE: complete spark_of_talent
-CHOICE Hey up. -> dpq1_open
+CHOICE Councillor Mosley sent me back to you. -> dpq1_open
 GATE: active daniel_pauls_quest_one
 # check_out_the_church branch. Requires the makeshift vape (greys until carried), so it only opens
 # once the player is back from the church with it. Daniel speaks first ("What is this contraption?").
-CHOICE Check this out! -> cotc_show
+CHOICE I found this weird vape at the church. -> cotc_show
 GATE: active check_out_the_church
 ITEM: makeshift_vape x1
 # investigate_weird_vape, stage 1 — the player is back from Scrap Man with the "Big Blue" price.
 # Daniel speaks first ("So what's he said?").
-CHOICE Oi. -> iwv_bigblue
+CHOICE I spoke to Scrap Man. -> iwv_bigblue
 GATE: stage investigate_weird_vape 1
 # investigate_weird_vape, stage 3 — the player is back with the gathered goods. Requires blueberries
 # as a proxy (a choice can require only one item; the full three-item check is the Collect stage's
 # job — its objective only flips to "head back" once all three are carried). Daniel speaks first
 # ("Oh mate, amazing.").
-CHOICE Here's the stuff. -> iwv_brew
+CHOICE Here are the ingredients for the Big Blue. -> iwv_brew
 GATE: stage investigate_weird_vape 3
 ITEM: blueberries x2
 # deliver_the_big_blue, stage 1 — the report after Scrap Man's reveal. Daniel speaks first
 # ("Alright then, so what did you find out?").
-CHOICE Well.. -> dbb_report
+CHOICE Scrap Man told me who's behind the vapes. -> dbb_report
 GATE: stage deliver_the_big_blue 1
-CHOICE End Conversation.
+CHOICE Got any magic advice for me? -> done
+GATE: complete spark_of_talent
+CHOICE Catch you later.
+
+NODE intro_blaine
+SPEAKER: danielpauls
+SPEAK: David Blaine was my 3rd ever student. Second was a fella named Jesus. Now he didn't learn too much — I didn't know Spanish and he wasn't great with English, but he was a good trier.
+CHOICE Uh, what? -> offer_open
+CHOICE Not now, mate.
 
 NODE offer_open
 SPEAKER: danielpauls
 SPEAK: HEY YOU! I can sense it, you've got it. Do me a favour and I'll change your life!
-CHOICE What you on about? What you up to? -> research
+CHOICE What are you on about? What are you up to? -> research
 CHOICE Not now, weirdo.
 
 NODE research
 SPEAKER: danielpauls
 SPEAK: There's been a few suspect events. Sparks and bangs, strange folk acting aloof.
-CHOICE Actually — saw a bloke get zapped by some smackhead by the Jones' last week. Thought I'd had some dodgy bud. -> sendoff
+CHOICE Actually — saw a bloke get zapped by some smackhead outside the Joneses' last week. Thought I'd had some dodgy bud. -> sendoff
 GRANT: spark_of_talent
 CHOICE Right. I'll leave you to it.
 
@@ -109,7 +103,7 @@ SPEAK: Right, now I invoke the 7 secret corners of the magic circle....... GUH..
 
 NODE done
 SPEAKER: danielpauls
-SPEAK: Careful where you sling spells lad. Johnny Law comes a knocking if you're to liberal with the lightening.
+SPEAK: Careful where you sling spells, lad. Johnny Law comes a-knocking if you're too liberal with the lightning.
 
 # ----------------------------------------------------------------------------------------
 # daniel_pauls_quest_one - "Find the Magic Man".
@@ -123,27 +117,27 @@ SPEAK: Careful where you sling spells lad. Johnny Law comes a knocking if you're
 
 NODE dpq1_open
 SPEAKER: danielpauls
-SPEAK: Just the man. Right, well... I know you feel like you're only one now.
-CHOICE Do I? -> dpq1_help
+SPEAK: Just the man. Right, well... I know you feel like you're on your own in all this magic lark.
+CHOICE A bit, yeah. -> dpq1_help
 
 NODE dpq1_help
 SPEAKER: danielpauls
-SPEAK: Well, there's a way you can help me out.
+SPEAK: Well, there's a way you can help me out while getting some practice in.
 CHOICE Go on. -> dpq1_church
 
 NODE dpq1_church
 SPEAKER: danielpauls
 SPEAK: The abandoned church next to the castle has had its copper stripped from the roof.
-CHOICE And that's out of the ordinary? -> dpq1_speed
+CHOICE And that's out of the ordinary around here? -> dpq1_speed
 
 NODE dpq1_speed
 SPEAKER: danielpauls
-SPEAK: No. Well, yes. But... it's the speed. I was there just the day before. Then by the morning, poof.
+SPEAK: Well, no. But it's the speed of it. I was there just the day before. Then by the morning, poof — completely stripped clean.
 # This one choice both completes "Find the Magic Man" and grants Quest 3, "Check Out the Church" -
 # the same shape as councillormosley.quest's nag_two, which completes one quest and grants the next
 # from a single choice. By the time Daniel says his closing line, the journal has swapped one quest
 # for the next, so it clears as he briefs you rather than a beat later.
-CHOICE Maybe it was a gang? -> dpq1_close
+CHOICE Sounds like an organized crew. -> dpq1_close
 COMPLETE: daniel_pauls_quest_one
 GRANT: check_out_the_church
 
@@ -152,7 +146,7 @@ SPEAKER: danielpauls
 SPEAK: It's too big a church... something ain't right. Check it out for me, please. Few quid in it for you too.
 # This choice must have no  ->  : that is what ends a conversation. Without one this node has no
 # exit, and DialogueManager would append its own - an ending nobody wrote, mid-conversation.
-CHOICE Ugh fine.
+CHOICE Alright, I'll take a look.
 
 # ----------------------------------------------------------------------------------------
 # check_out_the_church - "Check Out the Church" (Quest 3).
@@ -163,16 +157,16 @@ CHOICE Ugh fine.
 
 NODE cotc_show
 SPEAKER: danielpauls
-SPEAK: What is this contraption?
+SPEAK: What in God's name is this contraption? Looks like a vape crossed with a car battery.
 # The player says nothing scripted here - just a click onward.
-CHOICE Look at it. -> cotc_scrapman
+CHOICE Found it on one of the Neeks in the church. -> cotc_scrapman
 
 NODE cotc_scrapman
 SPEAKER: danielpauls
-SPEAK: Give Scrap Man a shout for me. He might know about this.
+SPEAK: Give Scrap Man a shout for me down south. He knows every piece of junk in London.
 # This one choice completes Check Out the Church and grants the Quest 4 arc's first quest,
 # investigate_weird_vape - the same shape as dpq1_speed above.
-CHOICE Alright.
+CHOICE On it.
 COMPLETE: check_out_the_church
 GRANT: investigate_weird_vape
 
@@ -184,69 +178,69 @@ GRANT: investigate_weird_vape
 
 NODE iwv_bigblue
 SPEAKER: danielpauls
-SPEAK: So what's he said?
-CHOICE Make him a Big Blue and he'll talk. -> iwv_bits
+SPEAK: So what did Scrap Man say?
+CHOICE He wants a 'Big Blue' concoction before he spills anything. -> iwv_bits
 
 NODE iwv_bits
 SPEAKER: danielpauls
-SPEAK: Fuck's sake. Right, I'm gonna need some bits.
-CHOICE Well, you've got legs. -> iwv_guild
+SPEAK: Fuck's sake. Right, I'm gonna need some bits to brew that up.
+CHOICE You've got legs, haven't you? -> iwv_guild
 
 NODE iwv_guild
 SPEAKER: danielpauls
-SPEAK: Come on, get him a good box and you're in the guild.
-CHOICE Guild? -> iwv_list
+SPEAK: Come on, brew him a good batch and you're in the guild.
+CHOICE Guild? What guild? -> iwv_list
 
 NODE iwv_list
 SPEAKER: danielpauls
-SPEAK: Yeah, guild. Come on. Here's the list. You can grab all of it in the old bus station.
-CHOICE Sounds fun. -> iwv_diary
+SPEAK: The Alchemists' Guild! Come on. Here's the list. You can grab all of it over in the old bus station.
+CHOICE Sounds like a lovely day out. -> iwv_diary
 
 NODE iwv_diary
 SPEAKER: danielpauls
-SPEAK: Directions in the diary. I'll sort you some cash when you're back too.
+SPEAK: Directions are in your diary. I'll sort you some proper cash when you get back too.
 # Ends the conversation. This is stage 1 (TalkTo danielpauls), which advances to stage 2 on the
 # interact, so the objective becomes "clear the Neeks" as the chat closes.
-CHOICE Sigh. Fine. BRB.
+CHOICE Fine, fine. Be right back.
 
 NODE iwv_brew
 SPEAKER: danielpauls
-SPEAK: Oh mate, amazing. You are such a lad. Right, I'm gonna make these into a potion now for you to take to Scrap Man. So just wait a second.
-CHOICE Okay. -> iwv_stir
+SPEAK: Oh mate, amazing! You absolute legend. Right, I'm gonna brew these into a potion for Scrap Man now. Give me a second.
+CHOICE Go ahead. -> iwv_stir
 
 NODE iwv_stir
 SPEAKER: danielpauls
-SPEAK: *He begins to stir and smash in his pestle and mortar vigorously until a weird blue liquid emerges.*
+SPEAK: *He begins to stir and crush the ingredients in his pestle and mortar vigorously until a strange luminous blue liquid emerges.*
 # The script's "[Next]" beat here - the player just clicks on.
 CHOICE *watch him work* -> iwv_distill
 
 NODE iwv_distill
 SPEAKER: danielpauls
-SPEAK: *He distills the weird blue liquid into a janky looking container and hands it back to you.*
-CHOICE [Grab the suspicious blue container] -> iwv_deliver
+SPEAK: *He distills the glowing blue liquid into a janky-looking flask and hands it over.*
+CHOICE [Take the suspicious Big Blue flask] -> iwv_deliver
 
 NODE iwv_deliver
 SPEAKER: danielpauls
-SPEAK: Right, so get that back to Scrap Man and get back here with what he says. Cheers, lad.
+SPEAK: Right, get that over to Scrap Man and bring back whatever gossip he's sitting on. Cheers, lad.
 # Completes part 1 (the reward, the Big Blue, is paid on this) and grants part 2. Ends the chat.
-CHOICE Alright, son. See you.
+CHOICE See you in a bit.
 COMPLETE: investigate_weird_vape
 GRANT: deliver_the_big_blue
 
 # ----------------------------------------------------------------------------------------
-# deliver_the_big_blue - "Investigate the Weird Vape" (Quest 4, part 2). Daniel's one beat:
+# deliver_the_big_blue - "Deliver the Big Blue" (Quest 4, part 2). Daniel's one beat:
 #   stage 1 (dbb_report) - the report after Scrap Man's reveal. Completes part 2, pays the cash,
 #                          and grants Quest 5 (wtf_mosley) - go and confront Mosley.
 
 NODE dbb_report
 SPEAKER: danielpauls
-SPEAK: Alright then, so what did you find out?
-CHOICE Fuck me, Mosley's been buying dodgy vapes off the local gangs, and they've been getting the vapes from the Chinese. I think that's what's been sending the Neeks crazy. -> dbb_chat
+SPEAK: Alright then, what did Scrap Man say?
+CHOICE Mosley's been buying dodgy vapes off the Spartans, who got them imported from China. It's what's driving the Neeks feral. -> dbb_chat
 
 NODE dbb_chat
 SPEAKER: danielpauls
-SPEAK: What? The Chinese? Mosley hates the Chinese. Nah, he can't be that desperate. Please, have a chat with him. Here's your cash, sorted for the info. But yeah, chat with him. That can't be right.
+SPEAK: What? China? Mosley hates foreign gear! Nah, he can't be that desperate. Please, go have a word with him. Here's your cash for the info, but you've got to sort him out. That can't be right.
 # Ends the chat (no ->), completes part 2 and grants Quest 5.
-CHOICE I'll have a word.
+CHOICE I'll go confront him.
 COMPLETE: deliver_the_big_blue
 GRANT: wtf_mosley
