@@ -64,6 +64,8 @@ namespace GBHEngland.UI
         /// <summary>The 4 spell-slot button backgrounds + labels, refreshed to show bound spells.</summary>
         private readonly Image[] _spellSlotImages = new Image[4];
         private readonly TextMeshProUGUI[] _spellSlotLabels = new TextMeshProUGUI[4];
+        private readonly AbilityData[] _cachedEquippedAbilities = new AbilityData[4];
+        private bool _spellSlotsInitialized;
 
         /// <summary>The 5 knife icons of the wanted meter, left to right. Null until
         /// <see cref="EnsureWantedMeter"/> has run, and left null entirely if it bailed.</summary>
@@ -1151,11 +1153,26 @@ namespace GBHEngland.UI
         private void RefreshSpellSlots()
         {
             var combat = Combat.CombatController.Instance;
+            bool changed = !_spellSlotsInitialized;
             for (int i = 0; i < _spellSlotImages.Length; i++)
             {
                 AbilityData ability = null;
                 if (combat != null && combat.EquippedAbilities != null && i < combat.EquippedAbilities.Count)
                     ability = combat.EquippedAbilities[i];
+
+                if (_cachedEquippedAbilities[i] != ability)
+                {
+                    _cachedEquippedAbilities[i] = ability;
+                    changed = true;
+                }
+            }
+
+            if (!changed) return;
+            _spellSlotsInitialized = true;
+
+            for (int i = 0; i < _spellSlotImages.Length; i++)
+            {
+                AbilityData ability = _cachedEquippedAbilities[i];
                 bool bound = ability != null;
 
                 if (_spellSlotImages[i] != null)
