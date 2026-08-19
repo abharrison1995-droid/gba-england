@@ -23,6 +23,12 @@ namespace GBHEngland.Data
             return definition;
         }
 
+        /// <summary>Editor authoring calls this after creating/updating assets.</summary>
+        public static void ResetCache()
+        {
+            _byId = null;
+        }
+
         private static void EnsureLoaded()
         {
             if (_byId != null) return;

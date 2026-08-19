@@ -201,7 +201,12 @@ namespace GBHEngland.Companions
             // Position beside the player once they exist.
             var player = CombatController.Instance;
             if (player != null)
-                root.transform.position = player.transform.position + Vector3.back * 2.0f;
+            {
+                Vector3 targetPos = player.transform.position + Vector3.back * 2.0f;
+                if (UnityEngine.AI.NavMesh.SamplePosition(targetPos, out UnityEngine.AI.NavMeshHit hit, 4.0f, UnityEngine.AI.NavMesh.AllAreas))
+                    targetPos = hit.position;
+                root.transform.position = targetPos;
+            }
             agent.Warp(root.transform.position);
         }
 
@@ -282,6 +287,8 @@ namespace GBHEngland.Companions
             _joinedChunkInstance = instance;
 
             Vector3 pos = player.transform.position + Vector3.back * 2.0f;
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out UnityEngine.AI.NavMeshHit hit, 4.0f, UnityEngine.AI.NavMesh.AllAreas))
+                pos = hit.position;
             Follower.transform.position = pos;
             var agent = Follower.GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (agent != null) agent.Warp(pos);

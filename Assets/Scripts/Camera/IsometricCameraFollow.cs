@@ -19,12 +19,17 @@ namespace GBHEngland.World
         private Vector3 _lastTargetPos;
         private Vector3 _targetVelocity;
         private Coroutine _shakeCoroutine;
+        private Rigidbody _targetRb;
 
         private void Awake()
         {
             ApplyVibeLock();
             RebuildOffset();
-            if (Target != null) _lastTargetPos = Target.position;
+            if (Target != null)
+            {
+                _lastTargetPos = Target.position;
+                _targetRb = Target.GetComponent<Rigidbody>();
+            }
         }
 
         private void OnDestroy()
@@ -40,11 +45,15 @@ namespace GBHEngland.World
         {
             if (Target == null) return;
 
+            // Cache/update Rigidbody reference if target was swapped without SetTarget
+            if (_targetRb == null || _targetRb.transform != Target)
+                _targetRb = Target.GetComponent<Rigidbody>();
+
             // Speed calculation for dynamic zoom and forward lookahead
             float dt = Mathf.Max(0.0001f, Time.deltaTime);
-            Vector3 targetDelta = (Target.position - _lastTargetPos) / dt;
+            Vector3 rawVelocity = _targetRb != null ? _targetRb.velocity : ((Target.position - _lastTargetPos) / dt);
             _lastTargetPos = Target.position;
-            _targetVelocity = Vector3.Lerp(_targetVelocity, targetDelta, 8f * dt);
+            _targetVelocity = Vector3.Lerp(_targetVelocity, rawVelocity, 1f - Mathf.Exp(-8f * dt));
             float speed = _targetVelocity.magnitude;
 
             // Dynamic OrthoSize (smoothly expands when driving fast)
@@ -121,8 +130,13 @@ namespace GBHEngland.World
             if (Target != null)
             {
                 _lastTargetPos = Target.position;
+                _targetRb = Target.GetComponent<Rigidbody>();
                 _targetVelocity = Vector3.zero;
                 transform.position = Target.position + _offset;
+            }
+            else
+            {
+                _targetRb = null;
             }
         }
 
