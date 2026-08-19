@@ -240,6 +240,7 @@ namespace GBHEngland.UI
                 case PerkEffectType.ResourceRegenPercent: return signed + "% mana/stamina regen";
                 case PerkEffectType.MoveSpeedPercent: return signed + "% move speed";
                 case PerkEffectType.ExtraLootRolls: return signed + " loot rolls from containers";
+                case PerkEffectType.MeleeKnockback: return signed + "m melee knockback";
                 default: return effect.Type + " " + signed;
             }
         }

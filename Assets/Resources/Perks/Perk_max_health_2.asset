@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a03bfa407f5f4ce0bf64c24683d7ce6e, type: 3}
+  m_Name: Perk_max_health_2
+  m_EditorClassIdentifier: 
+  PerkId: max_health_2
+  Title: Max Health II
+  Description: "[owner to author prose]"
+  AllowedClasses: []
+  MinLevel: 14
+  Prerequisite: {fileID: 11400000, guid: b7777777777777777777777777777777, type: 2}
+  Effects:
+  - Type: 2
+    Magnitude: 20
