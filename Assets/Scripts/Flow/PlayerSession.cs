@@ -148,7 +148,12 @@ namespace GBHEngland.Flow
             HasStartedNewGame = true;
             KnowsSpark = false;
             SpellName = DefaultSpellName;
+            // Fight-pit progress must not leak into a same-session New Game: HighestPitRound would
+            // show a bogus "Personal Best" on the first fight and HasPurchasedRoyalCrown would
+            // permanently bar the new character from the one-per-save crown they never bought.
             PitTournamentWon = false;
+            HighestPitRound = 0;
+            HasPurchasedRoyalCrown = false;
 
             // RestoreFromSave immediately repopulates these via RestoreInventory/RestorePounds — a
             // fresh New Game must not inherit whatever a previous playthrough carried or was

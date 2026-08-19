@@ -90,6 +90,32 @@ namespace GBHEngland.Combat
             }
         }
 
+        private void Update()
+        {
+            if (!_isMatchLive || _aliveEnemies == null) return;
+
+            bool pruned = false;
+            for (int i = _aliveEnemies.Count - 1; i >= 0; i--)
+            {
+                if (_aliveEnemies[i] == null)
+                {
+                    _aliveEnemies.RemoveAt(i);
+                    pruned = true;
+                }
+            }
+
+            if (pruned && _aliveEnemies.Count == 0)
+            {
+                _isMatchLive = false;
+                if (_pacingCoroutine != null)
+                {
+                    StopCoroutine(_pacingCoroutine);
+                    _pacingCoroutine = null;
+                }
+                _pacingCoroutine = StartCoroutine(RoundVictoryRoutine());
+            }
+        }
+
         private void OnNavMeshBakeComplete()
         {
             var baker = GetComponent<RuntimeNavMeshBaker>() 
@@ -192,8 +218,12 @@ namespace GBHEngland.Combat
                 GameObject enemyObj = Instantiate(preset.EnemyPrefab, spawnPos, spawnRot, _enemyHolder.transform);
                 enemyObj.name = $"{preset.EnemyPrefab.name}_R{roundIndex + 1}_{i + 1}";
 
-                // Enemy prefabs lack EnemyLevel; add or get it before activation so Health.Awake scales stats correctly
-                var enemyLevel = enemyObj.GetComponent<EnemyLevel>() ?? enemyObj.AddComponent<EnemyLevel>();
+                // Enemy prefabs lack EnemyLevel; add or get it before activation so Health.Awake scales stats correctly.
+                // Use an explicit Unity-null check, not `?? AddComponent` — `??` bypasses Unity's overloaded null
+                // check and can skip the AddComponent, throwing MissingComponentException on the next line.
+                var enemyLevel = enemyObj.GetComponent<EnemyLevel>();
+                if (enemyLevel == null)
+                    enemyLevel = enemyObj.AddComponent<EnemyLevel>();
                 enemyLevel.Level = Mathf.Max(1, opp.BaseLevel + levelOffset);
 
                 // Replicate PlacementPreset overrides if configured
@@ -220,6 +250,19 @@ namespace GBHEngland.Combat
                 }
 
                 _aliveEnemies.Add(enemyObj);
+            }
+
+            // If a round resolved no opponents at all (every PresetKey missing / unregistered / null
+            // EnemyPrefab), neither victory path can fire: OnEnemyDied never runs, and Update()'s
+            // prune-then-check can't trigger on an already-empty list. The player would be sealed in a
+            // live-but-empty pit with no UI to leave. Abort the run safely rather than soft-lock.
+            if (_aliveEnemies.Count == 0)
+            {
+                Debug.LogError($"FightPitController: round {roundIndex + 1} resolved no opponents — aborting to avoid a soft-lock. " +
+                               "Check the round's PresetKeys against PlacementPresetLibrary.");
+                _isMatchLive = false;
+                ReturnOutside();
+                return;
             }
 
             // Activating holder invokes Health.Awake (which applies EnemyLevel) and EnemyAI.Awake synchronously
@@ -572,18 +615,33 @@ namespace GBHEngland.Combat
                 FightPitEntryCoordinator.Instance.RestoreVitalsToPlayer(player);
             }
 
-            MapChunkData returnChunk = ChunkManager.Instance != null 
+            MapChunkData returnChunk = ChunkManager.Instance != null
                 ? (ChunkManager.Instance.FindChunkByName("Home_London") ?? ChunkManager.Instance.FindChunkByName("Home_London_Data"))
                 : null;
 
             if (returnChunk != null && ChunkManager.Instance != null)
             {
-                ChunkManager.Instance.TravelTo(returnChunk, "castle_arena_return", Vector3.zero);
+                // Prefer the named arrival marker so the player pops out beside Prince Mandrew, but
+                // only if it actually exists in the return chunk's prefab. A named TravelTo whose
+                // marker does not resolve ABORTS the journey (ChunkManager.TravelRoutine, by design),
+                // which would trap the player in the pit forever. When the marker is missing, fall
+                // back to the lenient id-less travel, which lands them at Home London's default spawn.
+                bool hasReturnMarker = returnChunk.ChunkPrefab != null
+                    && PlayerSpawnPoint.FindExact(returnChunk.ChunkPrefab, "castle_arena_return") != null;
+
+                if (hasReturnMarker)
+                    ChunkManager.Instance.TravelTo(returnChunk, "castle_arena_return", Vector3.zero);
+                else
+                {
+                    Debug.LogWarning("FightPitController: no 'castle_arena_return' PlayerSpawnPoint in Home London; " +
+                                     "returning to the default spawn instead. Add that marker beside Prince Mandrew for a tidy arrival.");
+                    ChunkManager.Instance.TravelTo(returnChunk, Vector3.zero);
+                }
             }
             else if (ChunkManager.Instance != null && ChunkManager.Instance.CurrentChunkData != null)
             {
                 Debug.LogWarning("FightPitController: 'Home_London' chunk lookup failed; attempting fallback travel to active chunk origin.");
-                ChunkManager.Instance.TravelTo(ChunkManager.Instance.CurrentChunkData, "player_spawn", Vector3.zero);
+                ChunkManager.Instance.TravelTo(ChunkManager.Instance.CurrentChunkData, Vector3.zero);
             }
             else
             {
