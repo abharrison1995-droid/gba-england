@@ -36,6 +36,9 @@ namespace GBHEngland.Combat
         public float KeepOutDistance = 1.1f;
         [Tooltip("Horizontal distance past which the companion stops walking and warps to the player.")]
         public float WarpDistance = 22f;
+        [Tooltip("Minimum seconds between warps, so a player outrunning the companion on a fast " +
+                 "vehicle can't retrigger one every single frame the gap holds.")]
+        public float WarpCooldown = 1.5f;
         [Tooltip("Horizontal distance at which it gives up pathing and walks straight (stuck recovery).")]
         public float StuckDistance = 3f;
 
@@ -65,6 +68,7 @@ namespace GBHEngland.Combat
 
         private float _nextHealTime;
         private float _nextDodgeTime;
+        private float _nextWarpTime;
 
         // Reused across retarget scans so the 0.4s tick allocates nothing.
         private readonly List<EnemyAI> _enemyPool = new List<EnemyAI>(8);
@@ -206,10 +210,16 @@ namespace GBHEngland.Combat
             toPlayer.y = 0f;
             float dist = toPlayer.magnitude;
 
-            // Stranded far beyond a walk's patience: warp, don't walk.
+            // Stranded far beyond a walk's patience: warp, don't walk - but only once per
+            // WarpCooldown, so a player outrunning it on a fast vehicle can't retrigger this
+            // every single frame the gap holds.
             if (dist > WarpDistance)
             {
-                WarpBesidePlayer(toPlayer);
+                if (Time.time >= _nextWarpTime)
+                {
+                    WarpBesidePlayer(toPlayer);
+                    _nextWarpTime = Time.time + WarpCooldown;
+                }
                 return;
             }
 
