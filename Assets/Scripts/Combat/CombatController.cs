@@ -644,6 +644,8 @@ namespace GBHEngland.Combat
 
                 yield return new WaitForSeconds(delay);
 
+                if (_isDead || (_health != null && _health.IsDead)) yield break;
+
                 Vector3 facing = _facingDir.sqrMagnitude > 0.001f ? _facingDir.normalized : transform.forward;
                 facing.y = 0f;
                 if (facing.sqrMagnitude < 0.001f) facing = Vector3.forward;
@@ -1209,6 +1211,8 @@ namespace GBHEngland.Combat
                 UI.SpellShoutText.Spawn(transform.position, shout);
 
                 yield return new WaitForSeconds(ability.CastTime);
+
+                if (_isDead || (_health != null && _health.IsDead)) yield break;
 
                 Health target = ability.SpellEffect == SpellEffectType.Spark
                                 || ability.SpellEffect == SpellEffectType.Fireball
