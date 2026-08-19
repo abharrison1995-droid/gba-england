@@ -44,6 +44,15 @@ namespace GBHEngland.Combat
         [Tooltip("Seconds after the hitbox before you can move/attack again.")]
         public float MeleeRecovery = 0.35f;
 
+        [Header("Melee Cleave Hitbox")]
+        [Tooltip("Maximum horizontal reach in metres from player origin.")]
+        public float MeleeRange = 1.95f;
+        [Tooltip("Total frontal attack arc in degrees (180 = full semicircle, 120 = focused cone).")]
+        [Range(60f, 360f)]
+        public float MeleeArcAngle = 180f;
+        [Tooltip("Radius around player where enemies are hit regardless of angle (point-blank grace).")]
+        public float PointBlankRange = 0.45f;
+
         [Header("Dodge Roll")]
         [Tooltip("Percent of MAXIMUM stamina spent per roll. 50 means exactly two rolls from full " +
                  "at every level, because the price scales with the pool. See CurrentRollCost.")]
@@ -92,7 +101,7 @@ namespace GBHEngland.Combat
         private float _nextRollTime;
         private float _invulnerableUntil;
         private bool _isDead;
-        private readonly Collider[] _hitResults = new Collider[10];
+        private readonly Collider[] _hitResults = new Collider[32];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
         private float _staminaRegenCarry;
         /// <summary>Last non-zero move direction — melee aims this way while idle.</summary>
@@ -154,15 +163,18 @@ namespace GBHEngland.Combat
             if (session != null) session.OnStatsChanged -= OnSessionStatsChanged;
         }
 
+        public void BindSessionStats(Flow.PlayerSession session)
+        {
+            if (session == null) return;
+            session.OnStatsChanged -= OnSessionStatsChanged;
+            session.OnStatsChanged += OnSessionStatsChanged;
+            OnSessionStatsChanged();
+        }
+
         private void Start()
         {
-            // Start, not Awake: PlayerSession is created by GameFlowController.EnsureSession and
-            // may not exist yet when this Awake runs. Paired with the unsubscribe in OnDestroy, so
-            // a reloaded player does not leave a dead listener on a session that outlives it.
-            var session = Flow.PlayerSession.Instance;
-            // No eager push here: BindPlayerToSession already does the new-game and load pushes,
-            // and at Start the session may exist with no character created yet.
-            if (session != null) session.OnStatsChanged += OnSessionStatsChanged;
+            // Bind to session if it exists at Start; GameFlowController.BindPlayerToSession also binds explicitly.
+            BindSessionStats(Flow.PlayerSession.Instance);
 
             if (Joystick == null && UIManager.Instance != null)
                 Joystick = UIManager.Instance.Joystick;
@@ -287,6 +299,8 @@ namespace GBHEngland.Combat
             // exactly the bug _speedModifiers exists to prevent. Keyed by the session, so this
             // replaces its own previous entry instead of stacking a new one each level.
             SetSpeedMultiplier(session, session.MoveSpeedMultiplier);
+
+            PushHud();
         }
 
         private void PushHud()
@@ -588,14 +602,16 @@ namespace GBHEngland.Combat
                 if (facing.sqrMagnitude < 0.001f) facing = Vector3.forward;
                 facing.Normalize();
 
-                float hitRadius = 1.15f;
-                float hitReach = 1.35f;
-                // Always aim from last facing — ignore a stale AttackPoint that doesn't follow aim
-                Vector3 hitCenter = transform.position + facing * hitReach;
+                float reach = MeleeRange > 0f ? MeleeRange : 1.95f;
                 if (AttackPoint != null)
-                    hitCenter = transform.position + facing * Vector3.Distance(transform.position, AttackPoint.position);
+                {
+                    float distToAttackPoint = Vector3.Distance(transform.position, AttackPoint.position);
+                    if (distToAttackPoint > reach) reach = distToAttackPoint;
+                }
 
-                int hitCount = Physics.OverlapSphereNonAlloc(hitCenter, hitRadius, _hitResults);
+                // Origin at waist height in 3D isometric space
+                Vector3 sphereCenter = transform.position + Vector3.up * (EKVibe.CharacterHeight * 0.5f);
+                int hitCount = Physics.OverlapSphereNonAlloc(sphereCenter, reach, _hitResults, ~0, QueryTriggerInteraction.Ignore);
                 int damage = PlayerData != null
                     ? PlayerData.BaseTraits.Strength + EKVibe.MeleeDamageStrengthOffset
                     : 6; // PlayerData unbound — 6 matches the default CoreTraits Strength (5) + the same offset.
@@ -612,6 +628,11 @@ namespace GBHEngland.Combat
                 if (session != null)
                     damage = Mathf.RoundToInt(damage * session.MeleeDamageMultiplier);
 
+                float arcAngle = MeleeArcAngle > 0f ? MeleeArcAngle : 180f;
+                float dotThreshold = Mathf.Cos((arcAngle * 0.5f) * Mathf.Deg2Rad);
+                float pointBlankSq = PointBlankRange * PointBlankRange;
+                Vector3 playerPos = transform.position;
+
                 _hitThisSwing.Clear();
                 for (int i = 0; i < hitCount; i++)
                 {
@@ -624,13 +645,26 @@ namespace GBHEngland.Combat
                     if (targetHealth == null || targetHealth.IsDead) continue;
                     if (!_hitThisSwing.Add(targetHealth)) continue;
 
-                    // Must be roughly in front of the facing direction
-                    Vector3 toTarget = targetHealth.transform.position - transform.position;
-                    toTarget.y = 0f;
-                    if (toTarget.sqrMagnitude > 0.01f)
+                    // Closest point on enemy collider for distance / point-blank check
+                    Vector3 closest = enemyCol.ClosestPoint(playerPos);
+                    Vector3 toClosest = closest - playerPos;
+                    toClosest.y = 0f;
+
+                    // Point-blank grace: overlapping / adjacent enemies hit automatically regardless of facing
+                    if (pointBlankSq > 0f && toClosest.sqrMagnitude <= pointBlankSq)
                     {
-                        float ahead = Vector3.Dot(toTarget.normalized, facing);
-                        if (ahead < 0.15f) continue; // behind / beside — ignore
+                        // Inside point-blank radius, connect hit
+                    }
+                    else
+                    {
+                        // Semicircle / arc angle check relative to player position
+                        Vector3 toTarget = targetHealth.transform.position - playerPos;
+                        toTarget.y = 0f;
+                        if (toTarget.sqrMagnitude > 0.001f)
+                        {
+                            float ahead = Vector3.Dot(toTarget.normalized, facing);
+                            if (ahead < dotThreshold) continue; // outside attack arc
+                        }
                     }
 
                     string foeName = string.IsNullOrEmpty(targetHealth.DisplayName)
@@ -667,10 +701,45 @@ namespace GBHEngland.Combat
             if (facing.sqrMagnitude < 0.001f) facing = Vector3.forward;
             facing.Normalize();
 
+            Vector3 origin = transform.position;
+            float reach = MeleeRange > 0f ? MeleeRange : 1.95f;
+            if (AttackPoint != null)
+            {
+                float distToAttackPoint = Vector3.Distance(transform.position, AttackPoint.position);
+                if (distToAttackPoint > reach) reach = distToAttackPoint;
+            }
+
+            float angle = MeleeArcAngle > 0f ? MeleeArcAngle : 180f;
+            float halfAngle = angle * 0.5f;
+
+            // Point-blank inner sphere
+            if (PointBlankRange > 0f)
+            {
+                Gizmos.color = new Color(1f, 0.5f, 0f, 0.4f);
+                Gizmos.DrawWireSphere(origin + Vector3.up * (EKVibe.CharacterHeight * 0.5f), PointBlankRange);
+            }
+
+            // Cleave arc rays and perimeter
             Gizmos.color = Color.red;
-            Vector3 center = transform.position + facing * 1.35f;
-            Gizmos.DrawWireSphere(center, 1.15f);
-            Gizmos.DrawLine(transform.position, transform.position + facing * 2f);
+            Quaternion leftRot = Quaternion.Euler(0f, -halfAngle, 0f);
+            Quaternion rightRot = Quaternion.Euler(0f, halfAngle, 0f);
+
+            Vector3 leftRay = leftRot * facing * reach;
+            Vector3 rightRay = rightRot * facing * reach;
+
+            Gizmos.DrawLine(origin, origin + leftRay);
+            Gizmos.DrawLine(origin, origin + rightRay);
+            Gizmos.DrawLine(origin, origin + facing * reach);
+
+            int segments = 24;
+            Vector3 prevPoint = origin + leftRay;
+            for (int i = 1; i <= segments; i++)
+            {
+                float a = -halfAngle + (angle / segments) * i;
+                Vector3 currPoint = origin + Quaternion.Euler(0f, a, 0f) * facing * reach;
+                Gizmos.DrawLine(prevPoint, currPoint);
+                prevPoint = currPoint;
+            }
         }
         #endregion
 

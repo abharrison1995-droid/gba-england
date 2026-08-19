@@ -171,6 +171,9 @@ namespace GBHEngland.Flow
 
                 // Clears _isDead — the player may be arriving here via the death screen
                 existing.ReviveFull();
+
+                // Explicitly subscribe CombatController to session stats events to eliminate Start() race conditions
+                existing.BindSessionStats(PlayerSession.Instance);
             }
 
             if (existing != null)
