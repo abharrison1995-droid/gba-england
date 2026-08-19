@@ -56,6 +56,8 @@ namespace GBHEngland.World
         private bool _hotwireLocked;
         private float _lockoutUntil;
         private bool _hotwiring;       // the minigame is open; the car must not move
+        private TrafficCar _leader;    // the car ahead on this route; hold behind it
+        private AudioClip _hornClip;
 
         private void Awake()
         {
@@ -63,13 +65,23 @@ namespace GBHEngland.World
             _interactable = GetComponent<Interactable>();
             _rb = GetComponent<Rigidbody>();
 
-            // Own the interactable. RemoveAllListeners guarantees exactly one listener — ours —
-            // whatever the builder tool may have wired, so a double-fire is impossible.
             if (_interactable != null)
             {
                 _interactable.OnInteract.RemoveAllListeners();
-                _interactable.OnInteract.AddListener(TryHotwire);
+                _interactable.OnInteract.AddListener(OnInteractTriggered);
                 _interactable.enabled = false;   // not interactable while driving
+            }
+        }
+
+        private void OnInteractTriggered()
+        {
+            if (_converted)
+            {
+                if (_vehicle != null) _vehicle.Toggle();
+            }
+            else
+            {
+                TryHotwire();
             }
         }
 
@@ -91,10 +103,11 @@ namespace GBHEngland.World
                 return;
             }
 
-            _cruiseSpeed = data.TrafficSpeed;
+            _cruiseSpeed = data.TrafficSpeed * Random.Range(0.9f, 1.1f);
             _hotwireWires = Mathf.Max(1, data.HotwireWires);
             _hotwireSeconds = Mathf.Max(1f, data.HotwireSeconds);
             _vehicleName = string.IsNullOrEmpty(data.VehicleName) ? "car" : data.VehicleName;
+            _hornClip = data.HornClip;
 
             if (_vehicle != null)
                 _vehicle.Apply(data);
@@ -115,14 +128,16 @@ namespace GBHEngland.World
                 return;
             }
 
-            bool blocked = PlayerInLane();
+            bool playerBlocking = PlayerInLane();
+            bool blocked = playerBlocking || LeaderTooClose();
 
             if (_isHeld)
             {
                 if (blocked)
                 {
                     _resumeAt = 0f;
-                    HonkIfDue();
+                    SetInteractable(true);
+                    HonkIfDue(playerBlocking);
                 }
                 else if (_resumeAt == 0f)
                 {
@@ -140,8 +155,9 @@ namespace GBHEngland.World
             {
                 _isHeld = true;
                 _resumeAt = 0f;
+                // Any stopped car is interactable — the Interactable's own range check handles proximity.
                 SetInteractable(true);
-                HonkIfDue();
+                HonkIfDue(playerBlocking);
             }
             else
             {
@@ -212,11 +228,39 @@ namespace GBHEngland.World
             return local.z > 0f && local.z < BrakeDistance && Mathf.Abs(local.x) < LaneHalfWidth;
         }
 
-        private void HonkIfDue()
+        /// <summary>
+        /// Is the car ahead of us and too close? Same math as PlayerInLane but against the leader
+        /// car's position. Returns false if no leader or leader is destroyed.
+        /// </summary>
+        private bool LeaderTooClose()
+        {
+            if (_leader == null) return false;
+
+            Vector3 local = transform.InverseTransformPoint(_leader.transform.position);
+            return local.z > 0f && local.z < BrakeDistance && Mathf.Abs(local.x) < LaneHalfWidth;
+        }
+
+        /// <summary>
+        /// Called by <see cref="TrafficRoute"/> to chain cars: this car will not drive through
+        /// its leader. Null-safe: if the leader is destroyed (reached route end), this car drives
+        /// freely.
+        /// </summary>
+        public void SetLeader(TrafficCar leader) { _leader = leader; }
+
+        private void OnDestroy()
+        {
+            if (_route != null)
+                _route.NotifyCarRemoved(this);
+        }
+
+        private void HonkIfDue(bool playerBlocking)
         {
             if (Time.time < _nextHonkAt) return;
             _nextHonkAt = Time.time + HonkInterval;
-            UIManager.Instance?.ShowToast("Beep beep! Get out the road!", 1.5f);
+            if (playerBlocking)
+                UIManager.Instance?.ShowToast("Beep beep! Get out the road!", 1.5f);
+            if (_hornClip != null)
+                AudioSource.PlayClipAtPoint(_hornClip, transform.position);
         }
 
         private void SetInteractable(bool on)
@@ -277,36 +321,37 @@ namespace GBHEngland.World
             if (_converted) return;
             _converted = true;
 
-            // Swap the interactable to the standard vehicle entry point.
+            // The car is no longer ambient traffic — free the slot so the route
+            // can spawn a replacement and repair the leader chain for following cars.
+            TrafficRoute route = _route;
+            if (_route != null)
+            {
+                _route.NotifyCarRemoved(this);
+                _route = null;
+            }
+
             if (_interactable != null)
             {
-                _interactable.OnInteract.RemoveAllListeners();
-                if (_vehicle != null)
-                    _interactable.OnInteract.AddListener(_vehicle.Toggle);
                 _interactable.enabled = true;
             }
 
             if (_vehicle == null) return;
 
-            // It's yours now — clear ownership so OnMounted does not spike a third knife, and the
-            // dismount prompt reads "Ride the ..." rather than "Nick the ...".
-            _vehicle.IsOwnedByNPC = false;
             _vehicle.MarkChunkOwned();
 
-            SpawnFleeingDriver();
+            SpawnFleeingDriver(route);
 
-            // Witnessed theft: instant 2 knives = two officers (PCSO then Bobby).
+            // Witnessed theft: spike first knife here; OnMounted spikes the second knife
+            // and shows the "Nicked a..." toast when mounting an IsOwnedByNPC vehicle.
             WantedManager.Instance?.SpikeKnives();
-            WantedManager.Instance?.SpikeKnives();
-            UIManager.Instance?.ShowToast($"Nicked a {_vehicleName}! The Fuzz is on to you.", 2.5f);
 
             MountController.Get()?.Mount(_vehicle);
         }
 
-        private void SpawnFleeingDriver()
+        private void SpawnFleeingDriver(TrafficRoute route)
         {
-            if (_route == null) return;
-            PlacementPreset preset = _route.PickDriver();
+            if (route == null) return;
+            PlacementPreset preset = route.PickDriver();
             if (preset == null) return;
 
             // Hop out the side of the car, parented to the live chunk so the driver dies with it.
@@ -315,7 +360,16 @@ namespace GBHEngland.World
                 ? ChunkManager.Instance.CurrentChunkInstance?.transform
                 : null;
 
-            NpcFactory.Build(preset, doorPos, chunk);
+            GameObject driver = NpcFactory.Build(preset, doorPos, chunk);
+            if (driver == null) return;
+
+            // Replace the default wander with a flee: the driver runs away from the car
+            // and despawns once off-camera.
+            var wander = driver.GetComponent<AI.NPCWander>();
+            if (wander != null) Object.Destroy(wander);
+
+            var flee = driver.AddComponent<AI.NPCFlee>();
+            flee.Begin(transform.position);
         }
     }
 }

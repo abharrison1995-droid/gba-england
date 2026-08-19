@@ -47,6 +47,25 @@ namespace GBHEngland.World
         public float SpawnJitter = 4f;
 
         private float _nextSpawnAt;
+        private readonly List<TrafficCar> _activeCars = new List<TrafficCar>();
+
+        /// <summary>
+        /// Called when a car on this route is destroyed or stolen (converted to player vehicle).
+        /// Removes the car from active tracking and repairs the leader chain for following cars.
+        /// </summary>
+        public void NotifyCarRemoved(TrafficCar car)
+        {
+            if (car == null) return;
+            int idx = _activeCars.IndexOf(car);
+            if (idx < 0) return;
+
+            // Repair: the car behind this one (if any) should now follow this car's leader (if any).
+            TrafficCar myLeader = idx > 0 ? _activeCars[idx - 1] : null;
+            if (idx + 1 < _activeCars.Count && _activeCars[idx + 1] != null)
+                _activeCars[idx + 1].SetLeader(myLeader);
+
+            _activeCars.RemoveAt(idx);
+        }
 
         private void Awake()
         {
@@ -64,22 +83,23 @@ namespace GBHEngland.World
             if (Cars == null || Cars.Count == 0) return;
             if (Waypoints == null || Waypoints.Count == 0) return;
 
-            if (LiveCarCount() >= MaxAlive) return;
+            for (int i = _activeCars.Count - 1; i >= 0; i--)
+            {
+                if (_activeCars[i] == null)
+                {
+                    TrafficCar myLeader = i > 0 ? _activeCars[i - 1] : null;
+                    if (i + 1 < _activeCars.Count && _activeCars[i + 1] != null)
+                        _activeCars[i + 1].SetLeader(myLeader);
+
+                    _activeCars.RemoveAt(i);
+                }
+            }
+
+            if (_activeCars.Count >= MaxAlive) return;
             if (Time.time < _nextSpawnAt) return;
 
             _nextSpawnAt = Time.time + SpawnInterval + Random.Range(0f, SpawnJitter);
             SpawnCar();
-        }
-
-        private int LiveCarCount()
-        {
-            int count = 0;
-            for (int i = 0; i < transform.childCount; i++)
-            {
-                if (transform.GetChild(i).GetComponent<TrafficCar>() != null)
-                    count++;
-            }
-            return count;
         }
 
         private void SpawnCar()
@@ -88,7 +108,16 @@ namespace GBHEngland.World
             if (entry == null || entry.Car == null || entry.Car.ChassisPrefab == null) return;
 
             Transform start = Waypoints[0];
-            GameObject go = Instantiate(entry.Car.ChassisPrefab, start.position, start.rotation, transform);
+            Quaternion spawnRot = start.rotation;
+            if (Waypoints.Count > 1 && Waypoints[1] != null)
+            {
+                Vector3 toNext = Waypoints[1].position - start.position;
+                toNext.y = 0f;
+                if (toNext.sqrMagnitude > 0.001f)
+                    spawnRot = Quaternion.LookRotation(toNext.normalized, Vector3.up);
+            }
+
+            GameObject go = Instantiate(entry.Car.ChassisPrefab, start.position, spawnRot, transform);
 
             var car = go.GetComponent<TrafficCar>();
             if (car == null)
@@ -99,6 +128,13 @@ namespace GBHEngland.World
             }
 
             car.Configure(entry.Car, this);
+
+            // Chain: the new car follows the previous active car so it stops behind it
+            // rather than clipping through.
+            if (_activeCars.Count > 0 && _activeCars[_activeCars.Count - 1] != null)
+                car.SetLeader(_activeCars[_activeCars.Count - 1]);
+
+            _activeCars.Add(car);
         }
 
         private TrafficCarEntry PickWeighted()
@@ -138,7 +174,7 @@ namespace GBHEngland.World
             for (int i = 0; i < transform.childCount; i++)
             {
                 Transform wp = transform.GetChild(i);
-                if (wp == null) continue;
+                if (wp == null || !wp.name.StartsWith("WP_")) continue;
 
                 Gizmos.DrawWireSphere(wp.position, 0.4f);
                 if (prev != null)

@@ -56,5 +56,9 @@ namespace GBHEngland.Data
 
         [Tooltip("Hotwire minigame: seconds on the clock. Less time = harder.")]
         public float HotwireSeconds = 6f;
+
+        [Header("Audio")]
+        [Tooltip("Horn sound played when the car honks at a blocked player. Leave empty until audio pass.")]
+        public AudioClip HornClip;
     }
 }

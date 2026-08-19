@@ -73,7 +73,10 @@ namespace GBHEngland.World
             {
                 var rider = CombatController.Instance;
                 if (rider != null)
+                {
                     transform.position = rider.transform.position;
+                    transform.rotation = rider.transform.rotation;
+                }
                 return;
             }
 
@@ -298,6 +301,10 @@ namespace GBHEngland.World
         // dropped too — leaving it set made the vehicle permanently half-mounted if it came back.
         private void OnDisable()
         {
+            // During scene teardown the singletons may already be gone. The cleanup
+            // is unnecessary anyway — the entire scene is being torn down.
+            if (!gameObject.scene.isLoaded) return;
+
             if (!IsRidden) return;
 
             var player = CombatController.Instance;

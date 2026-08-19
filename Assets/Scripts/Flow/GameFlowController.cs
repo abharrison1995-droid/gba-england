@@ -363,6 +363,12 @@ namespace GBHEngland.Flow
         /// </summary>
         public void HandlePlayerDeath()
         {
+            // A mounted vehicle is unparented from the chunk, so it survives the
+            // transition that follows. Dismounting here drops it in the current chunk
+            // (where it dies with the chunk) and restores the player's speed and visuals
+            // before the respawn.
+            World.MountController.Current?.Dismount();
+
             // ── Check for arrest ──
             var player = CombatController.Instance;
             if (player != null)

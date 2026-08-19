@@ -136,7 +136,7 @@ namespace GBHEngland.UI
                 // Horizontal only: the isometric world moves on X/Z and a kerb should not count.
                 float dx = a.x - b.x;
                 float dz = a.z - b.z;
-                if (dx * dx + dz * dz > EKVibe.PickpocketRange * EKVibe.PickpocketRange)
+                if (dx * dx + dz * dz > EKVibe.HotwireRange * EKVibe.HotwireRange)
                     Close();
             }
         }

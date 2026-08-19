@@ -230,8 +230,6 @@ public class BuildTrafficCarPrefabTool : EditorWindow
             vehicle.ReturnsHomeOnChunkChange = false;   // chunk-owned traffic; the route owns it
             vehicle.KeepModelVisibleWhileMounted = true;
 
-            UnityEventTools.AddPersistentListener(interactable.OnInteract, vehicle.Toggle);
-
             root.AddComponent<TrafficCar>();
 
             return PrefabUtility.SaveAsPrefabAsset(root, prefabPath);

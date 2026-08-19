@@ -121,6 +121,9 @@ namespace GBHEngland.Vibe
         /// </summary>
         public const float PickpocketRange = 3.5f;
 
+        /// <summary>Max horizontal distance from the car before the hotwire attempt auto-closes.</summary>
+        public const float HotwireRange = PickpocketRange;
+
         public static string FormatPounds(int amount) =>
             PoundSign + amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 

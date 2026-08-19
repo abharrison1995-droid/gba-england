@@ -68,6 +68,8 @@ namespace GBHEngland.World
 
         private void SpawnFor(MapChunkData data, GameObject chunkInstance)
         {
+            PruneDead(data);
+
             if (data.VehicleSpawns == null) return;
 
             int count = data.VehicleSpawns.Count;
@@ -112,6 +114,24 @@ namespace GBHEngland.World
                 vehicle.Apply(spawn.Vehicle);
                 vehicle.MarkChunkOwned();
                 live[i] = vehicle;
+            }
+        }
+
+        private void PruneDead(MapChunkData current)
+        {
+            // Snapshot keys to avoid modifying during iteration.
+            var keys = new List<MapChunkData>(_live.Keys);
+            foreach (MapChunkData key in keys)
+            {
+                if (key == current) continue;
+
+                VehicleController[] arr = _live[key];
+                bool anyAlive = false;
+                foreach (var v in arr)
+                {
+                    if (v != null) { anyAlive = true; break; }
+                }
+                if (!anyAlive) _live.Remove(key);
             }
         }
     }
