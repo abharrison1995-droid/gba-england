@@ -4,18 +4,18 @@ namespace GBHEngland.Data
 {
     public enum ItemType
     {
-        Weapon,
-        Shield,
-        Head,
-        Chest,
-        Cloak,
-        Ring,
-        Boots,
-        Consumable,
-        Quest,
-        Legs,
-        Belt,
-        Junk
+        Weapon = 0,
+        Shield = 1,
+        Head = 2,
+        Chest = 3,
+        Cloak = 4,
+        Ring = 5,
+        Boots = 6,
+        Consumable = 7,
+        Quest = 8,
+        Legs = 9,
+        Belt = 10,
+        Junk = 11
     }
 
     /// <summary>
@@ -83,6 +83,26 @@ namespace GBHEngland.Data
         [Header("Consumable Costs")]
         [Tooltip("Mana removed when this consumable is used, after any restoration. Clamped at zero.")]
         public int ManaDamage;
+
+        // Appended: Crown & Royal Arena stats. Older items deserialize all as zero/false.
+        [Header("Crown & Royal Stats")]
+        [Tooltip("Added to the character sheet's Fire resistance while equipped.")]
+        public int FireResistance;
+
+        [Tooltip("Passive HP regenerated per second while equipped (e.g. 0.1666f for 1 HP per 6s).")]
+        public float HealthRegenPerSecond;
+
+        [Tooltip("Flat Max HP added while this item is equipped.")]
+        public int MaxHealthBonus;
+
+        [Tooltip("Flat Max Mana added while this item is equipped.")]
+        public int MaxManaBonus;
+
+        [Tooltip("Flat Magic Damage added to spells and ranged magic attacks while equipped.")]
+        public int MagicDamageBonus;
+
+        [Tooltip("If true, only ONE crown can be purchased per save file.")]
+        public bool IsUniqueCrown;
 
         /// <summary>Can go in a visible paper-doll slot. Consumables are used, quests are carried.</summary>
         public bool IsEquippable =>

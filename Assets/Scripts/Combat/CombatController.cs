@@ -104,6 +104,8 @@ namespace GBHEngland.Combat
         private readonly Collider[] _hitResults = new Collider[32];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
         private float _staminaRegenCarry;
+        private float _healthRegenCarry;
+        private int _lastEffectiveMaxMana;
         /// <summary>Last non-zero move direction — melee aims this way while idle.</summary>
         private Vector3 _facingDir = Vector3.forward;
 
@@ -160,7 +162,11 @@ namespace GBHEngland.Combat
             if (Instance == this) Instance = null;
 
             var session = Flow.PlayerSession.Instance;
-            if (session != null) session.OnStatsChanged -= OnSessionStatsChanged;
+            if (session != null)
+            {
+                session.OnStatsChanged -= OnSessionStatsChanged;
+                session.OnEquipmentChanged -= OnSessionStatsChanged;
+            }
         }
 
         public void BindSessionStats(Flow.PlayerSession session)
@@ -168,6 +174,8 @@ namespace GBHEngland.Combat
             if (session == null) return;
             session.OnStatsChanged -= OnSessionStatsChanged;
             session.OnStatsChanged += OnSessionStatsChanged;
+            session.OnEquipmentChanged -= OnSessionStatsChanged;
+            session.OnEquipmentChanged += OnSessionStatsChanged;
             OnSessionStatsChanged();
         }
 
@@ -256,11 +264,26 @@ namespace GBHEngland.Combat
                 _staminaRegenCarry -= whole;
                 CurrentStamina = Mathf.Min(max, CurrentStamina + whole);
             }
+
+            // Passive Health Regeneration from equipped gear (e.g. Crown of Vitality: 1 HP per 6s = 0.1666f/s)
+            float hpRegenRate = session != null ? session.TotalHealthRegenPerSecond() : 0f;
+            if (hpRegenRate > 0f && _health != null && _health.CurrentHealth > 0 && _health.CurrentHealth < _health.MaxHealth)
+            {
+                _healthRegenCarry += hpRegenRate * Time.deltaTime;
+                if (_healthRegenCarry >= 1f)
+                {
+                    int wholeHp = Mathf.FloorToInt(_healthRegenCarry);
+                    _healthRegenCarry -= wholeHp;
+                    _health.Heal(wholeHp);
+                    CurrentHealth = _health.CurrentHealth;
+                    PushHud();
+                }
+            }
         }
 
         /// <summary>
-        /// Pushes the session's freshly derived stats onto the running player. Fires on every
-        /// <see cref="Flow.PlayerSession.OnStatsChanged"/> — new game, load, level-up, perk spend.
+        /// Pushes the session's freshly derived stats and equipment bonuses onto the running player.
+        /// Fires on every <see cref="Flow.PlayerSession.OnStatsChanged"/> and <see cref="Flow.PlayerSession.OnEquipmentChanged"/>.
         /// </summary>
         private void OnSessionStatsChanged()
         {
@@ -272,26 +295,34 @@ namespace GBHEngland.Combat
             {
                 if (_health != null)
                 {
-                    int newMax = stats.MaxHealth;
+                    int newMax = session.EffectiveMaxHealth();
                     int delta = newMax - _health.MaxHealth;
                     _health.MaxHealth = newMax;
 
-                    // Levelling GRANTS the new hit points rather than being a free full heal. That
-                    // is a design choice, not an oversight — do not "fix" it into a full heal.
-                    // Skipped while dead so a kill landing on the same frame as death cannot put a
-                    // corpse back above zero behind the death screen's back.
+                    // Equipping/Levelling GRANTS the new hit points rather than being a free full heal.
                     if (delta > 0 && _health.CurrentHealth > 0)
                         _health.CurrentHealth = Mathf.Min(newMax, _health.CurrentHealth + delta);
+                    else if (delta < 0 && _health.CurrentHealth > 0)
+                        _health.CurrentHealth = Mathf.Clamp(_health.CurrentHealth + delta, 1, newMax);
                     else if (_health.CurrentHealth > newMax)
                         _health.CurrentHealth = newMax;
 
                     CurrentHealth = _health.CurrentHealth;
                 }
 
-                // Both are clamped against MaxManaStamina wherever they are spent or regenerated,
-                // so a lowered maximum must not leave them reading over it.
-                CurrentMana = Mathf.Min(CurrentMana, stats.MaxManaStamina);
-                CurrentStamina = Mathf.Min(CurrentStamina, stats.MaxManaStamina);
+                int effectiveMaxMana = session.EffectiveMaxMana();
+                if (_lastEffectiveMaxMana > 0)
+                {
+                    int manaDelta = effectiveMaxMana - _lastEffectiveMaxMana;
+                    if (manaDelta > 0)
+                        CurrentMana = Mathf.Min(effectiveMaxMana, CurrentMana + manaDelta);
+                    else if (manaDelta < 0)
+                        CurrentMana = Mathf.Clamp(CurrentMana + manaDelta, 0, effectiveMaxMana);
+                }
+                _lastEffectiveMaxMana = effectiveMaxMana;
+                CurrentMana = Mathf.Min(CurrentMana, effectiveMaxMana);
+                int staminaMax = stats.MaxManaStamina;
+                CurrentStamina = Mathf.Min(CurrentStamina, staminaMax);
             }
 
             // ⚠ Through the modifier system, never by writing MovementSpeed — that field is the
@@ -307,13 +338,17 @@ namespace GBHEngland.Combat
         {
             if (UIManager.Instance == null) return;
 
+            var session = Flow.PlayerSession.Instance;
             int hp = _health != null ? _health.CurrentHealth : CurrentHealth;
-            int hpMax = _health != null ? _health.MaxHealth : (PlayerData != null ? PlayerData.MaxHealth : 100);
+            int hpMax = _health != null ? _health.MaxHealth : (session != null ? session.EffectiveMaxHealth() : (PlayerData != null ? PlayerData.MaxHealth : 100));
             CurrentHealth = hp;
 
+            int manaMax = session != null ? session.EffectiveMaxMana() : (PlayerData != null ? PlayerData.MaxManaStamina : 50);
+            int staminaMax = (session != null && session.RuntimeStats != null) ? session.RuntimeStats.MaxManaStamina : (PlayerData != null ? PlayerData.MaxManaStamina : 50);
+
             UIManager.Instance.UpdatePlayerHealth(hp, hpMax);
-            UIManager.Instance.UpdatePlayerMana(CurrentMana, PlayerData != null ? PlayerData.MaxManaStamina : 50);
-            UIManager.Instance.UpdatePlayerStamina(CurrentStamina, PlayerData != null ? PlayerData.MaxManaStamina : 50);
+            UIManager.Instance.UpdatePlayerMana(CurrentMana, manaMax);
+            UIManager.Instance.UpdatePlayerStamina(CurrentStamina, staminaMax);
         }
 
         private void HandleInput()
@@ -417,12 +452,6 @@ namespace GBHEngland.Combat
 
         private void HandleMovement()
         {
-            if (MountController.Current != null && MountController.Current.CurrentVehicle != null && MountController.Current.CurrentVehicle.DrivesItself)
-            {
-                ApplyLocomotionAnimation(0f);
-                return;
-            }
-
             Vector2 input = ReadMoveInput();
             if (input.sqrMagnitude < 0.0001f)
             {
@@ -508,7 +537,7 @@ namespace GBHEngland.Combat
         /// Joystick and WASD share the same screen-space axes:
         /// up = toward top of screen, left = toward left of screen.
         /// </summary>
-        public Vector2 ReadMoveInput()
+        private Vector2 ReadMoveInput()
         {
             Vector2 keyboard = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
             Vector2 stick = Joystick != null ? Joystick.InputVector : Vector2.zero;
@@ -520,7 +549,7 @@ namespace GBHEngland.Combat
             return keyboard;
         }
 
-        public static Vector3 GetScreenRelativeMoveDirection(Vector2 input)
+        private static Vector3 GetScreenRelativeMoveDirection(Vector2 input)
         {
             Vector3 forward;
             Vector3 right;
@@ -618,21 +647,19 @@ namespace GBHEngland.Combat
                 // Origin at waist height in 3D isometric space
                 Vector3 sphereCenter = transform.position + Vector3.up * (EKVibe.CharacterHeight * 0.5f);
                 int hitCount = Physics.OverlapSphereNonAlloc(sphereCenter, reach, _hitResults, ~0, QueryTriggerInteraction.Ignore);
-                int damage = PlayerData != null
+                int baseDamage = PlayerData != null
                     ? PlayerData.BaseTraits.Strength + EKVibe.MeleeDamageStrengthOffset
                     : 6; // PlayerData unbound — 6 matches the default CoreTraits Strength (5) + the same offset.
 
-                // Equipped weapon adds its Damage on top of the Strength roll.
                 var session = Flow.PlayerSession.Instance;
+                int damage = session != null
+                    ? Mathf.RoundToInt(baseDamage * session.MeleeDamageMultiplier)
+                    : baseDamage;
+
+                // Equipped weapon adds its Damage on top of the Strength roll.
                 Data.ItemData weapon = session != null ? session.EquippedWeapon() : null;
                 if (weapon != null) damage += weapon.Damage;
                 if (session != null) damage += session.TotalAttackBonus();
-
-                // After the weapon, so a perk multiplies the whole swing rather than the bare
-                // Strength roll. A cached float, never a walk over the perk list — this is a hot
-                // path and the multiplier only moves on level-up, load and perk spend.
-                if (session != null)
-                    damage = Mathf.RoundToInt(damage * session.MeleeDamageMultiplier);
 
                 float arcAngle = MeleeArcAngle > 0f ? MeleeArcAngle : 180f;
                 float dotThreshold = Mathf.Cos((arcAngle * 0.5f) * Mathf.Deg2Rad);

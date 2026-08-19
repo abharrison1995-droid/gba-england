@@ -95,6 +95,16 @@ namespace GBHEngland.Flow
         [Tooltip("The player-chosen name shouted when casting. Defaults to 'Spark Out'.")]
         public string SpellName = DefaultSpellName;
 
+        [Header("Fight Pit")]
+        [Tooltip("True after completing all 10 pit rounds for the first time.")]
+        public bool PitTournamentWon;
+
+        [Tooltip("Highest arena round ever completed (Personal Best).")]
+        public int HighestPitRound;
+
+        [Tooltip("True once the player has purchased their 1 unique royal crown.")]
+        public bool HasPurchasedRoyalCrown;
+
         public const string DefaultSpellName = "Spark Out";
 
         /// <summary>
@@ -138,6 +148,7 @@ namespace GBHEngland.Flow
             HasStartedNewGame = true;
             KnowsSpark = false;
             SpellName = DefaultSpellName;
+            PitTournamentWon = false;
 
             // RestoreFromSave immediately repopulates these via RestoreInventory/RestorePounds — a
             // fresh New Game must not inherit whatever a previous playthrough carried or was
@@ -813,15 +824,69 @@ namespace GBHEngland.Flow
         public int EffectivePoisonResistance() =>
             TotalPoisonResistance() + (RuntimeStats != null ? RuntimeStats.BaseResistances.Poison : 0);
 
+        /// <summary>Fire resistance supplied by all equipped items (e.g. Crown of the Bastion).</summary>
+        public int TotalFireResistance()
+        {
+            int total = 0;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.FireResistance;
+            return total;
+        }
+
+        /// <summary>Base/perk fire resistance plus live equipment contribution.</summary>
+        public int EffectiveFireResistance() =>
+            TotalFireResistance() + (RuntimeStats != null ? RuntimeStats.BaseResistances.Fire : 0);
+
+        /// <summary>Flat bonus Max HP granted by equipped items (e.g. Crown of Vitality).</summary>
+        public int TotalMaxHealthBonus()
+        {
+            int total = 0;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.MaxHealthBonus;
+            return total;
+        }
+
+        /// <summary>Total effective Max Health (base runtime stats + equipment bonuses).</summary>
+        public int EffectiveMaxHealth() =>
+            (RuntimeStats != null ? RuntimeStats.MaxHealth : 100) + TotalMaxHealthBonus();
+
+        /// <summary>Flat bonus Max Mana granted by equipped items (e.g. Crown of the Archmage).</summary>
+        public int TotalMaxManaBonus()
+        {
+            int total = 0;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.MaxManaBonus;
+            return total;
+        }
+
+        /// <summary>Total effective Max Mana (base runtime stats + equipment bonuses).</summary>
+        public int EffectiveMaxMana() =>
+            (RuntimeStats != null ? RuntimeStats.MaxManaStamina : 50) + TotalMaxManaBonus();
+
+        /// <summary>Magic damage bonus added to spells and magic ranged attacks from gear.</summary>
+        public int TotalMagicDamageBonus()
+        {
+            int total = 0;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.MagicDamageBonus;
+            return total;
+        }
+
+        public int EffectiveMagicDamage() =>
+            (RuntimeStats != null ? RuntimeStats.MagicDamageBonus : 0) + TotalMagicDamageBonus();
+
+        /// <summary>Passive health regeneration per second from gear (e.g. Crown of Vitality).</summary>
+        public float TotalHealthRegenPerSecond()
+        {
+            float total = 0f;
+            foreach (var pair in _equipment)
+                if (pair.Value != null) total += pair.Value.HealthRegenPerSecond;
+            return total;
+        }
+
         /// <summary>
         /// Worn armour plus derived Physical resistance — the single number the mitigation curve
         /// reads (<see cref="EKVibe.ArmourReduction"/>).
-        ///
-        /// Physical is included deliberately: the character sheet has always printed
-        /// <c>BaseResistances.Physical + TotalArmor()</c> as one "Armor" figure while only
-        /// TotalArmor() actually reduced damage. Feeding Physical into the curve is what makes that
-        /// readout honest, and it is also where perk armour lands, so a perk moves the readout and
-        /// the mitigation together rather than only the readout.
         /// </summary>
         public int EffectiveArmour() =>
             TotalArmor() + (RuntimeStats != null ? RuntimeStats.BaseResistances.Physical : 0);

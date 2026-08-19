@@ -11,6 +11,12 @@ namespace GBHEngland.Data
 
         [Tooltip("Shelf price in pounds. 0 uses the item's canonical Value.")]
         public int PriceOverride;
+
+        [Tooltip("Minimum Arena Personal Best round required to unlock this item. 0 = always available.")]
+        public int MinArenaLevel;
+
+        [Tooltip("Number of items added to inventory per purchase (e.g. 10 for Quail Eggs). Default is 1.")]
+        public int BundleQuantity = 1;
     }
 
     [Serializable]

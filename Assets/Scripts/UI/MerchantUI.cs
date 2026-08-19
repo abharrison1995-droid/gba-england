@@ -47,7 +47,17 @@ namespace GBHEngland.UI
 
         private void Open(MerchantData merchant, MerchantActionType mode)
         {
-            if (IsOpen) return;
+            if (IsOpen)
+            {
+                _merchant = merchant;
+                _mode = merchant.SellOnly ? MerchantActionType.Sell : mode;
+                _titleText.text = string.IsNullOrEmpty(merchant.MerchantName)
+                    ? "Shop"
+                    : merchant.MerchantName;
+                _statusText.text = "";
+                Refresh();
+                return;
+            }
 
             _merchant = merchant;
             _mode = merchant.SellOnly ? MerchantActionType.Sell : mode;
@@ -66,6 +76,25 @@ namespace GBHEngland.UI
             _panelRoot.SetActive(false);
             _merchant = null;
             Systems.PauseManager.Pop();
+        }
+
+        private void OnDisable()
+        {
+            if (_panelRoot != null && _panelRoot.activeSelf)
+            {
+                _panelRoot.SetActive(false);
+                Systems.PauseManager.Pop();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_panelRoot != null && _panelRoot.activeSelf)
+            {
+                _panelRoot.SetActive(false);
+                Systems.PauseManager.Pop();
+            }
+            if (_instance == this) _instance = null;
         }
 
         private void SetMode(MerchantActionType mode)
@@ -101,12 +130,33 @@ namespace GBHEngland.UI
                 MerchantStockEntry entry = _merchant.Stock[i];
                 if (entry == null || entry.Item == null) continue;
 
+                // Check Arena Level Unlock
+                bool arenaLocked = entry.MinArenaLevel > 0 && session.HighestPitRound < entry.MinArenaLevel;
+
+                // Check Unique Crown 1-Per-Save Rule
+                bool crownClaimed = entry.Item.IsUniqueCrown && session.HasPurchasedRoyalCrown;
+
                 int price = _merchant.PurchasePrice(entry);
                 int owned = session.CountItem(entry.Item);
                 string details = ItemDetails(entry.Item, owned);
-                bool canBuy = price > 0 && session.Pounds >= price;
-                BuildRow(entry.Item, details, EKVibe.FormatPounds(price), "BUY", canBuy,
-                    () => Buy(entry));
+
+                if (arenaLocked)
+                {
+                    BuildRow(entry.Item, details + $"\n<color=#C04040>[Requires Arena Wave {entry.MinArenaLevel}]</color>",
+                        "LOCKED", "LOCKED", false, null);
+                }
+                else if (crownClaimed)
+                {
+                    BuildRow(entry.Item, details + "\n<color=#A0A0A0>[Only 1 Crown Per Save Allowed]</color>",
+                        "CLAIMED", "CLAIMED", false, null);
+                }
+                else
+                {
+                    bool canBuy = price > 0 && session.Pounds >= price;
+                    string buyLabel = entry.BundleQuantity > 1 ? $"BUY (x{entry.BundleQuantity})" : "BUY";
+                    BuildRow(entry.Item, details, EKVibe.FormatPounds(price), buyLabel, canBuy,
+                        () => Buy(entry));
+                }
             }
         }
 
@@ -149,6 +199,13 @@ namespace GBHEngland.UI
             var session = PlayerSession.Instance;
             if (_merchant == null || session == null || entry == null || entry.Item == null) return;
 
+            if (entry.Item.IsUniqueCrown && session.HasPurchasedRoyalCrown)
+            {
+                _statusText.text = "You may only choose ONE Royal Crown per save!";
+                Refresh();
+                return;
+            }
+
             int price = _merchant.PurchasePrice(entry);
             if (price <= 0 || !session.SpendPounds(price))
             {
@@ -157,9 +214,18 @@ namespace GBHEngland.UI
                 return;
             }
 
-            // AddItem cannot refuse a valid item: the current backpack has no hard capacity.
-            session.AddItem(entry.Item, 1);
-            _statusText.text = "Bought " + entry.Item.ItemName + ".";
+            if (entry.Item.IsUniqueCrown)
+            {
+                session.HasPurchasedRoyalCrown = true;
+                _statusText.text = "Chosen the " + entry.Item.ItemName + "! The other crowns are now sealed.";
+            }
+            else
+            {
+                _statusText.text = "Bought " + entry.Item.ItemName + ".";
+            }
+
+            int qty = entry.BundleQuantity > 0 ? entry.BundleQuantity : 1;
+            session.AddItem(entry.Item, qty);
             Refresh();
         }
 
@@ -248,7 +314,7 @@ namespace GBHEngland.UI
             vrt.anchorMin = Vector2.zero;
             vrt.anchorMax = Vector2.one;
             vrt.offsetMin = new Vector2(28, 100);
-            vrt.offsetMax = new Vector2(-28, -138);
+            vrt.offsetMax = new Vector2(-28, -184);
             Win95Skin.AddBevel(vrt, sunken: true);
             var mask = viewport.AddComponent<Mask>();
             mask.showMaskGraphic = false;
