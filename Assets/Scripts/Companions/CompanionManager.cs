@@ -291,7 +291,11 @@ namespace GBHEngland.Companions
                 pos = hit.position;
             Follower.transform.position = pos;
             var agent = Follower.GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (agent != null) agent.Warp(pos);
+            // CompanionAI.OnCompanionDied disables the agent on knockout and leaves the object
+            // alive for ~2.2s (_knockoutDespawnAt) before despawning. A chunk transition landing
+            // in that window must not Warp a disabled agent - it is about to despawn anyway, so
+            // skipping the warp silently is correct.
+            if (agent != null && agent.isActiveAndEnabled) agent.Warp(pos);
         }
 
         // ----- preset resolution -----
