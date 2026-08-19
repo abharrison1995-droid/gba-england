@@ -29,6 +29,12 @@ namespace GBHEngland.World
 
         public void Teleport()
         {
+            if (MountController.IsPlayerRiding)
+            {
+                UI.UIManager.Instance?.ShowToast("Get out of the vehicle first.");
+                return;
+            }
+
             if (ChunkManager.Instance == null) return;
 
             GameObject chunkRoot = ChunkManager.Instance.CurrentChunkInstance;

@@ -34,6 +34,7 @@ namespace GBHEngland.Data
             Chest = 4,
             Portal = 5,
             SpawnPoint = 6,
+            DriveableVehicle = 7,
         }
 
         /// <summary>

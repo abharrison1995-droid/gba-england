@@ -79,6 +79,14 @@ namespace GBHEngland.UI
         private Sprite _shownPlayerPortrait;
         private bool _playerPortraitPainted;
 
+        // Driving cluster references
+        private GameObject _actionButtonsPanel;
+        private GameObject _drivingButtonsPanel;
+        private UITouchHoldButton _gasPedal;
+        private UITouchHoldButton _brakePedal;
+        private UITouchHoldButton _driftButton;
+        private TextMeshProUGUI _exitVehicleLabel;
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -92,6 +100,7 @@ namespace GBHEngland.UI
             EnsureStaminaBar();
             RetireConcealmentBar();
             BuildActionButtons();
+            BuildDrivingButtons();
             RestyleSceneHudButtons();
             PreparePlayerPortraitFrame();
             RefreshPlayerPortrait();
@@ -879,6 +888,7 @@ namespace GBHEngland.UI
 
             var panel = new GameObject("ActionButtons", typeof(RectTransform));
             panel.transform.SetParent(hud, false);
+            _actionButtonsPanel = panel;
             var prt = (RectTransform)panel.transform;
             prt.anchorMin = Vector2.zero;
             prt.anchorMax = Vector2.one;
@@ -918,6 +928,106 @@ namespace GBHEngland.UI
                 new Vector2(140f, 140f), new Vector2(-361f, 40f), rightEdge);
 
             RepositionInteractButton();
+        }
+
+        /// <summary>
+        /// Builds the mobile vehicle driving cluster: GAS, BRAKE, DRIFT, and EXIT buttons.
+        /// Kept inactive until MountController triggers driving mode.
+        /// </summary>
+        private void BuildDrivingButtons()
+        {
+            Transform hud = FindChildRecursive(transform, "HUDPanel") ?? transform;
+
+            var panel = new GameObject("DrivingButtons", typeof(RectTransform));
+            panel.transform.SetParent(hud, false);
+            _drivingButtonsPanel = panel;
+            var prt = (RectTransform)panel.transform;
+            prt.anchorMin = Vector2.zero;
+            prt.anchorMax = Vector2.one;
+            prt.pivot = new Vector2(0.5f, 0.5f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
+
+            var rightEdge = new Vector2(1f, 0f);
+
+            // GAS / ACCEL Pedal — Large vertical target bottom-right
+            var gasGo = CreateHoldPedal(panel.transform, "GAS", new Vector2(160f, 180f), new Vector2(-24f, 30f), rightEdge, 28f);
+            _gasPedal = gasGo.GetComponent<UITouchHoldButton>();
+
+            // BRAKE / REVERSE Pedal — Left of Gas
+            var brakeGo = CreateHoldPedal(panel.transform, "BRAKE", new Vector2(140f, 160f), new Vector2(-204f, 30f), rightEdge, 24f);
+            _brakePedal = brakeGo.GetComponent<UITouchHoldButton>();
+
+            // DRIFT / HANDBRAKE — Directly above Gas
+            var driftGo = CreateHoldPedal(panel.transform, "DRIFT", new Vector2(130f, 110f), new Vector2(-24f, 230f), rightEdge, 22f);
+            _driftButton = driftGo.GetComponent<UITouchHoldButton>();
+
+            // EXIT / GET OUT — Upper left of the driving cluster
+            var exitGo = CreateActionButton(panel.transform, "EXIT", HUDActionButton.ActionKind.Interact, 0,
+                new Vector2(110f, 90f), new Vector2(-174f, 210f), rightEdge);
+            var exitBtn = exitGo.GetComponent<Button>();
+            exitBtn.onClick.RemoveAllListeners();
+            exitBtn.onClick.AddListener(OnVehicleExitPressed);
+            _exitVehicleLabel = exitGo.GetComponentInChildren<TextMeshProUGUI>();
+            if (_exitVehicleLabel != null) _exitVehicleLabel.fontSize = 20f;
+
+            _drivingButtonsPanel.SetActive(false);
+        }
+
+        private GameObject CreateHoldPedal(Transform parent, string label, Vector2 size, Vector2 pos, Vector2 anchor, float fontSize)
+        {
+            var go = new GameObject(label + "Pedal", typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = anchor;
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+
+            var img = go.AddComponent<Image>();
+            img.color = Win95Skin.Face;
+            Win95Skin.AddBevel(rt, sunken: false);
+            go.AddComponent<UITouchHoldButton>();
+
+            var labelGo = new GameObject("Label", typeof(RectTransform));
+            labelGo.transform.SetParent(go.transform, false);
+            var lrt = (RectTransform)labelGo.transform;
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = Vector2.zero;
+            lrt.offsetMax = Vector2.zero;
+            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = label;
+            tmp.fontSize = fontSize;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = TextAlignmentOptions.Center;
+            Win95Skin.StyleLabel(tmp);
+            return go;
+        }
+
+        public void SetDrivingMode(bool isDriving, World.VehicleController vehicle)
+        {
+            if (_actionButtonsPanel != null) _actionButtonsPanel.SetActive(!isDriving);
+            if (_drivingButtonsPanel != null)
+            {
+                _drivingButtonsPanel.SetActive(isDriving);
+                if (!isDriving)
+                {
+                    _gasPedal?.ResetState();
+                    _brakePedal?.ResetState();
+                    _driftButton?.ResetState();
+                }
+            }
+            if (InteractButtonRoot != null) InteractButtonRoot.SetActive(!isDriving);
+        }
+
+        public float TouchThrottle => (_gasPedal != null && _drivingButtonsPanel != null && _drivingButtonsPanel.activeSelf) ? _gasPedal.Value : 0f;
+        public float TouchBrake => (_brakePedal != null && _drivingButtonsPanel != null && _drivingButtonsPanel.activeSelf) ? _brakePedal.Value : 0f;
+        public bool TouchDrift => (_driftButton != null && _drivingButtonsPanel != null && _drivingButtonsPanel.activeSelf) && _driftButton.IsPressed;
+
+        public void OnVehicleExitPressed()
+        {
+            World.MountController.Current?.Dismount();
         }
 
         /// <summary>

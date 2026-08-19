@@ -64,6 +64,9 @@ namespace GBHEngland.World
 
             CurrentVehicle = vehicle;
             vehicle.OnMounted(player);
+
+            if (vehicle.IsDriveablePhysics)
+                UIManager.Instance?.SetDrivingMode(true, vehicle);
         }
 
         public void Dismount()
@@ -72,6 +75,8 @@ namespace GBHEngland.World
 
             VehicleController vehicle = CurrentVehicle;
             CurrentVehicle = null;
+
+            UIManager.Instance?.SetDrivingMode(false, null);
             vehicle.OnDismounted(CombatController.Instance);
         }
 
@@ -83,6 +88,8 @@ namespace GBHEngland.World
         {
             if (CurrentVehicle != vehicle) return;
             CurrentVehicle = null;
+
+            UIManager.Instance?.SetDrivingMode(false, null);
             UIManager.Instance?.ShowToast("Your ride's gone.");
         }
     }

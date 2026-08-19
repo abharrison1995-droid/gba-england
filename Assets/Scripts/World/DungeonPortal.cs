@@ -79,7 +79,7 @@ namespace GBHEngland.World
             if (MountController.IsPlayerRiding)
             {
                 if (UIManager.Instance != null)
-                    UIManager.Instance.LogCombat("Get off the vehicle first.");
+                    UIManager.Instance.ShowToast("Get out of the vehicle first.");
                 return;
             }
 

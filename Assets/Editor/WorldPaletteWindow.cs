@@ -155,7 +155,7 @@ public class WorldPaletteWindow : EditorWindow
             else
                 DrawGrid(group.ToList());
 
-            if (group.Key == PlacementPreset.PlacementCategory.Vehicle)
+            if (group.Key == PlacementPreset.PlacementCategory.Vehicle || group.Key == PlacementPreset.PlacementCategory.DriveableVehicle)
                 DrawVehicleTarget();
 
             EditorGUILayout.Space();
@@ -229,6 +229,8 @@ public class WorldPaletteWindow : EditorWindow
         }
     }
 
+    private float _vehicleRotation = 0f;
+
     private void DrawVehicleTarget()
     {
         EditorGUI.indentLevel++;
@@ -237,8 +239,20 @@ public class WorldPaletteWindow : EditorWindow
                 "chunk prefab, so a vehicle placement writes a VehicleSpawn entry here."),
             _vehicleChunk, typeof(MapChunkData), false);
 
+        _vehicleRotation = EditorGUILayout.Slider(
+            new GUIContent("Y Rotation", "Yaw angle to orient the vehicle when stamped."),
+            _vehicleRotation, 0f, 360f);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("0° (N)")) _vehicleRotation = 0f;
+            if (GUILayout.Button("90° (E)")) _vehicleRotation = 90f;
+            if (GUILayout.Button("180° (S)")) _vehicleRotation = 180f;
+            if (GUILayout.Button("270° (W)")) _vehicleRotation = 270f;
+        }
+
         if (_armed != null
-            && _armed.Category == PlacementPreset.PlacementCategory.Vehicle
+            && (_armed.Category == PlacementPreset.PlacementCategory.Vehicle || _armed.Category == PlacementPreset.PlacementCategory.DriveableVehicle)
             && _vehicleChunk == null)
         {
             EditorGUILayout.HelpBox("Pick a target chunk before placing a vehicle.", MessageType.Warning);
@@ -332,12 +346,38 @@ public class WorldPaletteWindow : EditorWindow
         }
     }
 
-    private static void DrawGhost(Vector3 point)
+    private void DrawGhost(Vector3 point)
     {
         Handles.color = new Color(0.35f, 0.8f, 1f, 0.9f);
         Handles.DrawWireDisc(point, Vector3.up, 0.6f);
         Handles.DrawWireDisc(point, Vector3.up, 0.15f);
         Handles.DrawLine(point, point + Vector3.up * 1.35f);
+
+        if (_armed != null && (_armed.Category == PlacementPreset.PlacementCategory.Vehicle || _armed.Category == PlacementPreset.PlacementCategory.DriveableVehicle))
+        {
+            Quaternion rot = Quaternion.Euler(0f, _vehicleRotation, 0f);
+            Vector3 forward = rot * Vector3.forward;
+            Vector3 right = rot * Vector3.right;
+
+            // Draw car footprint box (4m x 1.8m)
+            Vector3 p1 = point + forward * 2f + right * 0.9f;
+            Vector3 p2 = point + forward * 2f - right * 0.9f;
+            Vector3 p3 = point - forward * 2f - right * 0.9f;
+            Vector3 p4 = point - forward * 2f + right * 0.9f;
+
+            Handles.color = new Color(0.4f, 0.9f, 1f, 0.7f);
+            Handles.DrawLine(p1, p2);
+            Handles.DrawLine(p2, p3);
+            Handles.DrawLine(p3, p4);
+            Handles.DrawLine(p4, p1);
+
+            // Forward direction arrow
+            Handles.color = new Color(1f, 0.85f, 0.2f, 0.95f);
+            Vector3 arrowTip = point + forward * 2.6f;
+            Handles.DrawLine(point, arrowTip);
+            Handles.DrawLine(arrowTip, arrowTip - forward * 0.5f + right * 0.4f);
+            Handles.DrawLine(arrowTip, arrowTip - forward * 0.5f - right * 0.4f);
+        }
     }
 
     /// <summary>
@@ -379,7 +419,7 @@ public class WorldPaletteWindow : EditorWindow
 
     private void PlaceAt(Vector3 point)
     {
-        if (_armed.Category == PlacementPreset.PlacementCategory.Vehicle)
+        if (_armed.Category == PlacementPreset.PlacementCategory.Vehicle || _armed.Category == PlacementPreset.PlacementCategory.DriveableVehicle)
         {
             PlaceVehicle(point);
             return;
@@ -462,12 +502,12 @@ public class WorldPaletteWindow : EditorWindow
         {
             Vehicle = _armed.Vehicle,
             Position = point,
-            YRotation = 0f
+            YRotation = _vehicleRotation
         });
 
         EditorUtility.SetDirty(_vehicleChunk);
         AssetDatabase.SaveAssets();
         Debug.Log($"World Palette: added {_armed.Vehicle.VehicleName} to " +
-                  $"{_vehicleChunk.ChunkName} at {point}.");
+                  $"{_vehicleChunk.ChunkName} at {point} (rot: {_vehicleRotation}°).");
     }
 }

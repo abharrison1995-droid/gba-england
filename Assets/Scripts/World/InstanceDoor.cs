@@ -27,8 +27,20 @@ namespace GBHEngland.World
 
         private void OnTriggerEnter(Collider other)
         {
-            if (!other.CompareTag("Player") && other.GetComponentInParent<Combat.CombatController>() == null)
+            bool isPlayer = other.CompareTag("Player") || other.GetComponentInParent<Combat.CombatController>() != null;
+            bool isRiddenVehicle = MountController.IsPlayerRiding && MountController.Current != null &&
+                                   MountController.Current.CurrentVehicle != null &&
+                                   (other.transform.IsChildOf(MountController.Current.CurrentVehicle.transform) ||
+                                    other.gameObject == MountController.Current.CurrentVehicle.gameObject);
+
+            if (!isPlayer && !isRiddenVehicle)
                 return;
+
+            if (MountController.IsPlayerRiding)
+            {
+                UIManager.Instance?.ShowToast("Get out of the vehicle first.");
+                return;
+            }
 
             if (RequireTutorialComplete
                 && (PlayerSession.Instance == null || !PlayerSession.Instance.TutorialComplete))

@@ -417,6 +417,12 @@ namespace GBHEngland.Combat
 
         private void HandleMovement()
         {
+            if (MountController.Current != null && MountController.Current.CurrentVehicle != null && MountController.Current.CurrentVehicle.DrivesItself)
+            {
+                ApplyLocomotionAnimation(0f);
+                return;
+            }
+
             Vector2 input = ReadMoveInput();
             if (input.sqrMagnitude < 0.0001f)
             {
@@ -502,7 +508,7 @@ namespace GBHEngland.Combat
         /// Joystick and WASD share the same screen-space axes:
         /// up = toward top of screen, left = toward left of screen.
         /// </summary>
-        private Vector2 ReadMoveInput()
+        public Vector2 ReadMoveInput()
         {
             Vector2 keyboard = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
             Vector2 stick = Joystick != null ? Joystick.InputVector : Vector2.zero;
@@ -514,7 +520,7 @@ namespace GBHEngland.Combat
             return keyboard;
         }
 
-        private static Vector3 GetScreenRelativeMoveDirection(Vector2 input)
+        public static Vector3 GetScreenRelativeMoveDirection(Vector2 input)
         {
             Vector3 forward;
             Vector3 right;

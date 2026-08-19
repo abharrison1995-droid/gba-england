@@ -60,5 +60,39 @@ namespace GBHEngland.Data
         [Header("Audio")]
         [Tooltip("Horn sound played when the car honks at a blocked player. Leave empty until audio pass.")]
         public AudioClip HornClip;
+
+        // ── Driveable 3D Physics ────────────────────────────────────────────────────────────
+        // Appended per §7 serialization rules.
+        [Header("Driveable 3D Physics")]
+        [Tooltip("If true, this vehicle uses dedicated Rigidbody arcade physics on X/Z rather than on-foot speed boost.")]
+        public bool IsDriveablePhysics = false;
+
+        [Tooltip("Engine drive force for acceleration.")]
+        public float DriveForce = 45f;
+
+        [Tooltip("Maximum forward speed in m/s.")]
+        public float TopSpeed = 16f;
+
+        [Tooltip("Maximum reverse speed in m/s.")]
+        public float ReverseSpeed = 6f;
+
+        [Tooltip("Braking deceleration force.")]
+        public float BrakeForce = 35f;
+
+        [Tooltip("Steering torque rate.")]
+        public float SteeringTorque = 12f;
+
+        [Tooltip("Lateral tire grip resisting side-slip.")]
+        public float TireGrip = 8f;
+
+        [Tooltip("Lateral grip multiplier when drifting.")]
+        public float HandbrakeDriftSlip = 0.35f;
+
+        [Header("Prompts")]
+        [Tooltip("Interact prompt when approaching to enter (e.g. 'Get in', 'Drive').")]
+        public string EnterPrompt = "Get in";
+
+        [Tooltip("Interact prompt to exit while mounted (e.g. 'Get out').")]
+        public string ExitPrompt = "Get out";
     }
 }

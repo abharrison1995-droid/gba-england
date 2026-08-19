@@ -178,6 +178,16 @@ namespace GBHEngland.World
             if (_isTransitioning) return;
             if (Time.unscaledTime < _nextEdgeTriggerAllowedAt) return;
 
+            if (MountController.IsPlayerRiding || (MountController.Current != null && MountController.Current.IsMounted))
+            {
+                if (Time.unscaledTime < _nextDeadEndWarningAt) return;
+                _nextDeadEndWarningAt = Time.unscaledTime + DeadEndWarningCooldown;
+                ShowWarning("Get out of the vehicle first.");
+                if (GBHEngland.UI.UIManager.Instance != null)
+                    GBHEngland.UI.UIManager.Instance.ShowToast("Get out of the vehicle first.");
+                return;
+            }
+
             if (CurrentChunkData != null
                 && CurrentChunkData.LockExitsUntilTutorialComplete
                 && (GBHEngland.Flow.PlayerSession.Instance == null
@@ -354,7 +364,8 @@ namespace GBHEngland.World
                     // findable by name even if the scene's AllChunks list predates it. This only
                     // lasts the run — MapChunkRegistry is what makes it survive a restart.
                     EnsureKnownChunk(targetChunk);
-                    GBHEngland.Flow.SaveGameManager.Save();
+                    if (targetChunk != null && !targetChunk.SuppressCheckpointSaves)
+                        GBHEngland.Flow.SaveGameManager.Save();
                 }
             }
             finally
@@ -489,7 +500,8 @@ namespace GBHEngland.World
                 _nextEdgeTriggerAllowedAt = Time.unscaledTime + EdgeTriggerGrace;
 
                 // Checkpoint: every chunk crossing is a save point.
-                GBHEngland.Flow.SaveGameManager.Save();
+                if (targetChunk != null && !targetChunk.SuppressCheckpointSaves)
+                    GBHEngland.Flow.SaveGameManager.Save();
             }
             finally
             {
@@ -553,11 +565,33 @@ namespace GBHEngland.World
             }
             PlayerTransform.position = position;
 
+            if (MountController.IsPlayerRiding && MountController.Current != null && MountController.Current.CurrentVehicle != null)
+            {
+                var vehicle = MountController.Current.CurrentVehicle;
+                vehicle.transform.position = position;
+                var vRb = vehicle.GetComponent<Rigidbody>();
+                if (vRb != null)
+                {
+                    vRb.position = position;
+                    vRb.velocity = Vector3.zero;
+                    vRb.angularVelocity = Vector3.zero;
+                }
+            }
+
             if (!facing.HasValue) return;
 
             Vector3 forward = facing.Value * Vector3.forward;
             forward.y = 0f;
             if (forward.sqrMagnitude < 0.0001f) return; // marker aimed straight up or down
+
+            if (MountController.IsPlayerRiding && MountController.Current != null && MountController.Current.CurrentVehicle != null)
+            {
+                var vehicle = MountController.Current.CurrentVehicle;
+                Quaternion vRot = Quaternion.LookRotation(forward.normalized, Vector3.up);
+                var vRb = vehicle.GetComponent<Rigidbody>();
+                if (vRb != null) vRb.rotation = vRot;
+                vehicle.transform.rotation = vRot;
+            }
 
             var combat = PlayerTransform.GetComponent<GBHEngland.Combat.CombatController>();
             if (combat != null)
