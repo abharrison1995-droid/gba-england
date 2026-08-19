@@ -10,12 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
-  m_Name: Dialogue_Sanjeet
+  m_Name: Dialogue_ralph
   m_EditorClassIdentifier: 
   StartNodeId: start
   Nodes:
   - Id: start
-    Speaker: {fileID: 11400000, guid: 3d703e95846332542ac0956b9b0efe75, type: 2}
-    DialogueText: We're the Croydon Spartans. My mum's house is the hideout, so keep
-      your voice down.
+    Speaker: {fileID: 11400000, guid: 7a920169f1a83414d9ddb301afe9aa43, type: 2}
+    DialogueText: Croydon Spartans, that's us. You've heard of us. You have.
     Choices: []
