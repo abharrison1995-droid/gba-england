@@ -68,10 +68,6 @@ namespace GBHEngland.World
         /// </summary>
         private string _containerId;
 
-        /// <summary>Every id an active Fixed container has claimed, so collisions can be reported.</summary>
-        private static readonly Dictionary<string, SpriteContainer> _claimedIds =
-            new Dictionary<string, SpriteContainer>();
-
         private void Awake()
         {
             // Mirrors LootChest: an authoring tool may or may not have put an Interactable on, so
@@ -97,11 +93,7 @@ namespace GBHEngland.World
 
         private void OnDestroy()
         {
-            if (!string.IsNullOrEmpty(_containerId) &&
-                _claimedIds.TryGetValue(_containerId, out var owner) && owner == this)
-            {
-                _claimedIds.Remove(_containerId);
-            }
+            ContainerIdRegistry.Release(_containerId, this);
         }
 
         /// <summary>
@@ -132,17 +124,7 @@ namespace GBHEngland.World
 
             _containerId = chunkName + "/" + gameObject.name;
 
-            if (_claimedIds.TryGetValue(_containerId, out var existing) && existing != null)
-            {
-                Debug.LogWarning(
-                    $"SpriteContainer: two containers in '{chunkName}' are both called " +
-                    $"'{gameObject.name}', so they share the save id '{_containerId}' and looting " +
-                    "either empties both. Rename one in the Hierarchy.", this);
-            }
-            else
-            {
-                _claimedIds[_containerId] = this;
-            }
+            ContainerIdRegistry.Claim(_containerId, this, chunkName);
 
             bool spent = Mode == ContainerMode.Fixed
                 ? PlayerSession.Instance != null && PlayerSession.Instance.IsContainerLooted(_containerId)
