@@ -277,6 +277,17 @@ namespace GBHEngland.World
                 yield break;
             }
 
+            // A portal leading INTO a locked-out city must refuse the same way OnPlayerHitEdge
+            // already refuses an edge crossing — otherwise a door is a hole in the lockout.
+            var wanted = GBHEngland.Systems.WantedManager.Instance;
+            if (wanted != null && wanted.IsCityLockedOut(targetChunk, out float lockoutRemaining))
+            {
+                Debug.LogWarning($"ChunkManager: '{targetChunk.ChunkName}' is locked out for {Mathf.CeilToInt(lockoutRemaining)}s — portal travel aborted.");
+                if (GBHEngland.UI.UIManager.Instance != null)
+                    GBHEngland.UI.UIManager.Instance.ShowToast($"Cannot enter {targetChunk.ChunkName}. Police activity active for {Mathf.CeilToInt(lockoutRemaining)}s.", 3f);
+                yield break;
+            }
+
             _isTransitioning = true;
             GBHEngland.Systems.PauseManager.Push();
             if (LoadingScreenUI)
