@@ -11,8 +11,10 @@ using GBHEngland.Vibe;
 /// Superseded for characters and props by the generated-art pipeline (ART_PIPELINE.md), which
 /// writes to Assets/Art/Generated instead. It is kept — rather than retired — because the editor
 /// tooling still loads its output by hardcoded path: ChunkArtMerge's material repair wants
-/// mat_dungeon_wall and friends, and BanditPracticeSpawner wants spr_bandit. Nothing else can
-/// regenerate those if they are ever lost.
+/// mat_dungeon_wall and friends. Nothing else can regenerate those if they are ever lost.
+/// It still generates spr_bandit, which nothing currently consumes now that
+/// BanditPracticeSpawner is gone (folded into Playtest Hub, which spawns real Enemy_* prefabs
+/// instead of a hand-built placeholder).
 ///
 /// It overwrites every file it produces, so it belongs in the Danger Zone rather than under
 /// Repair, where it read as a safe thing to reach for.

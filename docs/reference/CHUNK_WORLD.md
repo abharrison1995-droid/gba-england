@@ -88,7 +88,9 @@ the wanted system has to choose a kind deliberately; see
 is null and the flow state is `Playing`. It writes `CurrentChunkInstance` but **not**
 `CurrentChunkData`.
 
-Two editor tools also instantiate chunks: `DevZoneJump` and `DiscoverEnglandSetup`.
+Two editor tools also instantiate chunks: `PlaytestHubWindow` (`Tools → Debug → Playtest Hub` —
+replaced `DevZoneJump` on 2026-08-20, consolidating it with the enemy/NPC spawner and the wanted
+level debug tool into one window) and `DiscoverEnglandSetup`.
 
 ⚠️ **There is no `ChunkTransitionDoor` in this repository.** The generic USE-driven door is
 `DungeonPortal`. It adds its own `Interactable` if one is missing and routes through
