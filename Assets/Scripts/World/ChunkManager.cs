@@ -172,6 +172,19 @@ namespace GBHEngland.World
         }
 
         /// <summary>
+        /// Reads the same lockout timer <see cref="OnPlayerHitEdge"/> already consults, so any
+        /// travel path — edge crossing or portal — asks one canonical question instead of each
+        /// keeping its own copy of the answer.
+        /// </summary>
+        public bool IsCityLockedOut(MapChunkData chunk, out float remainingSeconds)
+        {
+            remainingSeconds = 0f;
+            if (chunk == null || !chunk.IsCity) return false;
+            if (!_cityLockoutTimers.TryGetValue(chunk.Coordinates, out remainingSeconds)) return false;
+            return remainingSeconds > 0f;
+        }
+
+        /// <summary>
         /// Evaluates if the player is hitting an outer edge of the chunk's bounding box.
         /// </summary>
         public void OnPlayerHitEdge(Direction edgeDirection)
@@ -274,6 +287,16 @@ namespace GBHEngland.World
             if (PlayerTransform == null)
             {
                 Debug.LogWarning("ChunkManager: no PlayerTransform — travel aborted.");
+                yield break;
+            }
+
+            // A portal leading INTO a locked-out city must refuse the same way OnPlayerHitEdge
+            // already refuses an edge crossing — otherwise a door is a hole in the lockout.
+            if (IsCityLockedOut(targetChunk, out float lockoutRemaining))
+            {
+                Debug.LogWarning($"ChunkManager: '{targetChunk.ChunkName}' is locked out for {Mathf.CeilToInt(lockoutRemaining)}s — portal travel aborted.");
+                if (GBHEngland.UI.UIManager.Instance != null)
+                    GBHEngland.UI.UIManager.Instance.ShowToast($"Cannot enter {targetChunk.ChunkName}. Police activity active for {Mathf.CeilToInt(lockoutRemaining)}s.", 3f);
                 yield break;
             }
 

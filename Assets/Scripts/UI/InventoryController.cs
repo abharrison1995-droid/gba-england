@@ -733,6 +733,9 @@ namespace GBHEngland.UI
                 if (item.ManaDamage > 0)
                     player.CurrentMana = Mathf.Max(0, player.CurrentMana - item.ManaDamage);
 
+                if (item.StaminaDamage > 0)
+                    player.CurrentStamina = Mathf.Max(0, player.CurrentStamina - item.StaminaDamage);
+
                 PlayUseAnimation(player, item.UseAnimationTrigger);
             }
 

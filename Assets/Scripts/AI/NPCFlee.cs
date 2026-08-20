@@ -14,10 +14,16 @@ namespace GBHEngland.AI
         [Tooltip("How long the NPC runs before checking visibility for despawn.")]
         public float MinFleeSeconds = 3f;
 
+        /// <summary>Same probe shape as NPCWander's Blocked() — chest-height SphereCast, triggers ignored.</summary>
+        private const float ProbeRadius = 0.35f;
+        private const float ProbeAhead  = 0.6f;
+        private const float ProbeHeight = 0.6f;
+
         private Rigidbody _rb;
         private Vector3 _fleeDirection;
         private float _fleeUntil;
         private bool _canDespawn;
+        private RaycastHit _probeHit;   // reused by Blocked()/Redirect() — no per-call allocation
 
         private void Awake()
         {
@@ -40,6 +46,12 @@ namespace GBHEngland.AI
         {
             if (_fleeDirection.sqrMagnitude < 0.0001f) return;
 
+            // The flee direction is fixed at Begin() and never re-aimed at anything — a wall in
+            // the way must deflect it, or the NPC runs on the spot against the wall for the whole
+            // MinFleeSeconds window while it is still on camera.
+            if (Blocked(_fleeDirection))
+                Redirect();
+
             // Face travel direction
             transform.rotation = Quaternion.LookRotation(_fleeDirection, Vector3.up);
 
@@ -48,6 +60,35 @@ namespace GBHEngland.AI
                 _rb.MovePosition(transform.position + step);
             else
                 transform.position += step;
+        }
+
+        /// <summary>
+        /// Something solid within a short step ahead. Mirrors NPCWander.Blocked(): a chest-height
+        /// SphereCast, triggers ignored so chunk edges and interact volumes never redirect a flee.
+        /// </summary>
+        private bool Blocked(Vector3 direction)
+        {
+            var probe = new Ray(transform.position + Vector3.up * ProbeHeight, direction);
+            if (Physics.SphereCast(probe, ProbeRadius, out _probeHit, ProbeAhead, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (_probeHit.collider != null
+                    && (_probeHit.collider.transform == transform || _probeHit.collider.transform.IsChildOf(transform)))
+                    return false;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Deflects along the wall instead of stopping — a fleeing NPC has nowhere to dwell and
+        /// think better of it the way NPCWander does, so it slides past the obstacle instead.
+        /// Falls back to reversing course if the wall is hit near head-on, where the slide
+        /// component collapses to near zero.
+        /// </summary>
+        private void Redirect()
+        {
+            Vector3 slide = Vector3.ProjectOnPlane(_fleeDirection, _probeHit.normal);
+            _fleeDirection = slide.sqrMagnitude > 0.01f ? slide.normalized : -_fleeDirection;
         }
 
         private void Update()

@@ -98,8 +98,17 @@ namespace GBHEngland.Combat
         private bool _isAttacking;
         private bool _isRolling;
         private bool _isKnockedBack;
+        private Coroutine _knockbackRoutine;
         private float _nextRollTime;
         private float _invulnerableUntil;
+        /// <summary>
+        /// True only during the dodge roll's own i-frame sub-window — a narrower thing than
+        /// <see cref="IsInvulnerable"/>, which is also true during the passive knockback slide and
+        /// its recovery. Exists purely so <see cref="Health"/> can tell "the player actively dodged
+        /// that" from "the player happened to be recovering from being hit" and pick its floating
+        /// text accordingly, without the invulnerability system itself needing two timestamps.
+        /// </summary>
+        private bool _isActivelyDodging;
         private bool _isDead;
         private readonly Collider[] _hitResults = new Collider[32];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
@@ -122,6 +131,14 @@ namespace GBHEngland.Combat
         /// nothing has to clear anything.
         /// </summary>
         public bool IsInvulnerable => Time.time < _invulnerableUntil;
+
+        /// <summary>
+        /// True only inside the roll's own i-frame sub-window — read by <see cref="Health"/> to
+        /// decide whether a refused hit was an actual dodge (worth a "Dodged!" toast) or just a
+        /// miss during passive knockback-slide/recovery invulnerability, which is not the same
+        /// player action and should not read as one.
+        /// </summary>
+        public bool IsActivelyDodging => _isActivelyDodging;
 
         /// <summary>Grants temporary invulnerability (i-frames) for the specified duration.</summary>
         public void GrantInvulnerability(float seconds)
@@ -206,6 +223,7 @@ namespace GBHEngland.Combat
             _isAttacking = false;
             _isRolling = false;
             _isKnockedBack = false;
+            _isActivelyDodging = false;
             _invulnerableUntil = 0f;
         }
 
@@ -595,6 +613,13 @@ namespace GBHEngland.Combat
             if (_isAttacking || _isRolling || _isKnockedBack || _isDead) return;
             if (BlockedByRiding()) return;
 
+            // Swinging a weapon is not sneaking. Same call PerformDodge makes and for the same
+            // reason — routed through ToggleStealth so the sprite tint, the toast and the CRO
+            // button all come back in step, rather than duplicating half of what it does here.
+            var stealth = StealthController.Instance;
+            if (stealth != null && stealth.IsCrouched)
+                stealth.ToggleStealth();
+
             StartCoroutine(MeleeHitboxRoutine(MeleeHitDelay, MeleeRecovery));
         }
 
@@ -898,7 +923,9 @@ namespace GBHEngland.Combat
                     // Re-armed each step rather than set once up front, so a roll cut short leaves
                     // no invulnerability running past its end. The 1.5x margin covers the gap to the
                     // next physics step.
-                    if (elapsed >= RollIFrameStart && elapsed < RollIFrameStart + RollIFrameDuration)
+                    bool inIFrameWindow = elapsed >= RollIFrameStart && elapsed < RollIFrameStart + RollIFrameDuration;
+                    _isActivelyDodging = inIFrameWindow;
+                    if (inIFrameWindow)
                         _invulnerableUntil = Mathf.Max(_invulnerableUntil,
                             Time.time + Time.fixedDeltaTime * 1.5f);
 
@@ -909,6 +936,7 @@ namespace GBHEngland.Combat
             finally
             {
                 _isRolling = false;
+                _isActivelyDodging = false;
             }
         }
 
@@ -957,7 +985,21 @@ namespace GBHEngland.Combat
             if (_isDead) return;
             dir.y = 0f;
             if (dir.sqrMagnitude < 0.0001f || distance <= 0f) return;
-            StartCoroutine(KnockbackRoutine(dir.normalized, distance));
+
+            // Defense in depth against a second landed hit starting a second slide while one is
+            // already running. The slide's own i-frames (above) close the main window that let
+            // that happen, but two knockback-capable enemies hitting in the same frame could still
+            // both land. Mirrors EnemyAI.ApplyKnockback's own guard: stop the old routine and reset
+            // its flag by hand rather than trust its finally ran first, then replace it — whichever
+            // slide finishes now sets _isKnockedBack false only for the routine it actually owns.
+            if (_knockbackRoutine != null)
+            {
+                StopCoroutine(_knockbackRoutine);
+                _knockbackRoutine = null;
+            }
+            _isKnockedBack = false;
+
+            _knockbackRoutine = StartCoroutine(KnockbackRoutine(dir.normalized, distance));
         }
 
         private IEnumerator KnockbackRoutine(Vector3 dir, float distance)
@@ -977,6 +1019,13 @@ namespace GBHEngland.Combat
                 // Harmless when the controller has neither parameter — both helpers check first.
                 ClearAnimatorTrigger("Hit");
                 SetAnimatorTrigger("Knockback");
+
+                // The slide itself is also an i-frame window, not just its aftermath. The hit that
+                // triggered this knockback only landed because the player was NOT invulnerable a
+                // moment ago, so without this a second attacker can land a free hit mid-slide, before
+                // KnockbackRecoveryIFrames even starts. Mathf.Max so a longer window already running
+                // (e.g. a roll's own i-frames) is never shortened.
+                _invulnerableUntil = Mathf.Max(_invulnerableUntil, Time.time + KnockbackSlideDuration);
 
                 // Once, at the start — same reasoning as RollRoutine: per-step zeroing would
                 // suspend gravity and leave the player hovering off a kerb.
@@ -1012,6 +1061,7 @@ namespace GBHEngland.Combat
             finally
             {
                 _isKnockedBack = false;
+                _knockbackRoutine = null;
             }
         }
         #endregion
@@ -1067,6 +1117,7 @@ namespace GBHEngland.Combat
             // flags here does not stop a running coroutine, so both are needed.
             _isRolling = false;
             _isKnockedBack = false;
+            _isActivelyDodging = false;
             _invulnerableUntil = 0f;
             _rb.velocity = Vector3.zero;
             if (PlayerAnimator != null) PlayerAnimator.SetFloat("Speed", 0f);
@@ -1099,6 +1150,7 @@ namespace GBHEngland.Combat
             _isAttacking = false;
             _isRolling = false;
             _isKnockedBack = false;
+            _isActivelyDodging = false;
             _invulnerableUntil = 0f;
         }
         #endregion
@@ -1176,6 +1228,11 @@ namespace GBHEngland.Combat
                 if (UIManager.Instance != null)
                     UIManager.Instance.ShowToast("Easy with the spells there Potter, not around the plebs yeah?");
             }
+
+            // Casting is not sneaking either — same call and same reasoning as PerformMeleeAttack.
+            var stealth = StealthController.Instance;
+            if (stealth != null && stealth.IsCrouched)
+                stealth.ToggleStealth();
 
             StartCoroutine(CastAbilityRoutine(ability));
         }

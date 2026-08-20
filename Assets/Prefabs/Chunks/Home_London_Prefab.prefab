@@ -15195,6 +15195,7 @@ Transform:
   - {fileID: 2487440638111308648}
   - {fileID: 2628635127273061792}
   - {fileID: 1987532173222664169}
+  - {fileID: 2914626251507892976}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8535346913083591749
@@ -28765,3 +28766,48 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3424905082638027926, guid: 01e94ef1f4b9710439697229a6c89a66, type: 3}
   m_PrefabInstance: {fileID: 9179951798624141287}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8482153359914252750
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2914626251507892976}
+  - component: {fileID: 2182819855120884463}
+  m_Layer: 0
+  m_Name: PlayerSpawn_CastleArenaReturn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2914626251507892976
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8482153359914252750}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 34.808365, y: 0, z: 28.081394}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7208322745594294504}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2182819855120884463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8482153359914252750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8f04285e6c9d454da008ecbb7119bbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Id: castle_arena_return

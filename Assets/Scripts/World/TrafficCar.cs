@@ -55,6 +55,7 @@ namespace GBHEngland.World
         private bool _converted;       // now a player vehicle; TrafficCar no longer drives it
         private bool _hotwireLocked;
         private float _lockoutUntil;
+        private bool _wasLockoutActive; // tracks the fleeing window, to drop a stale hold once it ends
         private bool _hotwiring;       // the minigame is open; the car must not move
         private TrafficCar _leader;    // the car ahead on this route; hold behind it
         private AudioClip _hornClip;
@@ -121,10 +122,24 @@ namespace GBHEngland.World
             // their feet — sidestepping out of the lane must not let it drive off mid-attempt.
             if (_hotwiring) return;
 
-            // A hotwire-locked car drives straight through — it got away.
-            if (_hotwireLocked && Time.time < _lockoutUntil)
+            bool lockoutActive = _hotwireLocked && Time.time < _lockoutUntil;
+            if (_wasLockoutActive && !lockoutActive)
             {
-                Drive();
+                // The lockout just ended. The car has been clear of any blockage for the whole
+                // window it spent fleeing, so a hold from before the flee began is stale — drop
+                // it, or the car pays a full ResumeDelay it no longer needs.
+                _isHeld = false;
+                _resumeAt = 0f;
+            }
+            _wasLockoutActive = lockoutActive;
+
+            // A hotwire-locked car gets away, but must still not clip through the car ahead on
+            // its own route — brake for its leader without falling into the normal held/pause
+            // branch below, which would defeat the point of fleeing.
+            if (lockoutActive)
+            {
+                if (!LeaderTooClose())
+                    Drive();
                 return;
             }
 

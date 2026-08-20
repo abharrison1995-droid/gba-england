@@ -194,15 +194,31 @@ namespace GBHEngland.Flow
 
             // ⚠ template may BE RuntimeStats. Both callers pass the scene player's
             // CombatController.PlayerData, and BindPlayerToSession assigns RuntimeStats to that
-            // field — so from the second new-game or load in an app session onwards, the "template"
-            // is this session's own derived stats. Re-capturing the baseline from it would bake
-            // every level's growth and every perk into the baseline, and the next recompute would
-            // add them again. When that happens the baseline we already hold is the right one.
+            // field — so from the second new-game or load in an app session onwards, the
+            // "template" is this session's own derived stats, already mutated by growth and
+            // perks. Portrait is never itself mutated by the derivation, so it can still be read
+            // off the (possibly aliased) template safely — resistances cannot; see
+            // _pristineTemplateResistances just below.
             if (template != null && template != RuntimeStats)
-            {
                 RuntimeStats.Portrait = template.Portrait;
-                _baselineResistances = CopyOf(template.BaseResistances);
+
+            // BeginNewGame means "start over," every time it runs — including a second New Game
+            // in the same app session with a different class, which is exactly the case the old
+            // `template != RuntimeStats` guard above got wrong for resistances: by then
+            // BindPlayerToSession had already pointed the caller's template at RuntimeStats
+            // itself, so the guard silently kept whatever baseline the FIRST character left
+            // behind (and would have carried forward any perk baked into it) instead of
+            // resetting for the new one. _pristineTemplateResistances is captured once, the
+            // first time this app session ever reaches this point — before any template can
+            // alias RuntimeStats — and _baselineResistances is reset from that pinned snapshot on
+            // every later call, so neither a second New Game nor a same-session reload can ever
+            // read resistances back off an already-mutated RuntimeStats.
+            if (!_hasCapturedPristineTemplateResistances)
+            {
+                _pristineTemplateResistances = CopyOf(template != null ? template.BaseResistances : null);
+                _hasCapturedPristineTemplateResistances = true;
             }
+            _baselineResistances = CopyOf(_pristineTemplateResistances);
 
             RuntimeStats.CharacterName = CharacterName;
             RecalculateDerivedStats();
@@ -223,6 +239,21 @@ namespace GBHEngland.Flow
         /// nothing logs it.
         /// </summary>
         private Resistances _baselineResistances = new Resistances();
+
+        /// <summary>
+        /// The class template's resistances as they stood the FIRST time <see cref="BeginNewGame"/>
+        /// ever ran this app session — before BindPlayerToSession had a chance to repoint the
+        /// caller's template at <see cref="RuntimeStats"/> itself. Never touched again after that
+        /// first capture, so every later <see cref="BeginNewGame"/> call (a second New Game with a
+        /// different class, or a same-session reload) can reset <see cref="_baselineResistances"/>
+        /// from something guaranteed never to have been mutated by growth or perks, instead of
+        /// gambling on reference-equality against RuntimeStats to decide whether the incoming
+        /// template is trustworthy.
+        /// </summary>
+        private Resistances _pristineTemplateResistances;
+
+        /// <summary>True once <see cref="_pristineTemplateResistances"/> has been captured this app session.</summary>
+        private bool _hasCapturedPristineTemplateResistances;
 
         /// <summary>Value copy — assigning the reference would let the derivation write back into the template asset.</summary>
         private static Resistances CopyOf(Resistances source)
