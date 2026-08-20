@@ -88,7 +88,6 @@ KNOWN_DANGLING = {
     "6ffcdb3bd81b57a4e840ef49beac20d9": "m_Sprite on three 'Visual' SpriteRenderers",
     "d58ea49aed1f53f409b496b426f04c11": "m_Sprite on three 'Visual' SpriteRenderers",
     "cacf62d2d709101468ca64fb99c7e20a": "m_Sprite on a 'Visual' SpriteRenderer",
-    "77ba605bbd83f4448bc8683510c3155e": "ActorSprite on the PCSO actor",
 }
 
 GUID_REF = re.compile(rb"guid:\s*([0-9a-f]{32})")

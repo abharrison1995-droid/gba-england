@@ -56,8 +56,8 @@ public static class CompanionPresetTool
     private const float AlexHeight = 1.76f;   // owner's tuned size for Alex (was the 1.35 cast height)
 
     private const string SpeakerPath = "Assets/Data/Dialogue/NPC_Alex.asset";
-    private const string DialoguePath = "Assets/Data/Dialogue/Generated/Dialogue_Alex.asset";
-    private const string FollowerDialoguePath = "Assets/Data/Dialogue/Generated/Dialogue_Alex_Follower.asset";
+    private const string DialoguePath = "Assets/Data/Dialogue/Generated/Dialogue_alex.asset";
+    private const string FollowerDialoguePath = "Assets/Data/Dialogue/Generated/Dialogue_alex_follower.asset";
 
     [MenuItem("Tools/Content/Companions/Build Alex Companion")]
     public static void Build()
