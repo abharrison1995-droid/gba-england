@@ -39,7 +39,10 @@ public class ContainerPlacementTool : EditorWindow
     [SerializeField] private string _saveId = "";
 
     // ── Behaviour ───────────────────────────────────────────────────────────────────────────
-    [SerializeField] private WorldContainer.ContainerMode _mode = WorldContainer.ContainerMode.Fixed;
+    // Respawning, not Fixed: bounded-cooldown restock is the default loot container going
+    // forward, to keep farming in check — Fixed stays fully available for the rarer finite,
+    // single-use important item, one EnumPopup click away.
+    [SerializeField] private WorldContainer.ContainerMode _mode = WorldContainer.ContainerMode.Respawning;
     [SerializeField] private int _respawnVisits = EKVibe.DefaultContainerRespawnVisits;
     [SerializeField] private float _interactRange = EKVibe.DefaultContainerInteractRange;
 
