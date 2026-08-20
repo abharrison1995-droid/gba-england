@@ -87,11 +87,13 @@ point compile. It proves nothing about their behaviour.**
 - ⚠️ **`ART_PIPELINE.md` still tells the art agent adults are 1.55**, so the **next delivered batch
   will arrive at the wrong density again** and need the same correction. Whether the contract or
   the cast is the thing to change is the owner's call and has not been made — undecided, not a bug.
-- **Four sprites in `c.unity` point at missing files** (three on one texture, three on another, one
-  on a third, plus the PCSO's `WorldActorVisual.ActorSprite` on a fourth) — old, listed in
-  `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix: reassign each in the Inspector, delete its
-  `KNOWN_DANGLING` line. PCSO probably wants `sheet_char_police_pcso_idle` (on disk) — confirm before
-  assuming.
+- **Seven sprites in `c.unity` point at three missing textures** (three `Visual` SpriteRenderers on
+  one, three on another, one on a third) — old, listed in `KNOWN_DANGLING` in
+  `Tools/asset_reachability.py`. Fix: reassign each in the Inspector, delete its `KNOWN_DANGLING`
+  line. ✅ **The PCSO's `WorldActorVisual.ActorSprite` is no longer one of them** — confirmed
+  2026-08-20: `c.unity` line 148659 now resolves to `sheet_char_police_pcso_idle`, and its GUID is
+  not in `KNOWN_DANGLING`. Fixed at some point without a log entry; caught by
+  `python Tools/asset_reachability.py --check-dangling`, which reports exactly 3 known GUIDs, not 4.
 - **£ may not render.** `EKVibe.FormatPounds` emits U+00A3; TMP's default static atlas is often
   ASCII-only. Check the bag readout and the pickpocket toast. Fix: TMP font asset → add £ to
   character set + regenerate, or switch Atlas Population Mode to Dynamic.
