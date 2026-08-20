@@ -1,7 +1,8 @@
 # Plan — Progressive Levelling System (player + enemies)
 
-**Status: agreed 2026-08-07, revised 2026-08-08 against the equipment/Win95/wiki work. Not
-implemented.** Delete or archive this file when the work lands.
+**Status: agreed 2026-08-07, revised 2026-08-08 against the equipment/Win95/wiki work. Phases 1–3
+are implemented and live on `main`; only Phase 4 (tiered loot bands) is still unscoped.** Delete
+or archive this file once Phase 4 lands too.
 
 ## Owner decisions (settled, don't re-ask)
 

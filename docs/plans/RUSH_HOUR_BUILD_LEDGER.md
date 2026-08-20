@@ -22,9 +22,11 @@ owed and left blank. Do not draft it.
 
 ### 1.1 East York, the chunk
 
-**Does not exist.** No `MapChunkData`, no prefab, not in `MapChunkRegistry` (which lists
-seventeen). The guide's location table has it as `East York (0, -2)` — two chunks south of London
-through `South_Slums`.
+**Partially built, uncommitted.** `East_York_Data.asset` and `East_York_Prefab.prefab` now exist on
+disk (`Assets/Data/Chunks/`, `Assets/Prefabs/Chunks/`) but are untracked — not yet committed, and
+not yet in `MapChunkRegistry` (which lists eighteen chunks, none of them East York). The guide's
+location table has it as `East York (0, -2)` — two chunks south of London through `South_Slums`.
+Confirm the adjacency wiring below actually happened before assuming the asset alone is enough.
 
 ⚠️ **`ChunkName` is a save key from the first save made inside it.** Decide the string once, now,
 while it is free. Note `Mosleys Lab Basement` uses spaces and `Manor Cellars` does too, while every
@@ -66,13 +68,11 @@ Needed, in this order:
 
 ### 1.4 `ProximityDialogueTrigger` — a new component
 
-**Does not exist.** Every conversation in the project is opened by the player pressing USE on an
-`Interactable`. Zhao's is meant to fire on approach.
-
-The firing is easy — `ChunkEdge`, `InstanceDoor` and `TutorialExitGate` are three existing
-`OnTriggerEnter` precedents to copy. ⚠️ **The re-fire is the hard part.** A chunk is destroyed and
-rebuilt on every entry, so a plain "already seen" bool on the component **resets every time** and
-Zhao ambushes the player forever.
+✅ **Built.** `Assets/Scripts/World/ProximityDialogueTrigger.cs` now exists and solves the re-fire
+problem the way this section anticipated: it gates on `QuestId` + `RequiredStage` rather than a
+plain "already seen" bool, so once the quest advances past the required stage the trigger disarms
+itself permanently, including across saves, with no extra save field needed. Never compiled or
+placed — it isn't attached to anything in East York yet, so this is still unexercised.
 
 **Recommended shape, which needs no new save field:** gate the trigger on quest state — fire only
 while `rush_hour` is active *and* on stage 0. Reaching the marker advances the stage, which

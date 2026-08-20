@@ -1,31 +1,33 @@
 # Quests and dialogue
 
 ```
-Last verified against: working tree, 2026-08-15
-Verification scope:    code; tracked dialogue/preset YAML (15 DialogueData assets read). A
-                       single-stage Kill quest was exercised in the editor, including reward
-                       payment and persistence across an autosave, verified by reading
-                       savegame.json. The three quest fixes on main POSTDATE that session.
-                       TalkTo, Collect, Reach and Manual have NEVER been exercised, and neither
-                       has any multi-stage quest. Multi-item Collect (QuestStage.AlsoCollect) was
-                       added 2026-08-15 and has NEVER been compiled — traced by hand only.
-                       Phase 0 (multi-quest watcher, quest focus, quest-gated dialogue choices,
-                       landmine fallbacks) is written and brace-balanced but has NEVER been
-                       compiled or opened in the editor — see docs/plans/QUEST_PIPELINE_PLAN.md.
-                       Merchant data/actions, the Win95 shop and four catalogues are written and
-                       reference-checked but have NEVER been compiled or exercised in the editor.
+Last verified against: working tree, 2026-08-15; superseded by real use 2026-08-17
+Verification scope:    code; tracked dialogue/preset YAML, as of 2026-08-15 (15 DialogueData
+                       assets read at the time). A single-stage Kill quest was exercised in the
+                       editor that day, including reward payment and persistence across an
+                       autosave, verified by reading savegame.json. Since then, a full Import
+                       Quests run on 2026-08-17 wrote all ten QuestDefinitions and rebuilt every
+                       generated DialogueData — see CLAUDE.md §5 for specifics — so TalkTo,
+                       Collect, Reach, Manual, multi-stage quests, multi-item Collect
+                       (QuestStage.AlsoCollect) and Phase 0 (multi-quest watcher, quest focus,
+                       quest-gated dialogue choices) are all now part of that compiled, imported
+                       content. See "Current content state" below for what actually exists.
+                       Merchant data/actions, the Win95 shop and four catalogues are still written
+                       and reference-checked but have NEVER been compiled or exercised in the
+                       editor.
 ```
 
 ## Current content state
 
-- **There are zero `QuestDefinition` assets.** `Assets/Resources/Quests/` holds only a README.
-  The quest system is **inert** until someone authors one.
-- **16 `DialogueData` assets exist**, in `Assets/Data/Dialogue/Generated/`, one per NPC, wired to
-  16 presets.
+- **Ten `QuestDefinition` assets exist** in `Assets/Resources/Quests/`, written by a full
+  `Import Quests` run on 2026-08-17 (see CLAUDE.md §5). The quest system is no longer inert.
+- **24 `DialogueData` assets exist**, in `Assets/Data/Dialogue/Generated/`, wired to their presets.
 - **Four merchant conversations have choices**: Roaming Pharmacist, F.U. Sports Clerk and
   Quidland Clerk expose their shops, while the Scrapman exposes Sell and Leave with a separate
-  farewell node. The other twelve remain single-node ambient one-liners with zero choices.
-- **No `GrantQuestId` exists anywhere**, so nothing can grant or complete a quest through dialogue.
+  farewell node. Other conversations vary now — check the specific NPC's `.quest` file rather than
+  assuming single-node.
+- **`DialogueChoice.GrantQuestId` exists** (`DialogueData.cs`) and is parsed by
+  `QuestTextImporter.cs`'s `GRANT:` directive, so dialogue can grant and complete a quest.
 - `escape_manor` and `spark_of_talent` run on bespoke tutorial code, not on this system.
 
 ⚠️ **Quest and dialogue writing is the owner's own work.** Build the machinery, leave the words.

@@ -134,15 +134,6 @@ namespace GBHEngland.World
         /// </summary>
         private string _containerId;
 
-        /// <summary>
-        /// Every id an active container has claimed, so collisions can be reported.
-        ///
-        /// ⚠ Must be unregistered in OnDestroy. Chunks are destroyed and rebuilt on every visit, so
-        /// without that every re-entry would warn about the previous instance of itself.
-        /// </summary>
-        private static readonly Dictionary<string, WorldContainer> _claimedIds =
-            new Dictionary<string, WorldContainer>();
-
         private void Awake()
         {
             _interactable = GetComponent<Interactable>();
@@ -170,11 +161,7 @@ namespace GBHEngland.World
 
         private void OnDestroy()
         {
-            if (!string.IsNullOrEmpty(_containerId) &&
-                _claimedIds.TryGetValue(_containerId, out var owner) && owner == this)
-            {
-                _claimedIds.Remove(_containerId);
-            }
+            ContainerIdRegistry.Release(_containerId, this);
         }
 
         /// <summary>
@@ -237,18 +224,7 @@ namespace GBHEngland.World
             string key = !string.IsNullOrEmpty(SaveId) ? SaveId : gameObject.name;
             _containerId = chunkName + "/" + key;
 
-            if (_claimedIds.TryGetValue(_containerId, out var existing) && existing != null)
-            {
-                Debug.LogWarning(
-                    $"WorldContainer: two containers in '{chunkName}' both key on '{key}', so they " +
-                    $"share the save id '{_containerId}' and looting either empties both. Give one " +
-                    "a different Save Id — Tools > Place > Container Placement > Validate All " +
-                    "Containers finds these.", this);
-            }
-            else
-            {
-                _claimedIds[_containerId] = this;
-            }
+            ContainerIdRegistry.Claim(_containerId, this, chunkName);
 
             bool spent = Mode == ContainerMode.Fixed
                 ? PlayerSession.Instance != null && PlayerSession.Instance.IsContainerLooted(_containerId)

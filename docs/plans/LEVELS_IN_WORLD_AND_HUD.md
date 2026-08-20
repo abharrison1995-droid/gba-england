@@ -1,7 +1,9 @@
 # Implementation plan — authorable enemy levels, combat-gated nameplates, a bigger HUD cluster
 
-**Status: plan only, nothing implemented.** Three related pieces of work, independent enough to
-land separately but sharing one verification pass in the editor.
+**Status: implemented — all three pieces are merged and live on `main`** (`EKVibe.HudClusterScale
+= 1.6f`, authorable `EnemyLevel`, combat-gated nameplates). Never seen by a compiler or the editor
+— see CLAUDE.md §5. Three related pieces of work, independent enough to have landed separately but
+sharing one verification pass in the editor.
 
 ```
 Grounded against: main @ 5ce3223, working tree 2026-08-08 (UI files modified but uncommitted).

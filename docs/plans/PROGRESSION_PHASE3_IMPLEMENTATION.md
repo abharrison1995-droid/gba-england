@@ -1,8 +1,9 @@
 # Implementation plan — Progression, Phase 3 (player gains)
 
-**Status: plan only, nothing implemented.** Phases 1 and 2 are merged and live on `main`; this
-builds on the code that actually exists, not on what the parent plan predicted. Phase 4 (loot
-tiers) is **out of scope**.
+**Status: implemented — Phase 3 is merged and live on `main`** (18 perk assets in
+`Resources/Perks/`, the armour soft-cap in `EKVibe`). Never seen by a compiler or the editor — see
+CLAUDE.md §5. Phases 1 and 2 are merged and live on `main` too; this builds on the code that
+actually exists, not on what the parent plan predicted. Phase 4 (loot tiers) is **out of scope**.
 
 ```
 Grounded against: main @ 70dbb41, 2026-08-08

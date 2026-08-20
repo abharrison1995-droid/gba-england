@@ -198,9 +198,11 @@ Exit Play mode and `Ctrl+S` first.
 3. **The tool draws.** `Tools → Place → Container Placement` with nothing selected must show a
    refusal, not an exception.
 4. **Attach one.** Open `Abandoned_Bus_Station_Prefab` in Prefab Mode, select an object in the
-   Hierarchy, click a point on it in the Scene view, set Mode `Fixed`, band `LootBand_BusBarnacles`,
-   prompt "Search wreckage", press Create. Confirm a child at the clicked point carrying
-   `WorldContainer` + `Interactable`, with `SaveId` filled in.
+   Hierarchy, click a point on it in the Scene view, set Mode `Respawning`, `RespawnVisits: 3`,
+   `FixedLoot` one `bus_station_barnacles` ×1 — **not** a `Band` — prompt "Search wreckage", press
+   Create. Confirm a child at the clicked point carrying `WorldContainer` + `Interactable`, with
+   `SaveId` filled in. (Superseded 2026-08-20 from the original `Mode: Fixed` / `Band` spec — see
+   [VAPE_ARC_BUILD_GUIDE.md](VAPE_ARC_BUILD_GUIDE.md).)
 5. **Attach a second to the same object.** The tool must load the existing config for editing, not
    add a second child.
 6. **Shift-click run.** Three objects in one armed session → three distinct `SaveId`s.

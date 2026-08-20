@@ -7,11 +7,12 @@ Verification scope:    code + format. THE PIPELINE HAS RUN. On 2026-08-16 the ow
                        the parser and validator compile and work on real files. That import also
                        found the case-collision defect (a DIALOGUE block whose npcId differs only
                        by case from an existing asset silently nulls the preset's Conversation);
-                       it was fixed the same day and the fix has NEVER RUN.
-                       Since then, brace-balanced but NOT compiled: a HIRE: <companionId> [free]
-                       choice directive in the importer, its validation in the validator, and the
-                       DialogueChoice.HireCompanionFree field it writes. First use is
-                       quests/dialogue/alex.quest.
+                       it was fixed the same day, and the fix has since run for real — the
+                       2026-08-17 Import Quests run round-tripped every preset's Conversation GUID
+                       cleanly (see CLAUDE.md §5). The HIRE: <companionId> [free] choice directive,
+                       its validator check, and the DialogueChoice.HireCompanionFree field it
+                       writes have also since run: quests/dialogue/alex.quest is its first and
+                       current use, gating Alex's hire on rush_hour.
                        See docs/plans/QUEST_PIPELINE_PLAN.md and
                        docs/plans/RUSH_HOUR_BUILD_LEDGER.md.
 ```

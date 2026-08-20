@@ -47,8 +47,8 @@ Assets/
   Scripts/          # runtime code, namespace GBHEngland.<Folder>
     AI/ Camera/ Combat/ Data/ Dialogue/ Flow/ Quests/ Systems/ UI/ Vibe/ World/
   Editor/           # editor-only tools (no asmdef — see below)
-  Data/Chunks/      # 6 MapChunkData .asset files
-  Data/Presets/     # 30 PlacementPreset assets
+  Data/Chunks/      # 19 MapChunkData .asset files (one, East York, still uncommitted)
+  Data/Presets/     # 38 PlacementPreset assets
   Data/Dialogue/    # DialogueData assets
   Prefabs/          # Chunks/, ModernBritain/, Enemies/
   Resources/        # loaded by name at runtime — Items/, Quests/, PlacementPresetLibrary
@@ -56,7 +56,7 @@ Assets/
   6twelve/          # third-party pack, not our code
   c.unity           # THE only gameplay scene
   c/                # NavMesh data for c.unity, auto-linked by scene name
-Tools/              # python helpers (see §5)
+Tools/              # python helpers (see §5) + Tools/blender/ (see Tools/blender/README.md)
 docs/               # everything else — routed from docs/README.md
 ```
 
@@ -314,9 +314,10 @@ both measure 65 px tall as of 2026-08-08.
 will arrive at the wrong density again and need the same correction. Deciding whether the contract
 or the cast is the thing to change is the owner's call, and nothing here has made it.
 
-**Also outstanding — a live defect, not a verification:** no `Police_*` prefab has `IsPolice` set,
-so arrest never fires and `DespawnPolice` destroys nothing. Fix is ticking the box on all five
-prefabs in the Inspector, **never** by re-running `ModernBritainSetup`.
+✅ **Fixed.** All five `Police_*` prefabs now have `IsPolice: 1` (commit `fb5f514`, "Set IsPolice
+on all five police, and knockback on OG and Tainted"), so arrest and `WantedManager.DespawnPolice`
+should both work. *Still to check in Play mode: die to a police officer and confirm arrest fires
+instead of death.*
 
 ⚠️ **Also a live defect — `Import Quests` silently nulls a preset's `Conversation` when the
 dialogue asset's filename differs only by case.** Found 2026-08-16 on the first real import.
@@ -349,12 +350,15 @@ Mosley and Scrap Man in `Home_London_Prefab` still resolve their conversations.*
 `Preset_Scrapman` came out holding the same `Conversation` GUIDs they went in with** — a byte-clean
 diff on both files. On the pre-fix code that run is exactly what nulled them. `Preset_Alex` went
 `{fileID: 0}` → `750c809e…` and `Preset_MadFisherman` `{fileID: 0}` → `fc8c91b6…`, so the reuse path
-resolves as well as the preserve path. **The `DIALOGUE ralph` collision test below is still worth
-running** — it is the only one of the three checks that has not now been answered by real use.
+resolves as well as the preserve path. ✅ **The `DIALOGUE ralph` collision test is now answered by
+real use, not a deliberate test.** `Assets/Data/Dialogue/Generated/Dialogue_ralph.asset` and
+`Dialogue_sanjeet.asset` exist, lowercase, with real authored lines — a `DIALOGUE ralph`/`DIALOGUE
+sanjeet` block was written and imported for real at some point after this entry, and it produced
+the correctly-cased file with no collision and no nulled preset.
 
-**The three changes in `QuestTextImporter.cs`**, which protect the other sixteen PascalCase assets
-still on disk (including **`Dialogue_Ralph` and `Dialogue_Sanjeet`**, the cast of the unwritten
-Quest 6, which the next quest written would have hit):
+**The three changes in `QuestTextImporter.cs`** protected the PascalCase assets that were still on
+disk at the time this was written, including `Dialogue_Ralph` and `Dialogue_Sanjeet` — both have
+since been superseded by the lowercase `Dialogue_ralph.asset` / `Dialogue_sanjeet.asset` above:
 
 - **`ResolveAssetPath`** maps a desired path onto the real file when the two differ only by case,
   by enumerating the directory. ⚠️ It deliberately does **not** shortcut on `File.Exists` — on a
@@ -371,9 +375,8 @@ Quest 6, which the next quest written would have hit):
 - **`SaveAsset` now tests `AssetDatabase.Contains(asset)`** rather than probing the path, so it can
   never dirty an object that is not the asset on disk.
 
-*Still to check: author a deliberate case-collision (a `DIALOGUE ralph` block) and confirm it
-updates `Dialogue_Ralph.asset` in place instead of nulling `Preset_Ralph.Conversation`; and force a
-validation error in a `.quest` file to confirm the failure path logs errors rather than throwing.*
+The case-collision check is answered above. *Still to check: force a validation error in a `.quest`
+file to confirm the failure path logs errors rather than throwing.*
 The unchanged-tree re-import is answered — see above.
 
 **Also outstanding — four sprites in `c.unity` point at files that do not exist.** Three `Visual`
@@ -414,11 +417,11 @@ never compiled:
 **Also outstanding — enemy knockback of the player, phase 2.** On `dodge-roll-phase2` (built on
 the phase 1 branch), never compiled:
 
-- **`EnemyAI.KnockbackDistance`, default 0** — no prefab or scene file changed, so nothing knocks
-  the player back until the Inspector pass sets it. Per the recorded decision: `Enemy_OG` and
-  `Enemy_Tainted` at **2 m**, police at **0**, folded into the same Inspector session as the
-  `Level: 3` and `IsPolice` prefab passes. *Stamp `Enemy_OG` from the palette, set Knockback
-  Distance = 2 outside Play mode, take a hit, and check the slide is ~2 m and stops at walls.*
+- ✅ **`EnemyAI.KnockbackDistance` is authored.** Commit `fb5f514` ("Set IsPolice on all five
+  police, and knockback on OG and Tainted") set `Enemy_OG.prefab` and `Enemy_Tainted.prefab` to
+  **2 m**, police stayed at **0**, per the recorded decision. *Still to check in Play mode: take a
+  hit from either and confirm the slide is ~2 m and stops at walls* — the value being set is
+  confirmed on disk, the slide itself has not been seen play.
 - **A dodged hit no longer shoves.** Both `AttackRoutine` damage branches gate the shove on
   `TakeDamage` returning true. *Roll through the stamped enemy's swing: "Dodged!", no red number,
   and crucially no slide.* This is the defect the whole return value exists to fix.
@@ -442,10 +445,9 @@ the phase 1 branch), never compiled:
 
 - **`PerkEffectType.MeleeKnockback = 9` is appended, never reordered** — the enum is serialized by
   integer index inside every `PerkData` asset, and the first asset authored freezes these indices
-  forever. Magnitude is a **flat metre value**, not a percentage. **No perk asset exists** — the
-  owner authors it: Create → `GBH England/Data/Perk`, into a `Resources/Perks` folder, one
-  effect of type MeleeKnockback, Magnitude 2. *Then spend a point and hit something: the enemy
-  should slide ~2 m and stop at walls.*
+  forever. Magnitude is a **flat metre value**, not a percentage. ✅ **`Perk_melee_knockback` now
+  exists** in `Resources/Perks/`, alongside 17 other authored perks. *Still to check: spend a point
+  on it and hit something — the enemy should slide ~2 m and stop at walls.*
 - **`PlayerSession.MeleeKnockbackDistance` resets with the other cached query values** in
   `RecalculateDerivedStats` step 6 — stats recompute on every load, so a cached value that is added
   to but never reset would accumulate per load. *Take the perk, note the shove, reload the save,
@@ -466,13 +468,13 @@ the phase 1 branch), never compiled:
 **Also outstanding — enemy levels in the world, combat nameplates, bigger HUD.** Merged
 2026-08-08, code-reviewed against its plan, never compiled:
 
-- **Enemy levels are authorable but nothing is authored.** `PlacementPreset.EnemyLevel` and the
+- **Enemy levels are authorable, and one is now authored.** `PlacementPreset.EnemyLevel` and the
   palette's per-stamp Level field attach an `EnemyLevel` at placement. **A level of 0 attaches no
   component at all** — deliberate, because a level-1 component is not inert: the nameplate starts
-  reading it and the badge flips from the prefab's "3" to "1". ⚠️ **No enemy prefab is placed
-  anywhere in any chunk or in `c.unity`** — the only `EnemyAI` in the scene is the PCSO — so this
-  path has never run. *Stamp an enemy from the palette at Level 4 and check it is tougher than
-  one stamped at Level 1.*
+  reading it and the badge flips from the prefab's "3" to "1". ✅ `TutorialSequence.cs` sets the
+  tutorial bandit's badge to **Level 1** on spawn — the first real exercise of this path. *Still to
+  check: stamp a second enemy from the palette at Level 4 and confirm it reads tougher than the
+  Level 1 bandit.*
 - **Nameplates are combat-gated and now build lazily.** They show on aggro **or** when the player
   is within `SightRadius`, and hide a few seconds after. *Check a plate appears as you approach
   rather than only after the first hit, and that it does not reappear over a corpse.* The tutorial
@@ -500,8 +502,8 @@ code-reviewed against its plan, never compiled:
   second load in one app session bakes growth and perks into the baseline and inflates stats
   permanently. *Load the same save twice in one sitting and check the stats read identically the
   second time.* This is the failure most likely to go unnoticed.
-- **No perk assets exist yet**, so the perk window has only ever had an empty state to draw.
-  Prose is the owner's: grep `[no perks written yet`. The placeholder toast that used to fire on
+- ✅ **18 perk assets now exist** in `Resources/Perks/`, so the perk window has content to draw —
+  still not seen open in an editor. The placeholder toast that used to fire on
   a point-granting level-up (`[perk point earned…`) is gone — `InventoryController.HandleLevelUp`
   now forces `PerkWindowUI` open instead, coalesced through a deferred flag so several level-ups
   in one XP grant open it at most once.
@@ -569,12 +571,13 @@ never compiled:
   is inactive in `c.unity` and nothing activates it, so there is a deliberate 28 px gap where its
   slot is reserved. The stray duplicate `MPFill` inside it was left alone. **Not a defect of this
   pass.**
-- ⚠️ **A pre-existing bug is now written up but not fixed**: `UIManager.EnsureDedicatedTrack`
-  tests `parent.childCount == 1`, and `EnsureBarLabel` later adds the readout beside the fill, so
-  the next call wraps a fill that never needed it — inheriting the fill fraction as the new track's
-  size. HP and MP both take that path, invisibly, because their first paint is a full bar. *It
-  would show as a health bar that tops out at a third after loading a save at low health.* Its own
-  pass; the stamina bar is built so it cannot be reached.
+- ✅ **The `EnsureDedicatedTrack` bug is fixed.** It used to test `parent.childCount == 1`, which
+  `EnsureBarLabel` would falsify on the very next call (it adds the readout beside the fill), so a
+  fill that never needed wrapping got wrapped anyway and inherited the fill fraction as the new
+  track's size — HP and MP both took that path invisibly, because their first paint is a full bar.
+  Commit `8d4b60c` ("Stop HP/MP bars capping at their first-paint fraction permanently") changed the
+  guard to `parent.name.EndsWith("Track")` instead. *Still to check in an editor: load a save at low
+  health and confirm the bar reads its real fraction, not capped at a third.*
 - **No save key changed**, and `Health`/`Mana`/`Stamina` already round-trip. *Load a save made
   before today and check it arrives with whatever mana it held, no error, and HP never at 0.*
 - **The magic tutorial is the one scripted sequence written while mana came back.** Spark costs 12
@@ -603,12 +606,12 @@ Committed 2026-08-15, never compiled, and **not importable until the editor pass
   being read, which most likely means `BuildDialogue` lost its two new field assignments.
 - **Stage 1 is `MANUAL`, not `TALKTO`.** A TalkTo final stage completes on the interact, before
   any choice is picked, which would skip the reward beat entirely.
-- **`Enemy_UnderHoused` does not exist yet.** `Tools → Content → Build Enemies From Generated Art`
-  creates it — **run it on a clean tree**, it rewrites the YAML of every enemy prefab on its
-  update path. Then in Prefab Mode: confirm `EnemyAI` is **unticked**, add `Interactable`
-  (prompt "Talk to the twitchy geezer", range 3, Reusable on), add `NPCDialogueInteractable` with
-  `Dialogue_underhoused`, add `HostileAfterDialogue` and hook `Interactable.OnInteract` →
-  `HostileAfterDialogue.OnTalked`, and set its hostile line.
+- ✅ **`Enemy_UnderHoused.prefab` now exists**, built by `Tools → Content → Build Enemies From
+  Generated Art`. *Still to check in Prefab Mode: `EnemyAI` **unticked**, an `Interactable`
+  (prompt "Talk to the twitchy geezer", range 3, Reusable on), a `NPCDialogueInteractable` with
+  `Dialogue_underhoused`, a `HostileAfterDialogue` hooked to `Interactable.OnInteract` →
+  `HostileAfterDialogue.OnTalked`, and its hostile line set* — the prefab's existence doesn't
+  confirm this wiring landed.
 - ⚠️ **Unverified Unity behaviour: whether `Awake` runs on a disabled component.** If the geezer,
   once panicked, stands still or falls through the NavMesh, that is the answer and
   `HostileAfterDialogue` must snap him to the NavMesh itself.
@@ -616,8 +619,8 @@ Committed 2026-08-15, never compiled, and **not importable until the editor pass
   quest is taken — which pre-completes the kill stage. Accepted deliberately.
 - **Two live defects this fixes**: loading a save directly into London used to produce no Daniel
   and no geezer; and reloading mid-quest used to require killing a second geezer.
-- **`Preset_DanielPauls.QuestKey` is blank** and must be set to `danielpauls` for
-  `daniel_pauls_quest_one`. His `Conversation` is written by the importer.
+- ✅ **`Preset_DanielPauls.QuestKey` is set to `danielpauls`**, matching `daniel_pauls_quest_one`.
+  His `Conversation` is written by the importer.
 - **`spark_of_talent` is unchanged as a save key.** *Load a save holding it mid-flight (should bind
   the kill stage to the placed geezer) and one holding it complete (should pay nothing — the
   reward is deliberately 0/0, since the reward scan retro-pays any completed unclaimed quest).*
@@ -766,9 +769,10 @@ Every `DungeonPortal` in the project, and where it lands:
   on the placement tool's defaults, and must be moved when that interior is dressed.
 - **Daniel Pauls is placed** — `NPC_Daniel Pauls` replaces the old `DanielPaulsSpawn` marker, so
   `spark_of_talent` finally has a giver in the world.
-- ⚠️ **`NPC_Ralph` and `NPC_Sanjeet` were removed from London.** They are the cast Quest 9 is meant to
-  build toward, and `Dialogue_Ralph.asset` / `Dialogue_Sanjeet.asset` are still on disk in PascalCase
-  — so a future `DIALOGUE ralph` block is still the untested collision case above.
+- **`NPC_Ralph` and `NPC_Sanjeet` were removed from London.** They are the cast Quest 9 is meant to
+  build toward. `Dialogue_Ralph.asset` / `Dialogue_Sanjeet.asset` no longer exist in PascalCase — a
+  `DIALOGUE ralph`/`DIALOGUE sanjeet` block has since been imported for real, producing lowercase
+  `Dialogue_ralph.asset` / `Dialogue_sanjeet.asset` with no collision (see the entry above).
 
 **Also outstanding — six empty interior shells, hand-authored YAML.** Committed 2026-08-09.
 `Quidland`, `FU_Sports`, `City_Hall`, `Police_Station`, `Gang_Hideout` and `The_Winchester` — each a
@@ -821,8 +825,8 @@ compiled:
   in place on GUID `750c809e…` and `Preset_Alex.Conversation` now points at it. *Confirm
   `CompanionHome_Alex.prefab` still resolves its Conversation on first open* — it binds the same
   GUID, so it should, but that has not been looked at.
-  ⚠️ **`Dialogue_Alex_Follower.asset` is still PascalCase in the same folder** — a future
-  `DIALOGUE alex_follower` block would collide the same way.
+  ✅ **`Dialogue_Alex_Follower.asset` is also lowercase now** (`Dialogue_alex_follower.asset`,
+  confirmed on disk) — the same-shape collision risk this flagged is resolved.
 - ⚠️ **`Preset_Alex.Speaker` was empty and is now `NPC_Alex`.** `ResolveSpeaker` falls back to the
   preset's own `Speaker`, so importing Alex's dialogue would have **stripped every line's portrait
   and display name** with a clean console.
@@ -879,7 +883,9 @@ and the six-step check.
 cloned byte-for-byte from the `Quidland` shell (floor + MeshCollider, four walls, a
 `RuntimeNavMeshBaker`, one id-less `PlayerSpawn`), differing only in `m_Name`, `ChunkName`,
 `Coordinates` (the `-2` interior column, Y −8…−11), and fresh file GUIDs. All four are appended to
-`MapChunkRegistry`, which now lists **seventeen** chunks.
+`MapChunkRegistry`, which listed **seventeen** chunks at the time. It now lists **eighteen** —
+the extra is `Castle_Fight_Arena_Data`, added by the unrelated, already-shipped Castle Fight Pit
+feature, not by anything in this section.
 
 - ⚠️ **Eight `.asset`/`.prefab` files and their eight `.meta` files were written by hand** — no Unity
   was available, so every GUID was assigned by a script. *Open each `*_Prefab` once and confirm Unity
@@ -960,8 +966,10 @@ Committed 2026-08-17 on `claude/forage-asset-containers-ahhwdf`, never compiled:
 - ⚠️ **`WorldContainer.SaveId` is why the component is safe on a child object.** Every container
   child the tool makes is called `Container`, so without an explicit id ten of them would share one
   save key and looting one would empty all ten. The tool uniquifies it against `SpriteContainer`
-  too — the two share one key space and **neither warns across the other**. *Force a duplicate and
-  check Validate All Containers names it.*
+  too — the two share one key space. `ContainerIdRegistry` (added 2026-08-20, commit `fe122f0`) now
+  warns across both types: a `WorldContainer` and a `SpriteContainer` claiming the same id in the
+  same chunk are both named in the console, whichever Awakes second. *Force a duplicate and check
+  Validate All Containers names it, and that a cross-type collision logs the same warning.*
 - **`WorldContainer.ContainerMode` and `TrapType` are serialized by integer index** and are frozen
   by the first authored container. No container is placed yet, so this is still the free moment.
 - **The trap, lock and quest-gate fields are declared and inert.** Every tooltip opens with
@@ -1047,11 +1055,12 @@ check list.
   gated choice and check it appears only once its quest reaches the right state.*
 - **Phase 1: the plain-text `.quest` pipeline.** `QuestTextImporter` turns a `.quest` file into a
   `QuestDefinition`; `QuestContentValidator` checks it; `QUEST_TEXT_FORMAT.md` and `_template.quest`
-  are the contract. *Run the importer on `_template.quest` from the menu and check it produces a
-  `QuestDefinition` without errors.* Editor tooling — it has generated nothing yet.
+  are the contract. ✅ **This has since run for real** — see the `Import Quests` entries elsewhere in
+  this ledger (2026-08-17 and later): all ten `QuestDefinition`s in `Resources/Quests/` now exist,
+  built by this exact pipeline. The multi-quest watcher and focus behaviour above have real quests
+  to bind to now; they still haven't been exercised in Play mode.
 - **`Tools/check_quest_phase0.py` passes its brace-balance scan.** That is NOT a compile (§5) — it
-  only rules out a truncated edit. No `.quest` has been imported and no `QuestDefinition` exists to
-  exercise the watcher or focus.
+  only rules out a truncated edit.
 
 **The companion system — ALEX has been played, and works.** On `main` (`ab2d6c5`, namespaced in
 `947ded5`). ✅ **Exercised in an editor session on 2026-08-16**: Alex was recruited and fought
@@ -1065,7 +1074,9 @@ and combat all good. That is the first time any of C0–C3 has run.
 - **`Companion_alex.asset` is the one authored definition**, in `Resources/Companions/`. ⚠️ **`Id:
   alex` is a save key** — it is what the save resolves the hired companion through, and it must
   also match the `PlacementPreset.QuestKey` used as his home anchor. Do not rename it.
-- ⚠️ **Alex's heal was rebuilt on 2026-08-16 and has NEVER been compiled or played.** It was
+- ⚠️ **Alex's heal was rebuilt on 2026-08-16 and has not been confirmed firing in play.** It
+  compiled fine — it's part of the same code that ran during the 2026-08-16 session above — but
+  that session confirms following, targeting and combat, not the heal specifically. It was
   previously single-target and gated on `_target == null`, so it **only ever fired out of combat** —
   which is why it was never seen. It now heals the player *and* Alex for `HealAmount` each, mirroring
   the player's own `Spell_healing_aura`, and the tick no longer gates it on being out of combat.

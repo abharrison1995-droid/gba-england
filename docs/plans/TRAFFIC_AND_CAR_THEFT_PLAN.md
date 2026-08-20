@@ -1,8 +1,9 @@
 # Implementation plan — ambient traffic and car theft ("Grand Theft Corsa")
 
-**Status: plan only, nothing implemented.** Ambient cars drive authored routes through a chunk;
-the player can stop one, hotwire it via a minigame, and drive off — which triggers a police
-response. Landed in phases, one verification pass in the editor.
+**Status: code landed on `main`** (merged 2026-08-20 in PR #9), **never compiled or exercised in
+the editor** — no `TrafficRoute` is authored in `Home_London_Prefab` yet, so none of this has run.
+Ambient cars drive authored routes through a chunk; the player can stop one, hotwire it via a
+minigame, and drive off — which triggers a police response. See CLAUDE.md §5.
 
 ```
 Grounded against: main @ 1ac6ecf, working tree 2026-08-12.

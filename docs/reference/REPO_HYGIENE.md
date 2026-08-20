@@ -70,9 +70,11 @@ chest instance in the Unity editor and the whole pack goes with it. Next largest
 zero of its 2,123 assets were referenced. **Policy going forward: pull individual sprites in when a
 system needs them, rather than carrying whole packs speculatively.**
 
-Reference integrity is clean: a full pass over every tracked `.unity`/`.prefab`/`.asset`/`.mat`/
-`.controller`/`.anim` found exactly one dangling reference, since fixed. One tracked `__MACOSX`
-junk file remains.
+Reference integrity carries three known dangling references, tracked deliberately in
+`KNOWN_DANGLING` inside `Tools/asset_reachability.py` rather than silently tolerated: three
+`Visual` SpriteRenderers with a missing `m_Sprite` (see CLAUDE.md §5). `--check-dangling` passes
+clean only because these three are on the allow-list — anything not on it fails the run. No
+tracked `__MACOSX` junk file remains.
 
 ## Committing scripts
 
