@@ -65,9 +65,14 @@ It sits directly at `Tools/World Palette`, uncategorised — the one deliberate 
   `Preset_NoseyParker` — `Prop`, pointing at a hand-built prefab — which has been deleted along
   with the rest of the snitch mechanic (see
   [CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md)). No preset **currently on disk** has
-  `Prefab` assigned, so this path is unexercised until someone runs
-  `Tools → Content → Build Container Prefabs`, whose `Preset_Container_*` presets are
-  `Prop` pointing at a container prefab.
+  `Prefab` assigned, so this path is unexercised. Containers are no longer authored this way:
+  `Tools → Content → Build Container Prefabs` and the `Preset_Container_*` preset pattern were
+  superseded 2026-08-17 by `Tools → Place → Container Placement`
+  (`Assets/Editor/ContainerPlacementTool.cs`), a click-to-place tool that stamps a `WorldContainer`
+  + `Interactable` directly rather than going through a preset. Its default `Mode` is `Respawning`
+  (changed 2026-08-20, commit `742b50a`); a `WorldContainer` and a `SpriteContainer` sharing a save
+  id are now caught by `ContainerIdRegistry` (`Assets/Scripts/World/ContainerIdRegistry.cs`, added
+  the same day).
 
 The five `Place/…` windows still exist and still work. They have not been removed because none has
 been checked for anything the palette cannot yet do.

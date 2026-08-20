@@ -58,10 +58,11 @@ point compile. It proves nothing about their behaviour.**
 - **`UIManager.EnsureDedicatedTrack`** wraps a bar fill in its own parent when the scene doesn't
   give it one — check the concealment/mana overlap is actually fixed, and that the concealment bar
   lands somewhere sane (it's been stretched across the whole cluster, so its real position is
-  unknown). ⚠️ **Known follow-on bug, not yet fixed**: `EnsureDedicatedTrack` tests
-  `parent.childCount == 1`, but `EnsureBarLabel` adds a label afterward — so the *second* bar wrapped
-  (HP or MP, whichever loads second) inherits the first bar's fill fraction as its new track size.
-  Would show as a health bar topping out at a third after loading at low health.
+  unknown). ✅ **The follow-on bug is fixed** (commit `8d4b60c`): `EnsureDedicatedTrack` now tests
+  `parent.name.EndsWith("Track")` instead of `parent.childCount == 1`, so `EnsureBarLabel` adding a
+  label afterward no longer makes the second-wrapped bar (HP or MP) inherit the first bar's fill
+  fraction as its new track size. *Still to check in an editor: load a save at low health and
+  confirm the bar reads its real fraction, not capped at a third.*
 - **Actor heights** (+0.2: player 1.8, NPC 1.55, child 1.3) with matched colliders/agents/nameplates.
   Check nobody's feet are underground, no nameplate sits on a head.
 - **`EnemyAI.Awake`** reads `WorldActorVisual.Height` instead of hardcoding 1.35. Check enemies path
@@ -126,8 +127,9 @@ point compile. It proves nothing about their behaviour.**
   the reorder didn't take). Finish both via `Tools → Place → Portal Placement`, reusing link ids
   `Abandoned_Church_Door` / `Bus_Station_Main_Door`. `Gang_Hideout`'s interior arrival point is still
   at chunk origin and needs moving when dressed. `NPC_Ralph`/`NPC_Sanjeet` were removed from London;
-  `Dialogue_Ralph.asset`/`Dialogue_Sanjeet.asset` are still PascalCase on disk — a future
-  `DIALOGUE ralph` block is the untested collision case above.
+  a real `DIALOGUE ralph`/`DIALOGUE sanjeet` block has since been imported, producing lowercase
+  `Dialogue_ralph.asset`/`Dialogue_sanjeet.asset` with no collision and no nulled preset — the
+  collision case above is answered by real use, not just a deliberate test.
 - **The duplicate Councillor Mosley is gone** (2026-08-18). `Home_London_Prefab` held two identical
   `NPC_Councillor Mosley` stamps under `NPCs`; the one in the crowd at `(-141.2, -2.5, 4.0)` was
   removed agent-side with Unity closed — 8 YAML documents, a pure 140-line deletion with no
@@ -174,11 +176,12 @@ point compile. It proves nothing about their behaviour.**
   now gated three ways on `rush_hour` (greeting only before, free hire during, £25 hire after) —
   confirm he can't be hired before Rush Hour completes. `Dialogue_Alex.asset` was renamed to
   lowercase and the 2026-08-17 import held it on GUID `750c809e…`; `Dialogue_Alex_Follower.asset` is
-  still PascalCase in the same folder — a future `DIALOGUE alex_follower` block hits the same
-  collision. `red_star_cigarettes` (new consumable, no icon) needs no new code. `rush_hour.quest` is
-  only a beginning — East York isn't a chunk, Mayor Zhao has no preset/art, no
-  `ProximityDialogueTrigger` exists, and Zhao's line asks the pipeline to *grant* an item on a choice,
-  which it can't do (`ITEM:` is a requirement, not a grant).
+  also lowercase now, so that collision risk is resolved too. `red_star_cigarettes` (new consumable,
+  no icon) needs no new code. `rush_hour.quest` is only a beginning — East York's `MapChunkData` and
+  prefab now exist on disk but are uncommitted and not yet in `MapChunkRegistry`; Mayor Zhao still
+  has no preset/art; `ProximityDialogueTrigger` now exists as a component but isn't placed anywhere
+  yet; and Zhao's line still asks the pipeline to *grant* an item on a choice, which it can't do
+  (`ITEM:` is a requirement, not a grant).
 - **Merchant stores and the equipment/paper-doll thread** (three merchants, Win95 shop window,
   fifteen tradeable items, flat equip bonuses). Check a clerk conversation → Buy opens/closes the
   shop without freezing (⚠️ the conversation's pause releases *before* the merchant window takes its
@@ -217,9 +220,9 @@ point compile. It proves nothing about their behaviour.**
   `knockback` is now a shape-changing action (6 frames/12fps, was 3) exempt from the standing-height
   check, same as `death`/`cycle`/`roll`.
 - **Melee knockback perk (phase 4)**: `PerkEffectType.MeleeKnockback = 9`, appended, never reordered
-  — first `PerkData` asset authored freezes the enum indices forever. **No perk asset exists yet** —
-  author one (Create → `GBH England/Data/Perk` in `Resources/Perks`, MeleeKnockback, Magnitude 2m
-  flat, not %), spend the point, hit something, check ~2m slide stopping at walls.
+  — first `PerkData` asset authored freezes the enum indices forever. ✅ **`Perk_melee_knockback`
+  now exists** in `Resources/Perks`, Magnitude 2m flat, not %. *Still to check: spend the point, hit
+  something, confirm ~2m slide stopping at walls.*
   `PlayerSession.MeleeKnockbackDistance` resets in `RecalculateDerivedStats` step 6 — reload after
   taking the perk, shove should be the same, not doubled. A killed enemy is never shoved (gated on
   `!targetHealth.IsDead`, since `Health.Die` already disables the agent). `EnemyAI`'s three
@@ -227,10 +230,12 @@ point compile. It proves nothing about their behaviour.**
   band 10 sheets land).
 
 ### Progression, HUD, enemy levels
-- **Enemy levels placed nowhere yet.** `PlacementPreset.EnemyLevel`/palette Level field attach an
-  `EnemyLevel` component (0 = none attached, deliberately, since level-1 isn't inert — it flips the
-  nameplate badge from the prefab's "3" to "1"). No enemy prefab is placed in any chunk or `c.unity` —
-  stamp one at Level 4 vs Level 1 and check the difference. Nameplates now show on aggro or within
+- **Enemy levels are authorable, and one is now authored.** `PlacementPreset.EnemyLevel`/palette
+  Level field attach an `EnemyLevel` component (0 = none attached, deliberately, since level-1 isn't
+  inert — it flips the nameplate badge from the prefab's "3" to "1"). ✅ `TutorialSequence.cs` sets
+  the tutorial bandit's badge to Level 1 on spawn — the first real exercise of this path. *Still to
+  check: stamp a second enemy from the palette at Level 4 and confirm it reads tougher.* Nameplates
+  now show on aggro or within
   `SightRadius`, hide a few seconds after — check one appears on approach, not just after first hit,
   and doesn't linger over a corpse. ⚠️ `EnemyAI` resolves its nameplate in `Start`, not `Awake` — a
   refactor moving that would cache null for the tutorial bandit (which gets `EnemyAI` added before

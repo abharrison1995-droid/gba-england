@@ -29,7 +29,7 @@ nothing throws, nothing logs, the data is just gone.
 position, health, mana, stamina, quest list, inventory, `Equipment`, `Pounds`, `LootedContainers`,
 `VisitedChunks`, `UnlockedWikiEntries`, `TotalXP`, `PerkIds`, `FocusedQuestId`,
 `ActiveCompanionId`, `CompanionHealth`, `KnownSpellIds`, `EquippedSpellIds`, `SpellName`,
-`ContainerCooldowns`.
+`PitTournamentWon`, `HighestPitRound`, `HasPurchasedRoyalCrown`, `ContainerCooldowns`.
 
 Everything from `Equipment` onwards was **appended**, so a save written before that feature existed
 has no such key at all and `JsonUtility` reads back the type's default — `0` for `Pounds` and

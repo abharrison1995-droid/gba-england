@@ -175,12 +175,9 @@ pickpocketing reachable on mobile, since `TryPickpocket` requires `IsCrouched`.
 
 ## Open defects
 
-- ⚠️ **No police officer has `IsPolice` set, so arrest never fires.** All five `Police_*` prefabs
-  carry `EnemyAI`, but only `Police_PCSO.prefab` serializes `IsPolice` at all and it is `0`; the
-  other four predate the field and take the C# default, also false. `ArrestRoutine` is keyed off
-  it, so dying to the police kills you instead of arresting you, and `WantedManager.DespawnPolice`
-  destroys nothing. **Fix is ticking the box on all five prefabs in the Inspector** — never by
-  re-running `ModernBritainSetup`.
+- ✅ **Fixed 2026-08-20** (commit `fb5f514`). All five `Police_*` prefabs now have `IsPolice: 1`, so
+  `ArrestRoutine` and `WantedManager.DespawnPolice` should both work. *Still to check in Play mode:
+  die to a police officer and confirm arrest fires instead of death.*
 - **Both payouts are live.** Pickpocketing pays into `PlayerSession.Pounds` via `AddPounds`, and
   the arrest fine (`EKVibe.ArrestFine`, £50) is taken via `SpendPounds`. The fine is **clamped to
   what the player is carrying** before it is spent, because `SpendPounds` is all-or-nothing and

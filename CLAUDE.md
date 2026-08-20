@@ -47,8 +47,8 @@ Assets/
   Scripts/          # runtime code, namespace GBHEngland.<Folder>
     AI/ Camera/ Combat/ Data/ Dialogue/ Flow/ Quests/ Systems/ UI/ Vibe/ World/
   Editor/           # editor-only tools (no asmdef — see below)
-  Data/Chunks/      # 6 MapChunkData .asset files
-  Data/Presets/     # 30 PlacementPreset assets
+  Data/Chunks/      # 19 MapChunkData .asset files (one, East York, still uncommitted)
+  Data/Presets/     # 38 PlacementPreset assets
   Data/Dialogue/    # DialogueData assets
   Prefabs/          # Chunks/, ModernBritain/, Enemies/
   Resources/        # loaded by name at runtime — Items/, Quests/, PlacementPresetLibrary
@@ -56,7 +56,7 @@ Assets/
   6twelve/          # third-party pack, not our code
   c.unity           # THE only gameplay scene
   c/                # NavMesh data for c.unity, auto-linked by scene name
-Tools/              # python helpers (see §5)
+Tools/              # python helpers (see §5) + Tools/blender/ (see Tools/blender/README.md)
 docs/               # everything else — routed from docs/README.md
 ```
 
@@ -314,9 +314,10 @@ both measure 65 px tall as of 2026-08-08.
 will arrive at the wrong density again and need the same correction. Deciding whether the contract
 or the cast is the thing to change is the owner's call, and nothing here has made it.
 
-**Also outstanding — a live defect, not a verification:** no `Police_*` prefab has `IsPolice` set,
-so arrest never fires and `DespawnPolice` destroys nothing. Fix is ticking the box on all five
-prefabs in the Inspector, **never** by re-running `ModernBritainSetup`.
+✅ **Fixed.** All five `Police_*` prefabs now have `IsPolice: 1` (commit `fb5f514`, "Set IsPolice
+on all five police, and knockback on OG and Tainted"), so arrest and `WantedManager.DespawnPolice`
+should both work. *Still to check in Play mode: die to a police officer and confirm arrest fires
+instead of death.*
 
 ⚠️ **Also a live defect — `Import Quests` silently nulls a preset's `Conversation` when the
 dialogue asset's filename differs only by case.** Found 2026-08-16 on the first real import.
@@ -965,8 +966,10 @@ Committed 2026-08-17 on `claude/forage-asset-containers-ahhwdf`, never compiled:
 - ⚠️ **`WorldContainer.SaveId` is why the component is safe on a child object.** Every container
   child the tool makes is called `Container`, so without an explicit id ten of them would share one
   save key and looting one would empty all ten. The tool uniquifies it against `SpriteContainer`
-  too — the two share one key space and **neither warns across the other**. *Force a duplicate and
-  check Validate All Containers names it.*
+  too — the two share one key space. `ContainerIdRegistry` (added 2026-08-20, commit `fe122f0`) now
+  warns across both types: a `WorldContainer` and a `SpriteContainer` claiming the same id in the
+  same chunk are both named in the console, whichever Awakes second. *Force a duplicate and check
+  Validate All Containers names it, and that a cross-type collision logs the same warning.*
 - **`WorldContainer.ContainerMode` and `TrapType` are serialized by integer index** and are frozen
   by the first authored container. No container is placed yet, so this is still the free moment.
 - **The trap, lock and quest-gate fields are declared and inert.** Every tooltip opens with
@@ -1071,7 +1074,9 @@ and combat all good. That is the first time any of C0–C3 has run.
 - **`Companion_alex.asset` is the one authored definition**, in `Resources/Companions/`. ⚠️ **`Id:
   alex` is a save key** — it is what the save resolves the hired companion through, and it must
   also match the `PlacementPreset.QuestKey` used as his home anchor. Do not rename it.
-- ⚠️ **Alex's heal was rebuilt on 2026-08-16 and has NEVER been compiled or played.** It was
+- ⚠️ **Alex's heal was rebuilt on 2026-08-16 and has not been confirmed firing in play.** It
+  compiled fine — it's part of the same code that ran during the 2026-08-16 session above — but
+  that session confirms following, targeting and combat, not the heal specifically. It was
   previously single-target and gated on `_target == null`, so it **only ever fired out of combat** —
   which is why it was never seen. It now heals the player *and* Alex for `HealAmount` each, mirroring
   the player's own `Spell_healing_aura`, and the tick no longer gates it on being out of combat.
