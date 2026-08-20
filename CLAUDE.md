@@ -129,6 +129,11 @@ mapping table first.**
   behaviour and you must touch all seven.
 - **`CurrentChunkData` is written from eight places across six files.** To react to a chunk change,
   **poll a remembered reference** — do not hook one transition and assume you caught them all.
+- ⚠️ **In `Awake`, ask `ChunkManager.ContentChunkName`, never `CurrentChunkData`.** `TravelRoutine`
+  instantiates the destination *before* assigning `CurrentChunkData` — deliberately, so a broken
+  arrival marker leaves the world untouched — and every `Awake` in the new chunk runs inside that
+  `Instantiate`. Content that asks directly gets the chunk the player just **left**, on that one
+  path of the seven, silently. This is a save-key bug wherever the answer is persisted.
 - ⚠️ **A chunk root cannot be suspended with `SetActive(false)`.** It permanently blinds every
   `EnemyAI`, leaks a registered NavMesh, strands two tutorial singletons and leaves scene-root
   nameplates visible. Chunks are only ever destroyed.
@@ -165,6 +170,7 @@ preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLi
 | Saves, serialized fields, enums, `.meta`/GUIDs | [docs/reference/SAVE_AND_SERIALIZATION.md](docs/reference/SAVE_AND_SERIALIZATION.md) |
 | Wanted level, police, stealth, pickpocketing, mounts, movement speed | [docs/reference/CONSEQUENCES_AND_MOUNTS.md](docs/reference/CONSEQUENCES_AND_MOUNTS.md) |
 | World Palette, presets, NPCs, enemy prefabs | [docs/reference/WORLD_AUTHORING_AND_NPCS.md](docs/reference/WORLD_AUTHORING_AND_NPCS.md) |
+| Containers, foraging, loot respawn | [docs/plans/CONTAINER_SYSTEM_PLAN.md](docs/plans/CONTAINER_SYSTEM_PLAN.md) + save keys in [docs/reference/SAVE_AND_SERIALIZATION.md](docs/reference/SAVE_AND_SERIALIZATION.md) |
 | Quests, quest conditions, dialogue graphs | [docs/reference/QUESTS_AND_DIALOGUE.md](docs/reference/QUESTS_AND_DIALOGUE.md) |
 | Spells, spell tuning, spellbook persistence and spell VFX | [docs/reference/SPELLS.md](docs/reference/SPELLS.md) |
 | The art importer, sprite sizing, animator controllers | [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) |
@@ -913,6 +919,63 @@ compiled:
 - **Untouched next door:** the city lockout is only ever consulted by `ChunkManager.OnPlayerHitEdge`,
   never by `TravelRoutine`, so a portal leading *into* a city would walk past an active lockout.
   None exists; noted, not fixed.
+
+**Also outstanding — the 3D container system and visit-counted respawn, none of it exercised.**
+Committed 2026-08-17 on `claude/forage-asset-containers-ahhwdf`, never compiled:
+
+- ⚠️ **A latent save-key defect is fixed, and it is the reason to check the portal path first.**
+  `TravelRoutine` instantiates the destination *before* assigning `CurrentChunkData`, so anything
+  resolving its own chunk in `Awake` got the chunk the player just left. `SpriteContainer` did
+  exactly that. `ChunkManager.ContentChunkName` (preferring the new `ChunkBeingBuilt`) is now what
+  content asks. *Loot a `Fixed` container reached **by portal**, quit, reload, and check it is still
+  empty; then read `LootedContainers` in `savegame.json` and confirm the id names the destination
+  chunk, not the origin.* Nothing logs if this is wrong.
+- ⚠️ **`SpriteContainer.Respawning` changed meaning, and two of them are live in `c.unity`.** It used
+  to refill on every chunk entry and save nothing; it now sits out `RespawnVisits` entries like the
+  new component. `RespawnVisits` was **appended**, so an existing asset reads it as `0`, not as the
+  initializer — both components treat `<= 0` as "use the default (3)", and
+  `Container_Respawning.prefab` was given the key explicitly.
+- ⚠️ **`c.unity` was hand-edited to delete two scene-root test containers.** `Container_Fixed` and
+  `Container_Respawning` were sitting active at the root of the scene, in no chunk. A GUID scan that
+  looked for the *script* guid missed them, because a prefab instance references the *prefab's*
+  guid. They mattered: a scene-root container is never destroyed and rebuilt, so its `Awake` runs
+  once per scene load, and `Container_Respawning` would have started writing a cooldown that
+  survived a restart under a save key naming a chunk it did not belong to. Removed on instruction —
+  two `!u!1001` documents and their two `SceneRoots.m_Roots` entries, **128 deletions and no
+  insertions**, nothing else in the scene referencing either. The two prefab *assets* are untouched
+  and remain as authoring templates. *Confirm on first open that the scene loads with exactly five
+  roots — SYSTEM, MANAGERS, ACTORS, ENVIRONMENT, UI — and no console error.*
+- **`SaveData.ContainerCooldowns` is appended.** *Load a save made before today and check it arrives
+  with no error and every container fresh.* `BeginNewGame` clears the table — *loot a Respawning
+  container, return to the title screen **without quitting**, start a New Game, and check it is
+  full.* That clear fails silently.
+- ⚠️ **Only the edge crossing and the portal tick a visit**; the other five instantiate paths do not,
+  and `LoadWorld` especially must not — a reload that advanced cooldowns would make reload-spam the
+  fastest way to farm. The table lives in `ChunkManager`. *Loot a Respawning container, save, quit,
+  reload twice, and check it is still empty.*
+- **`WorldContainer` and `Tools → Place → Container Placement` are new**, and their two `.meta`
+  files plus three `LootBand_*.asset` metas were hand-authored. *Confirm on first open that Unity
+  accepts all five rather than minting fresh GUIDs.* `--check-dangling` cannot speak to this here:
+  it exits **2, "nothing was verified"**, because `Library/PackageCache` is absent.
+- ⚠️ **`WorldContainer.SaveId` is why the component is safe on a child object.** Every container
+  child the tool makes is called `Container`, so without an explicit id ten of them would share one
+  save key and looting one would empty all ten. The tool uniquifies it against `SpriteContainer`
+  too — the two share one key space and **neither warns across the other**. *Force a duplicate and
+  check Validate All Containers names it.*
+- **`WorldContainer.ContainerMode` and `TrapType` are serialized by integer index** and are frozen
+  by the first authored container. No container is placed yet, so this is still the free moment.
+- **The trap, lock and quest-gate fields are declared and inert.** Every tooltip opens with
+  "NOT WIRED" and the validator reports any that are set. Nothing reads them.
+- **No container of either kind is placed anywhere now, and none of the three 3D models exists
+  yet** — the bush, the vending machine and the bus wreckage still have to be made and imported.
+  Until then the tool can only be exercised against placeholder geometry, and every save/cooldown
+  check needs a container authored first.
+- **The three forage items were retuned, ids untouched.** Barnacles and fungus are now Junk (sell
+  to the fisherman); blueberries heal 5 HP / 8 mana. ⚠️ Their `ItemID`s appear as literals in three
+  `.quest` files and `Import Quests` is an owed run — renaming one would make the importer write
+  `{fileID: 0}` into a Collect stage with **nothing logged**.
+
+→ [docs/plans/CONTAINER_SYSTEM_PLAN.md](docs/plans/CONTAINER_SYSTEM_PLAN.md) §6 for the full routes.
 
 **Also outstanding — the mobile performance pass, none of it exercised.** Landed on `main`, never
 compiled:

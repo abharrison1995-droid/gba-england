@@ -44,6 +44,46 @@ namespace GBHEngland.World
         public MapChunkData CurrentChunkData;
         public GameObject CurrentChunkInstance;
 
+        /// <summary>
+        /// The chunk whose prefab is being instantiated right now, or null outside that window.
+        ///
+        /// ⚠ This exists because <see cref="TravelRoutine"/> builds the destination and inspects it
+        /// for the arrival marker BEFORE committing anything — deliberately, so a broken marker id
+        /// leaves the world untouched. Every Awake in the new chunk runs synchronously inside that
+        /// Instantiate, so content reading <see cref="CurrentChunkData"/> during Awake sees the
+        /// chunk the player just LEFT. Moving the assignment earlier would destroy the abort
+        /// safety, so the answer is a second field and a resolver that prefers it.
+        ///
+        /// A property, not a serialized field: it is per-frame transient state with no business
+        /// being authorable, and a public field here would write an orphan key into c.unity.
+        /// </summary>
+        public MapChunkData ChunkBeingBuilt { get; private set; }
+
+        /// <summary>
+        /// The chunk that content instantiated right now belongs to. This is what anything running
+        /// in Awake must ask — never <see cref="CurrentChunkData"/> directly, which is only correct
+        /// on six of the seven paths that build a chunk.
+        /// </summary>
+        public string ContentChunkName =>
+            ChunkBeingBuilt != null ? ChunkBeingBuilt.ChunkName
+            : CurrentChunkData != null ? CurrentChunkData.ChunkName
+            : null;
+
+        // ── Container cooldowns and the seven instantiate paths ─────────────────────────
+        // Seven code paths build a chunk. Only the two here count as "a visit" for a restockable
+        // container, and the other five are silent on purpose:
+        //
+        //   TransitionToChunkRoutine (edge)   ticks — the canonical left-and-came-back
+        //   TravelRoutine (portal)            ticks — with a give-back on the abort branch
+        //   ChunkManager.Start (cold boot)    no — debug autoload; does not even write CurrentChunkData
+        //   SaveGameManager.LoadWorld         no — a reload must not advance a cooldown, or
+        //                                          reload-spam becomes the fastest way to farm
+        //   DeathScreenUI.OnNewGame fallback  no — dying is not a visit
+        //   GameFlowController.EnterManorCellars      no — one-shot; the arrest path lands here
+        //   GameFlowController.LoadLondonAtWestGates  no — one-shot tutorial exit
+        //
+        // Adding an eighth path means deciding which of those two groups it joins.
+
         [Header("Save / Load")]
         [Tooltip("Every chunk that Save/Load needs to be able to find by name. A chunk missing from this list cannot be loaded even if the save names it.")]
         public MapChunkData[] AllChunks;
@@ -324,6 +364,23 @@ namespace GBHEngland.World
                 // instance the player actually lands in — and an abort only happens on an authoring
                 // error the validator already reports, so the rare path is the one paying.
                 GameObject previousInstance = CurrentChunkInstance;
+
+                // CurrentChunkData is still the origin chunk here and stays that way until the
+                // marker resolves below. Content in the candidate runs its Awake inside this
+                // Instantiate, so ChunkBeingBuilt is what tells it where it actually is — see the
+                // field's remarks. Cleared in the finally, so an abort or an exception cannot leave
+                // a stale value behind for the next thing that asks.
+                ChunkBeingBuilt = targetChunk;
+
+                // The second of the two paths that count a visit, and before the Instantiate for
+                // the same reason as the edge crossing — containers read their cooldown in Awake.
+                // Given back on the abort branch below, so a broken marker id costs the player
+                // nothing for a journey that never happened. The exact touched-id list is kept
+                // (not just the chunk name) so the give-back can't re-lock a container that was
+                // already spent before this tick — see IncrementContainerCooldowns's remarks.
+                List<string> decrementedContainerIds =
+                    GBHEngland.Flow.PlayerSession.Instance?.DecrementContainerCooldowns(targetChunk.ChunkName);
+
                 GameObject candidate = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 candidate.name = targetChunk.ChunkPrefab.name;
 
@@ -344,6 +401,9 @@ namespace GBHEngland.World
                             "Check the marker exists in the chunk's PREFAB (not just the scene) and that " +
                             "the id matches exactly, then re-run Tools > Place > Portal Placement " +
                             "> Validate All Location Links.");
+                        // Give back the visit counted above: the player never arrived.
+                        GBHEngland.Flow.PlayerSession.Instance?.IncrementContainerCooldowns(
+                            decrementedContainerIds);
                         Destroy(candidate);
                         aborted = true;
                     }
@@ -394,6 +454,7 @@ namespace GBHEngland.World
             }
             finally
             {
+                ChunkBeingBuilt = null;
                 if (LoadingScreenUI)
                 {
                     LoadingScreenUI.alpha = 0f;
@@ -505,6 +566,13 @@ namespace GBHEngland.World
                 GBHEngland.Flow.PlayerSession.Instance?.MarkChunkVisited(targetChunk.ChunkName);
                 // Toast: walking across an edge is a live arrival — a first visit is a discovery.
                 GBHEngland.UI.WikiUnlock.GrantForChunk(targetChunk.ChunkName, silent: false);
+
+                // Walking in over an edge is the canonical "you left and came back", so it is one
+                // of the two paths that counts a visit against a restockable container. Must happen
+                // before the Instantiate below: containers read their cooldown in Awake, and a tick
+                // applied afterwards would not be seen until the visit after this one.
+                GBHEngland.Flow.PlayerSession.Instance?.DecrementContainerCooldowns(targetChunk.ChunkName);
+
                 CurrentChunkInstance = Instantiate(targetChunk.ChunkPrefab, Vector3.zero, Quaternion.identity);
                 CurrentChunkInstance.name = targetChunk.ChunkPrefab.name;
 

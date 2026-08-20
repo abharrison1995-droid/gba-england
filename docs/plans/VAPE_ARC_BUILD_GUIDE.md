@@ -655,6 +655,11 @@ reuses `bus_station_barnacles`.
   destroyed and rebuilt on every entry, so chest state resets by itself. ⚠️ **Quest 4 leaves two of
   these in the bag** and never consumes them, so a player arriving here starts at 2/10, not 0/10.
   Not a miscount — flagged so it doesn't look like one.
+  ⚠️ **`LootChest` is the deliberate choice, not a default left unmade.** The forage-container
+  system (`WorldContainer`, `Tools → Place → Container Placement`, merged 2026-08-20) could author
+  this step instead, but its Fixed mode is save-backed and stays empty forever once looted, where
+  `LootChest` resets on every chunk rebuild. The owner wants these farmable forever — do not
+  re-author this step onto `WorldContainer`.
 - [x] **Every `[TODO:]` line is written** (owner, 2026-08-17) — all six in Gangbusters and all
   three in Ah, Barnacles, in verbatim. **`grep -rn "TODO" quests/` now returns only comment lines
   about TODOs, and no placeholder anywhere in the tree.** The whole nine-quest arc is written prose

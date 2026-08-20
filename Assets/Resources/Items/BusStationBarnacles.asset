@@ -16,9 +16,9 @@ MonoBehaviour:
   ItemName: Bus Station Barnacles
   Description: AVAST! THERE BE A LAND CLAM! Is a barnacle a clam? Are these living? Dunno, but the fisherman will buy them for cash.
   Icon: {fileID: 21300000, guid: 305fbaf167236dc47984b0440f3917ae, type: 3}
-  Type: 7
+  Type: 11
   AllowedClasses:
-  Value: 1
+  Value: 8
   Tradeable: 1
   Damage: 0
   Armor: 0
