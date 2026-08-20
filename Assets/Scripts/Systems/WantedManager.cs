@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using GBHEngland.Data;
 using GBHEngland.World;
@@ -33,6 +34,16 @@ namespace GBHEngland.Systems
         [Tooltip("Seconds of no fresh offense before one Knife fades, GTA-star style. Resets to 0 every time SpikeKnives fires, so re-offending restarts the countdown.")]
         public float KnifeDecayInterval = 60f;
         private float _knifeDecayTimer;
+
+        /// <summary>
+        /// Mirrors ChunkManager's own per-chunk lockout timer (<c>_cityLockoutTimers</c>), which is
+        /// private and decays every frame in ChunkManager.Update. WantedManager is the only caller
+        /// of ApplyCityLockout (see OnChunkTransition below), so recording the same expiry here the
+        /// moment it is applied stays in step with it for free, and lets a travel path other than
+        /// edge-crossing ask the same "is this city locked out" question OnPlayerHitEdge already
+        /// asks. Keyed by absolute Time.time rather than counted down, so nothing needs to poll it.
+        /// </summary>
+        private readonly Dictionary<MapChunkData, float> _cityLockoutExpiry = new Dictionary<MapChunkData, float>();
 
         private void Awake()
         {
@@ -153,12 +164,19 @@ namespace GBHEngland.Systems
             
             var player = GBHEngland.Combat.CombatController.Instance;
             if (player == null) return;
-            
-            // Randomly spawn around player. A real implementation should use NavMesh.SamplePosition.
+
+            // Randomly spawn around the player, then snap to the NavMesh — the same pattern
+            // CompanionManager uses to place a companion beside the player. A random offset alone
+            // can land inside geometry; falling back to the player's own position (rather than
+            // the unsampled point) keeps a failed sample from spawning an officer in a wall.
             Vector3 randomOffset = Random.insideUnitSphere * SpawnRadius;
             randomOffset.y = 0;
             Vector3 spawnPos = player.transform.position + randomOffset;
-            
+            if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out UnityEngine.AI.NavMeshHit navHit, 4f, UnityEngine.AI.NavMesh.AllAreas))
+                spawnPos = navHit.position;
+            else
+                spawnPos = player.transform.position;
+
             Transform parent = ChunkManager.Instance != null && ChunkManager.Instance.CurrentChunkInstance != null
                 ? ChunkManager.Instance.CurrentChunkInstance.transform
                 : null;
@@ -216,6 +234,7 @@ namespace GBHEngland.Systems
                 // Apply cooldown to the city chunk we just left
                 float cooldown = CurrentKnives * CooldownPerKnife;
                 ChunkManager.Instance.ApplyCityLockout(previousChunk, cooldown);
+                _cityLockoutExpiry[previousChunk] = Time.time + cooldown;
 
                 // Clear wanted level
                 ClearWanted();
@@ -231,6 +250,33 @@ namespace GBHEngland.Systems
         {
             if (GBHEngland.UI.UIManager.Instance != null)
                 GBHEngland.UI.UIManager.Instance.UpdateKnivesUI(CurrentKnives);
+        }
+
+        /// <summary>
+        /// True while <paramref name="chunk"/> is under an active police lockout applied by
+        /// OnChunkTransition above, with <paramref name="remainingSeconds"/> filled in for a
+        /// warning message. Existing edge-crossing travel already refuses entry to a locked-out
+        /// city via ChunkManager.OnPlayerHitEdge, which checks ChunkManager's own private timer
+        /// directly. This is the same question asked from outside ChunkManager, for a travel path
+        /// (a DungeonPortal leading into a city) that has no access to that private dictionary.
+        ///
+        /// ⚠ ChunkManager.TravelRoutine does not call this yet — a portal leading into a locked-out
+        /// city currently walks straight past the lockout. Wiring that one-line call belongs to
+        /// whoever has ChunkManager.cs in scope; see CLAUDE.md's outstanding-work ledger.
+        /// </summary>
+        public bool IsCityLockedOut(MapChunkData chunk, out float remainingSeconds)
+        {
+            remainingSeconds = 0f;
+            if (chunk == null || !chunk.IsCity) return false;
+            if (!_cityLockoutExpiry.TryGetValue(chunk, out float expiresAt)) return false;
+
+            remainingSeconds = expiresAt - Time.time;
+            if (remainingSeconds <= 0f)
+            {
+                _cityLockoutExpiry.Remove(chunk);
+                return false;
+            }
+            return true;
         }
     }
 }
