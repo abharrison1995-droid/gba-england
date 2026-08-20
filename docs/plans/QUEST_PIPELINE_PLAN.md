@@ -1,15 +1,16 @@
 # Quest pipeline — modularity plan
 
 ```
-Last updated:          2026-08-12 (Phase 0 + Phase 1 written; first compile pass pending)
+Last updated:          2026-08-12 (Phase 0 + Phase 1 written); superseded by real use 2026-08-17
 Verification scope:    Phase 0 (multi-quest watcher, quest focus, quest-gated dialogue choices,
                        landmine fallbacks) and Phase 1 (text importer, content validator, .quest
-                       format, template) are WRITTEN and brace-balanced but NOT yet compiled or run
-                       in the editor. The quest spine (QuestDefinition → QuestDatabase →
-                       QuestConditionWatcher → QuestManager, dialogue grant/complete) is unchanged
-                       in shape and is described in docs/reference/QUESTS_AND_DIALOGUE.md. This plan
-                       is the roadmap for making the pipeline authorable end-to-end and modular per
-                       quest.
+                       format, template) are merged and have since been exercised for real: a full
+                       `Import Quests` run on 2026-08-17 wrote all ten `QuestDefinition`s and
+                       rebuilt every generated `DialogueData` — see CLAUDE.md §5 for specifics. The
+                       quest spine (QuestDefinition → QuestDatabase → QuestConditionWatcher →
+                       QuestManager, dialogue grant/complete) is unchanged in shape and is described
+                       in docs/reference/QUESTS_AND_DIALOGUE.md. This plan is the roadmap for making
+                       the pipeline authorable end-to-end and modular per quest.
 ```
 
 > **Owner verification gate (2026-08-12):** Phases 0–1 must be compiled and smoke-tested in the

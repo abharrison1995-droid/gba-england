@@ -1,8 +1,10 @@
 # Implementation plan — Progression, Phases 1 and 2
 
-**Status: plan only, nothing implemented.** Derived from
-[PROGRESSION_SYSTEM.md](PROGRESSION_SYSTEM.md), whose owner decisions are settled and are not
-reopened here. Phases 3–5 (auto growth, perks, loot bands) are **out of scope**.
+**Status: implemented — Phases 1–2 are merged and live on `main`** (`PlayerSession.TotalXP`,
+`EnemyLevel`, the kill-XP award in `Health`). Never seen by a compiler or the editor — see
+CLAUDE.md §5. Derived from [PROGRESSION_SYSTEM.md](PROGRESSION_SYSTEM.md), whose owner decisions
+are settled and are not reopened here. Phases 3–5 (auto growth, perks, loot bands) are
+**out of scope**.
 
 ```
 Grounded against: working tree on branch art-facing-and-density, 2026-08-08

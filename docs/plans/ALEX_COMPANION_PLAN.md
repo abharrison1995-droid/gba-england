@@ -1,17 +1,14 @@
 # Alex companion — approved design and implementation plan
 
 ```
-Last verified against: working tree, 2026-08-09
-Verification scope:    design plus local art pre-check. No companion runtime, save fields, prefab,
-                       preset or imported Alex art exists yet. `sheet_char_alex_idle`,
-                       `sheet_char_alex_walk`, `sheet_char_alex_attack` and
-                       `sheet_char_alex_cast`, `sheet_char_alex_hurt` and
-                       `sheet_char_alex_death`, `sheet_char_alex_roll` and
-                       `sheet_char_alex_knockback` are staged in
-                       `art_incoming/` and passed
-                       `Tools/precheck_sheets.py`; Unity has not imported or displayed them. The two
-                       supplied likeness sheets live outside the repo and are references, not
-                       importer-ready assets.
+Last verified against: working tree, 2026-08-09 (design only — see below for current state)
+Verification scope:    design plus local art pre-check, captured before implementation began.
+                       **Superseded:** the full companion runtime, save fields, prefab, preset and
+                       imported Alex art all exist now, and Alex has been recruited and fought
+                       alongside the player in an editor session — see
+                       [COMPANION_PIPELINE_PLAN.md](COMPANION_PIPELINE_PLAN.md) and CLAUDE.md's
+                       companion section for current state. This file remains the approved design
+                       record, not a status report.
 ```
 
 ## 1. Approved player-facing design

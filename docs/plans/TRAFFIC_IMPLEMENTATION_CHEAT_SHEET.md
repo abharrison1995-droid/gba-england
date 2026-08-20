@@ -6,10 +6,10 @@
 > [`TRAFFIC_AND_CAR_THEFT_PLAN.md`](TRAFFIC_AND_CAR_THEFT_PLAN.md) and
 > [`CONSEQUENCES_AND_MOUNTS.md`](../reference/CONSEQUENCES_AND_MOUNTS.md).
 >
-> **Current state (checked 2026-08-15):** both car GLBs and all four traffic scripts exist. No
-> generated traffic-car prefab, generated traffic `VehicleData`, or `TrafficRoute` is currently in
-> `Home_London_Prefab`. The code and its hand-authored `.meta` files have not been compiled or run
-> in Unity yet.
+> **Current state (checked 2026-08-20):** both car GLBs and all four traffic scripts are merged to
+> `main` (PR #9). No generated traffic-car prefab, generated traffic `VehicleData`, or
+> `TrafficRoute` is in `Home_London_Prefab` yet. The code and its hand-authored `.meta` files have
+> still not been compiled or run in Unity.
 
 ## The short version
 
