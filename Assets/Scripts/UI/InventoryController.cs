@@ -254,7 +254,7 @@ namespace GBHEngland.UI
         /// ⚠ The free band under MAP OF BRITAIN is only about 39 px tall against about 65 px for a
         /// rail button. This is the one layout number here that was reasoned about rather than
         /// looked at. If it reads cramped, raise Resistances to (0.08, 0.20)-(0.92, 0.38) in
-        /// Assets/Editor/InventoryWin95Builder.cs, widen this button to 0.118-0.19, and re-run
+        /// Assets/Editor/UI/InventoryWin95Builder.cs, widen this button to 0.118-0.19, and re-run
         /// Tools > UI > Rebuild Inventory Panel (Win95) with Play mode stopped.
         /// </summary>
         private void BuildPerksButton()

@@ -71,7 +71,14 @@ docs/               # everything else — routed from docs/README.md
 - **Editor menu path**: `Tools/<Category>/...` — `Place`, `Art`, `World`, `UI`, `Debug`,
   `Repair`, `Content`, plus **`Danger Zone`** for the five tools that overwrite or re-create assets. Each of
   those confirms first and names what it destroys. **Nothing destructive may go anywhere else.**
-  `Tools/World Palette` is the one deliberate uncategorised exception.
+  `Tools/World Palette` is the one deliberate uncategorised exception. **`Assets/Editor/` is
+  physically organised into matching subfolders** (`Place/`, `Art/`, `World/`, `UI/`, `Debug/`,
+  `Repair/`, `Content/`, `Danger Zone/`, since 2026-08-20), plus two the menu convention doesn't
+  name: `Validators/` (the four content-validation tools) and `Shared/` (helper classes with no
+  menu item of their own — `PlacementBuilders`, `EditorMaterialLibrary` — consumed by tools in
+  other folders). A file's folder and its `MenuItem` category usually match, but the folder is
+  about where the code lives, not what the menu shows — `WorldPaletteWindow.cs` sits in `World/`
+  despite its own uncategorised menu path.
 - **Mobile-first**: hot paths avoid allocation deliberately (preallocated `Collider[] _hitResults`,
   parallel key lists to avoid dictionary-iteration garbage). Respect this in `Update()` paths.
 - **`Assets/Editor/` is stripped from builds** and there are **no `.asmdef` files**, so it is the
@@ -174,7 +181,7 @@ preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLi
 | Quests, quest conditions, dialogue graphs | [docs/reference/QUESTS_AND_DIALOGUE.md](docs/reference/QUESTS_AND_DIALOGUE.md) |
 | Spells, spell tuning, spellbook persistence and spell VFX | [docs/reference/SPELLS.md](docs/reference/SPELLS.md) |
 | The art importer, sprite sizing, animator controllers | [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) |
-| Title screen, character creator, their layout and art | the two `Assets/Editor/*ScreenSetup.cs` / `*CreatorSetup.cs` builders — no reference doc; the anchors and the reasons for them are commented at each call site, because they are only true of the code that writes them |
+| Title screen, character creator, their layout and art | the two `Assets/Editor/Danger Zone/*ScreenSetup.cs` / `*CreatorSetup.cs` builders — no reference doc; the anchors and the reasons for them are commented at each call site, because they are only true of the code that writes them |
 | Git, asset pruning, `.gitattributes`, project naming | [docs/reference/REPO_HYGIENE.md](docs/reference/REPO_HYGIENE.md) |
 | Generating art (the art agent's contract) | [ART_PIPELINE.md](ART_PIPELINE.md) + [docs/art/ART_QUEUE.md](docs/art/ART_QUEUE.md) |
 | Building a 3D model (band 6 buildings, props) | [Tools/blender/README.md](Tools/blender/README.md) — or invoke the `model-author` skill |
@@ -640,14 +647,14 @@ Committed 2026-08-15, never compiled, and **not importable until the editor pass
   `sheet_char_player_walk` went 4 frames to 6 and frame 5 of the clip took `fileID: 0`, so the
   player flickered invisible once per stride. Repaired by hand in `fefe311`; this stops it
   recurring. Ids for existing frame names are reused, so nothing that references a frame moves.
-- **`Assets/Editor/ArtImportTool.cs` now has `using UnityEditor.U2D.Sprites;`** — from
+- **`Assets/Editor/Art/ArtImportTool.cs` now has `using UnityEditor.U2D.Sprites;`** — from
   `com.unity.2d.sprite`, added in `e1dc5b0` for exactly this. `Assets/Editor/` has no `.asmdef`, so
   this was raised as a risk that the editor assembly might not see the package and would fail to
   load wholesale. **It is not a risk:** `Unity.2D.Sprite.Editor.asmdef` declares
   `"autoReferenced": true` and is Editor-only, so `Assembly-CSharp-Editor` references it with no
   `.asmdef` of ours, and the package is resolved on disk at
   `Library/PackageCache/com.unity.2d.sprite@1.0.0`. Rollback, if it is ever wanted for another
-  reason, is `git checkout -- Assets/Editor/ArtImportTool.cs`.
+  reason, is `git checkout -- Assets/Editor/Art/ArtImportTool.cs`.
 - **The id a new frame gets comes from its GUID, not from us.** `SpriteDataExt(SpriteRect)` sets
   `internalID = spriteID.GetHashCode()`, so assigning a real `spriteID` per frame is the whole fix —
   that step is what `SpriteMetaData` had no field for. Conversely `CopyFromSpriteRect` copies name,

@@ -68,7 +68,7 @@ It sits directly at `Tools/World Palette`, uncategorised — the one deliberate 
   `Prefab` assigned, so this path is unexercised. Containers are no longer authored this way:
   `Tools → Content → Build Container Prefabs` and the `Preset_Container_*` preset pattern were
   superseded 2026-08-17 by `Tools → Place → Container Placement`
-  (`Assets/Editor/ContainerPlacementTool.cs`), a click-to-place tool that stamps a `WorldContainer`
+  (`Assets/Editor/Place/ContainerPlacementTool.cs`), a click-to-place tool that stamps a `WorldContainer`
   + `Interactable` directly rather than going through a preset. Its default `Mode` is `Respawning`
   (changed 2026-08-20, commit `742b50a`); a `WorldContainer` and a `SpriteContainer` sharing a save
   id are now caught by `ContainerIdRegistry` (`Assets/Scripts/World/ContainerIdRegistry.cs`, added

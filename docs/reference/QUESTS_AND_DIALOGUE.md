@@ -273,7 +273,7 @@ dangling id, a duplicate or an inescapable node. Treat both as untested the firs
   authoring feature** — a graph that needs it is still wrong. Gating is judged as it stands rather
   than structurally, because within one conversation the player's position only gets worse. The
   visited set is keyed on **node identity, not `Id`**, because duplicate ids are legal-but-broken.
-- **`Assets/Editor/DialogueValidator.cs`** — `Tools/Content/Validate Dialogue`, plus
+- **`Assets/Editor/Validators/DialogueValidator.cs`** — `Tools/Content/Validate Dialogue`, plus
   `CONTEXT/DialogueData/Validate This Conversation`. Errors: no nodes, a node with no `Id`, a
   duplicate `Id`, a dangling `NextNodeId`, a node with no route out. Warnings: an unresolvable
   `StartNodeId`, an unreachable node, a node whose every exit is gated, a `ConsumeRequiredItem`

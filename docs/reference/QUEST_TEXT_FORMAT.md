@@ -219,7 +219,7 @@ Missing items are logged and left null — resolve the `ItemID` in `Resources/It
 
 ## Cross-checks
 
-`Tools → Content → Validate Quests` (see `Assets/Editor/QuestContentValidator.cs`) checks the
+`Tools → Content → Validate Quests` (see `Assets/Editor/Validators/QuestContentValidator.cs`) checks the
 contract between quests and dialogue without re-importing: every quest id has a `GRANT:` somewhere,
 every `GRANT:` resolves, grant objectives are non-blank, and a `Collect` stage is last and has a
 `COMPLETE:` route. (The stage-`QuestKey`-to-placed-actor/marker scan is deferred — it needs loading
