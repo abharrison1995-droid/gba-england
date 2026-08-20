@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b12e847054b18345accdc5a254ef1bc, type: 3}
+  m_Name: Dialogue_PrinceMandrew
+  m_EditorClassIdentifier: 
+  StartNodeId: start
+  Nodes:
+  - Id: start
+    Speaker: {fileID: 0}
+    DialogueText: "Welcome to the Castle Fight Pit. Ten rounds of brutal combat.
+      Defeat every challenger to build the purse.\n\nYou can cash out for 50% between
+      rounds, and we'll patch you up. Push to the end for the full purse and a \xA3100
+      Championship bonus. If you fall, you leave with nothing.\n\nAre you ready to
+      enter?"
+    Choices:
+    - ChoiceText: Enter the Fight Pit.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 1
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+      IsFightPitContinue: 0
+      IsFightPitCashOut: 0
+      StartsFightPit: 1
+    - ChoiceText: Not right now.
+      NextNodeId: 
+      QuestGate: 0
+      QuestGateId: 
+      QuestGateStage: 0
+      RequiredStat: 
+      RequiredStatLevel: 0
+      RequiredItem: {fileID: 0}
+      RequiredItemQuantity: 1
+      ConsumeRequiredItem: 1
+      GrantQuestId: 
+      GrantQuestTitle: 
+      GrantQuestObjective: 
+      GrantQuestLocation: 
+      TeachSpark: 0
+      CompleteQuestId: 
+      Merchant: {fileID: 0}
+      MerchantAction: 0
+      HireCompanionId: 
+      HireCompanionFree: 0
+      CompanionCommand: 0
+      IsFightPitContinue: 0
+      IsFightPitCashOut: 0
+      StartsFightPit: 0

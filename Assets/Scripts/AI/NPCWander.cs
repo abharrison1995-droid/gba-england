@@ -145,7 +145,13 @@ namespace GBHEngland.AI
         private bool Blocked(Vector3 direction)
         {
             var probe = new Ray(transform.position + Vector3.up * ProbeHeight, direction);
-            return Physics.SphereCast(probe, ProbeRadius, ProbeAhead, ~0, QueryTriggerInteraction.Ignore);
+            if (Physics.SphereCast(probe, ProbeRadius, out RaycastHit hit, ProbeAhead, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider != null && (hit.collider.transform == transform || hit.collider.transform.IsChildOf(transform)))
+                    return false;
+                return true;
+            }
+            return false;
         }
 
         private void PickTarget()

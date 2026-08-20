@@ -201,7 +201,12 @@ namespace GBHEngland.Companions
             // Position beside the player once they exist.
             var player = CombatController.Instance;
             if (player != null)
-                root.transform.position = player.transform.position + Vector3.back * 2.0f;
+            {
+                Vector3 targetPos = player.transform.position + Vector3.back * 2.0f;
+                if (UnityEngine.AI.NavMesh.SamplePosition(targetPos, out UnityEngine.AI.NavMeshHit hit, 4.0f, UnityEngine.AI.NavMesh.AllAreas))
+                    targetPos = hit.position;
+                root.transform.position = targetPos;
+            }
             agent.Warp(root.transform.position);
         }
 
@@ -282,9 +287,15 @@ namespace GBHEngland.Companions
             _joinedChunkInstance = instance;
 
             Vector3 pos = player.transform.position + Vector3.back * 2.0f;
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out UnityEngine.AI.NavMeshHit hit, 4.0f, UnityEngine.AI.NavMesh.AllAreas))
+                pos = hit.position;
             Follower.transform.position = pos;
             var agent = Follower.GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (agent != null) agent.Warp(pos);
+            // CompanionAI.OnCompanionDied disables the agent on knockout and leaves the object
+            // alive for ~2.2s (_knockoutDespawnAt) before despawning. A chunk transition landing
+            // in that window must not Warp a disabled agent - it is about to despawn anyway, so
+            // skipping the warp silently is correct.
+            if (agent != null && agent.isActiveAndEnabled) agent.Warp(pos);
         }
 
         // ----- preset resolution -----

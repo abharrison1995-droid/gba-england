@@ -170,6 +170,12 @@ namespace GBHEngland.Flow
             CombatController player = CombatController.Instance;
             if (chunkMgr == null || player == null || chunkMgr.CurrentChunkData == null) return;
 
+            // Central defence-in-depth: never checkpoint inside a transient chunk (e.g. the Castle
+            // Fight Arena). Reloading such a save would rebuild the room with no live match and could
+            // seal the player in an empty pit. The two transition call sites also honour this flag,
+            // but any other caller of Save() would otherwise bypass it.
+            if (chunkMgr.CurrentChunkData.SuppressCheckpointSaves) return;
+
             var data = new SaveData();
 
             PlayerSession session = PlayerSession.Instance;

@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: Prince Mandrew
   Category: 0
-  Icon: {fileID: 0}
+  Icon: {fileID: 1599336376, guid: 0c4ddd632500f6c468a51b9bb1d43744, type: 3}
   Prefab: {fileID: 0}
   NpcName: Prince Mandrew
-  NpcSprite: {fileID: 0}
-  NpcController: {fileID: 0}
+  NpcSprite: {fileID: 1599336376, guid: 0c4ddd632500f6c468a51b9bb1d43744, type: 3}
+  NpcController: {fileID: 9100000, guid: ff6ded70226657f449289e6bb68d944d, type: 2}
   Conversation: {fileID: 11400000, guid: c1b2a3f4e5d60718293a4b5c6d7e8f92, type: 2}
   EnemyPrefab: {fileID: 0}
   OverrideHealth: 0
@@ -38,7 +38,7 @@ MonoBehaviour:
   Vehicle: {fileID: 0}
   SpawnPointId: 
   QuestKey: princemandrew
-  ArtSubject: princemandrew
+  ArtSubject: mandrew
   NpcHeight: 1.55
   Roams: 0
   RoamRadius: 6

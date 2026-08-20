@@ -84,6 +84,10 @@ namespace GBHEngland.Data
         [Tooltip("Mana removed when this consumable is used, after any restoration. Clamped at zero.")]
         public int ManaDamage;
 
+        // Appended: existing ItemData assets deserialize this as zero and keep their old behaviour.
+        [Tooltip("Stamina removed when this consumable is used, after any restoration. Clamped at zero.")]
+        public int StaminaDamage;
+
         // Appended: Crown & Royal Arena stats. Older items deserialize all as zero/false.
         [Header("Crown & Royal Stats")]
         [Tooltip("Added to the character sheet's Fire resistance while equipped.")]

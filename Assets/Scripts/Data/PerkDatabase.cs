@@ -32,6 +32,13 @@ namespace GBHEngland.Data
             return perk;
         }
 
+        /// <summary>Editor authoring calls this after creating/updating assets.</summary>
+        public static void ResetCache()
+        {
+            _all = null;
+            _byId = null;
+        }
+
         private static void EnsureLoaded()
         {
             if (_all != null) return;

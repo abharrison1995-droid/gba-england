@@ -23,6 +23,10 @@ namespace GBHEngland.EditorTools
         private const string ChunksDataFolder = "Assets/Data/Chunks";
         private const string ChunksPrefabFolder = "Assets/Prefabs/Chunks";
         private const string DialogueFolder = "Assets/Data/Dialogue/Generated";
+        private const string MaterialsFolder = "Assets/Materials";
+
+        private const string FloorMaterialPath = MaterialsFolder + "/mat_arena_regal_floor.mat";
+        private const string WallMaterialPath = MaterialsFolder + "/mat_arena_regal_wall.mat";
 
         private const string ConfigAssetPath = ResourcesFolder + "/FightPitConfig.asset";
         private const string LibraryAssetPath = ResourcesFolder + "/PlacementPresetLibrary.asset";
@@ -60,6 +64,7 @@ namespace GBHEngland.EditorTools
             if (!Directory.Exists(ChunksDataFolder)) Directory.CreateDirectory(ChunksDataFolder);
             if (!Directory.Exists(ChunksPrefabFolder)) Directory.CreateDirectory(ChunksPrefabFolder);
             if (!Directory.Exists(DialogueFolder)) Directory.CreateDirectory(DialogueFolder);
+            if (!Directory.Exists(MaterialsFolder)) Directory.CreateDirectory(MaterialsFolder);
         }
 
         private static void BuildFightPitConfig()
@@ -245,29 +250,34 @@ namespace GBHEngland.EditorTools
 
             try
             {
-                var baker = root.GetComponent<RuntimeNavMeshBaker>() ?? root.AddComponent<RuntimeNavMeshBaker>();
-                var controller = root.GetComponent<FightPitController>() ?? root.AddComponent<FightPitController>();
+                var baker = GetOrAdd<RuntimeNavMeshBaker>(root);
+                var controller = GetOrAdd<FightPitController>(root);
 
-                // Floor collider: 32 x 32 arena
-                Transform floorT = root.transform.Find("ArenaFloor");
-                GameObject floor = floorT != null ? floorT.gameObject : new GameObject("ArenaFloor");
-                floor.transform.SetParent(root.transform);
-                floor.transform.localPosition = new Vector3(0f, -0.1f, 0f);
-                var floorCol = floor.GetComponent<BoxCollider>() ?? floor.AddComponent<BoxCollider>();
-                floorCol.size = new Vector3(32f, 0.2f, 32f);
+                // Visible, collidable floor and walls. Regal deep-red velvet materials stand in for a
+                // padded-pillow texture — a real bitmap can be dropped onto these two materials later.
+                Mesh cubeMesh = GetBuiltinCubeMesh();
+                Material floorMat = LoadOrCreateMaterial(FloorMaterialPath, new Color(0.55f, 0.06f, 0.10f), 0.12f);
+                Material wallMat = LoadOrCreateMaterial(WallMaterialPath, new Color(0.34f, 0.03f, 0.06f), 0.10f);
 
-                // Perimeter walls
-                EnsureWall(root.transform, "Wall_North", new Vector3(0f, 2f, 16f), new Vector3(32f, 4f, 1f));
-                EnsureWall(root.transform, "Wall_South", new Vector3(0f, 2f, -16f), new Vector3(32f, 4f, 1f));
-                EnsureWall(root.transform, "Wall_East", new Vector3(16f, 2f, 0f), new Vector3(1f, 4f, 32f));
-                EnsureWall(root.transform, "Wall_West", new Vector3(-16f, 2f, 0f), new Vector3(1f, 4f, 32f));
+                // Floor: 32 x 32, top surface at y = 0 so actors stand on it.
+                EnsureBox(root.transform, "ArenaFloor", new Vector3(0f, -0.1f, 0f), new Vector3(32f, 0.2f, 32f), cubeMesh, floorMat);
+
+                // Perimeter walls. The isometric camera sits on the +X / -Z side (offset from
+                // EKVibe.Camera* works out to ~(+11, +9, -11)), so the East (+X) and South (-Z) walls
+                // are camera-NEAR and kept low so they never occlude the player; the North (+Z) and
+                // West (-X) walls are the far side and stay full height. A low wall still blocks a
+                // grounded actor — there is no jumping here.
+                EnsureBox(root.transform, "Wall_North", new Vector3(0f, 2f, 16f), new Vector3(32f, 4f, 1f), cubeMesh, wallMat);
+                EnsureBox(root.transform, "Wall_West", new Vector3(-16f, 2f, 0f), new Vector3(1f, 4f, 32f), cubeMesh, wallMat);
+                EnsureBox(root.transform, "Wall_East", new Vector3(16f, 0.5f, 0f), new Vector3(1f, 1f, 32f), cubeMesh, wallMat);
+                EnsureBox(root.transform, "Wall_South", new Vector3(0f, 0.5f, -16f), new Vector3(32f, 1f, 1f), cubeMesh, wallMat);
 
                 // Player arrival spawn point
                 Transform playerSpawnT = root.transform.Find("PlayerSpawn_Arena");
                 GameObject playerSpawn = playerSpawnT != null ? playerSpawnT.gameObject : new GameObject("PlayerSpawn_Arena");
                 playerSpawn.transform.SetParent(root.transform);
                 playerSpawn.transform.localPosition = new Vector3(0f, 0f, -10f);
-                var spawnPoint = playerSpawn.GetComponent<PlayerSpawnPoint>() ?? playerSpawn.AddComponent<PlayerSpawnPoint>();
+                var spawnPoint = GetOrAdd<PlayerSpawnPoint>(playerSpawn);
                 spawnPoint.Id = "arena_player";
 
                 // Enemy spawn points
@@ -293,14 +303,108 @@ namespace GBHEngland.EditorTools
             }
         }
 
-        private static void EnsureWall(Transform parent, string name, Vector3 pos, Vector3 size)
+        private const string MandrewPresetPath = "Assets/Data/Presets/Preset_PrinceMandrew.asset";
+
+        /// <summary>
+        /// Gives Prince Mandrew his billboard visual from the wired preset, mirroring
+        /// <see cref="GBHEngland.World.NpcFactory"/>. The preset only carries an NpcSprite/NpcController
+        /// after its ArtSubject matches the imported art and
+        /// Tools > Content > Wire Presets From Imported Art has been run — until then this logs a
+        /// warning and leaves the NPC bodyless rather than crashing the build.
+        /// </summary>
+        private static void EnsureMandrewVisual(GameObject npc)
+        {
+            if (npc == null) return;
+
+            var preset = AssetDatabase.LoadAssetAtPath<PlacementPreset>(MandrewPresetPath);
+            if (preset == null)
+            {
+                Debug.LogWarning($"BuildCastleFightArenaTool: {MandrewPresetPath} not found, so Prince Mandrew has no visual.");
+                return;
+            }
+
+            if (preset.NpcSprite == null)
+            {
+                Debug.LogWarning(
+                    "BuildCastleFightArenaTool: Preset_PrinceMandrew has no NpcSprite, so Prince Mandrew is invisible. " +
+                    "Set its ArtSubject to match the imported art (your sheets are 'mandrew'), then run " +
+                    "Tools > Content > Wire Presets From Imported Art, and re-run this tool.");
+                return;
+            }
+
+            var visual = GetOrAdd<WorldActorVisual>(npc);
+            visual.ActorSprite = preset.NpcSprite;
+            visual.Height = NpcFactory.HeightFor(preset);
+            visual.ApplyVisual();
+            if (preset.NpcController != null)
+                visual.AttachAnimator(preset.NpcController);
+        }
+
+        // Unity-null-aware get-or-add. The `GetComponent<T>() ?? AddComponent<T>()` idiom is unsafe:
+        // `??` uses plain reference-null and bypasses Unity's overloaded null check, so a "fake-null"
+        // component wrapper is treated as non-null and AddComponent is skipped, producing a
+        // MissingComponentException on first access. Always test with `== null` (Unity's overload).
+        private static T GetOrAdd<T>(GameObject go) where T : Component
+        {
+            T component = go.GetComponent<T>();
+            if (component == null)
+                component = go.AddComponent<T>();
+            return component;
+        }
+
+        /// <summary>
+        /// A visible, collidable box. Dimensions come from the transform scale on a unit cube mesh,
+        /// so the BoxCollider size stays 1 (it inherits the scale) — matching mesh and collider
+        /// exactly. Idempotent: re-running reconciles an existing collider-only box built by an
+        /// earlier version of this tool.
+        /// </summary>
+        private static void EnsureBox(Transform parent, string name, Vector3 pos, Vector3 size, Mesh mesh, Material material)
         {
             Transform existing = parent.Find(name);
-            GameObject wall = existing != null ? existing.gameObject : new GameObject(name);
-            wall.transform.SetParent(parent);
-            wall.transform.localPosition = pos;
-            var col = wall.GetComponent<BoxCollider>() ?? wall.AddComponent<BoxCollider>();
-            col.size = size;
+            GameObject go = existing != null ? existing.gameObject : new GameObject(name);
+            go.transform.SetParent(parent);
+            go.transform.localPosition = pos;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = size;
+
+            var col = GetOrAdd<BoxCollider>(go);
+            col.center = Vector3.zero;
+            col.size = Vector3.one;
+
+            var mf = GetOrAdd<MeshFilter>(go);
+            mf.sharedMesh = mesh;
+
+            var mr = GetOrAdd<MeshRenderer>(go);
+            mr.sharedMaterial = material;
+        }
+
+        /// <summary>Unity's built-in unit cube mesh, borrowed from a throwaway primitive.</summary>
+        private static Mesh GetBuiltinCubeMesh()
+        {
+            var temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Mesh mesh = temp.GetComponent<MeshFilter>().sharedMesh;
+            Object.DestroyImmediate(temp);
+            return mesh;
+        }
+
+        /// <summary>
+        /// Loads the material at <paramref name="path"/> or creates it (built-in Standard shader,
+        /// matching the project's other materials). Colour and smoothness are re-applied every run so
+        /// a tuning change here reaches an already-created material.
+        /// </summary>
+        private static Material LoadOrCreateMaterial(string path, Color color, float smoothness)
+        {
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("Standard"));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.color = color;
+            mat.SetFloat("_Glossiness", smoothness);
+            mat.SetFloat("_Metallic", 0f);
+            EditorUtility.SetDirty(mat);
+            return mat;
         }
 
         private static Transform EnsureSpawnPoint(Transform parent, string name, Vector3 pos)
@@ -409,26 +513,30 @@ namespace GBHEngland.EditorTools
 
                 // Ensure Prince Mandrew NPC
                 Transform npcTransform = root.transform.Find("NPC_PrinceMandrew");
+                GameObject npc;
                 if (npcTransform == null)
                 {
-                    GameObject npc = new GameObject("NPC_PrinceMandrew");
+                    npc = new GameObject("NPC_PrinceMandrew");
                     npc.transform.SetParent(root.transform);
                     npc.transform.localPosition = new Vector3(10f, 0f, 15f);
 
-                    var interactable = npc.AddComponent<Interactable>();
+                    var interactable = GetOrAdd<Interactable>(npc);
                     interactable.Prompt = "Talk to Prince Mandrew";
                     interactable.InteractRange = 3f;
                     interactable.Reusable = true;
 
-                    var dialogueInteractable = npc.AddComponent<NPCDialogueInteractable>();
+                    var dialogueInteractable = GetOrAdd<NPCDialogueInteractable>(npc);
                     dialogueInteractable.Conversation = dialogue;
                 }
                 else
                 {
-                    var dialogueInteractable = npcTransform.GetComponent<NPCDialogueInteractable>();
+                    npc = npcTransform.gameObject;
+                    var dialogueInteractable = npc.GetComponent<NPCDialogueInteractable>();
                     if (dialogueInteractable != null)
                         dialogueInteractable.Conversation = dialogue;
                 }
+
+                EnsureMandrewVisual(npc);
 
                 PrefabUtility.SaveAsPrefabAsset(root, HomeLondonPrefabPath);
             }
