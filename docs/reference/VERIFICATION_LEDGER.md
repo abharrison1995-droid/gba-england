@@ -1,12 +1,14 @@
 # Verification ledger — what's never been seen by a compiler or an editor
 
-**Last verified against:** `main` @ 2026-08-18, added by the mobile HUD layout pass. `CLAUDE.md`
-§5 still carries its own inline copy of this material as of this commit — trimming it down to a
-pointer here is separate doc-hygiene work, not part of this pass, and hasn't landed on `main` yet.
+**Last verified against:** `main` @ 2026-08-20, reconciled against `CLAUDE.md` §5 and against the
+prefab/asset YAML on disk.
 
-Owned by [CLAUDE.md](../../CLAUDE.md) §5, which explains *why* this exists: there is no C#
-compiler, no Unity, and no test framework in the agent environment, so this file is the honest
-record of what's landed on `main` but not yet exercised.
+**This file is the sole canonical owner of verification status.** `CLAUDE.md` §5 currently still
+carries its own inline copy pending a separate cleanup pass that will replace it with a pointer
+here — once that lands, this note should be deleted.
+
+*Why this exists*: there is no C# compiler, no Unity, and no test framework in the agent
+environment, so this file is the honest record of what's landed on `main` but not yet exercised.
 
 **Read this before claiming a feature works, or before touching one of the systems below.** Not a
 routine read — CLAUDE.md's own routing table (§4) still tells you which reference doc a task
@@ -46,11 +48,15 @@ point compile. It proves nothing about their behaviour.**
   Still open: a *deliberate* new case-collision (`DIALOGUE ralph` targeting `Dialogue_Ralph.asset`
   / `Preset_Ralph.Conversation`) hasn't been tried, and neither has a forced validation error to
   confirm the failure path logs rather than throws.
-- **The companion system (Alex).** Recruited and fought alongside the player against a placed
-  `Enemy_Spicehead` in an editor session, 2026-08-16 — following, targeting, combat all confirmed
-  good. Alex's rebuilt heal (now dual-target, no longer combat-gated) postdates that session and is
-  still open — see Companions below.
-- **Name unification namespace rename.** Compiles (2026-08-16 checkpoint). Behaviour below.
+- **The companion system (Alex).** ✅ confirmed 2026-08-16: recruited and fought a placed
+  `Enemy_Spicehead` in an editor session — following, targeting and combat all good. His rebuilt
+  heal postdates that session and is still open — see Companions below.
+- **`IsPolice` on the police prefabs.** ✅ confirmed 2026-08-20: all five `Police_*` prefabs carry
+  `IsPolice: 1` (commit `fb5f514`) — `Police_ArmedResponse`, `Police_Bobby`, `Police_OccultAgent`,
+  `Police_OccultCommander`, `Police_PCSO`. Still to check in Play mode: die to a police officer and
+  confirm arrest fires instead of death.
+- **Name unification namespace rename.** ✅ confirmed 2026-08-16: the 147-file `GBHEngland` rename
+  compiles. Its behaviour is unexercised — see *Name unification and product identity* below.
 
 ## Open — grouped by system
 
@@ -58,11 +64,9 @@ point compile. It proves nothing about their behaviour.**
 - **`UIManager.EnsureDedicatedTrack`** wraps a bar fill in its own parent when the scene doesn't
   give it one — check the concealment/mana overlap is actually fixed, and that the concealment bar
   lands somewhere sane (it's been stretched across the whole cluster, so its real position is
-  unknown). ✅ **The follow-on bug is fixed** (commit `8d4b60c`): `EnsureDedicatedTrack` now tests
-  `parent.name.EndsWith("Track")` instead of `parent.childCount == 1`, so `EnsureBarLabel` adding a
-  label afterward no longer makes the second-wrapped bar (HP or MP) inherit the first bar's fill
-  fraction as its new track size. *Still to check in an editor: load a save at low health and
-  confirm the bar reads its real fraction, not capped at a third.*
+  unknown). Its follow-on bug (bars capping at their first-paint fraction) was fixed in `8d4b60c`
+  by guarding on `parent.name.EndsWith("Track")`. *Still to check in an editor: load a save at low
+  health and confirm the bar reads its real fraction, not capped at a third.*
 - **Actor heights** (+0.2: player 1.8, NPC 1.55, child 1.3) with matched colliders/agents/nameplates.
   Check nobody's feet are underground, no nameplate sits on a head.
 - **`EnemyAI.Awake`** reads `WorldActorVisual.Height` instead of hardcoding 1.35. Check enemies path
@@ -76,9 +80,13 @@ point compile. It proves nothing about their behaviour.**
   `spicehead_hurt`, `spicehead_walk`, all four villager walks. Facing was called by eye. Check each
   plays facing right and cycles forward. Undo a wrong call: `python Tools/flip_sheets.py --force <name>`.
   `player_stabmeister_walk` was flipped too but is still in `art_incoming/`, never imported.
-- **`ART_PIPELINE.md` still tells the art agent adults are 1.55** (the cast is now 1.35/65px). Next
-  delivered batch will arrive wrong-density until someone decides whether the contract or the cast
-  is what changes — undecided, not a bug.
+- **The cast is uniformly 65 px** as of 2026-08-08. Every character sidecar declares
+  `worldHeight: 1.35`, which imports at 65 px cells. `sheet_char_player_mrhood_idle` and
+  `sheet_char_player_stabmeister_idle` were the last two on disk at 74; the importer re-did them
+  in place, **GUIDs intact**, and both measure 65 px. Not looked at in an editor since.
+- ⚠️ **`ART_PIPELINE.md` still tells the art agent adults are 1.55**, so the **next delivered batch
+  will arrive at the wrong density again** and need the same correction. Whether the contract or
+  the cast is the thing to change is the owner's call and has not been made — undecided, not a bug.
 - **Four sprites in `c.unity` point at missing files** (three on one texture, three on another, one
   on a third, plus the PCSO's `WorldActorVisual.ActorSprite` on a fourth) — old, listed in
   `KNOWN_DANGLING` in `Tools/asset_reachability.py`. Fix: reassign each in the Inspector, delete its
@@ -109,17 +117,13 @@ point compile. It proves nothing about their behaviour.**
   longer rewinding a mid-flight objective, the watcher claiming a reward only after paying it. Needs
   a `QuestDefinition` in `Resources/Quests/` and a way to grant it — the throwaway test rig was
   deleted deliberately (quests are meant to be granted in-world, never from a menu).
-- **Live defect, not yet fixed**: no `Police_*` prefab has `IsPolice` set, so arrest never fires and
-  `DespawnPolice` destroys nothing. Fix: tick the box on all five prefabs in the Inspector — **never**
-  by re-running `ModernBritainSetup`.
 - **`spark_of_talent`** (the magic tutorial) was converted off bespoke code onto the `.quest`
-  pipeline; `MagicTutorial.cs` is deleted. ✅ The import ran 2026-08-17, `NPC_Daniel Pauls` is placed
-  in `Home_London_Prefab` (replacing the old `DanielPaulsSpawn` marker) and
-  `Preset_DanielPauls.QuestKey` is `danielpauls`. What remains unexercised is the quest itself.
-  Unverified: whether `Awake` runs on a
-  disabled component — if the panicked geezer stands still or falls through the NavMesh, that's the
-  answer and `HostileAfterDialogue` needs to snap him to the NavMesh itself. Check both a mid-flight
-  save and a completed save (completed should retro-pay 0/0, not re-pay).
+  pipeline; `MagicTutorial.cs` is deleted. ✅ confirmed 2026-08-17: the import ran, `NPC_Daniel
+  Pauls` is placed in `Home_London_Prefab` and `Preset_DanielPauls.QuestKey` is `danielpauls`. The
+  quest itself is unexercised. ⚠️ Unverified Unity behaviour: whether `Awake` runs on a disabled
+  component — if the panicked geezer stands still or falls through the NavMesh, that is the answer
+  and `HostileAfterDialogue` must snap him to the NavMesh itself. Check both a mid-flight save and
+  a completed save (completed should retro-pay 0/0, not re-pay).
 - **Four London doors are authored** (2026-08-17); two lead nowhere. Church → `Abandoned_Church` and
   Station → `Abandoned_Bus_Station` have no arrival marker on the interior side — pressing USE should
   leave the player standing still with a console warning naming the chunk/id (this is the first real
@@ -177,11 +181,16 @@ point compile. It proves nothing about their behaviour.**
   confirm he can't be hired before Rush Hour completes. `Dialogue_Alex.asset` was renamed to
   lowercase and the 2026-08-17 import held it on GUID `750c809e…`; `Dialogue_Alex_Follower.asset` is
   also lowercase now, so that collision risk is resolved too. `red_star_cigarettes` (new consumable,
-  no icon) needs no new code. `rush_hour.quest` is only a beginning — East York's `MapChunkData` and
-  prefab now exist on disk but are uncommitted and not yet in `MapChunkRegistry`; Mayor Zhao still
-  has no preset/art; `ProximityDialogueTrigger` now exists as a component but isn't placed anywhere
-  yet; and Zhao's line still asks the pipeline to *grant* an item on a choice, which it can't do
-  (`ITEM:` is a requirement, not a grant).
+  no icon) needs no new code. `rush_hour.quest` is only a beginning. **East York is committed**
+  (`d5bd032`) — `East_York_Data.asset`, `East_York_Prefab.prefab` and an entry in
+  `MapChunkRegistry`, which now lists **19 chunks** (East York is guid
+  `e819a42f6c8d4732b1154c93a027df91`). Still open: `Preset_MayorZhao.asset` exists with sprite,
+  controller, speaker and a generated `Dialogue_mayorzhao`, but **Zhao is not placed in
+  `East_York_Prefab`**; `ProximityDialogueTrigger.cs` exists but is **not on any prefab or in
+  `c.unity`** (GUID scan, 2026-08-20); and Zhao's line still asks the pipeline to *grant* the
+  cigarettes on a choice, which it cannot do — inside a choice `ITEM:` routes to
+  `ParseItemRequirement`, so it is a **requirement**, not a grant. The only item payout is a quest
+  `REWARD`, paid at completion.
 - **Merchant stores and the equipment/paper-doll thread** (three merchants, Win95 shop window,
   fifteen tradeable items, flat equip bonuses). Check a clerk conversation → Buy opens/closes the
   shop without freezing (⚠️ the conversation's pause releases *before* the merchant window takes its
@@ -193,6 +202,60 @@ point compile. It proves nothing about their behaviour.**
   first active quest without error), quest-gated dialogue choices, and the `.quest` importer/validator
   itself. `Tools/check_quest_phase0.py` passing is a brace-balance scan, not a compile.
 
+### Containers and foraging
+
+The 3D container system and visit-counted respawn (committed 2026-08-17), never compiled. **No
+container of either kind is placed anywhere yet, and none of the three 3D models exists** — the
+bush, the vending machine and the bus wreckage still have to be made and imported, so the tool can
+only be exercised against placeholder geometry.
+
+- ⚠️ **A latent save-key defect is fixed, and it is why the portal path is the first thing to
+  check.** `TravelRoutine` instantiates the destination *before* assigning `CurrentChunkData`, so
+  anything resolving its own chunk in `Awake` got the chunk the player just **left** —
+  `SpriteContainer` did exactly that. Content now asks `ChunkManager.ContentChunkName` (which
+  prefers the new `ChunkBeingBuilt`). *Loot a `Fixed` container reached **by portal**, quit, reload,
+  confirm it is still empty; then read `LootedContainers` in `savegame.json` and confirm the id
+  names the **destination** chunk, not the origin.* Nothing logs if this is wrong.
+- ⚠️ **`WorldContainer.SaveId` is why the component is safe on a child object.** Every container
+  child the placement tool makes is called `Container`, so without an explicit id ten of them would
+  share one save key and looting one would empty all ten. The tool uniquifies against
+  `SpriteContainer` too — the two share one key space. `ContainerIdRegistry` (2026-08-20, `fe122f0`)
+  warns across both types: a `WorldContainer` and a `SpriteContainer` claiming the same id in the
+  same chunk are both named in the console, whichever Awakes second. *Force a duplicate, check
+  `Validate All Containers` names it, and check a cross-type collision logs the same warning.*
+- ⚠️ **`WorldContainer.ContainerMode` and `TrapType` serialize by integer index** and are frozen by
+  the first authored container. None is placed yet — **still the free moment**.
+- ⚠️ **Only the edge crossing and the portal tick a container visit.** The other five instantiate
+  paths do not, and `LoadWorld` especially **must not** — a reload that advanced cooldowns would
+  make reload-spam the fastest way to farm. The table lives in `ChunkManager`. *Loot a Respawning
+  container, save, quit, reload twice, confirm it is still empty.*
+- ⚠️ **`SpriteContainer.Respawning` changed meaning**, and two of them are live in `c.unity`. It
+  used to refill on every chunk entry and save nothing; it now sits out `RespawnVisits` entries like
+  the new component. `RespawnVisits` was **appended**, so an existing asset reads it as `0` — both
+  components treat `<= 0` as "use the default (3)", *not* as the field's literal initializer.
+  `Container_Respawning.prefab` was given the key explicitly.
+- ⚠️ **`c.unity` was hand-edited to delete two scene-root test containers.** `Container_Fixed` and
+  `Container_Respawning` sat active at the scene root, in no chunk. A scene-root container is never
+  destroyed and rebuilt, so its `Awake` runs once per scene load, and `Container_Respawning` would
+  have started writing a cooldown that survived a restart under a save key naming a chunk it did not
+  belong to. Removed on instruction — two `!u!1001` documents and their two `SceneRoots.m_Roots`
+  entries, 128 deletions, no insertions. The two prefab *assets* are untouched and remain authoring
+  templates. *Confirm on first open that the scene loads with exactly five roots — SYSTEM, MANAGERS,
+  ACTORS, ENVIRONMENT, UI — and no console error.*
+- **`SaveData.ContainerCooldowns` is appended.** *Load a save made before 2026-08-17, confirm it
+  arrives with no error and every container fresh.* `BeginNewGame` clears the table — *loot a
+  Respawning container, return to the title screen **without quitting**, start a New Game, confirm
+  it is full.* That clear fails silently.
+- **`WorldContainer` and `Tools → Place → Container Placement` are new**; their two `.meta` files
+  plus three `LootBand_*.asset` metas were hand-authored. *Confirm on first open that Unity accepts
+  all five rather than minting fresh GUIDs.*
+- **The trap, lock and quest-gate fields are declared and inert.** Every tooltip opens with
+  "NOT WIRED" and the validator reports any that are set. Nothing reads them.
+- ⚠️ **The three forage items were retuned, ids untouched** — barnacles and fungus are now Junk,
+  blueberries heal 5 HP / 8 mana. Their `ItemID`s appear as literals in three `.quest` files;
+  renaming one would make `Import Quests` write `{fileID: 0}` into a Collect stage with **nothing
+  logged**.
+
 ### Combat: dodge, knockback, perks
 - **Dodge roll** (Space, 2.4m/0.40s, 14 stamina, i-frames 0.05-0.30s in, 1s cooldown) — animation
   confirmed playing (2026-08-09 import). Still open: distance matches the field, a second Space
@@ -203,9 +266,9 @@ point compile. It proves nothing about their behaviour.**
   Hierarchy until Play starts). ⚠️ `RollSpeedCurve` must integrate to exactly 1 over [0,1] — that's
   the only reason the roll travels `RollDistance`; reshaping it without preserving that decouples the
   two silently.
-- **Player knockback (phase 2)**: `EnemyAI.KnockbackDistance` defaults to 0 — nothing knocks the
-  player until `Enemy_OG`/`Enemy_Tainted` are stamped and set to 2m (police stay 0, per the recorded
-  decision, folded into the same Inspector pass as `Level: 3`/`IsPolice`). Check the slide is ~2m and
+- **Player knockback (phase 2)**: `Enemy_OG` and `Enemy_Tainted` are authored at
+  `KnockbackDistance: 2` on disk (commit `fb5f514`); police stay at 0, per the recorded decision.
+  **The slide itself has never been seen in Play mode** — still to check. Check it is ~2m and
   stops at walls; a dodged hit no longer shoves (`TakeDamage` returning false gates it — "Dodged!",
   no slide); knockback wins over an in-progress roll; 0.4s recovery i-frames stop two enemies
   chain-stunning. `Health.TakeDamage` now returns `bool` — **no longer bindable in a UnityEvent
@@ -220,10 +283,10 @@ point compile. It proves nothing about their behaviour.**
   `knockback` is now a shape-changing action (6 frames/12fps, was 3) exempt from the standing-height
   check, same as `death`/`cycle`/`roll`.
 - **Melee knockback perk (phase 4)**: `PerkEffectType.MeleeKnockback = 9`, appended, never reordered
-  — first `PerkData` asset authored freezes the enum indices forever. ✅ **`Perk_melee_knockback`
-  now exists** in `Resources/Perks`, Magnitude 2m flat, not %. *Still to check: spend the point, hit
-  something, confirm ~2m slide stopping at walls.*
-  `PlayerSession.MeleeKnockbackDistance` resets in `RecalculateDerivedStats` step 6 — reload after
+  — first `PerkData` asset authored freezes the enum indices forever. `Perk_melee_knockback` exists
+  in `Resources/Perks`, Magnitude 2m flat, not %. *Still to check: spend the point, hit something,
+  confirm ~2m slide stopping at walls.* `PlayerSession.MeleeKnockbackDistance` resets in
+  `RecalculateDerivedStats` step 6 — reload after
   taking the perk, shove should be the same, not doubled. A killed enemy is never shoved (gated on
   `!targetHealth.IsDead`, since `Health.Die` already disables the agent). `EnemyAI`'s three
   `SetTrigger` calls are now guarded, so an undefined `Knockback` trigger won't error (expected until
@@ -232,11 +295,11 @@ point compile. It proves nothing about their behaviour.**
 ### Progression, HUD, enemy levels
 - **Enemy levels are authorable, and one is now authored.** `PlacementPreset.EnemyLevel`/palette
   Level field attach an `EnemyLevel` component (0 = none attached, deliberately, since level-1 isn't
-  inert — it flips the nameplate badge from the prefab's "3" to "1"). ✅ `TutorialSequence.cs` sets
-  the tutorial bandit's badge to Level 1 on spawn — the first real exercise of this path. *Still to
+  inert — it flips the nameplate badge from the prefab's "3" to "1"). `TutorialSequence.cs` sets the
+  tutorial bandit's badge to Level 1 on spawn — the first real exercise of this path. *Still to
   check: stamp a second enemy from the palette at Level 4 and confirm it reads tougher.* Nameplates
-  now show on aggro or within
-  `SightRadius`, hide a few seconds after — check one appears on approach, not just after first hit,
+  now show on aggro or within `SightRadius`, hiding a few seconds after — check one appears on
+  approach, not just after first hit,
   and doesn't linger over a corpse. ⚠️ `EnemyAI` resolves its nameplate in `Start`, not `Awake` — a
   refactor moving that would cache null for the tutorial bandit (which gets `EnemyAI` added before
   `EnemyNameplate`). Every existing enemy prefab still wears a cosmetic "3" badge while actually
@@ -323,6 +386,47 @@ point compile. It proves nothing about their behaviour.**
   is reserved for it any more: the 2026-08-18 pitch fix puts the stamina bar over the slot it was
   authored in, so the stealth pass has to place it. No save key changed in this pass; a pre-today
   save should arrive with whatever mana it held, no error, HP never at 0.
+
+### Traffic and vehicles
+
+**The ambient traffic and car theft work is landed and entirely unexercised** — unseen by a
+compiler or an editor.
+
+- **Four new scripts** — `TrafficRoute`, `TrafficCar`, `HotwireMenuUI`, `BuildTrafficCarPrefabTool`
+  — plus edits to `EKVibe`, `VehicleData`, `VehicleController` and `WorldActorVisual`. ⚠️ **Their
+  four `.meta` files were hand-authored, and rewritten byte-exact after Unity rejected the first
+  pass.** *Confirm on first open that Unity accepts them rather than minting fresh GUIDs.*
+- **The check list is §10.2 of
+  [`TRAFFIC_AND_CAR_THEFT_PLAN.md`](../plans/TRAFFIC_AND_CAR_THEFT_PLAN.md)**: compile on open; run
+  the builder tool twice (Reliant Robin common, Vauxhall Corsa better); author two routes in
+  `Home_London_Prefab`; cars drive, brake, honk and resume; hotwire success → driver flees, 2
+  knives, two officers, hidden rider; timeout → 1 knife, car drives off; ride across a chunk edge;
+  reload → traffic fresh, stolen car gone.
+- ⚠️ **The FU Sports nested prefab in `Home_London_Prefab` was re-pointed** to its
+  post-reorganisation `Shops/` path (committed 2026-08-12) and **that edit has never been opened in
+  an editor**. *Confirm on first open that the FU Sports building resolves rather than showing as a
+  missing prefab.*
+- ⚠️ **Never `SetActive(false)` a vehicle root** — `OnDisable` clears the speed multiplier, so the
+  vehicle cancels its own boost the instant it is mounted. Hide `ParkedModel` instead. (Invariant,
+  not a check.)
+
+### Name unification and product identity
+
+The 147-file `GBHEngland` rename compiles (2026-08-16 checkpoint); none of its behaviour has been
+exercised.
+
+- ⚠️ **Three `UnityEvent` bindings store the namespace as a literal string**, not as a GUID, and
+  were rewritten in the same commit: `EBike.prefab` (`VehicleController`),
+  `Pub_TheWinchester.prefab` (`PubInteractable`) and `c.unity` (`InventoryController`). **A miss
+  fails silently with a clean console.** *Mount the e-bike, USE the Winchester, open the bag and
+  click the rebuilt buttons. If one is dead, look at its `m_TargetAssemblyTypeName`, not the C#.*
+- ⚠️ **`productName` is now `GBH England`** — no colon, because it becomes a real folder inside
+  `persistentDataPath`. **Every save made before 2026-08-16 is orphaned**, along with the graphics
+  `PlayerPrefs`. Accepted deliberately; there is no migration shim. *Play once and confirm a save
+  appears under `…/LocalLow/DefaultCompany/GBH England/`. Expect graphics settings to reset once.*
+- **`Create →` menus moved to `GBH England/Data/…`.** Existing assets are unaffected — `menuName`
+  is not stored in the asset. *Check `Create → GBH England → Data → Item Data` still makes a working
+  `ItemData`.*
 
 ### Platform/mobile
 - **Mobile performance pass**: `Tools → Art → Apply Mobile Texture Settings` never run — Dry Run
