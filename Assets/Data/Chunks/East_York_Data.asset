@@ -10,15 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 12fb82371264224489fb843eabdf15dd, type: 3}
-  m_Name: South_Slums_Data
+  m_Name: East_York_Data
   m_EditorClassIdentifier: 
-  ChunkName: South_Slums
+  ChunkName: East_York
   Coordinates:
     X: 0
-    Y: -1
-  IsCity: 0
-  ChunkPrefab: {fileID: 7870091013470841423, guid: d401f02f262c4e3459fad68ca125de25, type: 3}
-  NorthChunk: {fileID: 11400000, guid: 5a35b5720ddb68e4ca6ae25fd3467332, type: 2}
-  SouthChunk: {fileID: 11400000, guid: e819a42f6c8d4732b1154c93a027df91, type: 2}
+    Y: -2
+  IsCity: 1
+  IsTutorialDungeon: 0
+  LockExitsUntilTutorialComplete: 0
+  ChunkPrefab: {fileID: 1000001, guid: a3b8417c8d924151b75294a5c6e8310f, type: 3}
+  NorthChunk: {fileID: 11400000, guid: 0f592a0de10c4274a9f52bd86c74eaa6, type: 2}
+  SouthChunk: {fileID: 0}
   EastChunk: {fileID: 0}
   WestChunk: {fileID: 0}
+  VehicleSpawns: []
+  SuppressCheckpointSaves: 0
