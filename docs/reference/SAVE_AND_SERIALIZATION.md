@@ -1,7 +1,7 @@
 # Save format and Unity serialization
 
 ```
-Last verified against: working tree, 2026-08-15
+Last verified against: working tree, 2026-08-17
 Verification scope:    code (read line by line); tracked prefab/asset YAML. The appended
                        BundaBasher=4 class mapping is code-reviewed but not Unity-tested. Quest persistence
                        across an autosave was confirmed in an editor session by reading
@@ -11,7 +11,10 @@ Verification scope:    code (read line by line); tracked prefab/asset YAML. The 
                        been round-tripped with them present. PerkData.PerkId is documented from the
                        code that reads it; no PerkData asset exists yet, so no perk id has ever
                        been written to a save file. Spellbook fields and AbilityID resolution are
-                       code-reviewed only; Unity has not compiled or round-tripped them.
+                       code-reviewed only; Unity has not compiled or round-tripped them. The
+                       appended ContainerCooldowns field and the WorldContainer key space are
+                       code-read only — never compiled, and no save has been round-tripped with
+                       either present.
 ```
 
 **This is the highest-risk area in the repo.** A mistake here corrupts player saves silently —
@@ -25,7 +28,8 @@ nothing throws, nothing logs, the data is just gone.
 `SaveData` holds, in declaration order: character name, class, `TutorialComplete`, chunk name,
 position, health, mana, stamina, quest list, inventory, `Equipment`, `Pounds`, `LootedContainers`,
 `VisitedChunks`, `UnlockedWikiEntries`, `TotalXP`, `PerkIds`, `FocusedQuestId`,
-`ActiveCompanionId`, `CompanionHealth`, `KnownSpellIds`, `EquippedSpellIds`, `SpellName`.
+`ActiveCompanionId`, `CompanionHealth`, `KnownSpellIds`, `EquippedSpellIds`, `SpellName`,
+`ContainerCooldowns`.
 
 Everything from `Equipment` onwards was **appended**, so a save written before that feature existed
 has no such key at all and `JsonUtility` reads back the type's default — `0` for `Pounds` and
@@ -113,11 +117,18 @@ back through `Resources/Perks` by `PerkDatabase.Find`. Same never-rename rule as
   downward retune cannot show a negative figure; the derivation still honours every spent id.
 - `PerkEffectType` is serialized by integer index inside each `PerkData` asset. Append only.
 
-### Container ids — `"<ChunkName>/<GameObjectName>"`
+### Container ids — `"<ChunkName>/<key>"`
 
-`SpriteContainer` in `Fixed` mode remembers being emptied. The key it uses is built in its `Awake`
-as `CurrentChunkData.ChunkName + "/" + gameObject.name`, cached, and written into
-`SaveData.LootedContainers` as a plain list of strings.
+Two components share one key space. `SpriteContainer` is the 2D billboarded kind and keys on its
+own GameObject name; `WorldContainer` attaches to a child of a 3D model and keys on an authored
+`SaveId`, falling back to the GameObject name when that is blank. Both build the id in `Awake`,
+cache it, and write it into `SaveData.LootedContainers` — one list, both components.
+
+⚠ **The chunk half of the key comes from `ChunkManager.ContentChunkName`, never
+`CurrentChunkData` directly.** `TravelRoutine` instantiates the destination chunk *before*
+assigning `CurrentChunkData`, so content asking directly during `Awake` gets the chunk the player
+just left. `ContentChunkName` prefers `ChunkBeingBuilt`, which only that routine sets. Anything new
+that resolves a chunk name during `Awake` must ask the same way.
 
 **This is a save key with no asset behind it**, which makes it easier to break than the other two:
 
@@ -126,26 +137,55 @@ as `CurrentChunkData.ChunkName + "/" + gameObject.name`, cached, and written int
   every container looted there.
 - **Renaming a container GameObject in the Hierarchy refills it** for every existing save, silently.
   So does renaming its chunk.
-- **Two containers with the same name in the same chunk share one id**, and looting either empties
-  both. `SpriteContainer.Awake` warns when it sees a duplicate, naming both the chunk and the name.
-- A container with no resolvable chunk cannot build an id at all. It warns and behaves as
-  `Respawning` for that session rather than throwing in `Awake`.
+- **Two containers with the same key in the same chunk share one id**, and looting either empties
+  both. Both components warn on a duplicate they can see, but ⚠ **neither sees across the other** —
+  a `WorldContainer` whose `SaveId` equals a `SpriteContainer`'s GameObject name collides in
+  silence. `Tools → Place → Container Placement → Validate All Containers` is what catches that,
+  and it only sees the open prefab or scene.
+- ⚠ `WorldContainer` lives on a **child** object, and the tool names every one of them `Container`.
+  That is exactly why `SaveId` exists: without it, ten containers under ten different models would
+  be ten legal GameObjects sharing one key. Blank `SaveId` is only safe when the names are unique.
+- A container with no resolvable chunk cannot build an id at all. It warns and remembers nothing
+  for that session rather than throwing in `Awake`.
+
+### Container cooldowns — `SaveData.ContainerCooldowns`
+
+A restockable container (`Respawning` on either component) empties, sits out a number of visits to
+its chunk, then refills. `ContainerCooldown` is `{ Id, VisitsRemaining }`; `Id` is the same key
+described above, so both lists live in one namespace.
+
+- **`RespawnVisits` counts returns, not seconds.** Loot at visit 0 with 3 → return 1 leaves 2,
+  return 2 leaves 1, return 3 leaves 0 and it is full. *N* means "available on the Nth return".
+- ⚠ **Only two of the seven chunk-instantiate paths tick a visit** — the edge crossing and the
+  portal. In particular `SaveGameManager.LoadWorld` does **not**, or reload-spam would be the
+  fastest way to farm a container. The full table is in `ChunkManager`, beside the resolver.
+- The portal path **gives the visit back** if travel aborts on a missing arrival marker.
+- `DecrementContainerCooldowns` **clamps at zero rather than removing**, which is what lets that
+  give-back work. `IsContainerOnCooldown` treats a spent entry as free, so `RemoveExpiredCooldowns`
+  is pure housekeeping and is never load-bearing. It runs in `Save()` so the file does not grow an
+  entry per container ever emptied.
+- ⚠ `RespawnVisits` was **appended to `SpriteContainer`**, whose two prefabs already existed. Unity
+  gives an appended int `0` on an asset it has not re-serialized, not the field initializer, so
+  both components treat `<= 0` as "use the default" rather than "refill instantly". Without that,
+  an untouched asset silently keeps the pre-cooldown behaviour.
 
 Restore ordering matters and is load-bearing: `GameFlowController.ContinueFromSave` calls
-`PlayerSession.RestoreLootedContainers` immediately after `RestorePounds`, **before** either
-`EnterManorCellars` or `LoadWorld`. Every container reads the set in its own `Awake`, so a world
-built first would refill everything the player had cleared.
+`PlayerSession.RestoreLootedContainers` and then `RestoreContainerCooldowns` immediately after
+`RestorePounds`, **before** either `EnterManorCellars` or `LoadWorld`. Every container reads both in
+its own `Awake`, so a world built first would refill everything the player had cleared.
 
-`PlayerSession` holds the set as a private `HashSet<string>`, not a serialized field — it reaches
-the file through `SaveData` only. `BeginNewGame` clears it beside `Inventory.Clear()`, so a New Game
-in the same app session does not inherit the last playthrough's emptied bins.
+`PlayerSession` holds the looted set as a private `HashSet<string>` and the cooldowns as a private
+`Dictionary<string, int>`, neither a serialized field — they reach the file through `SaveData` only.
+`BeginNewGame` clears **both** beside `Inventory.Clear()`, so a New Game in the same app session
+does not inherit the last playthrough's emptied bins or their pending refills. ⚠ Missing either
+clear fails silently.
 
 ## What is and is not saved
 
 **Saved:** character name and class, `TutorialComplete`, chunk, position, health/mana/stamina,
-quest state and focus, inventory/equipment, pounds, emptied `Fixed` container ids, map/wiki state,
-XP/perks, the active companion contract and health, known/equipped spells, and Spark's player-authored
-shout.
+quest state and focus, inventory/equipment, pounds, emptied `Fixed` container ids, pending container
+refills, map/wiki state, XP/perks, the active companion contract and health, known/equipped spells,
+and Spark's player-authored shout.
 
 `PlayerClass` is stored as its integer enum value. The original mappings remain
 `YoungDriller=0`, `EnGarde=1`, `MrHood=2`, `Dynamo=3`; `BundaBasher=4` was appended so existing
@@ -224,14 +264,20 @@ git ls-files 'Assets/**/*.cs' | while read f; do [ -f "$f.meta" ] || echo "NO ME
 
 Reordering or inserting values silently remaps existing data. **Always append.**
 
-Twenty live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
+Twenty-two live enums, from `grep -rn "public enum" --include="*.cs" Assets/Scripts`:
 
 `Direction`, `AbilityResourceType`, `ItemType`, `PlayerClass`, `GameFlowState`,
 `HUDActionButton.ActionKind`, `InstanceDoor.Destination`, `PlacementCategory`, `CityRegion`,
 `QuestConditionType`, `TutorialSequence.Stage`,
 `SpriteContainer.ContainerMode` (`Fixed = 0`, `Respawning = 1`), `WikiCategory`,
 `PerkEffectType`, `SpellEffectType`, `QuestGateType`, `MerchantActionType`,
-`CompanionCommandType`, `CompanionContractType`, `TilingSurface.TilingPlane`.
+`CompanionCommandType`, `CompanionContractType`, `TilingSurface.TilingPlane`,
+`WorldContainer.ContainerMode` (`Fixed = 0`, `Respawning = 1`),
+`WorldContainer.TrapType` (`None = 0`, `Damage = 1`, `WantedSpike = 2`).
+
+The two `WorldContainer` enums have **no authored asset yet**, so their indices are still free to
+choose — and frozen the moment the first container is placed. `TrapType` is declared ahead of the
+behaviour that will read it precisely so that freezing happens once.
 
 `HUDActionButton.ActionKind` is the one with values proven live in serialized data: `c.unity`
 holds six authored `HUDActionButton` components covering `Attack=0`, `Ability=1`, `Inventory=2`

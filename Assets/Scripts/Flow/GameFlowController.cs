@@ -224,6 +224,9 @@ namespace GBHEngland.Flow
             // and the LoadWorld call further down. Every SpriteContainer reads this set in its own
             // Awake, so a chunk built first would refill every bin the player had already cleared.
             PlayerSession.Instance.RestoreLootedContainers(data.LootedContainers);
+            // Same Awake-ordering dependency, same reason: a restockable container asks whether it
+            // is still cooling down as it is built, so an empty table here refills everything.
+            PlayerSession.Instance.RestoreContainerCooldowns(data.ContainerCooldowns);
             // Any time before the map is opened is fine — it is only read on open.
             PlayerSession.Instance.RestoreVisitedChunks(data.VisitedChunks);
             PlayerSession.Instance.RestoreWikiEntries(data.UnlockedWikiEntries);

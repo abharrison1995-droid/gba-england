@@ -353,5 +353,21 @@ namespace GBHEngland.Vibe
 
         /// <summary>How long a car stays hotwire-locked after a failed attempt, in seconds.</summary>
         public const float HotwireRetryLockoutSeconds = 30f;
+
+        /// <summary>
+        /// Visits a restockable container sits out before it refills. Counted per entry into its
+        /// chunk, so 3 means "available on the third return" — loot it, come back, come back, come
+        /// back. A container authored with a count of zero or less falls back to this.
+        /// </summary>
+        public const int DefaultContainerRespawnVisits = 3;
+
+        /// <summary>
+        /// How close the player has to be to use a container, in metres.
+        ///
+        /// ⚠ SpriteContainer and LootChest both hardcode 2.75 and are deliberately left alone —
+        /// a different number is a different feel, and retuning two working components is not this
+        /// constant's job. It is the default the container tool writes onto new containers.
+        /// </summary>
+        public const float DefaultContainerInteractRange = 2.5f;
     }
 }

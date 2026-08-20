@@ -26,6 +26,22 @@ namespace GBHEngland.Flow
         public string ItemID;
     }
 
+    /// <summary>
+    /// One restockable container waiting to refill, as a container id plus how many more visits to
+    /// its chunk it has to sit out.
+    ///
+    /// Declared here rather than in its own file so no .meta had to be hand-authored for it.
+    /// </summary>
+    [Serializable]
+    public class ContainerCooldown
+    {
+        /// <summary>"&lt;ChunkName&gt;/&lt;SaveId&gt;" — the same key space as <see cref="SaveData.LootedContainers"/>.</summary>
+        public string Id;
+
+        /// <summary>Visits still owed. At or below zero the container is free to refill.</summary>
+        public int VisitsRemaining;
+    }
+
     /// <summary>Everything a checkpoint needs to survive an app restart.</summary>
     [Serializable]
     public class SaveData
@@ -124,6 +140,15 @@ namespace GBHEngland.Flow
 
         // Appended for Royal Crowns: true once 1 of the 3 unique crowns is bought.
         public bool HasPurchasedRoyalCrown;
+
+        // Appended for restockable containers: which ones are still sitting out their refill, and
+        // for how many more visits to their chunk. A pre-cooldown save has no key here, JsonUtility
+        // hands back an empty list, and that correctly means nothing is waiting — every container
+        // reads as fresh.
+        //
+        // ⚠ The field name IS the JSON key and JsonUtility ignores [FormerlySerializedAs].
+        // Renaming this later resets every cooldown in every existing save, silently.
+        public List<ContainerCooldown> ContainerCooldowns = new List<ContainerCooldown>();
     }
 
     /// <summary>
@@ -211,6 +236,12 @@ namespace GBHEngland.Flow
                 }
 
                 data.LootedContainers.AddRange(session.LootedContainers);
+
+                // Prune before copying out, so the file never accumulates an entry for every
+                // container the player has ever emptied. Spent entries already read as free.
+                session.RemoveExpiredCooldowns();
+                data.ContainerCooldowns.AddRange(session.ContainerCooldowns);
+
                 data.VisitedChunks.AddRange(session.VisitedChunks);
                 data.UnlockedWikiEntries.AddRange(session.UnlockedWikiEntries);
                 data.PerkIds.AddRange(session.SpentPerkIds);
