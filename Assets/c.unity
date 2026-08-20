@@ -148725,7 +148725,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a648699066b369149a14d68e9fcf17b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ActorSprite: {fileID: 3234629978573100161, guid: 77ba605bbd83f4448bc8683510c3155e, type: 3}
+  ActorSprite: {fileID: 4862671371599063851, guid: b1393d2a5df307047a20b84037f86c15, type: 3}
   Tint: {r: 1, g: 1, b: 1, a: 1}
   Height: 1.55
   Width: 0.85
