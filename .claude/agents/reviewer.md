@@ -53,8 +53,13 @@ python Tools/asset_reachability.py --check-dangling
 python Tools/art_status.py            # if the diff touches art
 ```
 
-The expected baseline for `c.unity` is **17 unresolved GUIDs** — those are built-in Unity
-references and are not a problem. More than 17 means something broke.
+There is no tolerated count to compare against. Unity's two sentinel GUIDs are filtered out, and
+every reference that is genuinely broken is named individually in `KNOWN_DANGLING` in
+`Tools/asset_reachability.py`; **any unresolved GUID not on that list fails the run**, naming the
+GameObject and field that points at nothing. Exit `0` clean, `1` dangling, `2` couldn't verify —
+`Library/` is gitignored, so on a fresh clone it reports that it checked nothing rather than
+passing, and a `2` is not a pass. ⚠️ A diff that *adds* a line to `KNOWN_DANGLING` is a finding:
+that is how a real breakage gets waved through.
 
 Also worth checking by hand:
 

@@ -57,11 +57,18 @@ plan actually touches. Do not read all of `docs/`.
 ## Verification
 
 ```bash
-python Tools/asset_reachability.py --check-dangling   # 17-GUID baseline; exits 1 above it
+python Tools/asset_reachability.py --check-dangling   # reference integrity
 python Tools/art_status.py                            # if the change touches art
 ```
 
 Run the reachability check before and after anything that deletes, moves or renames an asset.
+
+`--check-dangling` is not a tolerated-count check. Every genuinely broken reference is named
+individually in `KNOWN_DANGLING` in `Tools/asset_reachability.py`, and **any unresolved GUID not on
+that list fails the run**, naming the GameObject and field that points at nothing. Exit `0` clean,
+`1` dangling, `2` couldn't verify — `Library/` is gitignored, so on a fresh clone it reports that it
+checked nothing rather than passing. ⚠️ Never add an entry to `KNOWN_DANGLING` to turn a red run
+green.
 
 ⚠️ **There is no compiler, no Unity and no test framework here.** A hand-written file lands LF in
 the Windows working tree; normalise it with `rm <file> && git checkout -- <file>` after committing.
