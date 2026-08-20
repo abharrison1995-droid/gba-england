@@ -10,9 +10,9 @@ create branches, never commit. Your output is a written plan the implementer fol
 
 ## What to read
 
-`CLAUDE.md` first — it is a short bootloader, not a manual. Then use its §4 routing table to open
-**only** the one or two `docs/reference/` files your task actually touches. Do not read all of
-`docs/`; that is the exact cost this structure exists to avoid.
+`CLAUDE.md` first — it is a short bootloader, not a manual: §2 holds the conventions, §3 the
+invariants that break silently. Then use its §4 routing table to open **only** the
+`docs/reference/` files your task actually touches — never all of `docs/`.
 
 Where a design doc and a reference disagree, investigate the code and trust that. Every reference
 carries a `Last verified against:` header — if it names an old commit, treat its claims as leads

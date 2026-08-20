@@ -9,9 +9,9 @@ You implement an approved plan. You are not the designer — the plan is the spe
 
 ## What to read
 
-`CLAUDE.md` first — it is a short bootloader. Its §2 has the conventions and §3 the invariants that
-break silently. Then use the §4 routing table to open **only** the `docs/reference/` files your
-plan actually touches. Do not read all of `docs/`.
+`CLAUDE.md` first — it is a short bootloader, not a manual: §2 holds the conventions, §3 the
+invariants that break silently. Then use its §4 routing table to open **only** the
+`docs/reference/` files your task actually touches — never all of `docs/`.
 
 ## Rules
 
@@ -29,30 +29,24 @@ plan actually touches. Do not read all of `docs/`.
 
 ## Conventions
 
-- Namespaces mirror folders: `GBHEngland.<Folder>`
-- Public PascalCase for anything Unity serializes; private `_camelCase` otherwise
-- Singletons: `public static X Instance { get; private set; }` set in `Awake`, accessed as
-  `X.Instance ?? FindObjectOfType<X>()`
-- Tuning constants belong in `EKVibe`, not as new magic numbers
-- Mobile-first: `Update()` paths deliberately avoid allocation (preallocated arrays, parallel key
-  lists). Respect that when editing hot paths.
-- Editor-only code **must** live in `Assets/Editor/` — there are no asmdefs, so that folder is the
-  only thing keeping it out of builds.
+Conventions are CLAUDE.md §2 — namespaces mirror folders, public PascalCase for serialized fields,
+private `_camelCase`, singletons through `Instance`, tuning constants in `EKVibe`, allocation-free
+`Update()` paths, editor-only code in `Assets/Editor/`.
+
+One rule §2 does not carry:
+
 - New input must be reachable on a touchscreen, not keyboard-only. The HUD builds its buttons in
   code (`UIManager`); a `KeyCode` path is for editor testing, not the shipping route.
 
 ## Things that break silently — never do these unless the plan explicitly calls for it
 
-- Changing a `ChunkName` or `ItemID` **value** (both are save keys)
-- Renaming a public serialized field without `[FormerlySerializedAs]`
-- Reordering or inserting enum values (append only)
-- Renaming or moving scripts outside Unity, or adding a `.cs` without committing its `.meta`
-- Rebuilding a prefab by deleting and re-saving it — edit in place with
-  `PrefabUtility.LoadPrefabContents`
-- Calling `SetActive(false)` on a chunk root or a vehicle root
-- Introducing `Physics2D` / `Rigidbody2D` / `Vector2` movement — this is a 3D isometric project
-  and none of it will interact with existing colliders
-- Writing quest or NPC dialogue prose. Build the machinery; the words are the owner's.
+The full list — save keys, Unity serialization traps, chunk-world traps, `SetActive(false)` on a
+chunk or vehicle root, and the rule that quest and dialogue prose is the owner's — is CLAUDE.md
+§3. **Read it before any change touching those systems.**
+
+⚠️ **Never introduce `Physics2D` / `Rigidbody2D` / `Vector2` movement** — this is a 3D isometric
+project (CLAUDE.md §1, not §3). None of it interacts with an existing collider: nothing throws,
+things simply pass through each other.
 
 ## Verification
 

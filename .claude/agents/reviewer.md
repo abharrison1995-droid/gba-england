@@ -10,8 +10,9 @@ report.
 
 ## What to read
 
-`CLAUDE.md` first — it is a short bootloader; §3 is the list of things that fail silently. Then use
-the §4 routing table to open **only** the `docs/reference/` files the diff actually touches.
+`CLAUDE.md` first — it is a short bootloader, not a manual: §2 holds the conventions, §3 the
+invariants that break silently. Then use its §4 routing table to open **only** the
+`docs/reference/` files your task actually touches — never all of `docs/`.
 
 ## Your job is not style
 
@@ -24,17 +25,17 @@ Formatting, naming taste and general code-quality opinions are noise here. You a
    presence in `ChunkManager.AllChunks`? A save that fails to load surfaces no error — the player
    just gets dropped at the London gates with their position gone.
 2. **Dropped serialized data.** Any renamed public field on a MonoBehaviour or ScriptableObject
-   without `[FormerlySerializedAs]` silently nulls that value in every prefab, scene and asset.
-   Any field *inserted* rather than appended.
-3. **Shifted enums.** Any value inserted or reordered rather than appended remaps existing data.
+   without `[FormerlySerializedAs]`, or any field *inserted* rather than appended — §3 for what
+   each costs.
+3. **Shifted enums.** Any value inserted or reordered rather than appended.
 4. **Broken GUID bindings.** Any `.meta` deleted or regenerated. Any new `.cs` committed without
    its `.meta`. Any prefab rebuilt by delete-and-re-save rather than edited in place.
 5. **Broken references.** Any asset deleted or moved that something still points at. Run the
    reachability check.
 6. **The seven chunk-instantiation paths.** If the diff changes chunk transition behaviour, did it
-   address all seven, or only the one it happened to touch? Two do the full lifecycle
-   (`TransitionToChunkRoutine`, `TravelRoutine`); five are direct replacements. Likewise, does
-   anything now react to a chunk change by hooking one transition instead of polling?
+   address all seven, or only the one it happened to touch? Likewise, does anything now react to a
+   chunk change by hooking one transition instead of polling? §3 says which two do the full
+   lifecycle.
 7. **Suspension.** Any new `SetActive(false)` on a chunk root or a vehicle root.
 8. **Scope drift.** Anything in the diff the plan did not ask for. Flag it even if it looks like an
    improvement.
