@@ -72,6 +72,32 @@ namespace GBHEngland.Combat
         [Tooltip("Seconds from the roll's START before another can begin.")]
         public float RollCooldown = 1f;
 
+        [Header("Special Attacks")]
+        [Tooltip("Seconds the spin lasts, not counting the recovery that follows it.")]
+        public float SpinDuration = 0.60f;
+        [Tooltip("How many times the spin sweeps. Each tick clears the dedupe set, so standing " +
+                 "inside the spin is hit once per tick.")]
+        public int SpinTicks = 3;
+        [Tooltip("Reach in metres. 0 falls back to MeleeRange.")]
+        public float SpinRange = 2.40f;
+        [Tooltip("Per-tick damage as a fraction of a plain swing.")]
+        public float SpinDamageMultiplier = 0.60f;
+        [Tooltip("Percent of MAXIMUM stamina spent per spin, for the reason CurrentRollCost " +
+                 "spells out: a flat cost silently gets cheaper every level as the pool grows.")]
+        public float SpinStaminaPercent = 35f;
+        [Tooltip("Seconds the dash lunge lasts.")]
+        public float DashDuration = 0.28f;
+        [Tooltip("Metres covered. Only meaningful because RollSpeedCurve integrates to 1.")]
+        public float DashDistance = 3.20f;
+        [Tooltip("Reach in metres for the dash's per-step sweep. 0 falls back to MeleeRange.")]
+        public float DashRange = 1.10f;
+        [Tooltip("Frontal arc in degrees for the dash. 360 or more skips the facing test.")]
+        public float DashArcAngle = 140f;
+        [Tooltip("Dash damage as a fraction of a plain swing. Charged once per target per dash.")]
+        public float DashDamageMultiplier = 1.25f;
+        [Tooltip("Percent of MAXIMUM stamina spent per dash.")]
+        public float DashStaminaPercent = 30f;
+
         [Header("Knockback")]
         [Tooltip("Seconds of i-frames granted as a knockback slide ends, so two enemies cannot " +
                  "chain-stun the player.")]
@@ -1000,6 +1026,193 @@ namespace GBHEngland.Combat
         /// stops matching the field it is read from.
         /// </summary>
         private static float RollSpeedCurve(float t) => 1.5f - t;
+        #endregion
+
+        #region Special Attacks
+        /// <summary>
+        /// Runs a special attack that has already been paid for and put on cooldown by the ability
+        /// path. Everything a special shares with a plain swing — the riding refusal, the cooldown,
+        /// the stealth break — happens up there, so this is only the dispatch.
+        /// </summary>
+        private void PerformSpecialMeleeAttack(AbilityData ability)
+        {
+            switch (ability.SpecialKind)
+            {
+                case SpecialAttackKind.Spin: StartCoroutine(SpinAttackRoutine(ability)); break;
+                case SpecialAttackKind.Dash: StartCoroutine(DashAttackRoutine(ability)); break;
+                default:
+                    // Reached only for a misauthored asset, and only after the cost has been
+                    // charged — the branch that calls this deliberately mirrors the cast path's
+                    // order rather than validating the kind a second time earlier.
+                    Debug.LogWarning($"PerformSpecialMeleeAttack: '{ability.AbilityID}' has " +
+                                     $"IsSpecialAttack set but SpecialKind None - nothing to run.");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// A 360 degree sweep repeated <see cref="SpinTicks"/> times. Uses no new state flag:
+        /// _isAttacking already suspends movement, blocks a second swing, a dodge and a cast, and is
+        /// cleared defensively in OnDisable and on death. A second flag would be two more places to
+        /// clear and two more ways to strand the player.
+        /// </summary>
+        private IEnumerator SpinAttackRoutine(AbilityData ability)
+        {
+            // Same discipline as MeleeHitboxRoutine and RollRoutine: a stuck _isAttacking gates
+            // every attack, cast and step of movement for the rest of the session, so the reset
+            // lives in a finally and the flag is raised before the first yield.
+            _isAttacking = true;
+
+            try
+            {
+                SetAnimatorTrigger("SpecialAttack");
+
+                // Once, at the start. Zeroing per tick would suspend gravity for the whole spin -
+                // the reason is spelled out in RollRoutine.
+                _rb.velocity = Vector3.zero;
+
+                // ⚠ Deliberately no SetFacing during the spin. The sprite is a billboard that only
+                // flips left/right, so turning the facing three times would read as the character
+                // twitching, not spinning. The clip sells the rotation; the facing stays put.
+                Vector3 facing = _facingDir.sqrMagnitude > 0.001f ? _facingDir.normalized : transform.forward;
+                facing.y = 0f;
+                if (facing.sqrMagnitude < 0.001f) facing = Vector3.forward;
+                facing.Normalize();
+
+                int ticks = Mathf.Max(1, SpinTicks);
+                float interval = SpinDuration / ticks;
+                int damage = ComputeMeleeDamage(SpinDamageMultiplier);
+                float reach = SpinRange > 0f ? SpinRange : MeleeRange;
+
+                for (int t = 0; t < ticks; t++)
+                {
+                    yield return new WaitForSeconds(interval);
+
+                    if (_isDead || (_health != null && _health.IsDead)) yield break;
+                    if (_isKnockedBack) yield break;   // being hit wins, the same rule the roll uses
+
+                    Vector3 sphereCenter = transform.position + Vector3.up * (EKVibe.CharacterHeight * 0.5f);
+
+                    // Per tick, not per spin: standing inside the spin is meant to hurt repeatedly.
+                    _hitThisSwing.Clear();
+                    ResolveMeleeSweep(sphereCenter, facing, reach, 360f, damage);
+                }
+
+                yield return new WaitForSeconds(MeleeRecovery);
+            }
+            finally
+            {
+                _isAttacking = false;
+                // ⚠ No player controller has a Special STATE yet, only the SpecialAttack trigger
+                // parameter, so a set trigger latches forever and would fire a special animation at
+                // an arbitrary moment the day a special sheet is imported.
+                ClearAnimatorTrigger("SpecialAttack");
+            }
+        }
+
+        /// <summary>
+        /// A committed forward lunge that sweeps as it travels. Structurally the roll's twin, but it
+        /// does not call it — it reuses exactly one thing, <see cref="RollSpeedCurve"/>, whose
+        /// integral over [0,1] is 1 and is therefore what makes DashDistance mean metres.
+        /// </summary>
+        private IEnumerator DashAttackRoutine(AbilityData ability)
+        {
+            _isAttacking = true;
+
+            try
+            {
+                // Unlike the roll, the dash faces where it goes. PerformDodge deliberately does NOT
+                // SetFacing so you can roll backwards out of a fight; a dash is an attack and has
+                // to commit to a direction.
+                Vector3 dir = GetScreenRelativeMoveDirection(ReadMoveInput());
+                if (dir.sqrMagnitude < 0.0001f) dir = _facingDir;
+                dir.y = 0f;
+                if (dir.sqrMagnitude < 0.0001f) dir = Vector3.forward;
+                dir.Normalize();
+                SetFacing(dir);
+
+                // The dash reuses the Roll clip: SpecialAttack is the one special trigger and the
+                // spin has it, and Roll is a 0.43 s lunge that reads correctly here.
+                SetAnimatorTrigger("Roll");
+
+                _rb.velocity = Vector3.zero;   // once, not per step - see RollRoutine
+
+                int damage = ComputeMeleeDamage(DashDamageMultiplier);
+                float reach = DashRange > 0f ? DashRange : MeleeRange;
+
+                // Once for the whole dash: passing an enemy must cost them one hit, not one per
+                // physics step. This is the opposite of the spin, and it is the reason the sweep
+                // helper leaves the clear to its caller.
+                _hitThisSwing.Clear();
+
+                // ⚠ Snapshotted, then polled every step. CurrentChunkData is written from eight
+                // places across six files, so hooking one transition would miss the others. A dash
+                // into an edge trigger starts a transition, which pauses and teleports the player:
+                // without this the dash resumes on the far side and drives the body away from the
+                // arrival marker.
+                ChunkManager chunkManager = ChunkManager.Instance;
+                MapChunkData chunkAtStart = chunkManager != null ? chunkManager.CurrentChunkData : null;
+
+                float elapsed = 0f;
+                var wait = new WaitForFixedUpdate();
+
+                while (elapsed < DashDuration)
+                {
+                    // Cooperative cancellation, checked before moving, as in RollRoutine.
+                    if (_isDead || (_health != null && _health.IsDead)) yield break;
+                    if (_isKnockedBack) yield break;
+                    // Cancels rather than suspends. A pause already freezes this loop, because
+                    // timeScale 0 stops FixedUpdate; this exists for the frame where a pause is
+                    // pushed and popped around a teleport, and because resuming a committed lunge
+                    // after the player closes their inventory is the wrong behaviour.
+                    if (Systems.PauseManager.IsPaused) yield break;
+                    if (chunkManager != null
+                        && (chunkManager.IsTransitioning || chunkManager.CurrentChunkData != chunkAtStart))
+                        yield break;
+
+                    float speed = DashDistance / DashDuration * RollSpeedCurve(elapsed / DashDuration);
+
+                    // ⚠ MovePosition, never a transform write: this Rigidbody is non-kinematic so
+                    // MovePosition sweeps and resolves against colliders. Enemy capsules are solid,
+                    // so the dash STOPS at the first enemy it reaches. That is the intended feel.
+                    _rb.MovePosition(_rb.position + dir * (speed * Time.fixedDeltaTime));
+
+                    Vector3 sphereCenter = transform.position + Vector3.up * (EKVibe.CharacterHeight * 0.5f);
+                    ResolveMeleeSweep(sphereCenter, dir, reach, DashArcAngle, damage);
+
+                    elapsed += Time.fixedDeltaTime;
+                    yield return wait;
+                }
+
+                yield return new WaitForSeconds(MeleeRecovery);
+            }
+            finally
+            {
+                _isAttacking = false;
+            }
+        }
+
+        /// <summary>
+        /// Percent of the live maximum, floored, minimum 1 — the same shape as
+        /// <see cref="CurrentRollCost"/> and for the reason its comment gives: a flat cost silently
+        /// becomes cheaper every level as MaxManaStamina grows. AbilityData.ResourceCost is
+        /// deliberately NOT read here, and the two assets carry ResourceType None so the generic
+        /// charge on the cast path would be a no-op even if this branch were ever removed.
+        /// </summary>
+        private int SpecialStaminaCost(AbilityData ability)
+        {
+            float pct = ability.SpecialKind == SpecialAttackKind.Spin ? SpinStaminaPercent : DashStaminaPercent;
+            return PlayerData != null
+                ? Mathf.Max(1, Mathf.FloorToInt(PlayerData.MaxManaStamina * pct / 100f))
+                : 12;
+        }
+
+        /// <summary>The class a special's class gate is tested against; the default before a session binds.</summary>
+        private static PlayerClass CurrentPlayerClass()
+        {
+            var session = Flow.PlayerSession.Instance;
+            return session != null ? session.Class : PlayerClass.YoungDriller;
+        }
         #endregion
 
         #region Knockback
