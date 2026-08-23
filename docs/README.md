@@ -45,7 +45,7 @@ python Tools/art_status.py
 
 | Document | State |
 |---|---|
-| [plans/STAGE_RF_PLAN_REVISED.md](plans/STAGE_RF_PLAN_REVISED.md) | Stage F, the inventory and loot overhaul. Not implemented. |
+| [plans/STAGE_RF_PLAN_REVISED.md](plans/STAGE_RF_PLAN_REVISED.md) | Stage F, the inventory and loot overhaul. F1 (equipment model + save format) landed on `main`; F2–F6 outstanding. |
 | [plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md](plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md) | Design record for chunk suspend/resume. Not implemented. |
 | [plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md](plans/PROGRESSION_PHASE1_2_IMPLEMENTATION.md) | XP, player level and enemy levels. **Landed on `main`**; unseen by a compiler or the editor. Its §9.3 is the owner's check list. |
 | [plans/PROGRESSION_PHASE3_IMPLEMENTATION.md](plans/PROGRESSION_PHASE3_IMPLEMENTATION.md) | Player gains: level growth, proportional armour, perks and the perk window. Written on `progression-perks`; unseen by a compiler or the editor. Its §10.3 is the owner's check list, and §10.3 check 7 is how the first perk asset gets authored. |
@@ -59,7 +59,8 @@ python Tools/art_status.py
 | [plans/CONTAINER_SYSTEM_PLAN.md](plans/CONTAINER_SYSTEM_PLAN.md) | 3D world containers (`WorldContainer`/`SpriteContainer`), visit-counted respawn, `Tools → Place → Container Placement`. Implemented and landed on `main`; unseen by a compiler or the editor. Its §6 is the owner's check list. |
 | [plans/QUEST_PIPELINE_PLAN.md](plans/QUEST_PIPELINE_PLAN.md) | Plain-text `.quest` authoring + importer, multi-quest watcher, quest focus, quest-gated dialogue choices. Phases 0–1 written; unseen by a compiler or the editor. Its verification gate is the owner's check list before Phase 2. |
 | [plans/COMPANION_PIPELINE_PLAN.md](plans/COMPANION_PIPELINE_PLAN.md) | Data-driven paid/quest companions (Alex first): definition, follower AI, contract lifecycle, knockout, HUD. C0–C3 and C5 written, C4/C6 partial, C7 (quest-bound companions) not started. **Alex, the first instance, is implemented** — recruit, follow, fight, dismiss (commit `ab2d6c5`, 2026-08-15). Never compiled or run in the editor. Its verification section is the owner's check list. |
-| [plans/ROYAL_FIGHT_ARENA_PLAN.md](plans/ROYAL_FIGHT_ARENA_PLAN.md) | **Castle Fight Arena**, hosted by Prince Mandrew outside the London castle: dialogue sends the player directly into a transient solo bout, then victory/defeat/forfeit returns them outside. Includes match-only rewards, persistent ladder wins, a dirty tiled-stone prefab contract, and a later `.arena` pipeline. **Revised plan only—nothing implemented.** Phase 0 requires explicit runtime-bake success and two agents reporting `isOnNavMesh`; visible chasing alone does not pass. |
+| [plans/ROYAL_FIGHT_ARENA_PLAN.md](plans/ROYAL_FIGHT_ARENA_PLAN.md) | **Castle Fight Arena**, hosted by Prince Mandrew outside the London castle: dialogue sends the player directly into a transient solo bout, then victory/defeat/forfeit returns them outside. Includes match-only rewards, persistent ladder wins, a dirty tiled-stone prefab contract, and a later `.arena` pipeline. Implemented under `FightPitController`/`FightPitConfig` (10 config-driven rounds); never compiled or run in the editor. |
+| [plans/PLAYER_SPECIAL_ATTACKS_PLAN.md](plans/PLAYER_SPECIAL_ATTACKS_PLAN.md) | Spin and dash special attacks on the right HUD row: authored as `AbilityData` but executed as melee, never through `SpellRuntime`, and deliberately kept out of `Resources/` so they never become save keys. Adds a shared melee sweep helper. **Planned only — no code written.** Its §11 is the owner's check list. |
 
 ## Archive — history only
 
