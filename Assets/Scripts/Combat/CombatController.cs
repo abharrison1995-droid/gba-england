@@ -110,7 +110,14 @@ namespace GBHEngland.Combat
         /// </summary>
         private bool _isActivelyDodging;
         private bool _isDead;
-        private readonly Collider[] _hitResults = new Collider[32];
+        /// <summary>
+        /// Overlap buffer for the melee sweep. 64, not 32: the sweep queries with mask ~0 and
+        /// QueryTriggerInteraction.Collide, so ground, buildings and props all consume slots
+        /// before any filtering runs, and OverlapSphereNonAlloc reports the overflow only by
+        /// silently returning a full array. At 32 the enemy the player was aiming at could
+        /// simply not be in it. Widening can only fix misses, never invent hits.
+        /// </summary>
+        private readonly Collider[] _hitResults = new Collider[64];
         private readonly HashSet<Health> _hitThisSwing = new HashSet<Health>();
         private float _staminaRegenCarry;
         private float _healthRegenCarry;
@@ -736,6 +743,11 @@ namespace GBHEngland.Combat
         private int ResolveMeleeSweep(Vector3 origin, Vector3 facing, float reach, float arcAngle, int damage)
         {
             int hitCount = Physics.OverlapSphereNonAlloc(origin, reach, _hitResults, ~0, QueryTriggerInteraction.Collide);
+#if UNITY_EDITOR
+            if (hitCount == _hitResults.Length)
+                Debug.LogWarning($"ResolveMeleeSweep: overlap buffer saturated at {hitCount} — " +
+                                 "targets beyond this were dropped. Raise _hitResults.");
+#endif
 
             var session = Flow.PlayerSession.Instance;
 
