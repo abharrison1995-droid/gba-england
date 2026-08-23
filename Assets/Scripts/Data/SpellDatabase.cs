@@ -61,6 +61,13 @@ namespace GBHEngland.Data
             foreach (AbilityData ability in _all)
             {
                 if (ability == null || string.IsNullOrWhiteSpace(ability.AbilityID)) continue;
+                // ⚠ A special attack is an AbilityData but it is not a spell. It reaches the
+                // player through CombatController's Inspector-assigned SpecialAttacks list, is
+                // never learned, and is never written to savegame.json — which is the only thing
+                // keeping its AbilityID from becoming a permanent save key. This guard means a
+                // special asset misfiled into Resources/Abilities still cannot be picked up by
+                // LearnAllCurrentSpells, slotted into the spellbook and persisted.
+                if (ability.IsSpecialAttack) continue;
                 if (_byId.ContainsKey(ability.AbilityID))
                 {
                     Debug.LogError($"SpellDatabase: duplicate AbilityID '{ability.AbilityID}' under Resources/Abilities.");
