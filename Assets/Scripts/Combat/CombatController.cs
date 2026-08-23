@@ -685,77 +685,9 @@ namespace GBHEngland.Combat
 
                 // Origin at waist height in 3D isometric space
                 Vector3 sphereCenter = transform.position + Vector3.up * (EKVibe.CharacterHeight * 0.5f);
-                int hitCount = Physics.OverlapSphereNonAlloc(sphereCenter, reach, _hitResults, ~0, QueryTriggerInteraction.Collide);
-                int baseDamage = PlayerData != null
-                    ? PlayerData.BaseTraits.Strength + EKVibe.MeleeDamageStrengthOffset
-                    : 6; // PlayerData unbound — 6 matches the default CoreTraits Strength (5) + the same offset.
-
-                var session = Flow.PlayerSession.Instance;
-                int damage = session != null
-                    ? Mathf.RoundToInt(baseDamage * session.MeleeDamageMultiplier)
-                    : baseDamage;
-
-                // Equipped weapon adds its Damage on top of the Strength roll.
-                Data.ItemData weapon = session != null ? session.EquippedWeapon() : null;
-                if (weapon != null) damage += weapon.Damage;
-                if (session != null) damage += session.TotalAttackBonus();
-
-                float arcAngle = MeleeArcAngle > 0f ? MeleeArcAngle : 180f;
-                float dotThreshold = Mathf.Cos((arcAngle * 0.5f) * Mathf.Deg2Rad);
-                float pointBlankSq = PointBlankRange * PointBlankRange;
-                Vector3 playerPos = transform.position;
 
                 _hitThisSwing.Clear();
-                for (int i = 0; i < hitCount; i++)
-                {
-                    Collider enemyCol = _hitResults[i];
-                    if (enemyCol == null) continue;
-                    if (enemyCol.transform == transform || enemyCol.transform.IsChildOf(transform)) continue;
-
-                    // Parent lookup so child colliders still resolve; set dedupes multi-collider enemies
-                    Health targetHealth = enemyCol.GetComponentInParent<Health>();
-                    if (targetHealth == null || targetHealth.IsDead) continue;
-                    if (targetHealth.GetComponent<CompanionAI>() != null) continue;
-                    if (!_hitThisSwing.Add(targetHealth)) continue;
-
-                    // Closest point on enemy collider for distance / point-blank check
-                    Vector3 closest = enemyCol.ClosestPoint(playerPos);
-                    Vector3 toClosest = closest - playerPos;
-                    toClosest.y = 0f;
-
-                    // Point-blank grace: overlapping / adjacent enemies hit automatically regardless of facing
-                    if (pointBlankSq > 0f && toClosest.sqrMagnitude <= pointBlankSq)
-                    {
-                        // Inside point-blank radius, connect hit
-                    }
-                    else
-                    {
-                        // Semicircle / arc angle check relative to player position
-                        Vector3 toTarget = targetHealth.transform.position - playerPos;
-                        toTarget.y = 0f;
-                        if (toTarget.sqrMagnitude > 0.001f)
-                        {
-                            float ahead = Vector3.Dot(toTarget.normalized, facing);
-                            if (ahead < dotThreshold) continue; // outside attack arc
-                        }
-                    }
-
-                    string foeName = string.IsNullOrEmpty(targetHealth.DisplayName)
-                        ? targetHealth.name.Replace("(Clone)", "").Trim()
-                        : targetHealth.DisplayName;
-                    // Four-argument overload: passing gameObject is what sets Health.LastAttacker
-                    // to the player. Without it the player is invisible to anything that asks who
-                    // landed the killing blow — no error, just an attribution that never matches.
-                    if (targetHealth.TakeDamage(damage, "you", foeName, gameObject))
-                    {
-                        _bar?.Ping();
-                        // The knockback perk, gated on the hit LANDING and the enemy still being
-                        // alive: Health.Die has already disabled the agent and the AI by now, and
-                        // shoving a corpse would fight the destroy delay.
-                        if (session != null && session.MeleeKnockbackDistance > 0f && !targetHealth.IsDead)
-                            targetHealth.GetComponent<EnemyAI>()?.ApplyKnockback(facing, session.MeleeKnockbackDistance);
-                    }
-                }
+                ResolveMeleeSweep(sphereCenter, facing, reach, MeleeArcAngle, ComputeMeleeDamage(1f));
 
                 yield return new WaitForSeconds(attackDuration);
             }
@@ -763,6 +695,114 @@ namespace GBHEngland.Combat
             {
                 _isAttacking = false;
             }
+        }
+
+        /// <summary>
+        /// The swing's damage: Strength + the session's melee multiplier + equipped weapon +
+        /// attack bonus, then scaled by <paramref name="moveMultiplier"/> so a special can hit
+        /// harder or softer than a plain swing. Lifted unchanged from MeleeHitboxRoutine.
+        /// </summary>
+        private int ComputeMeleeDamage(float moveMultiplier)
+        {
+            int baseDamage = PlayerData != null
+                ? PlayerData.BaseTraits.Strength + EKVibe.MeleeDamageStrengthOffset
+                : 6; // PlayerData unbound — 6 matches the default CoreTraits Strength (5) + the same offset.
+
+            var session = Flow.PlayerSession.Instance;
+            int damage = session != null
+                ? Mathf.RoundToInt(baseDamage * session.MeleeDamageMultiplier)
+                : baseDamage;
+
+            // Equipped weapon adds its Damage on top of the Strength roll.
+            Data.ItemData weapon = session != null ? session.EquippedWeapon() : null;
+            if (weapon != null) damage += weapon.Damage;
+            if (session != null) damage += session.TotalAttackBonus();
+
+            return Mathf.RoundToInt(damage * moveMultiplier);
+        }
+
+        /// <summary>
+        /// One overlap-and-resolve pass: sphere at <paramref name="origin"/>, filter, arc test,
+        /// damage, knockback. Returns how many targets took damage.
+        ///
+        /// ⚠ The caller owns <see cref="_hitThisSwing"/> and must clear it itself. That is
+        /// deliberate, and it is the ONE thing that differs between the callers: clearing once
+        /// gives one hit for the whole move however many passes it makes, clearing before every
+        /// pass makes standing in the move hurt repeatedly. Hiding that behind a bool parameter
+        /// would bury the only decision worth seeing at the call site.
+        ///
+        /// <paramref name="arcAngle"/> >= 360 skips the facing test entirely.
+        /// </summary>
+        private int ResolveMeleeSweep(Vector3 origin, Vector3 facing, float reach, float arcAngle, int damage)
+        {
+            int hitCount = Physics.OverlapSphereNonAlloc(origin, reach, _hitResults, ~0, QueryTriggerInteraction.Collide);
+
+            var session = Flow.PlayerSession.Instance;
+
+            float effectiveArc = arcAngle > 0f ? arcAngle : 180f;
+            bool skipArcTest = effectiveArc >= 360f;
+            float dotThreshold = Mathf.Cos((effectiveArc * 0.5f) * Mathf.Deg2Rad);
+            float pointBlankSq = PointBlankRange * PointBlankRange;
+            // ⚠ The player's own position, NOT the waist-height sphere centre passed in as
+            // origin. The two have always been different values here — the overlap is a 3D
+            // sphere at waist height while the distance and arc tests are flat on X/Z — and
+            // they must stay different.
+            Vector3 playerPos = transform.position;
+            int hits = 0;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider enemyCol = _hitResults[i];
+                if (enemyCol == null) continue;
+                if (enemyCol.transform == transform || enemyCol.transform.IsChildOf(transform)) continue;
+
+                // Parent lookup so child colliders still resolve; set dedupes multi-collider enemies
+                Health targetHealth = enemyCol.GetComponentInParent<Health>();
+                if (targetHealth == null || targetHealth.IsDead) continue;
+                if (targetHealth.GetComponent<CompanionAI>() != null) continue;
+                if (!_hitThisSwing.Add(targetHealth)) continue;
+
+                // Closest point on enemy collider for distance / point-blank check
+                Vector3 closest = enemyCol.ClosestPoint(playerPos);
+                Vector3 toClosest = closest - playerPos;
+                toClosest.y = 0f;
+
+                // Point-blank grace: overlapping / adjacent enemies hit automatically regardless of facing
+                if (pointBlankSq > 0f && toClosest.sqrMagnitude <= pointBlankSq)
+                {
+                    // Inside point-blank radius, connect hit
+                }
+                else if (!skipArcTest)
+                {
+                    // Semicircle / arc angle check relative to player position
+                    Vector3 toTarget = targetHealth.transform.position - playerPos;
+                    toTarget.y = 0f;
+                    if (toTarget.sqrMagnitude > 0.001f)
+                    {
+                        float ahead = Vector3.Dot(toTarget.normalized, facing);
+                        if (ahead < dotThreshold) continue; // outside attack arc
+                    }
+                }
+
+                string foeName = string.IsNullOrEmpty(targetHealth.DisplayName)
+                    ? targetHealth.name.Replace("(Clone)", "").Trim()
+                    : targetHealth.DisplayName;
+                // Four-argument overload: passing gameObject is what sets Health.LastAttacker
+                // to the player. Without it the player is invisible to anything that asks who
+                // landed the killing blow — no error, just an attribution that never matches.
+                if (targetHealth.TakeDamage(damage, "you", foeName, gameObject))
+                {
+                    hits++;
+                    _bar?.Ping();
+                    // The knockback perk, gated on the hit LANDING and the enemy still being
+                    // alive: Health.Die has already disabled the agent and the AI by now, and
+                    // shoving a corpse would fight the destroy delay.
+                    if (session != null && session.MeleeKnockbackDistance > 0f && !targetHealth.IsDead)
+                        targetHealth.GetComponent<EnemyAI>()?.ApplyKnockback(facing, session.MeleeKnockbackDistance);
+                }
+            }
+
+            return hits;
         }
 
         private void OnDrawGizmosSelected()
