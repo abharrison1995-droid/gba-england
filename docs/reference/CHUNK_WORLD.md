@@ -12,6 +12,12 @@ Verification scope:    code (read line by line); chunk prefabs and MapChunkData 
                        placed anywhere" was re-checked by GUID scan on 2026-08-15 and still holds.
                        ChunkBeingBuilt/ContentChunkName and the container-cooldown ticks landed
                        2026-08-17 and have NEVER been compiled or run.
+                       Manor_Cellars' Coordinates (-1,-1 -> -1,-99) and the eleven off-grid
+                       interiors' Coordinates (X: -2 -> -3) were edited directly in the tracked
+                       YAML on 2026-08-20 to free the overworld region grid's West York column.
+                       Read, not compiled or run. The MapOfBritainUI consequence for Manor_Cellars
+                       (readable in this file's Manor_Cellars entry) is reasoned from its layout
+                       code, not observed on screen.
 ```
 
 Discrete chunks, **220×220 units** (`EKVibe.ChunkSize = 220f`). One chunk is live at a time.
@@ -26,10 +32,31 @@ Movement is on the X/Z plane; chunk edges are `pos.x` / `pos.z`.
 **Adjacency is authored by reference, not computed from `Coordinates`.** `Coordinates` is only a
 dictionary key for city lockout timers. It is **not** a save key — `ChunkName` is.
 
-**Six overworld chunks:** `Home_London` (0,0 — the hub, `IsCity: 1`), `North_Wasteland`,
-`South_Slums`, `East_RetailPark`, `West_Canal`, and `Manor_Cellars` (-1,-1 — the tutorial dungeon,
-reached by `InstanceDoor`, never by an edge). Outer chunks link back to Home only; their other
-three directions are null.
+**Eleven overworld chunks across the 5×5 Britain Region Grid:**
+Centered around `Home_London` (0, 0 — the hub, `IsCity: 1`):
+- `Hyde_Park_Jungle` (0, 1): Overgrown jungle parkland, yellowed dirt track.
+- `Barren_Lands_MK` (-1, 0): Bleak Milton Keynes wasteland, yellowed dirt road.
+- `Commie_Slum_Bolshevik` (1, 0): High-density brutalist towers, asphalt road.
+- `Commie_Slum_Menshevik` (0, -1): Post-war council estates, asphalt crossroads.
+- `The_Peaks` (-1, -1): Rugged mountains / Cornish folk, yellowed dirt track.
+- `OpenData_Draughtlands` (1, -1): Tech compound / server perimeter, asphalt road.
+- `East_York` (0, -2): Sino-Yorkshire hub (`IsCity: 1`), Yorkstone pavement.
+- `Knob_Moor` (-1, -2): Wild moorland / Hob Moor spin, yellowed dirt road.
+- `West_York` (-2, -2): Northern gritstone mill town (`IsCity: 1`), regular city roads.
+- `Brighton` (2, -2): Coastal seaside hub (`IsCity: 1`), regular city roads.
+- `Manor_Cellars` (-1, -99): Tutorial dungeon, reached by `InstanceDoor`.
+
+`Manor_Cellars.Coordinates` was moved off `(-1,-1)` on 2026-08-20 to clear that cell for the
+overworld region grid (see [NAME_UNIFICATION_PLAN.md](../plans/NAME_UNIFICATION_PLAN.md)-adjacent
+region work) and parked at `Y: -99`, mirroring `Castle_Fight_Arena`'s existing convention for a
+coordinate nothing else will ever claim. Unlike `Castle_Fight_Arena`, **`Manor_Cellars.EastChunk`
+is wired to `Home_London`** (one-directional — `Home_London.WestChunk` is `Barren_Lands_MK`, not this),
+so `MapOfBritainUI`'s BFS still reaches it whenever the player opens the map from inside it, and
+draws it as a real, if distant, graph node rather than an isolated one. That view was already
+non-orthogonal before this move (an "EastChunk" link diagonal to `(-1,-1)`); after this move the
+same view's auto-fit will additionally compress every other visited node into a tight cluster
+opposite `Manor_Cellars` for that one screen. **Unverified** — `MapOfBritainUI` has never been
+compiled or run; this is read from its layout math, not observed.
 
 **Six interior shells,** added 2026-08-09 and **empty apart from their shell**. Five are the named
 London locations from [ART_QUEUE.md](../art/ART_QUEUE.md) band 6; `The_Winchester` is the sixth, and
@@ -37,12 +64,18 @@ is not in that list.
 
 | Chunk | Coords | Floor | What it is |
 |---|---|---|---|
-| `Quidland` | (-2,-1) | 24×16 | Pound shop that sells weapons |
-| `FU_Sports` | (-2,-2) | 26×18 | Sports shop that sells armour |
-| `City_Hall` | (-2,-3) | 34×24 | Mayor Swalls and Councillor Mosley |
-| `Police_Station` | (-2,-4) | 30×22 | Commissioner Spencer, Riggs, Murtaugh |
-| `Gang_Hideout` | (-2,-5) | 18×14 | Ralph and Sanjeet — Sanjeet's mum's house |
-| `The_Winchester` | (-2,-6) | 20×14 | The pub |
+| `Quidland` | (-3,-1) | 24×16 | Pound shop that sells weapons |
+| `FU_Sports` | (-3,-2) | 26×18 | Sports shop that sells armour |
+| `City_Hall` | (-3,-3) | 34×24 | Mayor Swalls and Councillor Mosley |
+| `Police_Station` | (-3,-4) | 30×22 | Commissioner Spencer, Riggs, Murtaugh |
+| `Gang_Hideout` | (-3,-5) | 18×14 | Ralph and Sanjeet — Sanjeet's mum's house |
+| `The_Winchester` | (-3,-6) | 20×14 | The pub |
+
+This table predates five more interiors added since (`Mosleys_Lab_Basement`,
+`Abandoned_Bus_Station`, `Mosley_Mansion`, `DP_Academy`, `Abandoned_Church`) that share the same
+off-grid column — moved to `X: -3` alongside the six above on 2026-08-20, still `Y: -7` through
+`Y: -11` respectively, still all-null adjacency. Not re-tabulated here; this row count was already
+stale before this edit and fixing it is a separate task.
 
 Each is a floor, four walls at 3.2 m, a `RuntimeNavMeshBaker` on the root and one id-less
 `PlayerSpawn`. All four adjacency slots are null and none carries a `ChunkEdge` — the only way in is

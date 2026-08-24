@@ -604,7 +604,7 @@ Everything else. No C# compiler, no Unity, no test framework. Specifically unpro
    `git checkout Assets/Data/Presets/`, not retyping 32 assets.
 
 3. **Placing a levelled enemy.** Open a chunk prefab first: Project →
-   `Assets/Prefabs/Chunks/South_Slums_Prefab.prefab` → double-click for Prefab Mode. Then Tools →
+   `Assets/Prefabs/Chunks/Commie_Slum_Menshevik_Prefab.prefab` → double-click for Prefab Mode. Then Tools →
    GBH → World Palette, arm **Roadman**, set the palette's **Level** field to **5**, click in the
    Scene view, Ctrl+S. Hierarchy → select the placed Roadman → Inspector: it must carry an **Enemy
    Level** component reading **5**, and **Health → Max Health** must still read the prefab's **45**

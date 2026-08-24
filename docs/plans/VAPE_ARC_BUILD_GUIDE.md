@@ -681,7 +681,7 @@ No file written; it needs prose first. What it will need building:
 
 | Needs | State | Note |
 |---|---|---|
-| East York chunk at `(0, -2)` | not built | Two south, straight through `South_Slums`. A new `MapChunkData` + prefab + registry entry — same shape as the interior shells, but an exterior with edges. |
+| East York chunk at `(0, -2)` | not built | Two south, straight through `Commie_Slum_Menshevik`. A new `MapChunkData` + prefab + registry entry — same shape as the interior shells, but an exterior with edges. |
 | Alex as a hired companion | half there | `Preset_Alex` exists and the whole companion system is written, but **no `CompanionDefinition` asset exists anywhere**, so none of it has ever run. Alex would be its first exercise. |
 | Alex's "free for this one" offer | needs words | Owner's prose. He normally charges; this mission he doesn't. |
 | Mayor Zhao + forced approach dialogue | new | Nothing starts a conversation on proximity today — every conversation is USE-driven. This is the one genuinely new mechanic Quest 8 needs. |
@@ -746,7 +746,7 @@ the id **exactly**, including case. All six live ids do:
 | `DP_Academy` | shell ✓ (2026-08-16) | Not required by this arc — Daniel's guild interior, optional |
 | `Gang_Hideout` | shell ✓, **door done and played** | **Quest 6.** Croyden traphouse model, then move the interior door out of the room's centre; keyed gang + the boss. Ralph & Sanjeet live here |
 | `East_RetailPark` | exists | **Quest 7.** The chunk east of London — the Mad Fisherman goes here, subject to the fit question in Phase 7 |
-| East York `(0, -2)` | not built | **Quest 8.** Two chunks south, through `South_Slums`. Nothing exists yet |
+| East York `(0, -2)` | not built | **Quest 8.** Two chunks south, through `Commie_Slum_Menshevik`. Nothing exists yet |
 
 *Shells created 2026-08-16 by cloning the Quidland shell (fresh GUIDs, registered, `--check-dangling`
 clean). Never opened in Unity — first-open check in Phase 4. `FU_Sports` and `Quidland` shells

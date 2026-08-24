@@ -25,7 +25,7 @@ owed and left blank. Do not draft it.
 **Partially built, uncommitted.** `East_York_Data.asset` and `East_York_Prefab.prefab` now exist on
 disk (`Assets/Data/Chunks/`, `Assets/Prefabs/Chunks/`) but are untracked — not yet committed, and
 not yet in `MapChunkRegistry` (which lists eighteen chunks, none of them East York). The guide's
-location table has it as `East York (0, -2)` — two chunks south of London through `South_Slums`.
+location table has it as `East York (0, -2)` — two chunks south of London through `Commie_Slum_Menshevik`.
 Confirm the adjacency wiring below actually happened before assuming the asset alone is enough.
 
 ⚠️ **`ChunkName` is a save key from the first save made inside it.** Decide the string once, now,
@@ -36,7 +36,7 @@ It is an **exterior**, which means two things the interior shells did not need:
 
 - it has no `RuntimeNavMeshBaker` if it follows the other six exteriors, so it rides on
   `Assets/c/NavMesh.asset` and needs a bake;
-- it needs chunk-edge adjacency wiring so `South_Slums` leads to it, which is the ordinary
+- it needs chunk-edge adjacency wiring so `Commie_Slum_Menshevik` leads to it, which is the ordinary
   `MapChunkData` N/S/E/W path, not a portal.
 
 ### 1.2 The flats, west of East York
