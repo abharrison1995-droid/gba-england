@@ -269,11 +269,24 @@ namespace GBHEngland.Flow
                 }
 
                 File.Copy(TempSavePath, SavePath, overwrite: true);
-                File.Delete(TempSavePath);
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"SaveGameManager: failed to write save — {e.Message}");
+            }
+            finally
+            {
+                // Always clear the staging file, so a failed copy can't leave a stale
+                // savegame.json.tmp that ReadSaveData would otherwise have to reason about.
+                try
+                {
+                    if (File.Exists(TempSavePath))
+                        File.Delete(TempSavePath);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"SaveGameManager: failed to clean up temp save — {e.Message}");
+                }
             }
         }
 
