@@ -985,6 +985,14 @@ namespace GBHEngland.Combat
                 // gravity for the whole roll and leave the player hovering if they rolled off a kerb.
                 _rb.velocity = Vector3.zero;
 
+                // ⚠ Snapshotted, then polled every step, exactly as DashAttackRoutine does.
+                // CurrentChunkData is written from eight places across six files, so hooking one
+                // transition would miss the others. A roll into an edge trigger starts a
+                // transition, which pauses and teleports the player: without this the roll resumes
+                // on the far side and drives the body away from the arrival marker.
+                ChunkManager chunkManager = ChunkManager.Instance;
+                MapChunkData chunkAtStart = chunkManager != null ? chunkManager.CurrentChunkData : null;
+
                 float elapsed = 0f;
                 var wait = new WaitForFixedUpdate();
 
@@ -996,6 +1004,13 @@ namespace GBHEngland.Combat
                     // is why nothing here needs StopCoroutine — whether that runs a finally is
                     // not something this repo can verify without an editor.
                     if (_isDead || _isKnockedBack) yield break;
+                    // Cancels rather than suspends, for the reasons DashAttackRoutine gives: a
+                    // pause already freezes this loop because timeScale 0 stops FixedUpdate, so
+                    // this covers the frame where a pause is pushed and popped around a teleport.
+                    if (Systems.PauseManager.IsPaused) yield break;
+                    if (chunkManager != null
+                        && (chunkManager.IsTransitioning || chunkManager.CurrentChunkData != chunkAtStart))
+                        yield break;
 
                     float speed = RollDistance / RollDuration * RollSpeedCurve(elapsed / RollDuration);
 
