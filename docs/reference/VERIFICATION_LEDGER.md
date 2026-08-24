@@ -2,7 +2,8 @@
 
 **Last verified against:** `main` @ 2026-08-20, reconciled against `CLAUDE.md` §5 and against the
 prefab/asset YAML on disk. Fight Pit entry added 2026-08-21; player special attacks
-added 2026-08-24 from branch `feat/player-special-attacks`.
+added 2026-08-24 from branch `feat/player-special-attacks`; chunk ground/road repair added
+2026-08-25.
 
 **This file is the sole canonical owner of verification status.**
 
@@ -108,6 +109,37 @@ point compile. It proves nothing about their behaviour.**
   `art_incoming/processed/`, expect no "Identifier uniqueness violation", no new Animator
   transitions, `0 duplicate transition(s) removed` (also settles reimport idempotency, still unproven
   otherwise).
+
+### Chunk grounds and roads
+
+Landed 2026-08-25. Ten chunk prefabs edited as YAML in place — no `.meta` touched, no GUID minted
+for anything that already existed, round-trip proven byte-identical on all 27 chunk prefabs before
+any edit, and `asset_reachability --check-dangling` reports the same known set afterwards as
+before. None of it has been opened in Unity.
+
+- ⚠️ **The magenta diagnosis is inferred, not proven.** Every road and track `MeshRenderer` in the
+  project was a truncated ten-line stub where Unity's own writer emits forty-two, missing
+  `m_StaticBatchInfo`, `m_CastShadows`, `m_LightProbeUsage` and `m_RenderingLayerMask`. All sixteen
+  were roads, and the `Ground` beside them carrying the **same material** rendered correctly, which
+  rules the material out and leaves the renderer as the only difference. Which missing field
+  actually triggers the error shader was never established. They are now full blocks. *Check the
+  roads render; if any is still magenta the cause is something else entirely and this whole entry
+  is wrong.*
+- ⚠️ **Road texture orientation is the one guess in the change.** Every strip is rotated so its
+  tarmac runs along local **+X**, on the assumption that a built-in Cube's top face maps U→X and
+  V→Z. If that is backwards the roads will read sideways — bands across the carriageway instead of
+  along it. *One-line fix if so: swap the tiling on `Road_Asphalt` from `22 x 1` to `1 x 22` and
+  drop the 90° yaw from the north-south strips.*
+- **Four ground materials are flat colour on purpose** — `Ground_MoorDark`,
+  `Ground_ScorchedSand`, `Ground_RockyGrey`, `Track_Dirt` wait on Band 13 art. Each carries an
+  approximate `_Color` tint. **That tint must go back to white when its texture lands**, or it
+  multiplies against the texture and darkens it twice.
+- **Brighton and West York gained an `Intersection_Centre`** they did not have, at `y=0.06`,
+  matching what the generator's own `Crossroad_Intersection` style produces. Without it the two
+  strips are coplanar where they cross. *Check the junction does not z-fight.*
+- **`ChunkPrefabGeneratorTool`'s dead `Ground UV Tiling` field is gone**, replaced by a read-out of
+  what the assigned material actually does. Uncompiled — the balance scan is not a compile. *Opening
+  `Tools → World → Generate Chunk Prefab` at all proves the editor assembly built.*
 
 ### Wallet, quests, dialogue
 - **The wallet has never run.** Pickpocket a civilian, get arrested, reload a save. Check the bag

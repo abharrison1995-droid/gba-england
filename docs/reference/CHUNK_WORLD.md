@@ -1,7 +1,8 @@
 # Chunk world
 
 ```
-Last verified against: working tree, 2026-08-17
+Last verified against: working tree, 2026-08-17; the ground/road visuals section added
+                       2026-08-25
 Verification scope:    code (read line by line); chunk prefabs and MapChunkData assets (tracked
                        YAML). Edge-crossing behaviour was play-tested in an earlier editor
                        session — but NOT since ChunkTravelKind was added on 2026-08-15, which
@@ -10,6 +11,9 @@ Verification scope:    code (read line by line); chunk prefabs and MapChunkData 
                        The portal-marker, mounted-refusal and MapChunkRegistry sections landed
                        2026-08-09 and have NEVER been compiled or run. "No DungeonPortal is
                        placed anywhere" was re-checked by GUID scan on 2026-08-15 and still holds.
+                       "Ground and road visuals" is read from the prefab and material YAML and
+                       has NOT been seen in an editor — see the ledger entry for the two parts
+                       of it that are inference rather than fact.
                        ChunkBeingBuilt/ContentChunkName and the container-cooldown ticks landed
                        2026-08-17 and have NEVER been compiled or run.
                        Manor_Cellars' Coordinates (-1,-1 -> -1,-99) and the eleven off-grid
@@ -272,3 +276,36 @@ cache, return stack, encounter ledger and corpse-loot lifecycle — is written u
 [../plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md](../plans/BUILDING_INTERIORS_AND_LOCATION_CACHE_PLAN.md).
 **None of it is implemented.** Read it before touching chunk lifetime; treat its phases as
 architect-first work.
+
+## Ground and road visuals
+
+An outdoor chunk's visuals are three things: a `Ground` plane at scale 22 (Unity's plane is 10x10,
+so 220x220 m), optional strips under `Environment/Paths`, and an optional square patch under
+`Environment/Details` covering the seam where two strips cross. All of it is built by
+`Tools → World → Generate Chunk Prefab`.
+
+⚠️ **Tiling belongs to the material, not the renderer.** A material assigned to two chunks tiles
+identically on both, and there is no per-chunk override — Unity would need a MaterialPropertyBlock
+or a material instance, and neither survives into a prefab as a serialized value. This has two
+consequences that look like bugs if you do not know them:
+
+- **A 1x1 ground material stretches one image across the whole 220 m plane.** Six chunks shipped
+  with `Asphalt.mat` as their ground and therefore had a single enormous photograph of a road for a
+  backdrop. Ground materials tile **80 x 80** — one tile per 2.75 m.
+- **Strips of different lengths need different materials**, because the tiling that puts one tile
+  per 10 m of a 220 m road puts one per 5 m of a 110 m one. Hence `Road_Asphalt` (22 x 1),
+  `Road_Asphalt_Stem` (11 x 1) for East York's T-junction stem, and `Road_Asphalt_Patch` (2.8 x 2.8,
+  plain tarmac with no markings) for the junction squares.
+
+**Every strip runs along its local +X and is rotated about Y to point it**, rather than being
+modelled along Z. A north-south road is scale `(220, 0.04, 10)` with a 90° yaw, not
+`(10, 0.04, 220)` with none. That is what lets every road on every bearing share one material: the
+tarmac in the texture runs along U, so it has to run along local X on the mesh.
+
+Strips sit at `y=0.04` and junction patches at `y=0.06`. Two strips crossing at the same height are
+coplanar and z-fight, which is the whole reason the patch exists.
+
+⚠️ **A road `MeshRenderer` must be a complete block.** Sixteen of them were hand-written stubs that
+stopped after `m_Materials`, and every one rendered magenta while the `Ground` beside it, carrying
+the same material, rendered correctly. If you write prefab YAML by hand, copy a renderer Unity
+wrote — do not write a minimal one and trust the defaults.
