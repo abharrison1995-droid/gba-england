@@ -32,7 +32,7 @@ namespace GBHEngland.Flow
 
         private const float MoveDistanceRequired = 4f;
 
-        private Sprite _banditSprite;
+        private GameObject _banditPrefab;
         private GameObject _chestPrefab;
         private float _movedDistance;
         private Vector3 _lastPlayerPos;
@@ -52,9 +52,9 @@ namespace GBHEngland.Flow
                 _banditHealth.OnDeath.RemoveListener(OnBanditKilled);
         }
 
-        public void Begin(Sprite banditSprite, GameObject chestPrefab = null)
+        public void Begin(GameObject banditPrefab, GameObject chestPrefab = null)
         {
-            _banditSprite = banditSprite;
+            _banditPrefab = banditPrefab;
             _chestPrefab = chestPrefab;
             SetObjective("Get your bearings — use the stick to move around the cellar.");
         }
@@ -136,6 +136,38 @@ namespace GBHEngland.Flow
             if (NavMesh.SamplePosition(spawnPos, out NavMeshHit navHit, 10f, NavMesh.AllAreas))
                 spawnPos = navHit.position;
 
+            int enemyLayer = LayerMask.NameToLayer("Enemy");
+
+            if (_banditPrefab != null)
+                SpawnBanditFromPrefab(spawnPos, enemyLayer);
+            else
+                SpawnProceduralBandit(spawnPos, enemyLayer);
+        }
+
+        /// <summary>
+        /// Builds the tutorial enemy from a full-sprite enemy prefab so it gets a real
+        /// Animator + sprite set. The prefab already carries Health, EnemyAI, WorldActorVisual,
+        /// NavMeshAgent and a nameplate; only the death hook that drives the tutorial is added.
+        /// </summary>
+        private void SpawnBanditFromPrefab(Vector3 spawnPos, int enemyLayer)
+        {
+            GameObject bandit = Instantiate(_banditPrefab, spawnPos, Quaternion.identity);
+            bandit.name = _banditPrefab.name;
+            bandit.transform.SetParent(transform, false);
+            bandit.transform.position = spawnPos;
+
+            if (enemyLayer >= 0)
+                bandit.layer = enemyLayer;
+
+            _banditHealth = bandit.GetComponent<Health>();
+            if (_banditHealth == null)
+                _banditHealth = bandit.AddComponent<Health>();
+
+            _banditHealth.OnDeath.AddListener(OnBanditKilled);
+        }
+
+        private void SpawnProceduralBandit(Vector3 spawnPos, int enemyLayer)
+        {
             GameObject bandit = new GameObject("TutorialBandit");
             bandit.transform.SetParent(transform, false);
             bandit.transform.position = spawnPos;
@@ -157,7 +189,7 @@ namespace GBHEngland.Flow
 
             // Visual must exist before EnemyAI — EnemyAI.Awake caches it via GetComponent
             var visual = bandit.AddComponent<WorldActorVisual>();
-            visual.ActorSprite = _banditSprite;
+            visual.ActorSprite = null;
             visual.Height = EKVibe.CharacterHeight;
             visual.Width = EKVibe.CharacterWidth;
             visual.ApplyVisual();
@@ -168,13 +200,11 @@ namespace GBHEngland.Flow
             ai.AttackRange = 1.6f;
             ai.MoveSpeed = 3.2f;
 
-            if (_banditSprite == null)
-                AddFallbackCapsuleVisual(bandit.transform);
+            AddFallbackCapsuleVisual(bandit.transform);
 
             var plate = bandit.AddComponent<EnemyNameplate>();
             plate.Level = 1;
 
-            int enemyLayer = LayerMask.NameToLayer("Enemy");
             if (enemyLayer >= 0)
                 bandit.layer = enemyLayer;
         }

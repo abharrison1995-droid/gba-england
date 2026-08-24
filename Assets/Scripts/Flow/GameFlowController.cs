@@ -39,8 +39,8 @@ namespace GBHEngland.Flow
         public Vector3 ManorSpawnPosition = new Vector3(0f, 0f, -8f);
 
         [Header("Tutorial")]
-        [Tooltip("Sprite for the tutorial bandit. Assign here in the Inspector; falls back to a capsule if empty.")]
-        public Sprite TutorialBanditSprite;
+        [Tooltip("Prefab for the tutorial bandit. Assign here in the Inspector; falls back to a capsule if empty.")]
+        public GameObject TutorialBanditPrefab;
         [Tooltip("Prefab for the tutorial supply chest. Assign here in the Inspector; falls back to a plain box if empty.")]
         public GameObject TutorialChestPrefab;
         public PlayerClassVisualLibrary ClassVisuals;
@@ -352,7 +352,7 @@ namespace GBHEngland.Flow
                 var seqGo = new GameObject("TutorialSequence");
                 if (ChunkManager != null && ChunkManager.CurrentChunkInstance != null)
                     seqGo.transform.SetParent(ChunkManager.CurrentChunkInstance.transform, false);
-                seqGo.AddComponent<TutorialSequence>().Begin(TutorialBanditSprite, TutorialChestPrefab);
+                seqGo.AddComponent<TutorialSequence>().Begin(TutorialBanditPrefab, TutorialChestPrefab);
             }
 
             if (UIManager.Instance != null)
