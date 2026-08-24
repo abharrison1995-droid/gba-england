@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using GBHEngland.Data;
 using GBHEngland.World;
+using GBHEngland.Vibe;
 
 namespace GBHEngland.EditorTools
 {
@@ -41,7 +42,6 @@ namespace GBHEngland.EditorTools
 
         [Header("Ground Visuals")]
         [SerializeField] private Material _groundMaterial;
-        [SerializeField] private Vector2 _groundTiling = new Vector2(60f, 60f);
 
         [Header("World-Building Ground Detail")]
         [SerializeField] private DetailOverlayType _detailType = DetailOverlayType.NorthSouth_Road;
@@ -107,7 +107,7 @@ namespace GBHEngland.EditorTools
             // Ground & Material
             EditorGUILayout.LabelField("2. Ground Plane & Material", EditorStyles.boldLabel);
             _groundMaterial = (Material)EditorGUILayout.ObjectField("Ground Material", _groundMaterial, typeof(Material), false);
-            _groundTiling = EditorGUILayout.Vector2Field("Ground UV Tiling", _groundTiling);
+            DrawTilingReadout("ground plane", _groundMaterial);
 
             EditorGUILayout.Space(8);
 
@@ -117,6 +117,7 @@ namespace GBHEngland.EditorTools
             if (_detailType != DetailOverlayType.None)
             {
                 _detailMaterial = (Material)EditorGUILayout.ObjectField("Detail Material", _detailMaterial, typeof(Material), false);
+                DrawTilingReadout("road strip", _detailMaterial);
             }
 
             EditorGUILayout.Space(8);
@@ -321,6 +322,40 @@ namespace GBHEngland.EditorTools
             }
 
             return AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        }
+
+        /// <summary>
+        /// Reports what the assigned material's tiling will actually do across a chunk.
+        ///
+        /// There was a "Ground UV Tiling" field here that was drawn every frame and never applied
+        /// to anything, which is how six chunks shipped with a single road photograph stretched
+        /// across the whole 220 m ground plane. It could not have worked: tiling is a property of
+        /// the material asset, not of the renderer, so setting it here would silently retune every
+        /// other chunk sharing that material. This read-out replaces the promise with the truth.
+        /// </summary>
+        private static void DrawTilingReadout(string what, Material mat)
+        {
+            if (mat == null)
+                return;
+
+            if (mat.mainTexture == null)
+            {
+                EditorGUILayout.HelpBox($"'{mat.name}' has no texture — the {what} will render as flat colour.", MessageType.None);
+                return;
+            }
+
+            Vector2 tiling = mat.mainTextureScale;
+            float metresPerTile = tiling.x <= 0f ? 0f : EKVibe.ChunkSize / tiling.x;
+            string line = $"'{mat.name}' tiles {tiling.x} x {tiling.y} — one tile covers {metresPerTile:0.#} m of the {EKVibe.ChunkSize:0} m {what}.";
+
+            if (metresPerTile > 20f)
+            {
+                EditorGUILayout.HelpBox(line + "\n\nThat is almost certainly wrong — the texture will be stretched across the chunk rather than tiled over it. Fix the tiling on the material asset itself; this window cannot set it, because the material is shared with every other chunk that uses it.", MessageType.Warning);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(line, MessageType.Info);
+            }
         }
 
         private void BuildDetailOverlays(Transform pathsContainer, Transform detailsContainer)
