@@ -181,6 +181,7 @@ preset that has an `AmbientLine` and no `Conversation`. Leave a blank `AmbientLi
 | Quests, quest conditions, dialogue graphs | [docs/reference/QUESTS_AND_DIALOGUE.md](docs/reference/QUESTS_AND_DIALOGUE.md) |
 | The `.quest` file format, its directives, authoring a new quest as plain text | [docs/reference/QUEST_TEXT_FORMAT.md](docs/reference/QUEST_TEXT_FORMAT.md) |
 | Spells, spell tuning, spellbook persistence and spell VFX | [docs/reference/SPELLS.md](docs/reference/SPELLS.md) |
+| Player melee, the dodge roll, special attacks and the melee sweep helper | [docs/reference/PLAYER_COMBAT.md](docs/reference/PLAYER_COMBAT.md) |
 | The art importer, sprite sizing, animator controllers | [docs/reference/ART_IMPORTER.md](docs/reference/ART_IMPORTER.md) |
 | Title screen, character creator, their layout and art | the two `Assets/Editor/Danger Zone/*ScreenSetup.cs` / `*CreatorSetup.cs` builders — no reference doc; the anchors and the reasons for them are commented at each call site, because they are only true of the code that writes them |
 | Git, asset pruning, `.gitattributes`, project naming | [docs/reference/REPO_HYGIENE.md](docs/reference/REPO_HYGIENE.md) |

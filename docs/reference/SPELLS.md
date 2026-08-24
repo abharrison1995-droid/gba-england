@@ -1,10 +1,17 @@
 # Spells
 
 ```
-Last verified against: working tree, 2026-08-15
+Last verified against: working tree, 2026-08-15. Special-attack note added 2026-08-24 against
+                       branch feat/player-special-attacks.
 Verification scope:    code and AbilityData YAML reviewed; asset references checked mechanically.
-                       No C# compiler or Unity runtime was available.
+                       No C# compiler or Unity runtime was available. The special-attack note was
+                       read off the source only - none of that feature has been compiled or run.
 ```
+
+⚠ Not every `AbilityData` is a spell. The two special attacks - the spin and the dash - are
+`AbilityData` assets with `IsSpecialAttack` set: they never go through `SpellRuntime`, are never
+learned or persisted, must never be placed under `Assets/Resources/Abilities`, and are documented
+in [PLAYER_COMBAT.md](PLAYER_COMBAT.md), not here.
 
 Six current spell definitions live under `Assets/Resources/Abilities`. `AbilityData.AbilityID` is
 a save key: never rename an existing id. `SpellDatabase.CurrentSpellIds` is the canonical order
