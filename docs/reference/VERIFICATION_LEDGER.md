@@ -1,11 +1,10 @@
 # Verification ledger — what's never been seen by a compiler or an editor
 
 **Last verified against:** `main` @ 2026-08-20, reconciled against `CLAUDE.md` §5 and against the
-prefab/asset YAML on disk.
+prefab/asset YAML on disk. Fight Pit entry added 2026-08-21; player special attacks
+added 2026-08-24 from branch `feat/player-special-attacks`.
 
-**This file is the sole canonical owner of verification status.** `CLAUDE.md` §5 currently still
-carries its own inline copy pending a separate cleanup pass that will replace it with a pointer
-here — once that lands, this note should be deleted.
+**This file is the sole canonical owner of verification status.**
 
 *Why this exists*: there is no C# compiler, no Unity, and no test framework in the agent
 environment, so this file is the honest record of what's landed on `main` but not yet exercised.
@@ -294,6 +293,34 @@ only be exercised against placeholder geometry.
   `SetTrigger` calls are now guarded, so an undefined `Knockback` trigger won't error (expected until
   band 10 sheets land).
 
+- **The two player special attacks (spin and dash) have never been compiled or run.** Landed
+  2026-08-24 on `feat/player-special-attacks`: the `ResolveMeleeSweep` / `ComputeMeleeDamage`
+  extraction, `_hitResults` widened 32 → 64, three appended `AbilityData` fields plus the
+  `SpecialAttackKind` enum, both coroutines, the `TryUseAbility` split, `ActionKind.Special`, the
+  SPN and DSH buttons, and `Tools → Content → Create Special Attack Assets`. Owned by
+  [PLAYER_COMBAT.md](PLAYER_COMBAT.md); the owner's step-by-step is §11 of
+  [../plans/PLAYER_SPECIAL_ATTACKS_PLAN.md](../plans/PLAYER_SPECIAL_ATTACKS_PLAN.md).
+  **Nothing works yet even if it compiles**: the editor tool has not been run, so
+  `Special_spin.asset` / `Special_dash.asset` do not exist, and the player's `SpecialAttacks` list
+  in `c.unity` is unassigned — both buttons render dimmed and do nothing until steps 2 and 6 of
+  that checklist are done. Still to check, in order: the project compiles at all; the two buttons
+  land where the arithmetic says (SPN −517, DSH −673, in the Device Simulator, not a 16:9 Game
+  view, and they are built at runtime so they do not appear in the Hierarchy until Play starts);
+  the radial sweep runs and stamina drops by the expected percent; both are refused while riding
+  and both hide while driving; the dash stopping dead on the first enemy capsule reads as
+  "connected" rather than "stuck" (the single most likely thing to need retuning); and
+  ⚠ **dashing into a chunk edge lands the player on the arrival marker rather than sliding away
+  from it** — the chunk-snapshot guard, and the one item here most worth a hand test.
+  Deferred, not verifiable yet: whether `ClearAnimatorTrigger("SpecialAttack")` prevents the
+  latch, which cannot be seen until a player `special` sheet exists and the importer authors a
+  `Special` state. Also unproven: whether widening the overlap buffer changes anything observable
+  — it only matters in a crowded, built-up chunk.
+- **`RollRoutine` gained the chunk-change and pause bails** (commit `b188090`), mirroring
+  `DashAttackRoutine`: the chunk identity is snapshotted before the loop and polled each step
+  alongside `IsTransitioning`. Rolling into a chunk edge could previously resume the roll on the
+  far side and drive the player off the arrival marker. **Unverified** — reproducing it means
+  rolling into an edge trigger in the editor, which is a hand test.
+
 ### Progression, HUD, enemy levels
 - **Enemy levels are authorable, and one is now authored.** `PlacementPreset.EnemyLevel`/palette
   Level field attach an `EnemyLevel` component (0 = none attached, deliberately, since level-1 isn't
@@ -452,3 +479,26 @@ exercised.
   death/downed handling (C4/C6 partial, C5/C7 not started per `COMPANION_PIPELINE_PLAN.md`).
   `Companion_alex.asset`'s `Id: alex` is a save key and must keep matching
   `Preset_DanielPauls`-style `QuestKey` anchors — don't rename it.
+
+### Castle Fight Arena (Fight Pit)
+
+The whole arena loop is implemented and **never compiled or run** — `FightPitController.cs`
+(652 lines: 10-round tournament, defeat interception, cash-out, return to Home_London),
+`FightPitEntryCoordinator.cs`, `FightPitDialogue.cs`, `FightPitConfig.cs` (10 config-driven
+rounds, first-completion bonus), save fields `PitTournamentWon` / `HighestPitRound` /
+`HasPurchasedRoyalCrown`, `Castle_Fight_Arena_Data.asset`, `Castle_Fight_Arena_Prefab.prefab`, and
+a `MapChunkRegistry` entry. `Home_London_Prefab` holds the placed `NPC_Prince Mandrew`.
+
+- **The controller drives `castle_arena_quest`** via `StartQuest` / `UpdateObjective` /
+  `CompleteQuest` inside the bout flow — whether re-entering the arena after a first clear freezes
+  or re-opens the journal is unverified; confirm in Play mode (a repeatable tournament over a
+  one-shot quest completion is the suspect path).
+- **Two `Dialogue_PrinceMandrew` assets exist** — one hand-written in `Assets/Data/Dialogue/`, one
+  generated in `Assets/Data/Dialogue/Generated/`. Reconcile via `Tools → Content → Import Quests`
+  in the editor; do not hand-merge.
+- **Mandrew art subject (`mandrew`)** has idle/walk/attack/hurt sheets and a `mandrew_Controller`;
+  `Preset_PrinceMandrew` carries `Speaker`, `NpcController`, `NpcSprite` and `Conversation`.
+- Confirm in Play: entry validation (wanted / mounted / companion refusals), the victory purse and
+  first-completion bonus pay once, defeat/forfeit grant nothing, partial kills grant no XP/loot,
+  entry vitals restore rather than full-heal, and a mid-bout quit Continues at the pre-bout Home
+  London checkpoint (see `ROYAL_FIGHT_ARENA_PLAN.md` Unity verification route §1–12).
