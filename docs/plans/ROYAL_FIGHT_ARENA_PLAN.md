@@ -1,7 +1,7 @@
 # Castle Fight Arena
 
 ```
-Last updated:          2026-08-17 (revised plan; nothing implemented)
+Last updated:          2026-08-21 (implemented; never compiled or run)
 Verification scope:    Existing code and tracked assets were inspected on 2026-08-16/17.
                        The castle hierarchy, current transition/save paths, EnemyAI fallback,
                        Enemy_Neek loot component, kill-XP path, dialogue hooks, and registry were
@@ -53,15 +53,17 @@ or number of matches.
 
 ## Current state
 
-Nothing arena-specific is implemented.
+The arena loop is **implemented** (`FightPitController`, `FightPitEntryCoordinator`,
+`FightPitDialogue`, `FightPitConfig` with ten config-driven rounds, and save fields
+`PitTournamentWon` / `HighestPitRound` / `HasPurchasedRoyalCrown`). It has **never been compiled
+or run in the editor** — the verification checks below are the open work. The earlier "nothing
+implemented" snapshot is superseded.
 
-- `Home_London_Prefab` contains a `Castle` group at `(11.9, 0, 0)`. It currently has twelve
-  castle-model prefab children plus scenery, with colliders and `EnvironmentBlocker`s. It has no
-  arena marker, Prince Mandrew, or `DungeonPortal`.
-- No Castle Fight Arena prefab, `MapChunkData`, ladder, match controller, Mandrew preset,
-  conversation, or art subject exists.
-- `MapChunkRegistry` contains the existing overworld/interior chunks, not the arena.
-- `PlacementPresetLibrary` has no `neek` key.
+- `Home_London_Prefab` contains the `Castle` group and the placed `NPC_Prince Mandrew`.
+- `Castle_Fight_Arena_Prefab.prefab`, `Castle_Fight_Arena_Data.asset` and the `MapChunkRegistry`
+  entry all exist.
+- `Preset_PrinceMandrew` exists with `Speaker`, `NpcController`, `NpcSprite` (`mandrew`) and
+  `Conversation`; `PlacementPresetLibrary` carries the `neek` key.
 - `DungeonPortal`/`ChunkManager.TravelTo` provides the correct chunk lifecycle, named arrival
   marker validation, pause, camera snap, visited-location registration, and `Portal` wanted-state
   notification. Arena entry should reuse `TravelTo`, not invent another chunk swap.
@@ -69,8 +71,11 @@ Nothing arena-specific is implemented.
   `Preset_Neek.Loot` is empty. Empty preset loot is **not** proof that an arena spawn is clean.
 - `Health.Die` always calls `KillXP.AwardFor` after `OnDeath`. A player can otherwise kill one
   opponent, lose the match, and repeat for unlimited partial-bout XP.
-- Prince Mandrew has no art subject or owner-written dialogue. Machinery may be scaffolded, but
-  quest/dialogue prose and ladder titles remain the owner's words.
+- Mandrew's art subject (`mandrew`) has delivered idle/walk/attack/hurt sheets and a
+  `mandrew_Controller`. Two `Dialogue_PrinceMandrew` assets exist — one hand-written in
+  `Assets/Data/Dialogue/`, one generated in `Assets/Data/Dialogue/Generated/` — and must be
+  reconciled in the editor before either drives the conversation. Ladder titles remain the
+  owner's words.
 
 ---
 
@@ -419,7 +424,8 @@ reward/rank; save/reload still offers the correct next rung; partial kills grant
 
 ### Phase 2—Prince Mandrew entry
 
-- Create and wire `Preset_PrinceMandrew`.
+- Confirm `Preset_PrinceMandrew` and its art subject (`mandrew`) are wired; reconcile the two
+  `Dialogue_PrinceMandrew` assets.
 - Add `castle_arena_return` marker and place Mandrew outside the castle in Prefab Mode.
 - Append `DialogueChoice.StartsArena`.
 - Add `ARENA` parsing/validation and the dialogue-manager branch.
@@ -464,7 +470,7 @@ balanced directly. This replaces the old accidental ~65 XP first bout (two norma
 
 ## Art and owner-authored content
 
-- Prince Mandrew needs an art subject before he is more than a temporary reused villager visual.
+- Mandrew's art subject (`mandrew`) is delivered and wired through `Preset_PrinceMandrew`.
 - His dialogue, refusal lines, promotion messages, and every rank title need owner text.
 - The arena floor needs no new bitmap: reuse the existing 256×256 worn dark pavement tile through
   an arena-specific material.

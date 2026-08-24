@@ -96,9 +96,13 @@ that leaves ~670 for the body — four rows of bag visible, 24 reachable by scro
 
 FINDINGS THAT SHAPE THE WORK (all verified in code, do not re-derive)
 - `InventoryController.EquipmentSlots` is a `public Dictionary<ItemType, Image>`
-  (InventoryController.cs:29). Unity cannot serialize a Dictionary, so it is empty at
-  runtime and `EquipItem` is dead code. Replace it with a serializable structure; there
-  is currently NO equipment model at all, only a UI field.
+  (InventoryController.cs:29). Unity still cannot serialize a Dictionary — but it is no
+  longer dead: it is a runtime cache populated by `BuildEquipmentSlots()` from the
+  rebuilt paper doll, not a persistence surface. The real equipment model lives on
+  `PlayerSession.Equipment` (`IReadOnlyDictionary<ItemType, ItemData>`) with
+  `Equip`/`Unequip`/`UnequipAll`/`RestoreEquipment`, persisted as `SaveData.Equipment`
+  and read live at the two use sites (weapon damage and armour). There is no `EquipItem`
+  method any more. **F1 shipped all of this; F2–F6 remain.**
 - The 20-slot bag cap is not a constant. `PopulateBackpack` loops over
   `BackpackGridContainer.childCount`, i.e. however many BagSlot GameObjects were dragged
   into `c.unity`. Building the grid in code removes the cap permanently.
@@ -190,11 +194,13 @@ rename but OUT OF SCOPE.
 
 STAGE F — six commits, in this order (branch `stage-f`)
 
-    F1  Equipment model, no UI. Serializable equipment on PlayerSession beside Inventory;
-        Equip/Unequip/UnequipAll respecting ItemData.CanBeUsedBy; OnEquipmentChanged
-        mirroring OnInventoryChanged; aggregate armour/damage totals. Append Neck, Legs,
-        Gloves, Ammo to ItemType (see slot maths above — Ammo only if the mockup shows
-        it) to reach the 11 doll slots.
+    F1  [DONE — landed on `main`.] Equipment model, no UI. Serializable equipment on
+        PlayerSession beside Inventory; Equip/Unequip/UnequipAll respecting
+        ItemData.CanBeUsedBy; OnEquipmentChanged mirroring OnInventoryChanged; aggregate
+        armour/damage totals. ItemType was extended with `Legs`, `Belt` and `Junk` — this
+        plan had speculated Neck/Legs/Gloves/Ammo, but what actually shipped is
+        Legs = 9, Belt = 10, Junk = 11 (see ItemData.cs:5-19). The "slot maths" notes
+        below are superseded by that landed shape.
         [FIX] SAVE FORMAT: extend the `SaveData` JSON — add
         `List<EquipmentSaveEntry> Equipment` (slot identifier + ItemID, mirroring
         InventorySaveEntry). `int Pounds` is DONE — it landed early with the wallet.
