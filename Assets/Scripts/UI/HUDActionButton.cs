@@ -17,8 +17,9 @@ namespace GBHEngland.UI
         /// turn the attack button into something else. Crouch was appended as 4, Dodge as 5 —
         /// both are built at runtime by UIManager.BuildActionButtons and so are absent from the
         /// scene, but they are indices in the same sequence and the append rule covers them.
+        /// Special was appended as 6, on the same terms.
         /// </summary>
-        public enum ActionKind { Attack, Ability, Inventory, Interact, Crouch, Dodge }
+        public enum ActionKind { Attack, Ability, Inventory, Interact, Crouch, Dodge, Special }
 
         public ActionKind Kind = ActionKind.Ability;
         public int AbilityIndex;
@@ -29,7 +30,9 @@ namespace GBHEngland.UI
         {
             GetComponent<Button>().onClick.AddListener(Invoke);
 
-            if (Kind == ActionKind.Ability)
+            // The two special-attack buttons get the same radial sweep as a spell button; they
+            // are on a cooldown the player has to read just as much.
+            if (Kind == ActionKind.Ability || Kind == ActionKind.Special)
                 BuildCooldownOverlay();
         }
 
@@ -65,7 +68,11 @@ namespace GBHEngland.UI
                 return;
             }
 
-            float remaining = combat.GetCooldownRemaining(AbilityIndex, out float total);
+            // ⚠ The source has to branch: GetCooldownRemaining indexes EquippedAbilities, so a
+            // Special button reading it would sweep to whatever spell happened to be in slot 0 or 1.
+            float remaining = Kind == ActionKind.Special
+                ? combat.GetSpecialCooldownRemaining(AbilityIndex, out float total)
+                : combat.GetCooldownRemaining(AbilityIndex, out total);
             _cooldownOverlay.fillAmount = (remaining > 0f && total > 0f)
                 ? Mathf.Clamp01(remaining / total)
                 : 0f;
@@ -91,6 +98,11 @@ namespace GBHEngland.UI
                     break;
                 case ActionKind.Dodge:
                     UIManager.Instance.OnDodgePressed();
+                    break;
+                // ⚠ Must stay ABOVE default: Ability is the kind default serves, so a case
+                // added below it would never be reached.
+                case ActionKind.Special:
+                    UIManager.Instance.OnSpecialAttackPressed(AbilityIndex);
                     break;
                 default:
                     UIManager.Instance.OnActionButtonPressed(AbilityIndex);
