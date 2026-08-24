@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkName: Police_Station
   Coordinates:
-    X: -2
+    X: -3
     Y: -4
   IsCity: 0
   IsTutorialDungeon: 0

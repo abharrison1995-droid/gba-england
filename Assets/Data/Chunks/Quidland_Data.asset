@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkName: Quidland
   Coordinates:
-    X: -2
+    X: -3
     Y: -1
   IsCity: 0
   IsTutorialDungeon: 0

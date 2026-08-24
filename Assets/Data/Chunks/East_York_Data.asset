@@ -20,9 +20,9 @@ MonoBehaviour:
   IsTutorialDungeon: 0
   LockExitsUntilTutorialComplete: 0
   ChunkPrefab: {fileID: 1000001, guid: a3b8417c8d924151b75294a5c6e8310f, type: 3}
-  NorthChunk: {fileID: 11400000, guid: 0f592a0de10c4274a9f52bd86c74eaa6, type: 2}
+  NorthChunk: {fileID: 11400000, guid: 2c9b66a4a16b5765aa10bcd3962b4227, type: 2}
   SouthChunk: {fileID: 0}
   EastChunk: {fileID: 0}
-  WestChunk: {fileID: 0}
+  WestChunk: {fileID: 11400000, guid: cc72aa30696a550ab762e9167279baca, type: 2}
   VehicleSpawns: []
   SuppressCheckpointSaves: 0

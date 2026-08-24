@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkName: The_Winchester
   Coordinates:
-    X: -2
+    X: -3
     Y: -6
   IsCity: 0
   IsTutorialDungeon: 0

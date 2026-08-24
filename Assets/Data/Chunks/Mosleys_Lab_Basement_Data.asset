@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   ChunkName: Mosleys Lab Basement
   Coordinates:
-    X: -2
+    X: -3
     Y: -7
   IsCity: 0
   IsTutorialDungeon: 0
