@@ -118,6 +118,18 @@ namespace GBHEngland.Combat
         [Header("Abilities")]
         public List<AbilityData> EquippedAbilities;
 
+        [Header("Special Attacks")]
+        // ⚠ Inspector-assigned, and deliberately NOT resolved by id out of Resources. A
+        // special attack must never live under Resources/Abilities: SpellDatabase would load it,
+        // LearnAllCurrentSpells would learn and slot it, and its AbilityID would be written into
+        // savegame.json - at which point that id is a save key and can never be renamed.
+        // See docs/reference/PLAYER_COMBAT.md.
+        //
+        // Element 0 is the SPN button, element 1 is DSH. Left unassigned, both buttons render
+        // dimmed and pressing them does nothing: a visible failure mode, not a silent one, which
+        // is why this is a list on the component rather than a lookup by id.
+        public List<AbilityData> SpecialAttacks;
+
         private Dictionary<string, float> _abilityCooldowns = new Dictionary<string, float>();
         private List<string> _activeCooldownKeys = new List<string>(10);
 
@@ -424,6 +436,10 @@ namespace GBHEngland.Combat
             if (Input.GetKeyDown(KeyCode.Alpha2)) TryCastAbility(1);
             if (Input.GetKeyDown(KeyCode.Alpha3)) TryCastAbility(2);
             if (Input.GetKeyDown(KeyCode.Alpha4)) TryCastAbility(3);
+            // Desktop testing only - the shipping route for these two is the HUD's SPN and DSH
+            // buttons, built in UIManager.BuildActionButtons.
+            if (Input.GetKeyDown(KeyCode.Alpha5)) TrySpecialAttack(0);
+            if (Input.GetKeyDown(KeyCode.Alpha6)) TrySpecialAttack(1);
 #if UNITY_EDITOR
             // Dev shortcut: learn Spark and name it (the quest does this properly later). Cast with 1.
             if (Input.GetKeyDown(KeyCode.M))
@@ -646,12 +662,8 @@ namespace GBHEngland.Combat
             if (_isAttacking || _isRolling || _isKnockedBack || _isDead) return;
             if (BlockedByRiding()) return;
 
-            // Swinging a weapon is not sneaking. Same call PerformDodge makes and for the same
-            // reason — routed through ToggleStealth so the sprite tint, the toast and the CRO
-            // button all come back in step, rather than duplicating half of what it does here.
-            var stealth = StealthController.Instance;
-            if (stealth != null && stealth.IsCrouched)
-                stealth.ToggleStealth();
+            // Swinging a weapon is not sneaking.
+            BreakStealth();
 
             StartCoroutine(MeleeHitboxRoutine(MeleeHitDelay, MeleeRecovery));
         }
@@ -952,12 +964,8 @@ namespace GBHEngland.Combat
             CurrentStamina -= cost;
             _nextRollTime = Time.time + RollCooldown;
 
-            // Diving across the floor is not sneaking. Routed through ToggleStealth rather than
-            // clearing the speed modifier here, so the sprite tint, the toast and the CRO button
-            // all come back in step — that is its job, and duplicating half of it would drift.
-            var stealth = StealthController.Instance;
-            if (stealth != null && stealth.IsCrouched)
-                stealth.ToggleStealth();
+            // Diving across the floor is not sneaking.
+            BreakStealth();
 
             StartCoroutine(RollRoutine(dir));
         }
@@ -1450,19 +1458,95 @@ namespace GBHEngland.Combat
                 : 0f;
         }
 
+        /// <summary>How many special-attack buttons the HUD's action row builds. Two: SPN and DSH.
+        /// The Inspector list is allowed to be shorter - a missing entry paints its button dimmed
+        /// rather than failing.</summary>
+        public const int SpecialSlots = 2;
+
+        /// <summary>Null-safe read of a special slot, for the HUD's availability painting.</summary>
+        public AbilityData GetSpecial(int index)
+        {
+            if (SpecialAttacks == null || index < 0 || index >= SpecialAttacks.Count) return null;
+            return SpecialAttacks[index];
+        }
+
+        /// <summary>0 = ready; otherwise seconds left on the special's cooldown, for the HUD's
+        /// radial overlay. Separate from <see cref="GetCooldownRemaining"/> because that one
+        /// indexes EquippedAbilities and would read the wrong list entirely.</summary>
+        public float GetSpecialCooldownRemaining(int index, out float total)
+        {
+            total = 0f;
+            AbilityData ability = GetSpecial(index);
+            if (ability == null) return 0f;
+
+            total = ability.CooldownTime;
+            return _abilityCooldowns.TryGetValue(ability.AbilityID, out float remaining)
+                ? Mathf.Max(0f, remaining)
+                : 0f;
+        }
+
         public void TryCastAbility(int slotIndex)
+        {
+            if (EquippedAbilities == null || slotIndex < 0 || slotIndex >= EquippedAbilities.Count) return;
+            TryUseAbility(EquippedAbilities[slotIndex]);
+        }
+
+        /// <summary>
+        /// The two special attacks, by position in <see cref="SpecialAttacks"/>: 0 is SPN, 1 is
+        /// DSH. Resolved by index and never by id, because a special attack must never become
+        /// something the game looks up by AbilityID - see the comment on the field.
+        /// </summary>
+        public void TrySpecialAttack(int index)
+        {
+            if (SpecialAttacks == null || index < 0 || index >= SpecialAttacks.Count) return;
+            TryUseAbility(SpecialAttacks[index]);
+        }
+
+        /// <summary>
+        /// One copy of everything a cast and a special share: the gates, the riding refusal, the
+        /// cooldown, the stealth break. Both entry points resolve their own slot first and hand
+        /// the asset down here.
+        /// </summary>
+        private void TryUseAbility(AbilityData ability)
         {
             if (_isAttacking || _isRolling || _isKnockedBack || _isDead) return;
             if (BlockedByRiding()) return;
-            if (EquippedAbilities == null || slotIndex < 0 || slotIndex >= EquippedAbilities.Count) return;
-
-            AbilityData ability = EquippedAbilities[slotIndex];
             if (ability == null) return;
 
             if (_abilityCooldowns.ContainsKey(ability.AbilityID) && _abilityCooldowns[ability.AbilityID] > 0f)
             {
                 if (UIManager.Instance != null)
                     UIManager.Instance.LogCombat($"{ability.AbilityName} is on cooldown.");
+                return;
+            }
+
+            if (ability.IsSpecialAttack)
+            {
+                // ⚠ The special branch leaves BEFORE the concealment drain below and before
+                // CastAbilityRoutine's shout. A special attack is a weapon swing, not magic: it
+                // must not drain Concealment and must not shout a spell name.
+                if (!ability.CanBeUsedBy(CurrentPlayerClass()))
+                {
+                    if (UIManager.Instance != null)
+                        UIManager.Instance.LogCombat("You don't know how to do that.");
+                    return;
+                }
+
+                // A percent of the live maximum, not ability.ResourceCost - see SpecialStaminaCost.
+                // Read once into a local so the check and the spend charge the same number even if
+                // the maximum moved between them, the same rule PerformDodge follows for the roll.
+                int cost = SpecialStaminaCost(ability);
+                if (CurrentStamina < cost)
+                {
+                    if (UIManager.Instance != null)
+                        UIManager.Instance.LogCombat("Not enough Stamina.");
+                    return;
+                }
+                CurrentStamina -= cost;
+
+                BeginAbilityCooldown(ability);
+                BreakStealth();
+                PerformSpecialMeleeAttack(ability);
                 return;
             }
 
@@ -1482,9 +1566,7 @@ namespace GBHEngland.Combat
             if (ability.ResourceType == AbilityResourceType.Mana) CurrentMana -= ability.ResourceCost;
             if (ability.ResourceType == AbilityResourceType.Stamina) CurrentStamina -= ability.ResourceCost;
 
-            _abilityCooldowns[ability.AbilityID] = ability.CooldownTime;
-            if (!_activeCooldownKeys.Contains(ability.AbilityID))
-                _activeCooldownKeys.Add(ability.AbilityID);
+            BeginAbilityCooldown(ability);
 
             // Magic is a secret — casting it drains your Concealment meter.
             if (IsMagic(ability) && IsInCity())
@@ -1494,12 +1576,33 @@ namespace GBHEngland.Combat
                     UIManager.Instance.ShowToast("Easy with the spells there Potter, not around the plebs yeah?");
             }
 
-            // Casting is not sneaking either — same call and same reasoning as PerformMeleeAttack.
+            // Casting is not sneaking either.
+            BreakStealth();
+
+            StartCoroutine(CastAbilityRoutine(ability));
+        }
+
+        /// <summary>Starts an ability's cooldown and registers its key for the per-frame countdown.
+        /// The parallel key list is what keeps that countdown from iterating the dictionary and
+        /// allocating an enumerator every frame.</summary>
+        private void BeginAbilityCooldown(AbilityData ability)
+        {
+            _abilityCooldowns[ability.AbilityID] = ability.CooldownTime;
+            if (!_activeCooldownKeys.Contains(ability.AbilityID))
+                _activeCooldownKeys.Add(ability.AbilityID);
+        }
+
+        /// <summary>
+        /// Stands the player up if they were crouched. Routed through ToggleStealth rather than
+        /// clearing the speed modifier here, so the sprite tint, the toast and the CRO button all
+        /// come back in step - that is ToggleStealth's job, and duplicating half of it would
+        /// drift. Four callers: the swing, the roll, a cast and a special attack.
+        /// </summary>
+        private void BreakStealth()
+        {
             var stealth = StealthController.Instance;
             if (stealth != null && stealth.IsCrouched)
                 stealth.ToggleStealth();
-
-            StartCoroutine(CastAbilityRoutine(ability));
         }
 
         private static bool IsMagic(AbilityData a) => a != null && a.ResourceType == AbilityResourceType.Mana;
