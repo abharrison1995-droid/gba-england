@@ -261,13 +261,15 @@ namespace GBHEngland.World
 
             if (targetChunk != null)
             {
-                // Check if target chunk is locked out
-                if (targetChunk.IsCity && _cityLockoutTimers.ContainsKey(targetChunk.Coordinates))
+                // Check if target chunk is locked out. Routes through the canonical question
+                // (IsCityLockedOut) so the edge and portal paths stay in agreement, and so an
+                // entry whose timer has elapsed but not yet been pruned this frame doesn't refuse
+                // the crossing or print a negative countdown.
+                if (IsCityLockedOut(targetChunk, out float remainingTime))
                 {
                     // Throttle: same reason as tutorial lock above.
                     if (Time.unscaledTime < _nextDeadEndWarningAt) return;
                     _nextDeadEndWarningAt = Time.unscaledTime + DeadEndWarningCooldown;
-                    float remainingTime = _cityLockoutTimers[targetChunk.Coordinates];
                     ShowWarning($"Cannot enter {targetChunk.ChunkName}. Police activity active for {Mathf.CeilToInt(remainingTime)}s.");
                     return;
                 }
