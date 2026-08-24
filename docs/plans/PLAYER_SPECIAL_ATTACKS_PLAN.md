@@ -1,8 +1,10 @@
 # Player special attacks — Spin and Dash — implementation plan
 
-Status: **planned, not implemented.** Written against `main` as of 2026-08-23, after an eight-agent
-assessment swarm surveyed the combat system. Nothing below has been near a C# compiler or the Unity
-editor. §11 is the owner's check list.
+Status: **implemented and merged to `main`** on 2026-08-24 — twelve commits, `649f28c`..`b188090`,
+all eleven planned plus the optional roll fix. Written against `main` as of 2026-08-23, after an
+eight-agent assessment swarm surveyed the combat system. **Nothing below has been near a C#
+compiler or the Unity editor**, and the two ability assets do not exist until the owner runs
+`Tools → Content → Create Special Attack Assets`. §11 is the owner's check list.
 
 Owner doc when landed: new `docs/reference/PLAYER_COMBAT.md` (see §10). Every claim carries the
 `file:line` it was read at.
