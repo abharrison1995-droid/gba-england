@@ -67,6 +67,24 @@ namespace GBHEngland.UI
         private readonly AbilityData[] _cachedEquippedAbilities = new AbilityData[4];
         private bool _spellSlotsInitialized;
 
+        /// <summary>
+        /// The SPN and DSH button backgrounds + labels, and what they were last painted from.
+        /// ⚠ Repainted from Update like the spell slots, so the cache and the early-out are what
+        /// keep a per-frame allocation off a mobile hot path. The class is cached alongside the
+        /// assets because availability is a class gate, and PlayerSession can be created after
+        /// this HUD has been built.
+        /// </summary>
+        private readonly Image[] _specialSlotImages = new Image[Combat.CombatController.SpecialSlots];
+        private readonly TextMeshProUGUI[] _specialSlotLabels = new TextMeshProUGUI[Combat.CombatController.SpecialSlots];
+        private readonly AbilityData[] _cachedSpecials = new AbilityData[Combat.CombatController.SpecialSlots];
+        private PlayerClass _cachedSpecialClass = PlayerClass.YoungDriller;
+        private bool _specialSlotsInitialized;
+
+        /// <summary>Placeholder glyphs for the two special buttons, held in a static array so the
+        /// repaint never builds a string. Replaced by the asset's IconGlyph once the owner sets
+        /// one, exactly as RefreshSpellSlots does for a bound spell.</summary>
+        private static readonly string[] SpecialPlaceholders = { "SPN", "DSH" };
+
         /// <summary>The 5 knife icons of the wanted meter, left to right. Null until
         /// <see cref="EnsureWantedMeter"/> has run, and left null entirely if it bailed.</summary>
         private readonly Image[] _wantedKnifeIcons = new Image[5];
@@ -198,6 +216,7 @@ namespace GBHEngland.UI
         private void Update()
         {
             RefreshSpellSlots();
+            RefreshSpecialSlots();
             RefreshPlayerPortrait();
 
             var session = Flow.PlayerSession.Instance;
@@ -751,6 +770,18 @@ namespace GBHEngland.UI
                 combat.PerformDodge();
         }
 
+        /// <summary>
+        /// SPN / DSH. <paramref name="index"/> is the position in CombatController.SpecialAttacks:
+        /// 0 is the spin, 1 is the dash. Every gate — the cooldown, the stamina cost, the class
+        /// gate, the riding refusal — lives in TrySpecialAttack, so this is only the route in.
+        /// </summary>
+        public void OnSpecialAttackPressed(int index)
+        {
+            var combat = Combat.CombatController.Instance;
+            if (combat != null)
+                combat.TrySpecialAttack(index);
+        }
+
         public void OnCrouchPressed()
         {
             var stealth = World.StealthController.Instance ?? FindObjectOfType<World.StealthController>();
@@ -930,6 +961,23 @@ namespace GBHEngland.UI
             // reading right to left. 361 = USE's 205 + its 140 width + a 16 px gap.
             CreateActionButton(panel.transform, "DGE", HUDActionButton.ActionKind.Dodge, 0,
                 new Vector2(140f, 140f), new Vector2(-361f, 40f), rightEdge);
+
+            // SPN / DSH — the row continues leftward: ATK, USE, DGE, SPN, DSH reading right to
+            // left. 517 = DGE's 361 + its 140 width + a 16 px gap. 673 = 517 + 140 + 16.
+            // ⚠ Parented to panel.transform like the rest of the row, deliberately:
+            // SetDrivingMode hides this panel, so a special button parented anywhere else would
+            // stay on screen while driving, where BlockedByRiding refuses it a toast at a time.
+            var spin = CreateActionButton(panel.transform, SpecialPlaceholders[0],
+                HUDActionButton.ActionKind.Special, 0,
+                new Vector2(140f, 140f), new Vector2(-517f, 40f), rightEdge);
+            _specialSlotImages[0] = spin.GetComponent<Image>();
+            _specialSlotLabels[0] = spin.GetComponentInChildren<TextMeshProUGUI>();
+
+            var dash = CreateActionButton(panel.transform, SpecialPlaceholders[1],
+                HUDActionButton.ActionKind.Special, 1,
+                new Vector2(140f, 140f), new Vector2(-673f, 40f), rightEdge);
+            _specialSlotImages[1] = dash.GetComponent<Image>();
+            _specialSlotLabels[1] = dash.GetComponentInChildren<TextMeshProUGUI>();
 
             RepositionInteractButton();
         }
@@ -1199,6 +1247,62 @@ namespace GBHEngland.UI
                         _spellSlotLabels[i].fontSize = 24;
                         _spellSlotLabels[i].color = new Color(EKVibe.TextLight.r, EKVibe.TextLight.g, EKVibe.TextLight.b, 0.5f);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Paints the two special buttons: full face when the slot holds a special this class may
+        /// use, dimmed when the slot is empty or the class is gated out. Polled from Update like
+        /// RefreshSpellSlots and early-outs the same way — the cache compare is the whole reason
+        /// this is safe to call every frame.
+        ///
+        /// Win95Skin.Face deliberately, not the EKVibe.ButtonBrown the spell column repaints
+        /// itself with: these two sit in the ATK / USE / DGE row and match that row.
+        /// </summary>
+        private void RefreshSpecialSlots()
+        {
+            var combat = Combat.CombatController.Instance;
+            var session = Flow.PlayerSession.Instance;
+            PlayerClass playerClass = session != null ? session.Class : PlayerClass.YoungDriller;
+
+            bool changed = !_specialSlotsInitialized || playerClass != _cachedSpecialClass;
+            _cachedSpecialClass = playerClass;
+
+            for (int i = 0; i < _cachedSpecials.Length; i++)
+            {
+                AbilityData ability = combat != null ? combat.GetSpecial(i) : null;
+                if (_cachedSpecials[i] != ability)
+                {
+                    _cachedSpecials[i] = ability;
+                    changed = true;
+                }
+            }
+
+            if (!changed) return;
+            _specialSlotsInitialized = true;
+
+            for (int i = 0; i < _specialSlotImages.Length; i++)
+            {
+                AbilityData ability = _cachedSpecials[i];
+                bool available = ability != null && ability.CanBeUsedBy(_cachedSpecialClass);
+
+                if (_specialSlotImages[i] != null)
+                {
+                    Color c = Win95Skin.Face;
+                    if (!available) c.a = 0.35f;
+                    _specialSlotImages[i].color = c;
+                }
+
+                if (_specialSlotLabels[i] != null)
+                {
+                    string placeholder = i < SpecialPlaceholders.Length ? SpecialPlaceholders[i] : "SPC";
+                    _specialSlotLabels[i].text = available && !string.IsNullOrEmpty(ability.IconGlyph)
+                        ? ability.IconGlyph
+                        : placeholder;
+                    _specialSlotLabels[i].color = available
+                        ? EKVibe.TextLight
+                        : new Color(EKVibe.TextLight.r, EKVibe.TextLight.g, EKVibe.TextLight.b, 0.5f);
                 }
             }
         }
