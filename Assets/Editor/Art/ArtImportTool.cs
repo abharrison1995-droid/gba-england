@@ -46,7 +46,7 @@ public static class ArtImportTool
     private static readonly Dictionary<string, string> ActionToState = new Dictionary<string, string>
     {
         { "idle",   "Idle"   },
-        { "walk",   "Run"    },   // "Run" matches the existing Bandit_Controller
+        { "walk",   "Run"    },
         { "attack", "Attack" },
         { "hurt",   "Hurt"   },
         { "death",  "Death"  },
@@ -537,7 +537,7 @@ public static class ArtImportTool
     /// <summary>
     /// Points the player's Animator at the controller built from their sheets. Without this the
     /// sheets import, the clips exist, and the player carries on playing whatever placeholder
-    /// controller was assigned — Bandit_Controller, in this project.
+    /// controller was assigned.
     /// </summary>
     private static void AssignPlayerController(string subject, List<string> report, List<string> problems)
     {

@@ -12,9 +12,6 @@ using GBHEngland.Vibe;
 /// writes to Assets/Art/Generated instead. It is kept — rather than retired — because the editor
 /// tooling still loads its output by hardcoded path: ChunkArtMerge's material repair wants
 /// mat_dungeon_wall and friends. Nothing else can regenerate those if they are ever lost.
-/// It still generates spr_bandit, which nothing currently consumes now that
-/// BanditPracticeSpawner is gone (folded into Playtest Hub, which spawns real Enemy_* prefabs
-/// instead of a hand-built placeholder).
 ///
 /// It overwrites every file it produces, so it belongs in the Danger Zone rather than under
 /// Repair, where it read as a safe thing to reach for.
@@ -51,7 +48,6 @@ public static class PlaceholderArtGenerator
         SaveOpaque("tex_dungeon_wall", MakeBrickTile(64, EKVibe.DungeonWall, new Color(0.45f, 0.38f, 0.28f)));
 
         SaveSprite("spr_hero", MakeCharacterSprite(48, 64, new Color(0.35f, 0.45f, 0.7f), new Color(0.85f, 0.7f, 0.55f)));
-        SaveSprite("spr_bandit", MakeCharacterSprite(48, 64, new Color(0.45f, 0.22f, 0.18f), new Color(0.75f, 0.6f, 0.45f)));
         SaveSprite("spr_bush", MakeBushSprite(48, 40));
         SaveSprite("spr_tree", MakeTreeSprite(48, 72));
         SaveSprite("spr_loot", MakeLootBagSprite(32, 32));
@@ -64,7 +60,7 @@ public static class PlaceholderArtGenerator
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("Placeholder art restored in " + ArtFolder + " (hero/bandit sprites + floor materials).");
+        Debug.Log("Placeholder art restored in " + ArtFolder + " (hero sprites + floor materials).");
     }
 
     public static Sprite LoadSprite(string name)

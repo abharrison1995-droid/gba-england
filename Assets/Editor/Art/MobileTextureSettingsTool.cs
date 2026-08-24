@@ -143,12 +143,6 @@ namespace GBHEngland.EditorTools
             if (p.StartsWith("Assets/TextMesh Pro/")) return null;
             if (p.StartsWith("Assets/6twelve/")) return null;
 
-            // A pixel-art enemy sprite sheet living outside Art/Generated -- the same category of
-            // content, just from before ArtImportTool existed. A first run swept it into the
-            // Assets/3DModels/ rule below and applied ASTC compression to it; reverted, and
-            // excluded here so a re-run doesn't redo it.
-            if (p.StartsWith("Assets/3DModels/Bandits/")) return null;
-
             if (p.StartsWith("Assets/Textures/UI/"))
                 return new Rule(1024, false);
 

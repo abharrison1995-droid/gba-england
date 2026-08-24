@@ -29,7 +29,7 @@ namespace GBHEngland.World
                  "billboard sitting exactly on the floor gets its base clipped by the ground mesh.")]
         public float GroundOffset = 0f;
 
-        [Tooltip("Untick if ActorSprite's artwork faces camera-left by default (e.g. the Bandit pack). Determines which way flipping goes.")]
+        [Tooltip("Untick if ActorSprite's artwork faces camera-left by default. Determines which way flipping goes.")]
         public bool SpriteFacesRightByDefault = true;
 
         [Header("Melee Swing")]
