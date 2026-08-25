@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkName: Mosley_Mansion
   Coordinates:
-    X: -3
-    Y: -9
+    X: 7
+    Y: -99
   IsCity: 0
   IsTutorialDungeon: 0
   LockExitsUntilTutorialComplete: 0

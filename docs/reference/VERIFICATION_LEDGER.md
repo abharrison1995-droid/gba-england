@@ -110,6 +110,24 @@ point compile. It proves nothing about their behaviour.**
   transitions, `0 duplicate transition(s) removed` (also settles reimport idempotency, still unproven
   otherwise).
 
+### Chunk placement
+
+Landed 2026-08-25, unseen by an editor.
+
+- **Three placeholder chunks deleted** — North Wasteland, West Canal, East Retail Park, with their
+  prefabs and their `WikiEntry_*` assets. All three were unreachable (nothing linked back to them),
+  and a wiki entry unlocks only by entering its `LinkedChunk`, so no save can hold those `EntryID`s.
+  Their entries were `Entry not yet written.` placeholders. Removed from `ChunkManager.AllChunks` in
+  `c.unity` and from `MapChunkRegistry` as well; `--check-dangling` is clean. *If a save somehow
+  names one as the current chunk it will not resolve — none should exist, but it is the one way this
+  could bite.*
+- **The eleven interiors moved from the `x = -3` column to `y = -99`, `x = 1..11`.** Nothing in
+  travel reads `Coordinates`, so doors and portals are unaffected by construction — but *check one
+  interior still opens from its door*, because that claim is read from the code, not run.
+- **`DiscoverEnglandSetup` was writing `manor.Coordinates = (-1, 0)`** — Barren Lands' cell — while
+  the asset itself said `(-1, -99)`. Running that Danger Zone tool would have dropped the tutorial
+  dungeon onto a real chunk. Now `(-1, -99)`, matching the asset. Uncompiled.
+
 ### Chunk grounds and roads
 
 Landed 2026-08-25. Ten chunk prefabs edited as YAML in place — no `.meta` touched, no GUID minted

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkName: Gang_Hideout
   Coordinates:
-    X: -3
-    Y: -5
+    X: 6
+    Y: -99
   IsCity: 0
   IsTutorialDungeon: 0
   LockExitsUntilTutorialComplete: 0

@@ -2,7 +2,7 @@
 
 ```
 Last verified against: working tree, 2026-08-17; the ground/road visuals section added
-                       2026-08-25
+                       2026-08-25; the coordinates section added 2026-08-25
 Verification scope:    code (read line by line); chunk prefabs and MapChunkData assets (tracked
                        YAML). Edge-crossing behaviour was play-tested in an earlier editor
                        session — but NOT since ChunkTravelKind was added on 2026-08-15, which
@@ -309,3 +309,29 @@ coplanar and z-fight, which is the whole reason the patch exists.
 stopped after `m_Materials`, and every one rendered magenta while the `Ground` beside it, carrying
 the same material, rendered correctly. If you write prefab YAML by hand, copy a renderer Unity
 wrote — do not write a minimal one and trust the defaults.
+
+## Coordinates, and the off-map row
+
+`MapChunkData.Coordinates` is not decoration and it is not the travel system either. Two things
+read it, and only two:
+
+- **`MapOfBritainUI`** BFSes the neighbour graph from the chunk the player is standing in and lays
+  the result out by each asset's `Coordinates`.
+- **`ChunkManager`'s city knife-lockout timers** use it as a **dictionary key**.
+
+That second one is why a duplicate coordinate is a bug rather than an untidiness: two cities on one
+cell share one lockout timer, silently. Nothing warns.
+
+Travel never touches it. Edge crossings follow the `NorthChunk`/`SouthChunk`/`EastChunk`/`WestChunk`
+asset references, and `DungeonPortal.TargetChunk` is a direct `MapChunkData` reference. **Moving a
+chunk's coordinates cannot break a door, a portal or an edge** — only where it draws on the map, and
+who it shares a lockout timer with.
+
+⚠️ **Everything not on the map lives on the `y = -99` row.** Interiors and dungeons are entered by
+door or portal, never by walking off an edge, so they have no business occupying a grid cell that a
+real chunk might want. `BuildCastleFightArenaTool` already hardcoded `(0, -99)`; as of 2026-08-25
+the eleven interiors joined it at `x = 1..11` and Manor Cellars keeps `(-1, -99)`. All 24 chunks now
+hold 24 distinct cells.
+
+The interiors were previously stacked in a column at `x = -3`, which put F.U. Sports directly in the
+path of West York's unfilled west edge. If you park anything off-map, put it on the `-99` row.

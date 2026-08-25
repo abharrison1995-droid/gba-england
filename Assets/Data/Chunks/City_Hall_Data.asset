@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkName: City_Hall
   Coordinates:
-    X: -3
-    Y: -3
+    X: 3
+    Y: -99
   IsCity: 0
   IsTutorialDungeon: 0
   LockExitsUntilTutorialComplete: 0

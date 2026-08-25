@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkName: FU_Sports
   Coordinates:
-    X: -3
-    Y: -2
+    X: 5
+    Y: -99
   IsCity: 0
   IsTutorialDungeon: 0
   LockExitsUntilTutorialComplete: 0

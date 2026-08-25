@@ -92,7 +92,10 @@ public static class DiscoverEnglandSetup
         }
 
         manor.ChunkName = "Manor Cellars";
-        manor.Coordinates = new Vector2IntCoords(-1, 0);
+        // Off the map grid, on the y = -99 row every non-map chunk uses. It was (-1, 0),
+        // which is Barren Lands: running this tool would have dropped a tutorial dungeon
+        // on top of a real chunk, and Coordinates is the key for city lockout timers.
+        manor.Coordinates = new Vector2IntCoords(-1, -99);
         manor.IsCity = false;
         manor.IsTutorialDungeon = true;
         manor.LockExitsUntilTutorialComplete = true;
@@ -114,7 +117,7 @@ public static class DiscoverEnglandSetup
 
         // Manor Cellars is reached via its own door (ManorCellarsEntrance/InstanceDoor), not
         // the edge grid — NOT setting london.WestChunk here, since that edge already leads to
-        // West_Canal. Only give Manor Cellars a rough map-back reference.
+        // Barren Lands. Only give Manor Cellars a rough map-back reference.
         manor.EastChunk = london;
 
         EditorUtility.SetDirty(london);

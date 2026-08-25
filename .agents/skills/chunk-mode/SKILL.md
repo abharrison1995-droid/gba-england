@@ -55,10 +55,14 @@ Engage the user with structured prompts to define the chunk's identity and posit
    - Identify the $(X, Y)$ grid coordinate.
    - Reference existing grid anchors:
      - `Home_London`: $(0, 0)$
-     - `North_Wasteland`: $(0, 1)$
-     - `South_Slums`: $(0, -1)$
-     - `East_RetailPark`: $(1, 0)$
-     - `West_Canal`: $(-1, 0)$
+     - `Hyde_Park_Jungle`: $(0, 1)$
+     - `Commie_Slum_Menshevik`: $(0, -1)$
+     - `Commie_Slum_Bolshevik`: $(1, 0)$
+     - `Barren_Lands_MK`: $(-1, 0)$
+   - *Off-map rule:* interiors and dungeons are **not** on the grid. They sit on the
+     `y = -99` row, which exists so nothing enterable-by-door competes for a real cell.
+     Two chunks sharing a cell share one city knife-lockout timer, since `Coordinates` is
+     that dictionary's key.
 
 3. **City & Consequence Flag (`IsCity`):**
    - `IsCity = true`: Police patrol spawns, knife lockout timers active, magic casting drains concealment (for urban hubs).
