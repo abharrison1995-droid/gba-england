@@ -43,10 +43,14 @@ never completes. **Decision: ids are kept. Only stats are retuned.**
 every `Awake` in the new chunk runs synchronously inside that `Instantiate`, so anything reading
 `ChunkManager.Instance.CurrentChunkData` during `Awake` sees **the chunk it just left**.
 
-`SpriteContainer.SetUpFixed` does exactly that, so a container inside a portal-reached chunk builds
-its save id as `"<origin chunk>/<name>"`. Latent today: no `DungeonPortal` exists, and the only two
-placed `SpriteContainer`s were scene-root test objects that have since been deleted (§4.2.1). The
-bus-station containers will be portal-reached, which is the whole use case.
+`SpriteContainer` used to do exactly that, so a container inside a portal-reached chunk would have
+built its save id as `"<origin chunk>/<name>"`. Both components now resolve the chunk through
+`ChunkManager.ContentChunkName` in `SetUpFromSave`, which prefers `ChunkBeingBuilt`.
+
+**This is no longer latent.** Four `DungeonPortal`s exist in `Home_London_Prefab.prefab`, reaching
+`Mosleys_Lab_Basement`, `Gang_Hideout`, `Abandoned_Bus_Station` and `Abandoned_Church`. The
+bus-station containers will be portal-reached, which is the whole use case, and the path is now
+walkable — see §6 check 10.
 
 Six of the seven instantiate paths assign `CurrentChunkData` before instantiating and are correct.
 Only `TravelRoutine` does not. Moving the assignment earlier would destroy the abort safety, so the
@@ -216,12 +220,14 @@ Exit Play mode and `Ctrl+S` first.
 9. **`Fixed` persists.** Loot it empty, cross a chunk edge, return, confirm still empty and showing
    `EmptyVisual`. Then quit, `Continue`, confirm still empty. **That last step is the only proof the
    save round-trips**, and it is the one most likely to fail. (The *portal* variant of this — check
-   10 — still needs a `DungeonPortal`, which has never existed in this project.)
+   10 — is now walkable: four `DungeonPortal`s exist in `Home_London_Prefab`.)
 10. **The portal path uses the right chunk name.** Loot a `Fixed` container reached *by portal*, quit,
    reload, confirm still empty. If it refills, the resolver did not take — and nothing will say so.
    Cross-check by reading `LootedContainers` in `savegame.json`: it must read
-   `Abandoned_Bus_Station/<SaveId>`, not `Home_London/<SaveId>`. **Blocked until a `DungeonPortal`
-   is authored** — none exists in the project.
+   `Abandoned_Bus_Station/<SaveId>`, not `Home_London/<SaveId>`. **Unblocked.** The
+   `Home_London_Prefab` door named "Enter Station" reaches this chunk. ⚠ Its arrival marker id was
+   blank until 2026-08-25 (`1cbd067`), so the door aborted on use and the chunk could not be
+   entered at all — walk through it first and confirm you arrive before trusting this check.
 11. **`Respawning` counts down.** `RespawnVisits = 2`, loot it, return once (still empty), return
     again (full). Read `ContainerCooldowns` in the JSON between the two.
 12. **A reload does not advance a cooldown.** Loot one, save, quit, reload twice, still empty.

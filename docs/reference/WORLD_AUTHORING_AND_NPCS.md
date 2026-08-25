@@ -7,9 +7,12 @@ Verification scope:    code; tracked preset/prefab YAML (32 presets read). The v
                        exercised end to end in the editor and reported working by the owner.
                        The six London enemy prefabs have NEVER been seen in play, and a GUID scan
                        of the chunk prefabs and c.unity says none of them is placed anywhere. The
-                       preset count, the "no preset has Prefab assigned" claim and the enemy-level
-                       path below are from reading code and tracked YAML; nothing here has been
-                       reopened in the editor, and no enemy has been placed with a level.
+                       preset count and the enemy-level path below are from reading code and
+                       tracked YAML; nothing here has been reopened in the editor, and no enemy has
+                       been placed with a level. The "no preset has Prefab assigned" claim that
+                       used to sit here was FALSE and was corrected 2026-08-25 — three presets
+                       carry it, all of them containers. Re-run the grep before trusting any
+                       preset-population claim in this file.
                        The Portal Placement section landed 2026-08-09 describing a rewritten tool
                        that has NEVER been compiled, opened or run, and no linked pair exists.
                        The conversation-file paths named below were read off the quests/ tree on
@@ -64,8 +67,13 @@ It sits directly at `Tools/World Palette`, uncategorised — the one deliberate 
   link and any persisted UnityEvents survive the stamp. The worked example used to be
   `Preset_NoseyParker` — `Prop`, pointing at a hand-built prefab — which has been deleted along
   with the rest of the snitch mechanic (see
-  [CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md)). No preset **currently on disk** has
-  `Prefab` assigned, so this path is unexercised. Containers are no longer authored this way:
+  [CONSEQUENCES_AND_MOUNTS.md](CONSEQUENCES_AND_MOUNTS.md)). Three presets **currently on disk**
+  carry `Prefab`, and all three are containers — `Preset_Container_Fixed`,
+  `Preset_Container_Respawning` and `Preset_Container_AllItems_Test`. (The seven enemy presets
+  carry `EnemyPrefab`, a different field down a different branch.) So this path is *the* container
+  path, and `Container_AllItems_Test` reached `Home_London_Prefab` through it. Whether the other
+  two have ever been stamped is a separate question — as of 2026-08-25 they have not. Containers
+  on a **3D model** are no longer authored this way:
   `Tools → Content → Build Container Prefabs` and the `Preset_Container_*` preset pattern were
   superseded 2026-08-17 by `Tools → Place → Container Placement`
   (`Assets/Editor/Place/ContainerPlacementTool.cs`), a click-to-place tool that stamps a `WorldContainer`

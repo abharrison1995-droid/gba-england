@@ -3,7 +3,9 @@
 **Last verified against:** `main` @ 2026-08-20, reconciled against `CLAUDE.md` §5 and against the
 prefab/asset YAML on disk. Fight Pit entry added 2026-08-21; player special attacks
 added 2026-08-24 from branch `feat/player-special-attacks`; chunk ground/road repair added
-2026-08-25.
+2026-08-25. Container section corrected 2026-08-25: two statements in it were false — that two
+`SpriteContainer`s were live in `c.unity` (they were deleted, as this file said five bullets
+later) and that none of the three container prop models existed (all three do).
 
 **This file is the sole canonical owner of verification status.**
 
@@ -268,9 +270,14 @@ before. None of it has been opened in Unity.
 ### Containers and foraging
 
 The 3D container system and visit-counted respawn (committed 2026-08-17), never compiled. **No
-container of either kind is placed anywhere yet, and none of the three 3D models exists** — the
-bush, the vending machine and the bus wreckage still have to be made and imported, so the tool can
-only be exercised against placeholder geometry.
+container of either kind is placed anywhere yet.** All three prop models now exist, imported
+2026-08-18/19 under `Assets/3DModels/bus_station/` — `prop_bus_wreck_destroyed.glb`, and the
+vending machine as a **pair**, `prop_vending_machine_fungal_growth.glb` and
+`prop_vending_machine_fungus_harvested.glb`, which is exactly the `FullVisual` / `EmptyVisual`
+swap `WorldContainer` is built around. There is no dedicated berry-bush prop; the existing
+`tree_pack_1.1` bushes are the only candidate. **None of the three is placed in any chunk**, so
+the tool still has nothing authored to attach to — but the geometry is no longer the blocker it
+was, only the placement is.
 
 - ⚠️ **A latent save-key defect is fixed, and it is why the portal path is the first thing to
   check.** `TravelRoutine` instantiates the destination *before* assigning `CurrentChunkData`, so
@@ -292,7 +299,8 @@ only be exercised against placeholder geometry.
   paths do not, and `LoadWorld` especially **must not** — a reload that advanced cooldowns would
   make reload-spam the fastest way to farm. The table lives in `ChunkManager`. *Loot a Respawning
   container, save, quit, reload twice, confirm it is still empty.*
-- ⚠️ **`SpriteContainer.Respawning` changed meaning**, and two of them are live in `c.unity`. It
+- ⚠️ **`SpriteContainer.Respawning` changed meaning.** Two instances briefly stood at the root of
+  `c.unity` while this landed and were deleted before this section was written — see below. It
   used to refill on every chunk entry and save nothing; it now sits out `RespawnVisits` entries like
   the new component. `RespawnVisits` was **appended**, so an existing asset reads it as `0` — both
   components treat `<= 0` as "use the default (3)", *not* as the field's literal initializer.
