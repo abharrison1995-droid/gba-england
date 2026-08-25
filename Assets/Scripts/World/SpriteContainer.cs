@@ -76,9 +76,15 @@ namespace GBHEngland.World
             if (_interactable == null)
             {
                 _interactable = gameObject.AddComponent<Interactable>();
-                _interactable.Prompt = $"Open {ContainerName}";
                 _interactable.InteractRange = 2.75f;
             }
+
+            // Outside the null check on purpose, matching WorldContainer. Both shipped prefabs
+            // already carry an authored Interactable, so a Prompt set only in the branch above
+            // never ran and the player read the prefab's baked-in placeholder instead of
+            // ContainerName. InteractRange stays inside the branch — an authored Interactable
+            // carries its own range, and 2.75 is only the fallback for one we just added.
+            _interactable.Prompt = $"Open {ContainerName}";
             // Reusable: closing a half-emptied container has to leave it openable again. It is
             // disabled explicitly once everything in it has been taken.
             _interactable.Reusable = true;
