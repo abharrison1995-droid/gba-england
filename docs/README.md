@@ -19,6 +19,7 @@ reads, so anything perishable in it would rot faster than anywhere else. Current
 | The save file, save keys, renaming a serialized field, enums, `.meta`/GUIDs | [reference/SAVE_AND_SERIALIZATION.md](reference/SAVE_AND_SERIALIZATION.md) |
 | Wanted level, police, stealth, pickpocketing, pubs, arrest, mounts, vehicles, movement speed | [reference/CONSEQUENCES_AND_MOUNTS.md](reference/CONSEQUENCES_AND_MOUNTS.md) |
 | Placing content, the World Palette, `PlacementPreset`, building an NPC or an enemy prefab | [reference/WORLD_AUTHORING_AND_NPCS.md](reference/WORLD_AUTHORING_AND_NPCS.md) |
+| Containers, foraging, loot respawn | [plans/CONTAINER_SYSTEM_PLAN.md](plans/CONTAINER_SYSTEM_PLAN.md) + save keys in [reference/SAVE_AND_SERIALIZATION.md](reference/SAVE_AND_SERIALIZATION.md) |
 | Quests, quest conditions, dialogue graphs, dialogue authoring or validation | [reference/QUESTS_AND_DIALOGUE.md](reference/QUESTS_AND_DIALOGUE.md) |
 | Spells, spell tuning, spellbook persistence, spell VFX or debug spell grants | [reference/SPELLS.md](reference/SPELLS.md) |
 | Player melee, the dodge roll, special attacks and the melee sweep helper | [reference/PLAYER_COMBAT.md](reference/PLAYER_COMBAT.md) |
