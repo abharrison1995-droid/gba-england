@@ -578,8 +578,10 @@ public class ContainerPlacementTool : EditorWindow
     {
         HashSet<string> taken = CollectSaveIds(container);
 
-        if (!string.IsNullOrEmpty(_saveId) && !taken.Contains(_saveId)) return _saveId;
-        if (!string.IsNullOrEmpty(container.SaveId) && !taken.Contains(container.SaveId))
+        if (!string.IsNullOrEmpty(_saveId) && !taken.Contains(_saveId) && IsUsableSaveId(_saveId))
+            return _saveId;
+        if (!string.IsNullOrEmpty(container.SaveId) && !taken.Contains(container.SaveId)
+            && IsUsableSaveId(container.SaveId))
             return container.SaveId;
 
         string root = Sanitize(target.name) + "_container";
@@ -591,6 +593,30 @@ public class ContainerPlacementTool : EditorWindow
             if (!taken.Contains(candidate)) return candidate;
         }
         return root + "_" + System.Guid.NewGuid().ToString("N").Substring(0, 6);
+    }
+
+    /// <summary>
+    /// Whether an authored save id is safe to use verbatim.
+    ///
+    /// ⚠ The runtime key is <c>chunkName + "/" + SaveId</c> (WorldContainer.SetUpFromSave). An id
+    /// containing "/" makes that concatenation ambiguous — "Chunk/foo/bar" cannot be told apart
+    /// from a chunk called "Chunk/foo" holding "bar". Whitespace is worse than it looks: it
+    /// survives into the key, is invisible in the Inspector, and re-typing the id with a different
+    /// number of spaces silently mints a different key.
+    ///
+    /// <see cref="Sanitize"/> deliberately only runs on ids this tool mints itself, so an id the
+    /// author typed reaches the key untouched. Rejecting here sends it down the auto-mint path
+    /// rather than silently repairing it, because a repaired id is not the id the author read.
+    /// </summary>
+    private static bool IsUsableSaveId(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return false;
+        if (id.IndexOf('/') >= 0) return false;
+
+        foreach (char c in id)
+            if (char.IsWhiteSpace(c)) return false;
+
+        return true;
     }
 
     private static string Sanitize(string raw)
@@ -677,6 +703,15 @@ public class ContainerPlacementTool : EditorWindow
                 _findings.Add(
                     $"{path}: no Save Id, so it falls back to the GameObject name '{c.gameObject.name}'. " +
                     "Every container child is called Container, so this is very likely to collide.");
+            }
+            else if (!IsUsableSaveId(c.SaveId))
+            {
+                // Reachable by hand-editing the field in the Inspector, which bypasses this
+                // window's ResolveSaveId entirely.
+                _findings.Add(
+                    $"{path}: Save Id '{c.SaveId}' contains a slash or whitespace. The save key is " +
+                    "\"<ChunkName>/<SaveId>\", so a slash makes it ambiguous and whitespace makes it " +
+                    "invisible to read back. Retype it without either.");
             }
 
             bool hasFixed = c.FixedLoot != null && c.FixedLoot.Count > 0;
