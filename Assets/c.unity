@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!29 &1
 OcclusionCullingSettings:
@@ -60571,9 +60571,21 @@ MonoBehaviour:
   RollIFrameStart: 0.05
   RollIFrameDuration: 0.25
   RollCooldown: 1
+  SpinDuration: 0.6
+  SpinTicks: 3
+  SpinRange: 2.4
+  SpinDamageMultiplier: 0.6
+  SpinStaminaPercent: 35
+  DashDuration: 0.28
+  DashDistance: 3.2
+  DashRange: 1.1
+  DashArcAngle: 140
+  DashDamageMultiplier: 1.25
+  DashStaminaPercent: 30
   KnockbackRecoveryIFrames: 0.4
   StaminaRegenPercentPerSecond: 5
   EquippedAbilities: []
+  SpecialAttacks: []
 --- !u!54 &861987727
 Rigidbody:
   m_ObjectHideFlags: 0
