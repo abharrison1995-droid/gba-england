@@ -4346,10 +4346,7 @@ MonoBehaviour:
   CurrentChunkData: {fileID: 11400000, guid: 006538e106c0bd044908e2d871effd65, type: 2}
   CurrentChunkInstance: {fileID: 736820890}
   AllChunks:
-  - {fileID: 11400000, guid: 93880a9f5caac2f4889b9e26122ac8f4, type: 2}
   - {fileID: 11400000, guid: 5a35b5720ddb68e4ca6ae25fd3467332, type: 2}
-  - {fileID: 11400000, guid: c097012165fa83f49a01688468ec4e0b, type: 2}
-  - {fileID: 11400000, guid: f7f9afa3895876b4dae6178882646c61, type: 2}
   LoadingScreenUI: {fileID: 0}
   WarningPromptUI: {fileID: 0}
   PlayerTransform: {fileID: 861987731}
