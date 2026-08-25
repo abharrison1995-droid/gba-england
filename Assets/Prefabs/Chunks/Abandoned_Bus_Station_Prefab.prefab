@@ -892,4 +892,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8f04285e6c9d454da008ecbb7119bbe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Id: 
+  Id: Bus_Station_Main_Door_inside

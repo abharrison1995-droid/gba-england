@@ -786,7 +786,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8f04285e6c9d454da008ecbb7119bbe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Id: 
+  Id: Abandoned_Church_Door_inside
 --- !u!1 &7740233791825612967
 GameObject:
   m_ObjectHideFlags: 0
