@@ -123,6 +123,17 @@ public class ContainerPlacementTool : EditorWindow
             return;
         }
 
+        // DrawTargetPanel computes this same condition and warns about it, but its `return` only
+        // leaves that method — everything below kept drawing, and Create Container stayed
+        // clickable on a selection outside the open prefab. The scene-view picker was never
+        // exposed (it raycasts the stage's own physics scene), but the button was.
+        PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+        if (stage != null && !target.transform.IsChildOf(stage.prefabContentsRoot.transform))
+        {
+            EditorGUILayout.EndScrollView();
+            return;
+        }
+
         EditorGUILayout.Space();
         DrawConfigPanel(target);
         EditorGUILayout.Space();
