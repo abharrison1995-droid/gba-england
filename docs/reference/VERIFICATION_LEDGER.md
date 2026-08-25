@@ -137,10 +137,15 @@ before. None of it has been opened in Unity.
 - **Ground tiling is 44 on the three new materials, 80 on the older `Grass.mat`.** Not an
   oversight — 80 minified the new textures into flat noise at the real camera distance. If the
   moor and the grass ever need to read as the same family, that difference is why they do not.
-- **`mat_arena_regal_floor` and `mat_arena_regal_wall` have no texture at all**, only a flat red
-  tint, and are waiting on Band 14. The plan for the 1 m walls — a second material reading the top
-  quarter of the tall wall's strip via a `0 x 0.75` offset — is **untried**; UV offsets on a cube
-  face are exactly the kind of thing that comes out upside down.
+- ⚠️ **The arena's 1 m walls read the top quarter of the tall wall's texture** through
+  `mat_arena_regal_wall_low` at tiling `8 x 0.25`, offset `0 x 0.75`. Simulated before landing and
+  it comes out right way up — cornice, gold band, marble — but a **UV offset on a cube face is
+  still the single most likely thing here to be wrong in Unity**. *Check Wall_South and Wall_East
+  show a gold-capped parapet and not a slice of skirting.* If it is inverted the fix is
+  `offset 0 x 0` with tiling `8 x 0.25`; if it is upside down the texture is being sampled from
+  the bottom and the whole approach needs a second wall asset instead.
+- **The arena has never been entered.** Its floor and walls had no texture at all until
+  2026-08-25, so nothing about how that room reads has ever been seen.
 - **Brighton and West York gained an `Intersection_Centre`** they did not have, at `y=0.06`,
   matching what the generator's own `Crossroad_Intersection` style produces. Without it the two
   strips are coplanar where they cross. *Check the junction does not z-fight.*
