@@ -130,10 +130,17 @@ before. None of it has been opened in Unity.
   V→Z. If that is backwards the roads will read sideways — bands across the carriageway instead of
   along it. *One-line fix if so: swap the tiling on `Road_Asphalt` from `22 x 1` to `1 x 22` and
   drop the 90° yaw from the north-south strips.*
-- **Four ground materials are flat colour on purpose** — `Ground_MoorDark`,
-  `Ground_ScorchedSand`, `Ground_RockyGrey`, `Track_Dirt` wait on Band 13 art. Each carries an
-  approximate `_Color` tint. **That tint must go back to white when its texture lands**, or it
-  multiplies against the texture and darkens it twice.
+- **Three of those four grounds are textured now** (Band 13 delivered 2026-08-25) and their
+  tints are back to white. `Track_Dirt` is **still flat colour** and still carries its tint —
+  `track_dirt_strip` was never delivered, so The Peaks and Knob Moor have plain brown tracks.
+  **Reset that tint to white when it lands**, or it multiplies against the texture.
+- **Ground tiling is 44 on the three new materials, 80 on the older `Grass.mat`.** Not an
+  oversight — 80 minified the new textures into flat noise at the real camera distance. If the
+  moor and the grass ever need to read as the same family, that difference is why they do not.
+- **`mat_arena_regal_floor` and `mat_arena_regal_wall` have no texture at all**, only a flat red
+  tint, and are waiting on Band 14. The plan for the 1 m walls — a second material reading the top
+  quarter of the tall wall's strip via a `0 x 0.75` offset — is **untried**; UV offsets on a cube
+  face are exactly the kind of thing that comes out upside down.
 - **Brighton and West York gained an `Intersection_Centre`** they did not have, at `y=0.06`,
   matching what the generator's own `Crossroad_Intersection` style produces. Without it the two
   strips are coplanar where they cross. *Check the junction does not z-fight.*
